@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import * as cheerio from "cheerio";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -41,7 +42,7 @@ const BANKS: Record<string, BankConfig> = {
       const suffix = (account || "").slice(-8);
       return `https://apps.cbe.com.et:100/?id=${ref}${suffix}`;
     },
-    parse: parseCBEPdf,
+    parse: (_data, _ct) => ({ verified: false }), // handled separately
   },
   telebirr: {
     code: "telebirr",
@@ -77,15 +78,22 @@ const BANKS: Record<string, BankConfig> = {
   },
 };
 
-function parseCBEPdf(data: Buffer, _contentType: string): ParsedReceipt {
-  // Lazy import to avoid issues
-  const pdfText = extractPdfTextSync(data);
-  if (!pdfText || !pdfText.includes("Commercial Bank of Ethiopia")) {
-    return { verified: false, raw: pdfText };
+async function extractPdfText(data: Buffer): Promise<string> {
+  try {
+    const pdfParse = (await import("pdf-parse")).default;
+    const result = await pdfParse(data);
+    return result.text || "";
+  } catch {
+    return "";
+  }
+}
+
+function parseCBEPdfText(text: string): ParsedReceipt {
+  if (!text || !text.includes("Commercial Bank of Ethiopia")) {
+    return { verified: false };
   }
 
-  const lines = pdfText.split("\n").map((l) => l.trim());
-
+  const lines = text.split("\n").map((l) => l.trim());
   let senderName: string | undefined;
   let receiverName: string | undefined;
   let senderAccount: string | undefined;
@@ -95,7 +103,6 @@ function parseCBEPdf(data: Buffer, _contentType: string): ParsedReceipt {
   let reference: string | undefined;
   let branch: string | undefined;
   let reason: string | undefined;
-
   const accounts: string[] = [];
 
   for (const line of lines) {
@@ -144,49 +151,23 @@ function parseCBEPdf(data: Buffer, _contentType: string): ParsedReceipt {
     reference,
     branch,
     reason,
-    raw: pdfText,
   };
 }
 
-function extractPdfTextSync(data: Buffer): string {
-  try {
-    // Dynamic require to avoid bundler issues
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const pdfParse = require("pdf-parse");
-    // pdf-parse is sync-ish but actually returns a promise in some versions
-    // We use a sync wrapper approach
-    const result = pdfParse(data);
-    if (result instanceof Promise) {
-      // Fallback: return empty and handle async
-      return "";
-    }
-    return result.text || "";
-  } catch {
-    return "";
-  }
-}
-
-async function extractPdfTextAsync(data: Buffer): Promise<string> {
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const pdfParse = require("pdf-parse");
-    const result = await pdfParse(data);
-    return result.text || "";
-  } catch {
-    return "";
-  }
-}
-
 function parseTelebirrHtml(html: string, _contentType: string): ParsedReceipt {
-  if (html.includes("This request is not correct") || !html.toLowerCase().includes("telebirr receipt")) {
+  if (
+    html.includes("This request is not correct") ||
+    !html.toLowerCase().includes("telebirr receipt")
+  ) {
     return { verified: false, raw: html.slice(0, 500) };
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const cheerio = require("cheerio");
   const $ = cheerio.load(html);
   const text = $("body").text();
-  const lines = text.split("\n").map((l: string) => l.trim()).filter((l: string) => l);
+  const lines = text
+    .split("\n")
+    .map((l: string) => l.trim())
+    .filter((l: string) => l);
 
   function nextValueAfter(en: string, am?: string): string | undefined {
     for (let i = 0; i < lines.length; i++) {
@@ -228,7 +209,11 @@ function parseBOAJson(data: string, _contentType: string): ParsedReceipt {
   try {
     const payload = JSON.parse(data);
     const body = payload.body;
-    if (!body || !body[0] || body[0]["Payer's Name"] === "Invalid reference number") {
+    if (
+      !body ||
+      !body[0] ||
+      body[0]["Payer's Name"] === "Invalid reference number"
+    ) {
       return { verified: false, raw: data.slice(0, 500) };
     }
     const row = body[0];
@@ -313,14 +298,13 @@ export async function POST(request: NextRequest) {
     try {
       resp = await fetch(url, {
         headers: { "User-Agent": "Mozilla/5.0 (compatible; cheki)" },
-        // @ts-expect-error - Vercel/Node fetch supports this
-        rejectUnauthorized: false,
       });
     } catch {
       return NextResponse.json(
         {
           success: false,
-          error: "The bank's receipt endpoint is unreachable. It may be down or geo-blocking.",
+          error:
+            "The bank's receipt endpoint is unreachable. It may be down or geo-blocking.",
           bank: config.name,
           reference,
         },
@@ -353,60 +337,29 @@ export async function POST(request: NextRequest) {
     }
 
     const contentType = resp.headers.get("content-type") || "";
-    let data: string | Buffer;
 
+    // CBE returns a PDF
     if (config.responseType === "pdf") {
       const buf = Buffer.from(await resp.arrayBuffer());
       if (!buf.toString("ascii", 0, 4).includes("%PDF")) {
         return NextResponse.json(
           {
             success: false,
-            error: "The bank did not return a valid receipt PDF. The reference or account may be incorrect.",
+            error:
+              "The bank did not return a valid receipt PDF. The reference or account may be incorrect.",
             bank: config.name,
             reference,
           },
           { status: 404 }
         );
       }
-      // Use async extraction
-      const text = await extractPdfTextAsync(buf);
-      const parsed = parseCBEPdfWithText(text);
-      return NextResponse.json({
-        success: true,
-        bank: config.name,
-        reference,
-        sourceUrl: url,
-        ...parsed,
-      });
-    } else if (config.responseType === "html") {
-      data = await resp.text();
-      const parsed = config.parse(data, contentType);
+      const text = await extractPdfText(buf);
+      const parsed = parseCBEPdfText(text);
       if (!parsed.verified) {
         return NextResponse.json(
           {
             success: false,
-            error: "Receipt not found or invalid.",
-            bank: config.name,
-            reference,
-          },
-          { status: 404 }
-        );
-      }
-      return NextResponse.json({
-        success: true,
-        bank: config.name,
-        reference,
-        sourceUrl: url,
-        ...parsed,
-      });
-    } else {
-      data = await resp.text();
-      const parsed = config.parse(data, contentType);
-      if (!parsed.verified) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: "Receipt not found or invalid.",
+            error: "Could not parse the receipt PDF. The reference or account may be incorrect.",
             bank: config.name,
             reference,
           },
@@ -421,76 +374,32 @@ export async function POST(request: NextRequest) {
         ...parsed,
       });
     }
-  } catch (err) {
+
+    // HTML or JSON
+    const data = await resp.text();
+    const parsed = config.parse(data, contentType);
+    if (!parsed.verified) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Receipt not found or invalid.",
+          bank: config.name,
+          reference,
+        },
+        { status: 404 }
+      );
+    }
+    return NextResponse.json({
+      success: true,
+      bank: config.name,
+      reference,
+      sourceUrl: url,
+      ...parsed,
+    });
+  } catch {
     return NextResponse.json(
       { success: false, error: "Internal server error." },
       { status: 500 }
     );
   }
-}
-
-function parseCBEPdfWithText(text: string): ParsedReceipt {
-  if (!text || !text.includes("Commercial Bank of Ethiopia")) {
-    return { verified: false };
-  }
-
-  const lines = text.split("\n").map((l) => l.trim());
-  let senderName: string | undefined;
-  let receiverName: string | undefined;
-  let senderAccount: string | undefined;
-  let receiverAccount: string | undefined;
-  let amount: number | undefined;
-  let date: string | undefined;
-  let reference: string | undefined;
-  let branch: string | undefined;
-  let reason: string | undefined;
-  const accounts: string[] = [];
-
-  for (const line of lines) {
-    if (line.startsWith("Payer") && !senderName) {
-      senderName = line.replace("Payer", "").trim();
-    } else if (line.startsWith("Receiver") && !receiverName) {
-      receiverName = line.replace("Receiver", "").trim();
-    } else if (line.startsWith("Account")) {
-      const m = line.match(/Account\s+([0-9*]+)/);
-      if (m) accounts.push(m[1]);
-    } else if (line.includes("Transferred Amount")) {
-      const m = line.match(/Transferred Amount\s+([0-9,]+\.\d{2})\s*ETB/);
-      if (m) amount = parseFloat(m[1].replace(/,/g, ""));
-    } else if (line.includes("Payment Date & Time")) {
-      const m = line.match(
-        /Payment Date & Time\s+(\d{1,2}\/\d{1,2}\/\d{4}),\s+(\d{1,2}:\d{2}:\d{2})\s*(AM|PM)?/
-      );
-      if (m) {
-        let ds = `${m[1]} ${m[2]}`;
-        if (m[3]) ds += ` ${m[3]}`;
-        date = ds;
-      }
-    } else if (line.includes("VAT Receipt No:")) {
-      const m = line.match(/VAT Receipt No:\s*(\S+)/);
-      if (m) reference = m[1];
-    } else if (line.includes("Branch:")) {
-      const m = line.match(/Branch:\s*(.+)/);
-      if (m) branch = m[1].trim();
-    } else if (line.includes("Reason / Type of service")) {
-      reason = line.replace("Reason / Type of service", "").trim();
-    }
-  }
-
-  if (accounts.length >= 1) senderAccount = accounts[0];
-  if (accounts.length >= 2) receiverAccount = accounts[1];
-
-  return {
-    verified: true,
-    senderName,
-    senderAccount,
-    receiverName,
-    receiverAccount,
-    amount,
-    currency: "ETB",
-    date,
-    reference,
-    branch,
-    reason,
-  };
 }
