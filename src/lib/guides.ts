@@ -114,7 +114,7 @@ export const guides: Guide[] = [
     ],
     relatedGuides: ["verify-telebirr-transactions", "prevent-fake-payment-screenshots", "cbe-fake-receipt"],
     seo: {
-      title: "How to Verify CBE Transactions in Ethiopia | cheki",
+      title: "How to Verify CBE Transactions in Ethiopia",
       description:
         "Step-by-step guide to verifying Commercial Bank of Ethiopia (CBE) transactions using FT reference numbers. Free verification with cheki.",
       keywords: [
@@ -217,7 +217,7 @@ export const guides: Guide[] = [
     ],
     relatedGuides: ["verify-cbe-transactions", "prevent-fake-payment-screenshots", "telebirr-vs-cbe"],
     seo: {
-      title: "How to Verify Telebirr Transactions in Ethiopia | cheki",
+      title: "How to Verify Telebirr Transactions in Ethiopia",
       description:
         "Step-by-step guide to verifying Telebirr transactions using reference numbers. Free verification with cheki. Handle geo-blocking easily.",
       keywords: [
@@ -319,7 +319,7 @@ export const guides: Guide[] = [
     ],
     relatedGuides: ["cbe-fake-receipt", "detect-duplicate-payment-fraud", "verify-cbe-transactions"],
     seo: {
-      title: "How to Prevent Fake Payment Screenshots in Ethiopia | cheki",
+      title: "How to Prevent Fake Payment Screenshots in Ethiopia",
       description:
         "Learn how Ethiopian merchants detect forged Telebirr, CBE, and bank transfer screenshots. Free verification tools to stop payment fraud.",
       keywords: [
@@ -409,7 +409,7 @@ export const guides: Guide[] = [
     ],
     relatedGuides: ["prevent-fake-payment-screenshots", "detect-duplicate-payment-fraud", "verify-cbe-transactions"],
     seo: {
-      title: "CBE Fake Receipt: How to Spot and Stop Them | cheki",
+      title: "CBE Fake Receipt: How to Spot and Stop Them",
       description:
         "Protect your business from fake CBE transfer screenshots. Learn how forged receipts look and how live verification catches them instantly.",
       keywords: [
@@ -483,7 +483,7 @@ export const guides: Guide[] = [
     ],
     relatedGuides: ["prevent-fake-payment-screenshots", "cbe-fake-receipt", "payment-verification-businesses"],
     seo: {
-      title: "How to Detect Duplicate Payment Fraud in Ethiopia | cheki",
+      title: "How to Detect Duplicate Payment Fraud in Ethiopia",
       description:
         "Learn how to identify and stop duplicate payment fraud in Ethiopia. Spot reused Telebirr and CBE receipts before releasing goods.",
       keywords: [
@@ -574,7 +574,7 @@ export const guides: Guide[] = [
     ],
     relatedGuides: ["prevent-fake-payment-screenshots", "payment-verification-api", "verify-cbe-transactions"],
     seo: {
-      title: "Payment Verification for Ethiopian Businesses | cheki",
+      title: "Payment Verification for Ethiopian Businesses",
       description:
         "Why Ethiopian shops, logistics, and SaaS teams centralize CBE, Telebirr, and bank verification with cheki. Free API, batch verify, and audit trail.",
       keywords: [
@@ -670,7 +670,7 @@ export const guides: Guide[] = [
     ],
     relatedGuides: ["verify-cbe-transactions", "verify-telebirr-transactions", "payment-verification-businesses"],
     seo: {
-      title: "Payment Verification API for Ethiopian Businesses | cheki",
+      title: "Payment Verification API for Ethiopian Businesses",
       description:
         "Integrate CBE, Telebirr, and bank verification into your app with the cheki REST API. Free, no API key, no signup. Code examples included.",
       keywords: [
@@ -759,7 +759,7 @@ export const guides: Guide[] = [
     ],
     relatedGuides: ["verify-cbe-transactions", "verify-telebirr-transactions", "prevent-fake-payment-screenshots"],
     seo: {
-      title: "Telebirr vs CBE Verification: What Merchants Need to Know | cheki",
+      title: "Telebirr vs CBE Verification: What Merchants Need to Know",
       description:
         "Compare Telebirr and CBE payment verification fields, receipt formats, and best practices for Ethiopian merchants.",
       keywords: [

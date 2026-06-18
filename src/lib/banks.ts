@@ -78,7 +78,7 @@ export const banks: Bank[] = [
       },
     ],
     seo: {
-      title: "Verify CBE Transactions Online | cheki",
+      title: "Verify CBE Transactions Online",
       description:
         "Verify Commercial Bank of Ethiopia (CBE) transactions for free. Check FT reference numbers against official CBE receipt endpoints. No signup, no API key.",
       keywords: [
@@ -139,7 +139,7 @@ export const banks: Bank[] = [
       },
     ],
     seo: {
-      title: "Verify Telebirr Transactions Online | cheki",
+      title: "Verify Telebirr Transactions Online",
       description:
         "Verify Telebirr (Ethio Telecom) transactions for free. Check transaction references against official Telebirr receipt endpoints. No signup, no API key.",
       keywords: [
@@ -197,7 +197,7 @@ export const banks: Bank[] = [
       },
     ],
     seo: {
-      title: "Verify Bank of Abyssinia Transactions Online | cheki",
+      title: "Verify Bank of Abyssinia Transactions Online",
       description:
         "Verify Bank of Abyssinia (BOA) transactions for free. Check transaction references against official BOA API endpoints. No Selenium, no signup, no API key.",
       keywords: [
@@ -254,7 +254,7 @@ export const banks: Bank[] = [
       },
     ],
     seo: {
-      title: "Verify M-Pesa Ethiopia Transactions Online | cheki",
+      title: "Verify M-Pesa Ethiopia Transactions Online",
       description:
         "Verify M-Pesa Ethiopia (Safaricom) transactions for free. Check transaction references against official M-Pesa receipt API. No signup, no API key.",
       keywords: [
@@ -302,7 +302,7 @@ export const banks: Bank[] = [
       },
     ],
     seo: {
-      title: "Verify Dashen Bank Transactions Online | cheki",
+      title: "Verify Dashen Bank Transactions Online",
       description:
         "Verify Dashen Bank transactions for free. Check transaction references against official Dashen receipt endpoints. No signup, no API key.",
       keywords: [
@@ -345,7 +345,7 @@ export const banks: Bank[] = [
       },
     ],
     seo: {
-      title: "Verify Awash Bank Transactions Online | cheki",
+      title: "Verify Awash Bank Transactions Online",
       description:
         "Verify Awash Bank transactions for free. Check transaction references against official Awash receipt endpoints. No signup, no API key.",
       keywords: [
@@ -388,7 +388,7 @@ export const banks: Bank[] = [
       },
     ],
     seo: {
-      title: "Verify Zemen Bank Transactions Online | cheki",
+      title: "Verify Zemen Bank Transactions Online",
       description:
         "Verify Zemen Bank transactions for free. Check transaction references against official Zemen receipt endpoints. No signup, no API key.",
       keywords: [
@@ -436,7 +436,7 @@ export const banks: Bank[] = [
       },
     ],
     seo: {
-      title: "Verify CBE Birr Transactions Online | cheki",
+      title: "Verify CBE Birr Transactions Online",
       description:
         "Verify CBE Birr transactions for free. Check transaction references against official CBE Birr receipt endpoints. No signup, no API key.",
       keywords: [
@@ -477,7 +477,7 @@ export const banks: Bank[] = [
       },
     ],
     seo: {
-      title: "Verify Siinqee Bank Transactions Online | cheki",
+      title: "Verify Siinqee Bank Transactions Online",
       description:
         "Verify Siinqee Bank transactions for free. No signup, no API key.",
       keywords: [
