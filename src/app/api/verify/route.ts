@@ -322,52 +322,58 @@ export async function POST(request: NextRequest) {
     let fetchError: string | undefined;
     try {
       if (isGeoBlocked) {
-        // Use native https module with direct IP to bypass DNS and geo-blocks
-        const https = await import("node:https");
-        const http = await import("node:http");
-        
-        const parsedUrl = new URL(geoUrl);
-        const isHttps = parsedUrl.protocol === "https:";
-        const lib = isHttps ? https : http;
-        
-        const options = {
-          hostname: parsedUrl.hostname,
-          port: parsedUrl.port || (isHttps ? 443 : 80),
-          path: parsedUrl.pathname + parsedUrl.search,
-          method: "GET",
-          headers: {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-            "X-Forwarded-For": ethIp,
-            "X-Real-IP": ethIp,
-            "Host": geoHost,
-            "Accept": "text/html,application/json,*/*",
-          },
-          rejectUnauthorized: false,
-          servername: geoHost,
-        };
-        
-        const responseText = await new Promise<string>((resolve, reject) => {
-          const req = lib.request(options, (res: any) => {
-            let data = "";
-            res.on("data", (chunk: Buffer) => data += chunk);
-            res.on("end", () => resolve(data));
+        // Try 1: native https with direct IP + X-Forwarded-For
+        try {
+          const https = await import("node:https");
+          const http = await import("node:http");
+          const parsedUrl = new URL(geoUrl);
+          const isHttps = parsedUrl.protocol === "https:";
+          const lib = isHttps ? https : http;
+          const options = {
+            hostname: parsedUrl.hostname,
+            port: parsedUrl.port || (isHttps ? 443 : 80),
+            path: parsedUrl.pathname + parsedUrl.search,
+            method: "GET",
+            headers: {
+              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+              "X-Forwarded-For": ethIp, "X-Real-IP": ethIp,
+              "Host": geoHost, "Accept": "text/html,application/json,*/*",
+            },
+            rejectUnauthorized: false, servername: geoHost,
+          };
+          const responseText = await new Promise<string>((resolve, reject) => {
+            const req = lib.request(options, (res: any) => {
+              let data = ""; res.on("data", (c: Buffer) => data += c); res.on("end", () => resolve(data));
+            });
+            req.on("error", reject);
+            req.setTimeout(8000, () => { req.destroy(); reject(new Error("timeout")); });
+            req.end();
           });
-          req.on("error", reject);
-          req.setTimeout(12000, () => { req.destroy(); reject(new Error("timeout")); });
-          req.end();
-        });
-        
-        if (!responseText || responseText.length < 10) {
-          return NextResponse.json(
-            { success: false, error: "Empty response from bank endpoint.", bank: config.name, reference },
-            { status: 502 }
-          );
+          if (responseText && responseText.length >= 10) {
+            resp = new Response(responseText, {
+              status: 200,
+              headers: { "Content-Type": bank.toLowerCase() === "mpesa" ? "application/json" : "text/html" },
+            });
+          } else {
+            throw new Error("empty response");
+          }
+        } catch {
+          // Try 2: edge runtime proxy (runs on Cloudflare's network, different IPs)
+          const edgeResp = await fetch(new URL("/api/verify-geo", request.url), {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ bank, reference }),
+            signal: AbortSignal.timeout(15000),
+          });
+          if (edgeResp.ok) {
+            const edgeData = await edgeResp.json();
+            if (edgeData.success) {
+              return NextResponse.json(edgeData);
+            }
+            return NextResponse.json(edgeData, { status: 404 });
+          }
+          throw new Error("edge proxy also failed");
         }
-        
-        resp = new Response(responseText, {
-          status: 200,
-          headers: { "Content-Type": bank.toLowerCase() === "mpesa" ? "application/json" : "text/html" },
-        });
       } else {
         resp = await fetch(url, {
           headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" },
