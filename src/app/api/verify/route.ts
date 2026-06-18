@@ -93,8 +93,9 @@ function parseCBEPdfText(text: string): ParsedReceipt {
     return { verified: false };
   }
 
-  // pdf-parse may not preserve line breaks the same way pdfplumber does.
-  // Use regex on the full text to extract fields regardless of layout.
+  // pdf-parse extracts text with labels and values concatenated in the
+  // transaction section (e.g. "PayerMr Mohammed...", "Account1****1685").
+  // The header section has labels and values on separate lines.
 
   let senderName: string | undefined;
   let receiverName: string | undefined;
@@ -106,49 +107,49 @@ function parseCBEPdfText(text: string): ParsedReceipt {
   let branch: string | undefined;
   let reason: string | undefined;
 
-  // Sender/receiver names: "Payer <name>" and "Receiver <name>"
-  const payerMatch = text.match(/Payer\s+(Mr\s+|Mrs\s+|Ms\s+)?(.+?)(?:\n|$)/);
+  // Payer: "PayerMr Mohammed Abdulwasi Reshid" (no space after label)
+  const payerMatch = text.match(/Payer(Mr\s+|Mrs\s+|Ms\s+)?(.+?)(?:\n|$)/);
   if (payerMatch) {
-    senderName = (payerMatch[1] || "") + (payerMatch[2] || "");
-    senderName = senderName.trim();
+    senderName = ((payerMatch[1] || "") + (payerMatch[2] || "")).trim();
   }
 
-  const receiverMatch = text.match(/Receiver\s+(.+?)(?:\n|$)/);
+  // Receiver: "ReceiverSAMI ADIL ZEKARIA"
+  const receiverMatch = text.match(/Receiver(.+?)(?:\n|$)/);
   if (receiverMatch) {
     receiverName = receiverMatch[1].trim();
   }
 
-  // Accounts: "Account <masked number>" — find all
-  const accountMatches = text.matchAll(/Account\s+([0-9*]+)/g);
+  // Accounts: "Account1****1685" — find all
+  const accountMatches = text.matchAll(/Account([0-9*]+)/g);
   const accounts = Array.from(accountMatches).map((m) => m[1]);
   if (accounts.length >= 1) senderAccount = accounts[0];
   if (accounts.length >= 2) receiverAccount = accounts[1];
 
-  // Amount: "Transferred Amount 20,000.00 ETB"
-  const amountMatch = text.match(/Transferred Amount\s+([0-9,]+\.\d{2})\s*ETB/);
+  // Amount: "Transferred Amount20,000.00 ETB" (no space after label)
+  const amountMatch = text.match(/Transferred Amount([0-9,]+\.\d{2})\s*ETB/);
   if (amountMatch) {
     amount = parseFloat(amountMatch[1].replace(/,/g, ""));
   }
 
-  // Date: "Payment Date & Time 5/20/2026, 7:29:00 PM"
+  // Date: "Payment Date & Time5/20/2026, 7:29:00 PM" (no space after label)
   const dateMatch = text.match(
-    /Payment Date & Time\s+(\d{1,2}\/\d{1,2}\/\d{4}),\s+(\d{1,2}:\d{2}:\d{2})\s*(AM|PM)?/
+    /Payment Date & Time(\d{1,2}\/\d{1,2}\/\d{4}),\s+(\d{1,2}:\d{2}:\d{2})\s*(AM|PM)?/
   );
   if (dateMatch) {
     date = `${dateMatch[1]} ${dateMatch[2]}`;
     if (dateMatch[3]) date += ` ${dateMatch[3]}`;
   }
 
-  // Reference: "VAT Receipt No: FT26140P01YB"
-  const refMatch = text.match(/VAT Receipt No:\s*(\S+)/);
+  // Reference: "Reference No. (VAT Invoice No)FT26140P01YB" (no space)
+  const refMatch = text.match(/Reference No\. \(VAT Invoice No\)(\S+)/);
   if (refMatch) reference = refMatch[1];
 
-  // Branch: "Branch: MEKANISA MICHAEL BRANC"
-  const branchMatch = text.match(/Branch:\s*(.+?)(?:\n|$)/);
+  // Branch: value appears right before "Payment / Transaction Information"
+  const branchMatch = text.match(/([A-Z][A-Z ]+?)\nPayment \/ Transaction Information/);
   if (branchMatch) branch = branchMatch[1].trim();
 
-  // Reason: "Reason / Type of service <text>"
-  const reasonMatch = text.match(/Reason \/ Type of service\s+(.+?)(?:\n|$)/);
+  // Reason: "Reason / Type of servicescreen done via Mobile" (no space)
+  const reasonMatch = text.match(/Reason \/ Type of service(.+?)(?:\n|$)/);
   if (reasonMatch) reason = reasonMatch[1].trim();
 
   return {
@@ -390,7 +391,6 @@ export async function POST(request: NextRequest) {
         reference,
         sourceUrl: url,
         ...parsed,
-        debug_rawText: text.slice(0, 2000),
       });
     }
 
