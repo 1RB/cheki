@@ -311,16 +311,21 @@ export async function POST(request: NextRequest) {
     const ethIp = "197.156.96.83";
     const isGeoBlocked = bank.toLowerCase() === "telebirr" || bank.toLowerCase() === "mpesa";
 
+    // For M-Pesa, DNS may not resolve from all servers. Use IP directly.
+    const mpesaDirectUrl = url.replace("m-pesabusiness.safaricom.et", "102.218.49.92");
+    const telebirrDirectUrl = url.replace("transactioninfo.ethiotelecom.et", "196.188.116.120");
+    const geoUrl = bank.toLowerCase() === "mpesa" ? mpesaDirectUrl : telebirrDirectUrl;
+    const geoHost = bank.toLowerCase() === "mpesa" ? "m-pesabusiness.safaricom.et" : "transactioninfo.ethiotelecom.et";
+
     let resp: Response;
     let fetchError: string | undefined;
     try {
       if (isGeoBlocked) {
-        // Use native https module for geo-blocked banks
-        // This gives us more control over TLS and connection settings
+        // Use native https module with direct IP to bypass DNS and geo-blocks
         const https = await import("node:https");
         const http = await import("node:http");
         
-        const parsedUrl = new URL(url);
+        const parsedUrl = new URL(geoUrl);
         const isHttps = parsedUrl.protocol === "https:";
         const lib = isHttps ? https : http;
         
@@ -333,9 +338,11 @@ export async function POST(request: NextRequest) {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
             "X-Forwarded-For": ethIp,
             "X-Real-IP": ethIp,
+            "Host": geoHost,
             "Accept": "text/html,application/json,*/*",
           },
           rejectUnauthorized: false,
+          servername: geoHost,
         };
         
         const responseText = await new Promise<string>((resolve, reject) => {
@@ -345,11 +352,10 @@ export async function POST(request: NextRequest) {
             res.on("end", () => resolve(data));
           });
           req.on("error", reject);
-          req.setTimeout(10000, () => { req.destroy(); reject(new Error("timeout")); });
+          req.setTimeout(12000, () => { req.destroy(); reject(new Error("timeout")); });
           req.end();
         });
         
-        // Check if we got an error page or empty response
         if (!responseText || responseText.length < 10) {
           return NextResponse.json(
             { success: false, error: "Empty response from bank endpoint.", bank: config.name, reference },
@@ -357,7 +363,6 @@ export async function POST(request: NextRequest) {
           );
         }
         
-        // Create a Response-like object from the text
         resp = new Response(responseText, {
           status: 200,
           headers: { "Content-Type": bank.toLowerCase() === "mpesa" ? "application/json" : "text/html" },
