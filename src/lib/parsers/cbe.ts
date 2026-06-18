@@ -105,9 +105,10 @@ export class CBEParser extends BaseParser {
 
   static async extractPdfText(data: Buffer): Promise<string> {
     try {
-      const pdfParse = (await import("pdf-parse")).default;
-      const result = await pdfParse(data);
-      return result.text || "";
+      const { extractText, getDocumentProxy } = await import("unpdf");
+      const pdf = await getDocumentProxy(new Uint8Array(data));
+      const { text } = await extractText(pdf, { mergePages: true });
+      return text || "";
     } catch {
       return "";
     }

@@ -191,7 +191,25 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
         </nav>
 
         <div className="two-col" style={{ gap: "40px" }}>
-          <article className="prose" style={{ maxWidth: "720px" }}>
+          {/* TOC sidebar — appears above article on mobile, right side on desktop */}
+          <aside className="toc-sidebar" style={{ order: 1 }}>
+            <div className="toc-card" style={{
+              position: "sticky", top: "calc(var(--nav-h) + 24px)", padding: "20px",
+              borderRadius: "12px", background: "var(--surface)", border: "1px solid var(--border)",
+            }}>
+              <p style={{ fontSize: "12px", fontWeight: 700, color: "var(--ink)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "14px", display: "flex", alignItems: "center", gap: "6px" }}>
+                <span style={{ width: "4px", height: "16px", background: "var(--green)", borderRadius: "2px", display: "inline-block" }} />
+                In this article
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                {article.content.map((b, i) => b.type === "heading" ? (
+                  <a key={i} href={`#section-${i}`} style={{ fontSize: "13px", color: "var(--ink-2)", lineHeight: 1.4, padding: "4px 0", borderLeft: "2px solid transparent", paddingLeft: "10px", transition: "all 0.15s" }} className="toc-link">{b.text}</a>
+                ) : null)}
+              </div>
+            </div>
+          </aside>
+
+          <article className="prose" style={{ maxWidth: "720px", order: 2, minWidth: 0, overflowWrap: "break-word" }}>
             <p style={{ fontSize: "12px", fontWeight: 600, color: "var(--green)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "8px" }}>
               {article.category.replace("-", " ")} · {article.readTime} read
             </p>
@@ -217,35 +235,29 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
             )}
 
             {related.length > 0 && (
-              <div style={{ marginTop: "40px" }}>
-                <h2>Related articles</h2>
-                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              <div style={{ marginTop: "48px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "20px" }}>
+                  <span style={{ width: "4px", height: "22px", background: "var(--green)", borderRadius: "2px" }} />
+                  <h2 style={{ fontSize: "20px", fontWeight: 800, margin: 0, letterSpacing: "-0.01em" }}>Continue reading</h2>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                   {related.map((r) => (
                     <a key={r.slug} href={`/guides/${r.slug}`} style={{
-                      padding: "16px 20px", borderRadius: "10px", background: "var(--surface)", border: "1px solid var(--border)",
-                    }}>
-                      <p style={{ fontSize: "15px", fontWeight: 600 }}>{r.title}</p>
-                      <p style={{ fontSize: "13px", color: "var(--ink-2)", marginTop: "4px" }}>{r.excerpt}</p>
+                      padding: "18px 22px", borderRadius: "12px", background: "var(--surface)", border: "1px solid var(--border)",
+                      display: "flex", alignItems: "center", justifyContent: "space-between", gap: "14px",
+                      transition: "all 0.15s", textDecoration: "none",
+                    }} className="related-card">
+                      <div style={{ minWidth: 0 }}>
+                        <p style={{ fontSize: "15px", fontWeight: 700, marginBottom: "4px", color: "var(--ink)" }}>{r.title}</p>
+                        <p style={{ fontSize: "13px", color: "var(--ink-2)", lineHeight: 1.5, overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{r.excerpt}</p>
+                      </div>
+                      <span style={{ flexShrink: 0, width: "36px", height: "36px", borderRadius: "50%", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--green)", fontSize: "16px", fontWeight: 700, transition: "all 0.15s" }} className="related-arrow">{"\u2192"}</span>
                     </a>
                   ))}
                 </div>
               </div>
             )}
           </article>
-
-          <aside>
-            <div style={{
-              position: "sticky", top: "calc(var(--nav-h) + 24px)", padding: "24px",
-              borderRadius: "12px", background: "var(--surface)", border: "1px solid var(--border)",
-            }}>
-              <p style={{ fontSize: "12px", fontWeight: 600, color: "var(--ink-3)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "16px" }}>In this article</p>
-              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                {article.content.map((b, i) => b.type === "heading" ? (
-                  <a key={i} href={`#section-${i}`} style={{ fontSize: "13px", color: "var(--ink-2)", lineHeight: 1.4 }}>{b.text}</a>
-                ) : null)}
-              </div>
-            </div>
-          </aside>
         </div>
       </main>
       <Footer />

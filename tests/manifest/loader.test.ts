@@ -12,7 +12,7 @@ describe("manifest loader", () => {
   it("returns live banks only", () => {
     const live = getLiveBanks();
     expect(live.every((b) => b.status === "live")).toBe(true);
-    expect(live.length).toBe(5);
+    expect(live.length).toBe(10);
   });
 
   it("finds bank by id (case insensitive)", () => {

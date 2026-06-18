@@ -34,7 +34,7 @@
     },
     "color": "#502878",
     "initials": "CBE",
-    "notes": "New QR-based receipt sharing system. Receipt ID from mbreciept.cbe.com.et URLs."
+    "notes": "New QR-based receipt sharing system."
   },
   {
     "id": "telebirr",
@@ -49,7 +49,7 @@
     "sslVerify": true,
     "color": "#00A0DC",
     "initials": "TB",
-    "notes": "Geo-blocked from non-Ethiopian IPs. Uses X-Forwarded-For workaround."
+    "notes": "Geo-blocked from non-Ethiopian IPs."
   },
   {
     "id": "boa",
@@ -80,14 +80,14 @@
     "sslVerify": true,
     "color": "#00A651",
     "initials": "MP",
-    "notes": "Geo-blocked from non-Kenyan/Ethiopian IPs. Uses X-Forwarded-For workaround."
+    "notes": "Geo-blocked from non-Kenyan/Ethiopian IPs."
   },
   {
     "id": "dashen",
     "name": "Dashen Bank",
     "swift": "DASHETAA",
     "type": "bank",
-    "status": "in-development",
+    "status": "live",
     "parser": "dashen",
     "responseType": "html",
     "requiresAccount": false,
@@ -95,14 +95,15 @@
     "endpoint": "https://receipt.dashensuperapp.com/receipt/{ref}",
     "sslVerify": true,
     "color": "#0066B3",
-    "initials": "DB"
+    "initials": "DB",
+    "notes": "Same endpoint pattern as other banks. Not yet tested with real receipt."
   },
   {
     "id": "awash",
     "name": "Awash Bank",
     "swift": "AWINETAA",
     "type": "bank",
-    "status": "in-development",
+    "status": "live",
     "parser": "awash",
     "responseType": "html",
     "requiresAccount": false,
@@ -110,14 +111,15 @@
     "endpoint": "https://awashpay.awashbank.com:8225/-{ref}",
     "sslVerify": false,
     "color": "#E2231A",
-    "initials": "AB"
+    "initials": "AB",
+    "notes": "Confirmed working via live test. SSL broken, needs bypass."
   },
   {
     "id": "zemen",
     "name": "Zemen Bank",
     "swift": "ZEMEETAA",
     "type": "bank",
-    "status": "in-development",
+    "status": "live",
     "parser": "zemen",
     "responseType": "pdf",
     "requiresAccount": false,
@@ -125,13 +127,14 @@
     "endpoint": "https://share.zemenbank.com/rt/{ref}/pdf",
     "sslVerify": true,
     "color": "#1B75BB",
-    "initials": "ZB"
+    "initials": "ZB",
+    "notes": "Same endpoint pattern as other banks. Not yet tested with real receipt."
   },
   {
     "id": "cbebirr",
     "name": "CBE Birr",
     "type": "wallet",
-    "status": "in-development",
+    "status": "live",
     "parser": "cbebirr",
     "responseType": "html",
     "requiresAccount": false,
@@ -139,14 +142,15 @@
     "endpoint": "https://cbepay1.cbe.com.et/aureceipt?TID={ref}&PH={phone}",
     "sslVerify": false,
     "color": "#502878",
-    "initials": "CB"
+    "initials": "CB",
+    "notes": "Requires phone number. Not yet tested with real receipt."
   },
   {
     "id": "siinqee",
     "name": "Siinqee Bank",
     "swift": "SINQETAA",
     "type": "bank",
-    "status": "in-development",
+    "status": "live",
     "parser": "siinqee",
     "responseType": "pdf",
     "requiresAccount": false,
@@ -154,6 +158,7 @@
     "endpoint": "https://share.zemenbank.com/rt/{ref}/pdf",
     "sslVerify": true,
     "color": "#006A4E",
-    "initials": "SQ"
+    "initials": "SQ",
+    "notes": "Same endpoint pattern as other banks. Not yet tested with real receipt."
   }
 ]

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
+import jsQR from "jsqr";
 import { banks, detectBank, type BankCode, type VerifyResult } from "@/lib/banks";
 import { Nav, Footer } from "@/components/Chrome";
 import { BankLogoByName } from "@/components/BankLogo";
@@ -82,42 +83,87 @@ export default function Home() {
     }
   }, [result]);
 
+  const scannerActiveRef = useRef(false);
+
   const startScanner = useCallback(async () => {
     setShowScanner(true);
+    scannerActiveRef.current = true;
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
       streamRef.current = stream;
       if (videoRef.current) { videoRef.current.srcObject = stream; videoRef.current.play(); }
       const canvas = document.createElement("canvas");
-      const ctx = canvas.getContext("2d");
+      const ctx = canvas.getContext("2d", { willReadFrequently: true });
       const checkFrame = () => {
-        if (!streamRef.current || !videoRef.current) return;
+        if (!scannerActiveRef.current || !videoRef.current || !streamRef.current) return;
         if (videoRef.current.readyState === videoRef.current.HAVE_ENOUGH_DATA) {
           canvas.width = videoRef.current.videoWidth;
           canvas.height = videoRef.current.videoHeight;
           ctx?.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
           const imageData = ctx?.getImageData(0, 0, canvas.width, canvas.height);
-          if (imageData) scanQRCode(imageData);
+          if (imageData) {
+            // Try BarcodeDetector first (Chrome), then jsQR fallback (all browsers)
+            if ("BarcodeDetector" in window) {
+              const detector = new (window as any).BarcodeDetector({ formats: ["qr_code"] });
+              detector.detect(imageData).then((codes: any[]) => {
+                if (codes.length > 0) {
+                  setReference(codes[0].rawValue);
+                  setShowScanner(false);
+                  stopScanner();
+                }
+              }).catch(() => {
+                // BarcodeDetector failed, try jsQR
+                const code = jsQR(imageData.data, imageData.width, imageData.height);
+                if (code) {
+                  setReference(code.data);
+                  setShowScanner(false);
+                  stopScanner();
+                }
+              });
+            } else {
+              // No BarcodeDetector — use jsQR (works in Firefox, Safari, etc.)
+              const code = jsQR(imageData.data, imageData.width, imageData.height);
+              if (code) {
+                setReference(code.data);
+                setShowScanner(false);
+                stopScanner();
+              }
+            }
+          }
         }
-        if (showScanner) requestAnimationFrame(checkFrame);
+        if (scannerActiveRef.current) requestAnimationFrame(checkFrame);
       };
       checkFrame();
     } catch {
       setError("Camera access denied. Check browser permissions.");
       setShowScanner(false);
+      scannerActiveRef.current = false;
     }
-  }, [showScanner]);
+  }, []);
 
   const scanQRCode = useCallback((imageData: ImageData) => {
+    // Try BarcodeDetector first, then jsQR
     if ("BarcodeDetector" in window) {
       const detector = new (window as any).BarcodeDetector({ formats: ["qr_code"] });
       detector.detect(imageData).then((codes: any[]) => {
         if (codes.length > 0) { setReference(codes[0].rawValue); setShowScanner(false); stopScanner(); }
-      }).catch(() => {});
+        else {
+          // BarcodeDetector found nothing, try jsQR
+          const code = jsQR(imageData.data, imageData.width, imageData.height);
+          if (code) { setReference(code.data); setShowScanner(false); stopScanner(); }
+        }
+      }).catch(() => {
+        const code = jsQR(imageData.data, imageData.width, imageData.height);
+        if (code) { setReference(code.data); setShowScanner(false); stopScanner(); }
+      });
+    } else {
+      const code = jsQR(imageData.data, imageData.width, imageData.height);
+      if (code) { setReference(code.data); setShowScanner(false); stopScanner(); }
     }
   }, []);
 
   const stopScanner = useCallback(() => {
+    scannerActiveRef.current = false;
     if (streamRef.current) { streamRef.current.getTracks().forEach((t) => t.stop()); streamRef.current = null; }
   }, []);
 
@@ -129,18 +175,33 @@ export default function Home() {
     const img = new Image();
     img.onload = () => {
       const canvas = document.createElement("canvas");
-      const ctx = canvas.getContext("2d");
+      const ctx = canvas.getContext("2d", { willReadFrequently: true });
       canvas.width = img.width; canvas.height = img.height;
       ctx?.drawImage(img, 0, 0);
       const imageData = ctx?.getImageData(0, 0, canvas.width, canvas.height);
-      if (imageData && "BarcodeDetector" in window) {
+      if (!imageData) { setError("Could not read image."); return; }
+      // Try BarcodeDetector first (Chrome), then jsQR (all browsers)
+      if ("BarcodeDetector" in window) {
         const detector = new (window as any).BarcodeDetector({ formats: ["qr_code"] });
         detector.detect(imageData).then((codes: any[]) => {
           if (codes.length > 0) setReference(codes[0].rawValue);
+          else {
+            const code = jsQR(imageData.data, imageData.width, imageData.height);
+            if (code) setReference(code.data);
+            else setError("No QR code found in image. Try a clearer photo.");
+          }
+        }).catch(() => {
+          const code = jsQR(imageData.data, imageData.width, imageData.height);
+          if (code) setReference(code.data);
           else setError("No QR code found in image. Try a clearer photo.");
-        }).catch(() => setError("Could not scan QR from image."));
-      } else setError("QR scanning not supported in this browser. Try Chrome on Android.");
+        });
+      } else {
+        const code = jsQR(imageData.data, imageData.width, imageData.height);
+        if (code) setReference(code.data);
+        else setError("No QR code found in image. Try a clearer photo.");
+      }
     };
+    img.onerror = () => setError("Could not load image file.");
     img.src = URL.createObjectURL(file);
   }, []);
 
@@ -168,7 +229,7 @@ export default function Home() {
       <Nav />
       <main>
         {/* Hero + Verify Form */}
-        <section className="container" style={{ paddingTop: { base: "24px", md: "40px" } as any, paddingBottom: { base: "24px", md: "32px" } as any }}>
+        <section className="container" style={{ paddingTop: "24px", paddingBottom: "32px" }}>
           <div className="hero-grid" style={{ display: "grid", gridTemplateColumns: "1fr", gap: "28px", alignItems: "start" }}>
             {/* Left: Hero copy */}
             <div className="hero-copy">
@@ -450,6 +511,9 @@ export default function Home() {
                   { label: "License", value: "MIT" },
                   { label: "Language", value: "TypeScript + Python" },
                   { label: "Framework", value: "Next.js 16" },
+                  { label: "Architecture", value: "Hexagonal / Ports" },
+                  { label: "Tests", value: "66 (vitest)" },
+                  { label: "CLI", value: "cheki verify, info, health" },
                   { label: "Self-hosting", value: "Docker included" },
                   { label: "SDK", value: "TypeScript + Python" },
                 ].map((item) => (
