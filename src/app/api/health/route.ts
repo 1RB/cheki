@@ -42,7 +42,7 @@ export async function GET() {
         return {
           id: b.id,
           name: b.name,
-          status: b.geoBlocked ? "geo-blocked" : "unreachable",
+          status: (b.id === "telebirr" || b.id === "mpesa") ? "geo-blocked" : "unreachable",
           latencyMs: Date.now() - start,
         };
       }
