@@ -60,12 +60,12 @@ export function Footer() {
     { href: "/banks/siinqee", label: "Siinqee" },
   ];
   const guideLinks = [
-    { href: "/guides/verify-cbe-transactions", label: "Verify CBE" },
-    { href: "/guides/verify-telebirr-transactions", label: "Verify Telebirr" },
-    { href: "/guides/prevent-fake-payment-screenshots", label: "Fake screenshots" },
-    { href: "/guides/cbe-fake-receipt", label: "CBE fake receipt" },
-    { href: "/guides/payment-verification-api", label: "API guide" },
-    { href: "/guides/telebirr-vs-cbe", label: "Telebirr vs CBE" },
+    { href: "/guides/cbe-receipt-qr-code", label: "CBE QR codes" },
+    { href: "/guides/free-receipt-verification-no-api-key", label: "Free verification" },
+    { href: "/guides/payment-fraud-ethiopia", label: "Payment fraud" },
+    { href: "/guides/check-et-vs-verify-et-vs-cheki", label: "vs check.et" },
+    { href: "/guides/payment-verification-api-guide", label: "API guide" },
+    { href: "/guides/self-hosting-docker-guide", label: "Self-hosting" },
   ];
   return (
     <footer style={{ marginTop: "80px", borderTop: "1px solid var(--border)", background: "var(--surface-alt)" }}>
