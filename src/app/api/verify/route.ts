@@ -309,22 +309,65 @@ export async function POST(request: NextRequest) {
 
     // Ethiopian IP for X-Forwarded-For to bypass geo-blocking on telebirr/mpesa
     const ethIp = "197.156.96.83";
-    const fetchHeaders: Record<string, string> = {
-      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-    };
-    // telebirr and mpesa geo-block non-Ethiopian IPs
-    if (bank.toLowerCase() === "telebirr" || bank.toLowerCase() === "mpesa") {
-      fetchHeaders["X-Forwarded-For"] = ethIp;
-      fetchHeaders["X-Real-IP"] = ethIp;
-    }
+    const isGeoBlocked = bank.toLowerCase() === "telebirr" || bank.toLowerCase() === "mpesa";
 
     let resp: Response;
     let fetchError: string | undefined;
     try {
-      resp = await fetch(url, {
-        headers: fetchHeaders,
-        signal: AbortSignal.timeout(15000),
-      });
+      if (isGeoBlocked) {
+        // Use native https module for geo-blocked banks
+        // This gives us more control over TLS and connection settings
+        const https = await import("node:https");
+        const http = await import("node:http");
+        
+        const parsedUrl = new URL(url);
+        const isHttps = parsedUrl.protocol === "https:";
+        const lib = isHttps ? https : http;
+        
+        const options = {
+          hostname: parsedUrl.hostname,
+          port: parsedUrl.port || (isHttps ? 443 : 80),
+          path: parsedUrl.pathname + parsedUrl.search,
+          method: "GET",
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+            "X-Forwarded-For": ethIp,
+            "X-Real-IP": ethIp,
+            "Accept": "text/html,application/json,*/*",
+          },
+          rejectUnauthorized: false,
+        };
+        
+        const responseText = await new Promise<string>((resolve, reject) => {
+          const req = lib.request(options, (res: any) => {
+            let data = "";
+            res.on("data", (chunk: Buffer) => data += chunk);
+            res.on("end", () => resolve(data));
+          });
+          req.on("error", reject);
+          req.setTimeout(10000, () => { req.destroy(); reject(new Error("timeout")); });
+          req.end();
+        });
+        
+        // Check if we got an error page or empty response
+        if (!responseText || responseText.length < 10) {
+          return NextResponse.json(
+            { success: false, error: "Empty response from bank endpoint.", bank: config.name, reference },
+            { status: 502 }
+          );
+        }
+        
+        // Create a Response-like object from the text
+        resp = new Response(responseText, {
+          status: 200,
+          headers: { "Content-Type": bank.toLowerCase() === "mpesa" ? "application/json" : "text/html" },
+        });
+      } else {
+        resp = await fetch(url, {
+          headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" },
+          signal: AbortSignal.timeout(15000),
+        });
+      }
     } catch (err) {
       fetchError = err instanceof Error ? err.message : String(err);
       return NextResponse.json(
@@ -338,28 +381,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (resp.status === 404) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Receipt not found. Check the reference number.",
-          bank: config.name,
-          reference,
-        },
-        { status: 404 }
-      );
-    }
-
-    if (resp.status >= 500) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "The bank's server is currently unavailable.",
-          bank: config.name,
-          reference,
-        },
-        { status: 502 }
-      );
+    if (!isGeoBlocked) {
+      if (resp.status === 404) {
+        return NextResponse.json(
+          { success: false, error: "Receipt not found. Check the reference number.", bank: config.name, reference },
+          { status: 404 }
+        );
+      }
+      if (resp.status >= 500) {
+        return NextResponse.json(
+          { success: false, error: "The bank's server is currently unavailable.", bank: config.name, reference },
+          { status: 502 }
+        );
+      }
     }
 
     const contentType = resp.headers.get("content-type") || "";
@@ -402,16 +436,42 @@ export async function POST(request: NextRequest) {
     }
 
     // HTML or JSON
-    const data = await resp.text();
+    let data: string;
+    if (isGeoBlocked) {
+      // We already have the text from the https module
+      data = await resp.text();
+      // For geo-blocked banks, check if we got valid data
+      if (bank.toLowerCase() === "telebirr") {
+        if (data.includes("This request is not correct") || !data.toLowerCase().includes("telebirr receipt")) {
+          return NextResponse.json(
+            { success: false, error: "Receipt not found or invalid.", bank: config.name, reference },
+            { status: 404 }
+          );
+        }
+      }
+      if (bank.toLowerCase() === "mpesa") {
+        try {
+          const payload = JSON.parse(data);
+          if (payload.responseCode && String(payload.responseCode) !== "0") {
+            return NextResponse.json(
+              { success: false, error: payload.responseDescription || "Receipt not found.", bank: config.name, reference },
+              { status: 404 }
+            );
+          }
+        } catch {
+          return NextResponse.json(
+            { success: false, error: "Invalid response from M-Pesa.", bank: config.name, reference },
+            { status: 502 }
+          );
+        }
+      }
+    } else {
+      data = await resp.text();
+    }
     const parsed = config.parse(data, contentType);
     if (!parsed.verified) {
       return NextResponse.json(
-        {
-          success: false,
-          error: "Receipt not found or invalid.",
-          bank: config.name,
-          reference,
-        },
+        { success: false, error: "Receipt not found or invalid.", bank: config.name, reference },
         { status: 404 }
       );
     }
