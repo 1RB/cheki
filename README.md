@@ -1,36 +1,46 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# cheki
 
-## Getting Started
+Free, open-source Ethiopian receipt verification. No signup. No API key. No scam.
 
-First, run the development server:
+Live at **[cheki-pi.vercel.app](https://cheki-pi.vercel.app)**
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## What this is
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+A Next.js web app that lets anyone verify Ethiopian bank and mobile wallet receipts for free. It hits the same public receipt endpoints that check.et and verify.et use, but charges nothing.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Why
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+check.et and verify.et charge money to access public bank receipt URLs. The banks publish these receipts on public endpoints. Anyone with a transaction reference can access them. These services are reselling free data.
 
-## Learn More
+cheki does the same thing for $0.
 
-To learn more about Next.js, take a look at the following resources:
+## Supported banks
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| Bank | Status | Notes |
+|------|--------|-------|
+| Commercial Bank of Ethiopia | live | PDF parsing, full field extraction |
+| Bank of Abyssinia | live | JSON API, full field extraction |
+| Telebirr | geo-blocked | Endpoint blocks non-Ethiopian IPs |
+| M-Pesa Ethiopia | geo-blocked | Endpoint blocks non-Ethiopian IPs |
+| Zemen Bank | coming soon | URL known, parsing in progress |
+| Dashen Bank | coming soon | URL known, endpoint often down |
+| Awash Bank | coming soon | URL pattern uncertain |
+| CBE Birr | coming soon | Server currently times out |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Tech stack
 
-## Deploy on Vercel
+- Next.js 16 with Turbopack
+- TypeScript
+- Tailwind CSS
+- Server-side API routes (Node.js runtime)
+- pdf-parse for PDF text extraction
+- cheerio for HTML parsing
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Python library
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The verification logic is also available as a Python package:
+[ethio-receipt-verify](https://github.com/1RB/ethio-receipt-verify)
+
+## License
+
+MIT
