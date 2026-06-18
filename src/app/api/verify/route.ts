@@ -320,9 +320,11 @@ export async function POST(request: NextRequest) {
 
     let resp: Response;
     let fetchError: string | undefined;
+    let geoFallbackUrl: string | undefined;
     try {
       if (isGeoBlocked) {
         // Try 1: native https with direct IP + X-Forwarded-For
+        // This works when the server has a non-blocked IP (e.g. self-hosted in Ethiopia)
         try {
           const https = await import("node:https");
           const http = await import("node:http");
@@ -358,21 +360,35 @@ export async function POST(request: NextRequest) {
             throw new Error("empty response");
           }
         } catch {
-          // Try 2: edge runtime proxy (runs on Cloudflare's network, different IPs)
-          const edgeResp = await fetch(new URL("/api/verify-geo", request.url), {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ bank, reference }),
-            signal: AbortSignal.timeout(15000),
-          });
-          if (edgeResp.ok) {
-            const edgeData = await edgeResp.json();
-            if (edgeData.success) {
-              return NextResponse.json(edgeData);
+          // Try 2: edge runtime proxy
+          try {
+            const edgeResp = await fetch(new URL("/api/verify-geo", request.url), {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ bank, reference }),
+              signal: AbortSignal.timeout(12000),
+            });
+            if (edgeResp.ok) {
+              const edgeData = await edgeResp.json();
+              if (edgeData.success) {
+                return NextResponse.json(edgeData);
+              }
             }
-            return NextResponse.json(edgeData, { status: 404 });
+          } catch {}
+          // Try 3: direct fetch with X-Forwarded-For (might work from some regions)
+          try {
+            resp = await fetch(url, {
+              headers: {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+                "X-Forwarded-For": ethIp, "X-Real-IP": ethIp,
+              },
+              signal: AbortSignal.timeout(8000),
+            });
+          } catch {
+            // All server-side approaches failed - return fallback URL for client-side
+            geoFallbackUrl = url;
+            throw new Error("geo_blocked");
           }
-          throw new Error("edge proxy also failed");
         }
       } else {
         resp = await fetch(url, {
@@ -382,13 +398,18 @@ export async function POST(request: NextRequest) {
       }
     } catch (err) {
       fetchError = err instanceof Error ? err.message : String(err);
-      return NextResponse.json(
-        {
+      // If geo-blocked, return the receipt URL so the client can open it directly
+      if (geoFallbackUrl) {
+        return NextResponse.json({
           success: false,
-          error: `The bank's receipt endpoint is unreachable. ${fetchError}`,
+          error: "Our server can't reach this bank (it blocks cloud IPs). Open the receipt directly:",
+          fallbackUrl: geoFallbackUrl,
           bank: config.name,
           reference,
-        },
+        });
+      }
+      return NextResponse.json(
+        { success: false, error: `The bank's receipt endpoint is unreachable. ${fetchError}`, bank: config.name, reference },
         { status: 502 }
       );
     }

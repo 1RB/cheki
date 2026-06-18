@@ -304,9 +304,26 @@ export default function Home() {
         {error && (
           <section className="fade-up" style={{
             marginTop: "20px", padding: "16px 20px", borderRadius: "8px",
-            background: "var(--red-light)", border: "1px solid #fecaca",
+            background: result?.fallbackUrl ? "#fffbeb" : "var(--red-light)",
+            border: `1px solid ${result?.fallbackUrl ? "#fde68a" : "#fecaca"}`,
           }}>
-            <p style={{ color: "var(--red)", fontSize: "14px", fontWeight: 500 }}>{error}</p>
+            <p style={{ color: result?.fallbackUrl ? "#92400e" : "var(--red)", fontSize: "14px", fontWeight: 500, marginBottom: result?.fallbackUrl ? "12px" : 0 }}>
+              {error}
+            </p>
+            {result?.fallbackUrl && (
+              <a
+                href={result.fallbackUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: "inline-block", padding: "8px 16px", borderRadius: "6px",
+                  background: "var(--green)", color: "#fff",
+                  fontSize: "14px", fontWeight: 600, textDecoration: "none",
+                }}
+              >
+                Open Receipt
+              </a>
+            )}
           </section>
         )}
 

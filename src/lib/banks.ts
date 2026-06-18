@@ -14,6 +14,7 @@ export type BankCode = (typeof banks)[number]["code"];
 export interface VerifyResult {
   success: boolean;
   error?: string;
+  fallbackUrl?: string;
   bank?: string;
   reference?: string;
   sourceUrl?: string;
