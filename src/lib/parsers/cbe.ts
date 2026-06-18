@@ -119,6 +119,7 @@ export class CBENewParser extends BaseParser {
   readonly bankName = "Commercial Bank of Ethiopia";
   readonly responseType = "json" as const;
   readonly requiresAccount = false;
+  readonly accountDigits?: number = undefined;
   readonly requiresPhone = false;
   readonly sslVerify = false;
 
