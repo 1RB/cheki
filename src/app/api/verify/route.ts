@@ -11,7 +11,7 @@ interface BankConfig {
   accountDigits?: number;
   requiresPhone: boolean;
   endpoint: (ref: string, account?: string, phone?: string) => string;
-  parse: (data: string | Buffer, contentType: string) => ParsedReceipt;
+  parse: (data: string, contentType: string) => ParsedReceipt;
   responseType: "pdf" | "html" | "json";
 }
 
@@ -42,7 +42,7 @@ const BANKS: Record<string, BankConfig> = {
       const suffix = (account || "").slice(-8);
       return `https://apps.cbe.com.et:100/?id=${ref}${suffix}`;
     },
-    parse: (_data, _ct) => ({ verified: false }), // handled separately
+    parse: (_data: string, _ct: string) => ({ verified: false }), // handled separately
   },
   telebirr: {
     code: "telebirr",
