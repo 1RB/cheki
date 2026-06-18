@@ -13,10 +13,12 @@ export default function Home() {
 
   const selectedBank = banks.find((b) => b.code === bank)!;
   const needsAccount = "requiresAccount" in selectedBank && selectedBank.requiresAccount;
-  const isComingSoon = "comingSoon" in selectedBank && selectedBank.comingSoon;
+  const bankStatus = selectedBank.status;
+  const isDisabled = bankStatus === "soon";
+  const geoNote = bankStatus === "geo";
 
   const handleVerify = useCallback(async () => {
-    if (!reference.trim()) return;
+    if (!reference.trim() || isDisabled) return;
     setLoading(true);
     setError(null);
     setResult(null);
@@ -42,7 +44,7 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
-  }, [bank, reference, accountNumber]);
+  }, [bank, reference, accountNumber, isDisabled]);
 
   const inputStyle: React.CSSProperties = {
     background: "var(--card)",
@@ -101,11 +103,21 @@ export default function Home() {
               {banks.map((b) => (
                 <option key={b.code} value={b.code}>
                   {b.name}
-                  {"comingSoon" in b && b.comingSoon ? " (coming soon)" : ""}
+                  {b.status === "soon" ? " (coming soon)" : ""}
+                  {b.status === "geo" ? " (geo-blocked outside ET)" : ""}
                 </option>
               ))}
             </select>
           </div>
+
+          {geoNote && (
+            <div style={{ border: "2px solid #3a3a3a", padding: "12px 16px", background: "var(--card)" }}>
+              <p style={{ fontSize: "13px", color: "var(--muted)", lineHeight: 1.5 }}>
+                This bank blocks requests from outside Ethiopia. Verification may fail from our servers.
+                The endpoint itself is public, but it checks the requester&apos;s IP address.
+              </p>
+            </div>
+          )}
 
           <div>
             <label style={labelStyle}>Transaction Reference Number</label>
@@ -143,23 +155,23 @@ export default function Home() {
 
           <button
             onClick={handleVerify}
-            disabled={loading || isComingSoon || !reference.trim()}
+            disabled={loading || isDisabled || !reference.trim()}
             style={{
-              background: loading || isComingSoon || !reference.trim() ? "var(--card)" : "var(--accent)",
+              background: loading || isDisabled || !reference.trim() ? "var(--card)" : "var(--accent)",
               border: "2px solid var(--border)",
               borderRadius: 0,
               padding: "14px 24px",
-              color: loading || isComingSoon || !reference.trim() ? "var(--muted)" : "#030303",
+              color: loading || isDisabled || !reference.trim() ? "var(--muted)" : "#030303",
               fontSize: "16px",
               fontWeight: "bold",
-              cursor: loading || isComingSoon || !reference.trim() ? "not-allowed" : "pointer",
+              cursor: loading || isDisabled || !reference.trim() ? "not-allowed" : "pointer",
               fontFamily: "Georgia, serif",
               textTransform: "uppercase",
               letterSpacing: "1px",
               transition: "background 0.15s",
             }}
           >
-            {loading ? "Verifying..." : isComingSoon ? "Coming Soon" : "Verify Receipt"}
+            {loading ? "Verifying..." : isDisabled ? "Coming Soon" : "Verify Receipt"}
           </button>
         </div>
       </section>
@@ -185,20 +197,14 @@ export default function Home() {
 
       {/* The Scam */}
       <section style={{ marginTop: "60px", borderTop: "2px solid var(--border)", paddingTop: "32px" }}>
-        <h2
-          style={{
-            fontSize: "22px",
-            color: "var(--accent)",
-            marginBottom: "16px",
-          }}
-        >
+        <h2 style={{ fontSize: "22px", color: "var(--accent)", marginBottom: "16px" }}>
           the scam
         </h2>
         <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
           <p style={{ color: "var(--fg)", fontSize: "15px", lineHeight: 1.6 }}>
             <strong style={{ color: "var(--accent)" }}>check.et</strong> and{" "}
             <strong style={{ color: "var(--accent)" }}>verify.et</strong> charge you money to
-            verify receipts. They sell 200 credits for free, then make you pay.
+            verify receipts. They give you 200 free credits, then make you pay.
           </p>
           <p style={{ color: "var(--fg)", fontSize: "15px", lineHeight: 1.6 }}>
             Here is what they do not tell you: the banks already publish these receipts on
@@ -208,14 +214,7 @@ export default function Home() {
             They are reselling free data. We are giving it away.
           </p>
 
-          <div
-            style={{
-              border: "2px solid var(--border)",
-              padding: "16px 20px",
-              marginTop: "8px",
-              background: "var(--card)",
-            }}
-          >
+          <div style={{ border: "2px solid var(--border)", padding: "16px 20px", marginTop: "8px", background: "var(--card)" }}>
             <p style={{ fontSize: "13px", color: "var(--muted)", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "1px" }}>
               what they charge vs what it costs
             </p>
@@ -257,11 +256,11 @@ export default function Home() {
           >
             <p style={{ color: "var(--accent)", marginBottom: "6px" }}>CBE</p>
             <p>apps.cbe.com.et:100/?id=REFERENCE+LAST_8_DIGITS</p>
-            <p style={{ color: "var(--accent)", marginTop: "12px", marginBottom: "6px" }}>Telebirr</p>
-            <p>transactioninfo.ethiotelecom.et/receipt/REFERENCE</p>
             <p style={{ color: "var(--accent)", marginTop: "12px", marginBottom: "6px" }}>Bank of Abyssinia</p>
             <p>cs.bankofabyssinia.com/api/onlineSlip/getDetails/?id=TRX</p>
-            <p style={{ color: "var(--accent)", marginTop: "12px", marginBottom: "6px" }}>M-Pesa</p>
+            <p style={{ color: "var(--accent)", marginTop: "12px", marginBottom: "6px" }}>Telebirr (geo-blocked)</p>
+            <p>transactioninfo.ethiotelecom.et/receipt/REFERENCE</p>
+            <p style={{ color: "var(--accent)", marginTop: "12px", marginBottom: "6px" }}>M-Pesa (geo-blocked)</p>
             <p>m-pesabusiness.safaricom.et/api/receipt/getReceipt?trxNo=REF</p>
           </div>
           <p style={{ color: "var(--muted)", fontSize: "14px", lineHeight: 1.5 }}>
@@ -272,7 +271,25 @@ export default function Home() {
       </section>
 
       {/* Open Source */}
-      <section style={{ marginTop: "40px" }}>
+      <section style={{ marginTop: "40px", display: "flex", gap: "12px", flexWrap: "wrap" }}>
+        <a
+          href="https://github.com/1RB/cheki"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            display: "inline-block",
+            border: "2px solid var(--border)",
+            padding: "12px 24px",
+            color: "var(--accent)",
+            textDecoration: "none",
+            fontSize: "15px",
+            fontFamily: "Georgia, serif",
+            textTransform: "uppercase",
+            letterSpacing: "1px",
+          }}
+        >
+          site source
+        </a>
         <a
           href="https://github.com/1RB/ethio-receipt-verify"
           target="_blank"
@@ -289,7 +306,7 @@ export default function Home() {
             letterSpacing: "1px",
           }}
         >
-          open source on github
+          python library
         </a>
       </section>
 
@@ -334,22 +351,8 @@ function ResultCard({ result }: { result: VerifyResult }) {
         background: "var(--card)",
       }}
     >
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "10px",
-          marginBottom: "20px",
-        }}
-      >
-        <div
-          style={{
-            width: "12px",
-            height: "12px",
-            background: "var(--accent)",
-            borderRadius: 0,
-          }}
-        />
+      <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "20px" }}>
+        <div style={{ width: "12px", height: "12px", background: "var(--accent)", borderRadius: 0 }} />
         <h2 style={{ fontSize: "20px", color: "var(--accent)" }}>receipt verified</h2>
       </div>
 
