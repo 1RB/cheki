@@ -93,7 +93,9 @@ function parseCBEPdfText(text: string): ParsedReceipt {
     return { verified: false };
   }
 
-  const lines = text.split("\n").map((l) => l.trim());
+  // pdf-parse may not preserve line breaks the same way pdfplumber does.
+  // Use regex on the full text to extract fields regardless of layout.
+
   let senderName: string | undefined;
   let receiverName: string | undefined;
   let senderAccount: string | undefined;
@@ -103,41 +105,51 @@ function parseCBEPdfText(text: string): ParsedReceipt {
   let reference: string | undefined;
   let branch: string | undefined;
   let reason: string | undefined;
-  const accounts: string[] = [];
 
-  for (const line of lines) {
-    if (line.startsWith("Payer") && !senderName) {
-      senderName = line.replace("Payer", "").trim();
-    } else if (line.startsWith("Receiver") && !receiverName) {
-      receiverName = line.replace("Receiver", "").trim();
-    } else if (line.startsWith("Account")) {
-      const m = line.match(/Account\s+([0-9*]+)/);
-      if (m) accounts.push(m[1]);
-    } else if (line.includes("Transferred Amount")) {
-      const m = line.match(/Transferred Amount\s+([0-9,]+\.\d{2})\s*ETB/);
-      if (m) amount = parseFloat(m[1].replace(/,/g, ""));
-    } else if (line.includes("Payment Date & Time")) {
-      const m = line.match(
-        /Payment Date & Time\s+(\d{1,2}\/\d{1,2}\/\d{4}),\s+(\d{1,2}:\d{2}:\d{2})\s*(AM|PM)?/
-      );
-      if (m) {
-        let ds = `${m[1]} ${m[2]}`;
-        if (m[3]) ds += ` ${m[3]}`;
-        date = ds;
-      }
-    } else if (line.includes("VAT Receipt No:")) {
-      const m = line.match(/VAT Receipt No:\s*(\S+)/);
-      if (m) reference = m[1];
-    } else if (line.includes("Branch:")) {
-      const m = line.match(/Branch:\s*(.+)/);
-      if (m) branch = m[1].trim();
-    } else if (line.includes("Reason / Type of service")) {
-      reason = line.replace("Reason / Type of service", "").trim();
-    }
+  // Sender/receiver names: "Payer <name>" and "Receiver <name>"
+  const payerMatch = text.match(/Payer\s+(Mr\s+|Mrs\s+|Ms\s+)?(.+?)(?:\n|$)/);
+  if (payerMatch) {
+    senderName = (payerMatch[1] || "") + (payerMatch[2] || "");
+    senderName = senderName.trim();
   }
 
+  const receiverMatch = text.match(/Receiver\s+(.+?)(?:\n|$)/);
+  if (receiverMatch) {
+    receiverName = receiverMatch[1].trim();
+  }
+
+  // Accounts: "Account <masked number>" — find all
+  const accountMatches = text.matchAll(/Account\s+([0-9*]+)/g);
+  const accounts = Array.from(accountMatches).map((m) => m[1]);
   if (accounts.length >= 1) senderAccount = accounts[0];
   if (accounts.length >= 2) receiverAccount = accounts[1];
+
+  // Amount: "Transferred Amount 20,000.00 ETB"
+  const amountMatch = text.match(/Transferred Amount\s+([0-9,]+\.\d{2})\s*ETB/);
+  if (amountMatch) {
+    amount = parseFloat(amountMatch[1].replace(/,/g, ""));
+  }
+
+  // Date: "Payment Date & Time 5/20/2026, 7:29:00 PM"
+  const dateMatch = text.match(
+    /Payment Date & Time\s+(\d{1,2}\/\d{1,2}\/\d{4}),\s+(\d{1,2}:\d{2}:\d{2})\s*(AM|PM)?/
+  );
+  if (dateMatch) {
+    date = `${dateMatch[1]} ${dateMatch[2]}`;
+    if (dateMatch[3]) date += ` ${dateMatch[3]}`;
+  }
+
+  // Reference: "VAT Receipt No: FT26140P01YB"
+  const refMatch = text.match(/VAT Receipt No:\s*(\S+)/);
+  if (refMatch) reference = refMatch[1];
+
+  // Branch: "Branch: MEKANISA MICHAEL BRANC"
+  const branchMatch = text.match(/Branch:\s*(.+?)(?:\n|$)/);
+  if (branchMatch) branch = branchMatch[1].trim();
+
+  // Reason: "Reason / Type of service <text>"
+  const reasonMatch = text.match(/Reason \/ Type of service\s+(.+?)(?:\n|$)/);
+  if (reasonMatch) reason = reasonMatch[1].trim();
 
   return {
     verified: true,
@@ -295,16 +307,22 @@ export async function POST(request: NextRequest) {
     const url = config.endpoint(reference, accountNumber, phoneNumber);
 
     let resp: Response;
+    let fetchError: string | undefined;
     try {
       resp = await fetch(url, {
         headers: { "User-Agent": "Mozilla/5.0 (compatible; cheki)" },
+        signal: AbortSignal.timeout(15000),
       });
-    } catch {
+    } catch (err) {
+      fetchError = err instanceof Error ? err.message : String(err);
+      // Check if it's a timeout or connection error (likely geo-blocking)
+      const isTimeout = fetchError.includes("timeout") || fetchError.includes("aborted");
       return NextResponse.json(
         {
           success: false,
-          error:
-            "The bank's receipt endpoint is unreachable. It may be down or geo-blocking.",
+          error: isTimeout
+            ? `${config.name}'s receipt endpoint is unreachable from our servers. It may be geo-blocking non-Ethiopian IPs. Try again later.`
+            : `The bank's receipt endpoint is unreachable. ${fetchError}`,
           bank: config.name,
           reference,
         },
