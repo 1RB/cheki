@@ -49,7 +49,7 @@ html, body {
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   max-width: 100%;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 input, select, button, textarea { font-family: inherit; }
@@ -148,7 +148,7 @@ a { color: inherit; text-decoration: none; }
   .footer-grid { grid-template-columns: 1fr 1fr !important; }
 }
 @media (min-width: 900px) {
-  .footer-grid { grid-template-columns: 2fr 1fr 1fr 1fr !important; gap: 24px !important; }
+  .footer-grid { grid-template-columns: 2fr 1fr 1fr 1fr 1fr !important; gap: 20px !important; }
 }
 
 /* bank grid - mobile: 2 cols, tablet: 4, desktop: 5 */

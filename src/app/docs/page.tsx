@@ -107,7 +107,6 @@ export default function DocsPage() {
             {/* Sidebar nav */}
             <aside className="docs-sidebar">
               <div style={{
-                position: "sticky", top: "calc(var(--nav-h) + 24px)",
                 padding: "20px", borderRadius: "12px",
                 background: "var(--surface)", border: "1px solid var(--border)",
               }}>

@@ -359,14 +359,14 @@ export const seoPages: SeoPage[] = [
 ];
 
 export function getSeoPage(slug: string): SeoPage | undefined {
-  return seoPages.find((p) => p.slug === slug);
+  return allSeoPages.find((p) => p.slug === slug);
 }
 
 export function getRelatedSeoPages(slug: string, limit = 3): SeoPage[] {
   const current = getSeoPage(slug);
-  if (!current) return seoPages.slice(0, limit);
+  if (!current) return allSeoPages.slice(0, limit);
   // Return pages with the same bankCode or same intent, excluding current
-  return seoPages
+  return allSeoPages
     .filter((p) => p.slug !== slug)
     .sort((a, b) => {
       const aScore = (a.bankCode === current.bankCode ? 2 : 0) + (a.intent === current.intent ? 1 : 0);
@@ -375,3 +375,8 @@ export function getRelatedSeoPages(slug: string, limit = 3): SeoPage[] {
     })
     .slice(0, limit);
 }
+
+// Import and combine generated pages
+import { generatedSeoPages } from "./seo-pages-generated";
+
+export const allSeoPages: SeoPage[] = [...seoPages, ...generatedSeoPages];

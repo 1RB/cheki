@@ -194,7 +194,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
           {/* TOC sidebar — appears above article on mobile, right side on desktop */}
           <aside className="toc-sidebar" style={{ order: 1 }}>
             <div className="toc-card" style={{
-              position: "sticky", top: "calc(var(--nav-h) + 24px)", padding: "20px",
+              padding: "20px",
               borderRadius: "12px", background: "var(--surface)", border: "1px solid var(--border)",
             }}>
               <p style={{ fontSize: "12px", fontWeight: 700, color: "var(--ink)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "14px", display: "flex", alignItems: "center", gap: "6px" }}>

@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 import { banks } from "@/lib/banks";
 import { guides } from "@/lib/guides";
-import { seoPages } from "@/lib/seo-pages";
+import { allSeoPages } from "@/lib/seo-pages";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const base = "https://cheki.app";
@@ -30,7 +30,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.85,
   }));
 
-  const seoPagesSitemap: MetadataRoute.Sitemap = seoPages.map((p) => ({
+  const seoPagesSitemap: MetadataRoute.Sitemap = allSeoPages.map((p) => ({
     url: `${base}/verify/${p.slug}`,
     lastModified: now,
     changeFrequency: "weekly" as const,

@@ -113,10 +113,20 @@ export function Footer() {
     { href: "/verify/verify-telebirr-receipt-online", label: "Verify Telebirr receipt" },
     { href: "/verify/verify-boa-receipt-online", label: "Verify BOA receipt" },
     { href: "/verify/verify-mpesa-receipt-online", label: "Verify M-Pesa receipt" },
+    { href: "/verify/verify-dashen-receipt-online", label: "Verify Dashen receipt" },
     { href: "/verify/free-receipt-verification-ethiopia", label: "Free verification" },
     { href: "/verify/how-to-check-fake-receipt-ethiopia", label: "Check fake receipt" },
-    { href: "/verify/ethiopian-bank-receipt-formats", label: "Receipt formats" },
+    { href: "/verify/cheki-vs-check-et-vs-verify-et", label: "cheki vs check.et" },
+  ];
+  const resourceLinks = [
     { href: "/verify/ethiopian-receipt-api-free", label: "Free receipt API" },
+    { href: "/verify/receipt-verification-sdk-typescript", label: "TypeScript SDK" },
+    { href: "/verify/receipt-verification-python-library", label: "Python library" },
+    { href: "/verify/receipt-verification-for-business", label: "For businesses" },
+    { href: "/verify/edited-screenshot-receipt-fraud", label: "Screenshot fraud" },
+    { href: "/verify/old-receipt-reuse-fraud", label: "Old receipt fraud" },
+    { href: "/verify/reference-number-fraud-ethiopia", label: "Reference fraud" },
+    { href: "/verify/ethiopian-bank-receipt-formats", label: "Receipt formats" },
   ];
   return (
     <footer style={{ marginTop: "64px", borderTop: "1px solid var(--border)", background: "var(--surface-alt)" }}>
@@ -157,6 +167,14 @@ export function Footer() {
             <p style={{ fontSize: "12px", fontWeight: 600, color: "var(--ink-3)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "12px" }}>Verify</p>
             <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
               {seoLinks.map((l) => (
+                <a key={l.href} href={l.href} style={{ fontSize: "13px", color: "var(--ink-2)" }}>{l.label}</a>
+              ))}
+            </div>
+          </div>
+          <div>
+            <p style={{ fontSize: "12px", fontWeight: 600, color: "var(--ink-3)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "12px" }}>Resources</p>
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              {resourceLinks.map((l) => (
                 <a key={l.href} href={l.href} style={{ fontSize: "13px", color: "var(--ink-2)" }}>{l.label}</a>
               ))}
             </div>
