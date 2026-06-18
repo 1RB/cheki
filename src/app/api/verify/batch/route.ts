@@ -1,77 +1,49 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Verifier, errorToHttpStatus, errorToMessage } from "@/lib";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-interface BatchItem {
-  bank: string;
-  reference: string;
-  accountNumber?: string;
-  phoneNumber?: string;
-}
+const verifier = new Verifier();
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-
-    if (!Array.isArray(body.receipts)) {
+    const receipts = body.receipts;
+    if (!Array.isArray(receipts) || receipts.length === 0) {
       return NextResponse.json(
-        { success: false, error: "Expected a 'receipts' array." },
-        { status: 400 }
-      );
-    }
-
-    const receipts: BatchItem[] = body.receipts;
-    if (receipts.length === 0) {
-      return NextResponse.json(
-        { success: false, error: "Receipts array is empty." },
+        { success: false, error: "receipts array is required." },
         { status: 400 }
       );
     }
     if (receipts.length > 50) {
       return NextResponse.json(
-        { success: false, error: "Maximum 50 receipts per batch request." },
+        { success: false, error: "Maximum 50 receipts per batch." },
         { status: 400 }
       );
     }
 
-    // Process all receipts in parallel
-    const results = await Promise.all(
-      receipts.map(async (item, index) => {
-        try {
-          const resp = await fetch(new URL("/api/verify", request.url), {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              bank: item.bank,
-              reference: item.reference,
-              accountNumber: item.accountNumber,
-              phoneNumber: item.phoneNumber,
-            }),
-          });
-          const data = await resp.json();
-          return { index, ...data };
-        } catch (err) {
-          return {
-            index,
-            success: false,
-            error: err instanceof Error ? err.message : "Internal error",
-            bank: item.bank,
-            reference: item.reference,
-          };
-        }
-      })
+    const results = await verifier.verifyBatch(
+      receipts.map((r: { bank: string; reference: string; accountNumber?: string; phoneNumber?: string }) => ({
+        bank: r.bank,
+        reference: r.reference,
+        accountNumber: r.accountNumber,
+        phoneNumber: r.phoneNumber,
+      }))
     );
-
-    const verified = results.filter((r) => r.success).length;
-    const failed = results.filter((r) => !r.success).length;
 
     return NextResponse.json({
       success: true,
-      total: receipts.length,
-      verified,
-      failed,
-      results,
+      results: results.map((r) => {
+        if (!r.ok) {
+          return {
+            success: false,
+            error: errorToMessage(r.error),
+            status: errorToHttpStatus(r.error),
+          };
+        }
+        return { success: true, ...r.value };
+      }),
     });
   } catch {
     return NextResponse.json(
