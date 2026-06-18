@@ -18,6 +18,7 @@ export default function Home() {
   const needsAccount = "requiresAccount" in selectedBank && selectedBank.requiresAccount;
   const needsPhone = "requiresPhone" in selectedBank && selectedBank.requiresPhone;
   const isDisabled = selectedBank.status === "soon";
+  const isGeoBlocked = "geoBlocked" in selectedBank && selectedBank.geoBlocked;
 
   // load history from localStorage
   useEffect(() => {
@@ -144,6 +145,30 @@ export default function Home() {
                 ))}
               </select>
             </div>
+
+            {isGeoBlocked && (
+              <div className="fade-in" style={{
+                padding: "12px 16px", borderRadius: "8px",
+                background: "#fffbeb", border: "1px solid #fde68a",
+                display: "flex", gap: "10px", alignItems: "flex-start",
+              }}>
+                <span style={{ fontSize: "16px", flexShrink: 0 }}>⚠️</span>
+                <div>
+                  <p style={{ fontSize: "13px", color: "#92400e", lineHeight: 1.5 }}>
+                    This bank blocks requests from outside Ethiopia. Verification may fail from our hosted server.
+                    <br />
+                    <a href="https://github.com/1RB/cheki#self-hosting" target="_blank" rel="noopener" style={{ color: "#92400e", fontWeight: 600, textDecoration: "underline" }}>
+                      Self-host with Docker
+                    </a>
+                    {" "}or use the{" "}
+                    <a href="https://github.com/1RB/cheki/tree/main/python" target="_blank" rel="noopener" style={{ color: "#92400e", fontWeight: 600, textDecoration: "underline" }}>
+                      Python library
+                    </a>
+                    {" "}from an Ethiopian network for reliable results.
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* Reference */}
             <div>
@@ -354,18 +379,27 @@ export default function Home() {
           </p>
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
             {[
-              { bank: "CBE", url: "apps.cbe.com.et:100/?id=REF + last 8 digits" },
-              { bank: "BOA", url: "cs.bankofabyssinia.com/api/onlineSlip/getDetails/?id=TRX" },
-              { bank: "Telebirr", url: "transactioninfo.ethiotelecom.et/receipt/REF" },
-              { bank: "M-Pesa", url: "m-pesabusiness.safaricom.et/api/receipt/getReceipt?trxNo=REF" },
+              { bank: "CBE", url: "apps.cbe.com.et:100/?id=REF + last 8 digits", status: "works globally" },
+              { bank: "BOA", url: "cs.bankofabyssinia.com/api/onlineSlip/getDetails/?id=TRX", status: "works globally" },
+              { bank: "Telebirr", url: "transactioninfo.ethiotelecom.et/receipt/REF", status: "Ethiopia only" },
+              { bank: "M-Pesa", url: "m-pesabusiness.safaricom.et/api/receipt/getReceipt?trxNo=REF", status: "Ethiopia only" },
             ].map((item) => (
               <div key={item.bank} style={{
                 padding: "14px 16px", borderRadius: "8px",
                 background: "var(--surface-alt)", border: "1px solid var(--border)",
               }}>
-                <p style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink)", marginBottom: "4px" }}>
-                  {item.bank}
-                </p>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                  <p style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink)" }}>
+                    {item.bank}
+                  </p>
+                  <span style={{
+                    fontSize: "11px", fontWeight: 600, padding: "2px 8px", borderRadius: "4px",
+                    background: item.status === "works globally" ? "var(--green-light)" : "#fffbeb",
+                    color: item.status === "works globally" ? "var(--green-dark)" : "#92400e",
+                  }}>
+                    {item.status}
+                  </span>
+                </div>
                 <p style={{ fontSize: "13px", fontFamily: "var(--mono)", color: "var(--ink-3)" }}>
                   {item.url}
                 </p>
@@ -373,7 +407,7 @@ export default function Home() {
             ))}
           </div>
           <p style={{ color: "var(--ink-3)", fontSize: "13px", lineHeight: 1.5, marginTop: "16px" }}>
-            These endpoints are public by design. The banks built them so customers can share receipt links. The paid services hit the exact same URLs.
+            Telebirr and M-Pesa block requests from cloud servers. Self-host cheki on an Ethiopian network or use the Python library for these banks. CBE and BOA work from anywhere.
           </p>
         </section>
 
