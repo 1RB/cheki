@@ -1,0 +1,52 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #030303;
+  --fg: #e8e8e8;
+  --muted: #6b6b6b;
+  --accent: #2eb8e0;
+  --border: #2eb8e0;
+  --card: #0a0a0a;
+  --danger: #e04848;
+  --success: #2eb8e0;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: Georgia, "Times New Roman", serif;
+  -webkit-font-smoothing: antialiased;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+input, select, button, textarea {
+  font-family: inherit;
+}
+
+input:focus, select:focus {
+  outline: none;
+}
+
+::-webkit-scrollbar {
+  display: none;
+}
+
+input::placeholder, select option {
+  color: var(--muted);
+}
+
+select {
+  background: var(--card);
+  color: var(--fg);
+}
+
+select option {
+  background: var(--card);
+}
