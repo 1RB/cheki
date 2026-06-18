@@ -164,7 +164,7 @@ export class Verifier {
   /**
    * Verify multiple receipts in parallel (batch).
    */
-  async verifyBatch(requests: VerifyRequest[]): Promise<Result<Receipt[], ChekiError>[]> {
+  async verifyBatch(requests: VerifyRequest[]): Promise<Result<Receipt, ChekiError>[]> {
     return Promise.all(requests.map((r) => this.verify(r)));
   }
 }
