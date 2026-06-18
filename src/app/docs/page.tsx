@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Nav, Footer } from "@/components/Chrome";
 
 export default function DocsPage() {
   const [copied, setCopied] = useState<string | null>(null);
@@ -58,6 +59,8 @@ export default function DocsPage() {
   );
 
   return (
+    <>
+    <Nav />
     <div style={{ minHeight: "100vh" }}>
       <nav style={{
         display: "flex", justifyContent: "space-between", alignItems: "center",
@@ -167,5 +170,7 @@ print(result.to_dict())`} id="py" />
         </div>
       </main>
     </div>
+    <Footer />
+    </>
   );
 }
