@@ -5,106 +5,92 @@ import { useState } from "react";
 export default function DocsPage() {
   const [copied, setCopied] = useState<string | null>(null);
 
-  const copyToClipboard = (text: string, id: string) => {
+  const copy = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
     setCopied(id);
     setTimeout(() => setCopied(null), 2000);
   };
 
-  const codeBlock = (code: string, id: string) => (
+  const Code = ({ code, id }: { code: string; id: string }) => (
     <div style={{ position: "relative", marginBottom: "16px" }}>
-      <pre
-        style={{
-          background: "var(--card)",
-          border: "2px solid var(--border)",
-          padding: "16px 20px",
-          overflow: "auto",
-          fontSize: "13px",
-          fontFamily: "monospace",
-          color: "var(--fg)",
-          margin: 0,
-        }}
-      >
+      <pre style={{
+        background: "#1a1a1a", color: "#e0e0e0", padding: "16px 20px",
+        borderRadius: "8px", overflow: "auto", fontSize: "13px",
+        fontFamily: "var(--mono)", lineHeight: 1.6, margin: 0,
+      }}>
         {code}
       </pre>
-      <button
-        onClick={() => copyToClipboard(code, id)}
-        style={{
-          position: "absolute",
-          top: "8px",
-          right: "8px",
-          background: "var(--bg)",
-          border: "2px solid var(--border)",
-          color: copied === id ? "var(--accent)" : "var(--muted)",
-          padding: "4px 10px",
-          fontSize: "12px",
-          fontFamily: "Georgia, serif",
-          cursor: "pointer",
-        }}
-      >
-        {copied === id ? "copied" : "copy"}
+      <button onClick={() => copy(code, id)} style={{
+        position: "absolute", top: "8px", right: "8px",
+        padding: "4px 10px", fontSize: "12px",
+        background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)",
+        borderRadius: "4px", color: copied === id ? "var(--green)" : "#aaa",
+        cursor: "pointer",
+      }}>
+        {copied === id ? "Copied" : "Copy"}
       </button>
     </div>
   );
 
-  const sectionTitle: React.CSSProperties = {
-    fontSize: "22px",
-    color: "var(--accent)",
-    marginBottom: "12px",
-    marginTop: "32px",
-  };
+  const Endpoint = ({ method, path, desc }: { method: string; path: string; desc: string }) => (
+    <div style={{ marginBottom: "8px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" }}>
+        <span style={{
+          padding: "3px 10px", borderRadius: "4px", fontSize: "12px", fontWeight: 700,
+          fontFamily: "var(--mono)",
+          background: method === "GET" ? "var(--green-light)" : "#ede9fe",
+          color: method === "GET" ? "var(--green-dark)" : "#6d28d9",
+        }}>
+          {method}
+        </span>
+        <code style={{ fontSize: "15px", fontFamily: "var(--mono)", color: "var(--ink)" }}>
+          {path}
+        </code>
+      </div>
+      <p style={{ color: "var(--ink-2)", fontSize: "14px", marginBottom: "12px" }}>{desc}</p>
+    </div>
+  );
 
-  const endpointStyle: React.CSSProperties = {
-    fontSize: "16px",
-    fontFamily: "monospace",
-    color: "var(--fg)",
-    marginBottom: "6px",
-  };
-
-  const methodBadge = (method: string, color: string) => ({
-    display: "inline-block",
-    background: color,
-    color: "#030303",
-    padding: "2px 8px",
-    fontSize: "12px",
-    fontWeight: "bold",
-    fontFamily: "monospace",
-    marginRight: "8px",
-  });
+  const H2 = ({ children }: { children: React.ReactNode }) => (
+    <h2 style={{ fontSize: "20px", fontWeight: 700, color: "var(--ink)", marginTop: "32px", marginBottom: "12px" }}>
+      {children}
+    </h2>
+  );
 
   return (
-    <main style={{ minHeight: "100vh", maxWidth: "640px", margin: "0 auto", padding: "24px 20px" }}>
-      <header style={{ textAlign: "center", marginBottom: "32px", marginTop: "20px" }}>
-        <h1 style={{ fontSize: "32px", fontWeight: "bold", color: "var(--accent)", letterSpacing: "2px" }}>
-          api docs
+    <div style={{ minHeight: "100vh" }}>
+      <nav style={{
+        display: "flex", justifyContent: "space-between", alignItems: "center",
+        padding: "16px 24px", maxWidth: "640px", margin: "0 auto",
+      }}>
+        <a href="/" style={{ fontWeight: 800, fontSize: "20px", letterSpacing: "-0.02em", color: "var(--ink)", textDecoration: "none" }}>
+          cheki
+        </a>
+        <a href="https://github.com/1RB/cheki" target="_blank" rel="noopener" style={{ color: "var(--ink-2)", textDecoration: "none", fontSize: "14px", fontWeight: 500 }}>
+          GitHub
+        </a>
+      </nav>
+
+      <main style={{ maxWidth: "640px", margin: "0 auto", padding: "0 24px 80px" }}>
+        <h1 style={{ fontSize: "32px", fontWeight: 800, letterSpacing: "-0.03em", color: "var(--ink)", marginBottom: "8px", marginTop: "32px" }}>
+          API Documentation
         </h1>
-        <p style={{ color: "var(--muted)", fontSize: "15px", marginTop: "8px" }}>
-          free rest api. no auth. no rate limit (yet). no scam.
+        <p style={{ color: "var(--ink-2)", fontSize: "16px", marginBottom: "32px" }}>
+          Free REST API. No auth. No rate limit. No scam.
         </p>
-      </header>
 
-      <section>
-        <h2 style={sectionTitle}>base url</h2>
-        {codeBlock("https://cheki-pi.vercel.app", "baseurl")}
-      </section>
+        <H2>Base URL</H2>
+        <Code code="https://cheki-pi.vercel.app" id="base" />
 
-      <section>
-        <h2 style={sectionTitle}>verify a receipt</h2>
-        <div style={endpointStyle}>
-          <span style={methodBadge("POST", "var(--accent)")}>POST</span>
-          /api/verify
-        </div>
-        <p style={{ color: "var(--muted)", fontSize: "14px", marginBottom: "12px" }}>
-          Verify a single receipt. Returns parsed fields from the bank&apos;s public endpoint.
-        </p>
-        <p style={{ fontSize: "13px", color: "var(--muted)", marginBottom: "6px" }}>request body:</p>
-        {codeBlock(`{
+        <H2>Endpoints</H2>
+
+        <Endpoint method="POST" path="/api/verify" desc="Verify a single receipt." />
+        <Code code={`{
   "bank": "cbe",
   "reference": "FT26140P01YB",
   "accountNumber": "1000560536171"
-}`, "verify_req")}
-        <p style={{ fontSize: "13px", color: "var(--muted)", marginBottom: "6px" }}>response:</p>
-        {codeBlock(`{
+}`} id="verify_req" />
+        <Code code={`{
   "success": true,
   "bank": "Commercial Bank of Ethiopia",
   "reference": "FT26140P01YB",
@@ -118,156 +104,68 @@ export default function DocsPage() {
   "date": "5/20/2026 7:29:00 PM",
   "branch": "MEKANISA MICHAEL BRANC",
   "sourceUrl": "https://apps.cbe.com.et:100/?id=FT26140P01YB60536171"
-}`, "verify_resp")}
-      </section>
+}`} id="verify_resp" />
 
-      <section>
-        <h2 style={sectionTitle}>batch verify</h2>
-        <div style={endpointStyle}>
-          <span style={methodBadge("POST", "var(--accent)")}>POST</span>
-          /api/verify/batch
-        </div>
-        <p style={{ color: "var(--muted)", fontSize: "14px", marginBottom: "12px" }}>
-          Verify up to 50 receipts in one request. All processed in parallel.
-        </p>
-        {codeBlock(`{
+        <Endpoint method="POST" path="/api/verify/batch" desc="Verify up to 50 receipts in parallel." />
+        <Code code={`{
   "receipts": [
     { "bank": "cbe", "reference": "FT26140P01YB", "accountNumber": "1000560536171" },
-    { "bank": "cbe", "reference": "FT25211G11JQ", "accountNumber": "21827223" }
+    { "bank": "telebirr", "reference": "DET8FJGUJ4" }
   ]
-}`, "batch_req")}
-      </section>
+}`} id="batch_req" />
 
-      <section>
-        <h2 style={sectionTitle}>list banks</h2>
-        <div style={endpointStyle}>
-          <span style={methodBadge("GET", "var(--accent)")}>GET</span>
-          /api/banks
-        </div>
-        <p style={{ color: "var(--muted)", fontSize: "14px", marginBottom: "12px" }}>
-          Returns all supported banks with metadata (status, required fields, endpoint pattern).
-        </p>
-      </section>
+        <Endpoint method="GET" path="/api/banks" desc="List all supported banks with metadata." />
 
-      <section>
-        <h2 style={sectionTitle}>health check</h2>
-        <div style={endpointStyle}>
-          <span style={methodBadge("GET", "var(--accent)")}>GET</span>
-          /api/health
-        </div>
-        <p style={{ color: "var(--muted)", fontSize: "14px", marginBottom: "12px" }}>
-          Checks if each bank endpoint is reachable from our servers. Includes latency.
-        </p>
-      </section>
+        <Endpoint method="GET" path="/api/health" desc="Check if each bank endpoint is reachable. Includes latency." />
 
-      <section>
-        <h2 style={sectionTitle}>download receipt</h2>
-        <div style={endpointStyle}>
-          <span style={methodBadge("GET", "var(--accent)")}>GET</span>
-          /api/receipt?bank=cbe&amp;reference=FT26140P01YB&amp;account=1000560536171
-        </div>
-        <p style={{ color: "var(--muted)", fontSize: "14px", marginBottom: "12px" }}>
-          Downloads the original receipt PDF directly from the bank. Supported: cbe, zemen, dashen.
-        </p>
-      </section>
+        <Endpoint method="GET" path="/api/receipt?bank=cbe&reference=FT...&account=..." desc="Download the original receipt PDF from the bank." />
 
-      <section>
-        <h2 style={sectionTitle}>typescript sdk</h2>
-        {codeBlock(`import { Cheki } from "cheki";
+        <H2>TypeScript SDK</H2>
+        <Code code={`import { Cheki } from "cheki";
 
 const cheki = new Cheki("https://cheki-pi.vercel.app");
 
-// verify one
 const result = await cheki.verify("cbe", "FT26140P01YB", {
   accountNumber: "1000560536171"
 });
-console.log(result.verified); // true
 
-// batch verify
 const batch = await cheki.verifyBatch([
   { bank: "cbe", reference: "FT26140P01YB", accountNumber: "1000560536171" },
-  { bank: "boa", reference: "AB123456789", accountNumber: "100000006171" }
+  { bank: "telebirr", reference: "DET8FJGUJ4" }
 ]);
 
-// list banks
 const { banks } = await cheki.getBanks();
+const health = await cheki.getHealth();`} id="sdk" />
 
-// health check
-const health = await cheki.getHealth();`, "ts_sdk")}
-      </section>
-
-      <section>
-        <h2 style={sectionTitle}>python library</h2>
-        {codeBlock(`pip install git+https://github.com/1RB/cheki.git#subdirectory=python
+        <H2>Python</H2>
+        <Code code={`pip install git+https://github.com/1RB/cheki.git#subdirectory=python
 
 from ethio_receipt_verify import verify
 
 result = verify("cbe", "FT26140P01YB", account_number="1000560536171")
-print(result.to_dict())`, "py_lib")}
-      </section>
+print(result.to_dict())`} id="py" />
 
-      <section>
-        <h2 style={sectionTitle}>curl</h2>
-        {codeBlock(`curl -X POST https://cheki-pi.vercel.app/api/verify \\
+        <H2>cURL</H2>
+        <Code code={`curl -X POST https://cheki-pi.vercel.app/api/verify \\
   -H "Content-Type: application/json" \\
-  -d '{"bank":"cbe","reference":"FT26140P01YB","accountNumber":"1000560536171"}'`, "curl")}
-      </section>
+  -d '{"bank":"cbe","reference":"FT26140P01YB","accountNumber":"1000560536171"}'`} id="curl" />
 
-      <section>
-        <h2 style={sectionTitle}>error handling</h2>
-        <p style={{ color: "var(--fg)", fontSize: "15px", marginBottom: "12px", lineHeight: 1.6 }}>
-          Errors return a non-200 status code with a JSON body:
-        </p>
-        {codeBlock(`{
+        <H2>Errors</H2>
+        <Code code={`{
   "success": false,
   "error": "Receipt not found. Check the reference number.",
   "bank": "Commercial Bank of Ethiopia",
   "reference": "INVALID123"
-}`, "error_resp")}
-      </section>
+}`} id="error" />
 
-      <section style={{ marginTop: "40px", display: "flex", gap: "12px", flexWrap: "wrap" }}>
-        <a
-          href="/"
-          style={{
-            display: "inline-block",
-            border: "2px solid var(--border)",
-            padding: "12px 24px",
-            color: "var(--accent)",
-            textDecoration: "none",
-            fontSize: "15px",
-            fontFamily: "Georgia, serif",
-            textTransform: "uppercase",
-            letterSpacing: "1px",
-          }}
-        >
-          back to cheki
-        </a>
-        <a
-          href="https://github.com/1RB/cheki"
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{
-            display: "inline-block",
-            border: "2px solid var(--border)",
-            padding: "12px 24px",
-            color: "var(--accent)",
-            textDecoration: "none",
-            fontSize: "15px",
-            fontFamily: "Georgia, serif",
-            textTransform: "uppercase",
-            letterSpacing: "1px",
-          }}
-        >
-          github
-        </a>
-      </section>
-
-      <footer style={{ marginTop: "40px", paddingBottom: "40px", textAlign: "center" }}>
-        <p style={{ color: "var(--muted)", fontSize: "13px" }}>
-          cheki api v0.2.0. free. forever.
-        </p>
-      </footer>
-    </main>
+        <div style={{ marginTop: "40px", display: "flex", gap: "12px" }}>
+          <a href="/" style={{
+            padding: "10px 20px", borderRadius: "8px", border: "1px solid var(--border)",
+            color: "var(--ink)", textDecoration: "none", fontSize: "14px", fontWeight: 500,
+            background: "var(--surface)",
+          }}>Back to cheki</a>
+        </div>
+      </main>
+    </div>
   );
 }

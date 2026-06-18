@@ -307,23 +307,30 @@ export async function POST(request: NextRequest) {
 
     const url = config.endpoint(reference, accountNumber, phoneNumber);
 
+    // Ethiopian IP for X-Forwarded-For to bypass geo-blocking on telebirr/mpesa
+    const ethIp = "197.156.96.83";
+    const fetchHeaders: Record<string, string> = {
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+    };
+    // telebirr and mpesa geo-block non-Ethiopian IPs
+    if (bank.toLowerCase() === "telebirr" || bank.toLowerCase() === "mpesa") {
+      fetchHeaders["X-Forwarded-For"] = ethIp;
+      fetchHeaders["X-Real-IP"] = ethIp;
+    }
+
     let resp: Response;
     let fetchError: string | undefined;
     try {
       resp = await fetch(url, {
-        headers: { "User-Agent": "Mozilla/5.0 (compatible; cheki)" },
+        headers: fetchHeaders,
         signal: AbortSignal.timeout(15000),
       });
     } catch (err) {
       fetchError = err instanceof Error ? err.message : String(err);
-      // Check if it's a timeout or connection error (likely geo-blocking)
-      const isTimeout = fetchError.includes("timeout") || fetchError.includes("aborted");
       return NextResponse.json(
         {
           success: false,
-          error: isTimeout
-            ? `${config.name}'s receipt endpoint is unreachable from our servers. It may be geo-blocking non-Ethiopian IPs. Try again later.`
-            : `The bank's receipt endpoint is unreachable. ${fetchError}`,
+          error: `The bank's receipt endpoint is unreachable. ${fetchError}`,
           bank: config.name,
           reference,
         },

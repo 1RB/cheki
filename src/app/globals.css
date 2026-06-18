@@ -1,52 +1,92 @@
 @import "tailwindcss";
 
-:root {
-  --bg: #030303;
-  --fg: #e8e8e8;
-  --muted: #6b6b6b;
-  --accent: #2eb8e0;
-  --border: #2eb8e0;
-  --card: #0a0a0a;
-  --danger: #e04848;
-  --success: #2eb8e0;
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("https://rsms.me/inter/font-files/InterVariable.woff2?v=4.0") format("woff2");
 }
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+:root {
+  --bg: #faf9f6;
+  --surface: #ffffff;
+  --surface-alt: #f5f2ec;
+  --receipt-bg: #f8f6f0;
+  --ink: #1a1a1a;
+  --ink-2: #555;
+  --ink-3: #888;
+  --green: #16a34a;
+  --green-dark: #0a7b43;
+  --green-light: #dcfce7;
+  --red: #dc2626;
+  --red-light: #fef2f2;
+  --amber: #f59e0b;
+  --border: #e5e2dc;
+  --dotted: #d4d0c8;
+  --mono: "JetBrains Mono", "IBM Plex Mono", "Roboto Mono", ui-monospace, monospace;
+  --sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
 
 html, body {
   background: var(--bg);
-  color: var(--fg);
-  font-family: Georgia, "Times New Roman", serif;
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
   max-width: 100%;
   overflow-x: hidden;
 }
 
-input, select, button, textarea {
-  font-family: inherit;
-}
+input, select, button, textarea { font-family: inherit; }
 
-input:focus, select:focus {
-  outline: none;
-}
+input:focus, select:focus { outline: none; }
 
-::-webkit-scrollbar {
-  display: none;
-}
+::-webkit-scrollbar { width: 0; height: 0; }
 
-input::placeholder, select option {
-  color: var(--muted);
-}
+input::placeholder { color: var(--ink-3); }
 
 select {
-  background: var(--card);
-  color: var(--fg);
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  padding-right: 40px;
 }
 
-select option {
-  background: var(--card);
+select option { background: var(--surface); color: var(--ink); }
+
+/* animations */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes drawLine {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+.fade-up { animation: fadeUp 0.3s ease-out both; }
+.fade-in { animation: fadeIn 0.2s ease-out both; }
+.spin { animation: spin 0.8s linear infinite; }
+
+/* receipt dotted line */
+.dotted-line {
+  border: none;
+  border-top: 2px dotted var(--dotted);
+  margin: 0;
 }
