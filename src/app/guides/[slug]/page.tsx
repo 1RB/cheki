@@ -53,11 +53,7 @@ function renderBlock(block: ContentBlock, key: number) {
 
     case "code":
       return (
-        <pre key={key} style={{
-          background: "var(--ink)", color: "#e0e0e0", padding: "16px 20px",
-          borderRadius: "8px", fontSize: "13px", fontFamily: "var(--mono)",
-          lineHeight: 1.6, overflow: "auto", margin: "12px 0",
-        }}>
+        <pre className="code-block" key={key}>
           <code>{block.code}</code>
         </pre>
       );
@@ -80,8 +76,8 @@ function renderBlock(block: ContentBlock, key: number) {
 
     case "table":
       return (
-        <div key={key} style={{ overflowX: "auto", margin: "16px 0" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "14px", background: "var(--surface)", borderRadius: "8px", overflow: "hidden" }}>
+        <div className="table-wrap" key={key}>
+          <table>
             <thead>
               <tr style={{ borderBottom: "2px solid var(--border)" }}>
                 {block.headers.map((h, i) => (

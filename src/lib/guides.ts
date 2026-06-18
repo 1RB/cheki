@@ -792,6 +792,216 @@ export const articles: Article[] = [
       keywords: ["open source ethiopian fintech", "free ethiopian payment tools", "cheki open source", "ethiopian bank verification open source", "MIT license ethiopia"],
     },
   },
+  {
+    slug: "how-to-verify-cbe-receipt",
+    title: "How to Verify a CBE Receipt (Step by Step)",
+    description: "Complete guide to verifying Commercial Bank of Ethiopia receipts. Both the new mbreciept QR system and the old FT reference + account method. Free with cheki.",
+    category: "bank",
+    bankCode: "cbe",
+    excerpt: "Two ways to verify CBE receipts: the new QR/URL system and the classic FT reference + account method. Both are free with cheki.",
+    date: "2026-06-18",
+    readTime: "4 min",
+    content: [
+      { type: "text", text: "CBE (Commercial Bank of Ethiopia) is the largest bank in Ethiopia and the most common settlement rail for businesses. There are two ways to verify a CBE receipt, and cheki supports both for free." },
+
+      { type: "heading", text: "Method 1: New CBE receipt system (QR code or URL)" },
+      { type: "text", text: "CBE's new receipt sharing system generates a short URL like https://mbreciept.cbe.com.et/fHCxyV4mg5pRIwEkJO. This URL is also encoded as a QR code on the receipt. This is the easiest method because it requires only one piece of information." },
+      {
+        type: "steps",
+        items: [
+          { title: "Get the receipt link or QR code", text: "Ask the customer to share the receipt link from their CBE app, or scan the QR code on the printed receipt." },
+          { title: "Paste the URL in cheki", text: "Open cheki.app, switch to the 'Receipt URL' tab, and paste the mbreciept.cbe.com.et link. Or scan the QR code directly with cheki's camera scanner." },
+          { title: "Click Verify", text: "cheki calls CBE's JSON API and returns the transaction data in under 2 seconds. You'll see the FT reference, amount, sender, receiver, and date." },
+        ],
+      },
+      { type: "callout", variant: "tip", title: "Easiest method", text: "The new system doesn't require an account number. Just paste the link or scan the QR code. The API returns masked account numbers for privacy." },
+
+      { type: "heading", text: "Method 2: Classic CBE receipt (FT reference + account)" },
+      { type: "text", text: "If you don't have the receipt link, you can verify using the FT reference number and your receiving account number. This uses CBE's older PDF endpoint." },
+      {
+        type: "steps",
+        items: [
+          { title: "Get the FT reference number", text: "Ask the customer for the FT reference from their receipt. It starts with 'FT' followed by 10 characters, e.g. FT26140P01YB." },
+          { title: "Get your account number", text: "You need the last 8 digits of your receiving CBE account. For example, if your account is 1000560536171, the last 8 digits are 60536171." },
+          { title: "Enter both in cheki", text: "Select CBE from the bank dropdown, enter the FT reference, and enter the account digits. cheki constructs the URL and fetches the PDF receipt." },
+          { title: "Review the result", text: "cheki parses the PDF and returns the sender name, receiver name, amount, date, and branch." },
+        ],
+      },
+
+      { type: "heading", text: "What information do you need?" },
+      {
+        type: "table",
+        headers: ["Method", "Required info", "Example"],
+        rows: [
+          ["New (URL/QR)", "Receipt link or QR scan", "https://mbreciept.cbe.com.et/fHCxyV4mg5pRIwEkJO"],
+          ["Classic (FT ref)", "FT reference + last 8 digits of account", "FT26140P01YB + 60536171"],
+        ],
+      },
+
+      { type: "heading", text: "What the receipt contains" },
+      { type: "text", text: "A verified CBE receipt includes:" },
+      { type: "list", items: [
+        "Transaction reference (FT number)",
+        "Transferred amount in ETB",
+        "Payer (sender) name and account",
+        "Receiver name and account",
+        "Payment date and time",
+        "Branch name",
+        "Reason / type of service",
+      ]},
+
+      { type: "heading", text: "Verifying CBE receipts via API" },
+      { type: "code", lang: "bash", code: '# New system (URL):\ncurl -X POST https://cheki.app/api/verify \\\n  -H "Content-Type: application/json" \\\n  -d \'{"reference":"https://mbreciept.cbe.com.et/fHCxyV4mg5pRIwEkJO"}\'\n\n# Classic system (FT ref + account):\ncurl -X POST https://cheki.app/api/verify \\\n  -H "Content-Type: application/json" \\\n  -d \'{"bank":"cbe","reference":"FT26140P01YB","accountNumber":"1000560536171"}\'' },
+
+      { type: "callout", variant: "info", title: "Both methods are free", text: "Whether you use the new QR/URL system or the classic FT reference method, verification is free with cheki. check.et charges 499 ETB/month for the same data after 200 free verifications." },
+    ],
+    faq: [
+      { q: "Do I need the account number for the new CBE system?", a: "No. The new mbreciept system only requires the short URL or QR code. The account number is only needed for the classic FT reference method." },
+      { q: "Can I verify CBE receipts from outside Ethiopia?", a: "Yes. Both CBE endpoints (apps.cbe.com.et and Mb.cbe.com.et) are accessible globally. Unlike Telebirr and M-Pesa, CBE is not geo-blocked." },
+      { q: "How fast is CBE verification?", a: "The new system (JSON API) typically takes 0.5-2 seconds. The classic system (PDF parsing) takes 1-3 seconds. Both are fast enough for real-time counter verification." },
+    ],
+    related: ["cbe-receipt-qr-code", "how-to-verify-telebirr-receipt", "free-receipt-verification-no-api-key"],
+    seo: {
+      title: "How to Verify a CBE Receipt Step by Step",
+      description: "Complete guide to verifying Commercial Bank of Ethiopia receipts. Both the new QR/URL system and the classic FT reference method. Free with cheki.",
+      keywords: ["verify CBE receipt", "how to verify CBE transaction", "CBE FT reference verify", "CBE receipt check", "verify Commercial Bank of Ethiopia", "CBE receipt QR code"],
+    },
+  },
+  {
+    slug: "how-to-verify-telebirr-receipt",
+    title: "How to Verify a Telebirr Receipt (Step by Step)",
+    description: "Complete guide to verifying Telebirr (Ethio Telecom) transactions. Reference number format, geo-blocking workarounds, and free verification with cheki.",
+    category: "bank",
+    bankCode: "telebirr",
+    excerpt: "Telebirr is Ethiopia's most used mobile wallet. Here's how to verify any Telebirr transaction for free, including what to do about geo-blocking.",
+    date: "2026-06-18",
+    readTime: "4 min",
+    content: [
+      { type: "text", text: "Telebirr is Ethio Telecom's mobile money service and the most widely used digital wallet in Ethiopia. Verifying Telebirr receipts is simpler than CBE because you only need the transaction reference number, no account number required." },
+
+      { type: "heading", text: "What you need" },
+      { type: "list", items: [
+        "Transaction reference number (required) - e.g. DET8FJGUJ4 or CHQ0FJ403O",
+        "That's it. No account number needed.",
+      ]},
+
+      { type: "heading", text: "Telebirr reference number format" },
+      { type: "text", text: "Telebirr transaction references start with a 2-3 letter prefix followed by 6-8 alphanumeric characters. The reference is sent via SMS to both the payer and receiver after each transaction." },
+      {
+        type: "table",
+        headers: ["Prefix", "Transaction type"],
+        rows: [
+          ["DET", "Person-to-person transfer (most common)"],
+          ["CHQ", "Cheque-related transaction"],
+          ["DAB", "Bank account transfer"],
+          ["DEL", "Merchant payment"],
+          ["ADQ", "Other transaction types"],
+        ],
+      },
+
+      { type: "heading", text: "Step-by-step verification" },
+      {
+        type: "steps",
+        items: [
+          { title: "Get the transaction reference", text: "Ask the customer for the reference number from their Telebirr SMS or app. It starts with a 2-3 letter prefix like DET, CHQ, or DAB." },
+          { title: "Enter it in cheki", text: "Open cheki.app, select Telebirr from the bank dropdown (or just paste the reference, cheki auto-detects Telebirr from the prefix)." },
+          { title: "Click Verify", text: "cheki fetches the receipt from Telebirr's public endpoint at transactioninfo.ethiotelecom.et/receipt/{REFERENCE}" },
+          { title: "Review the result", text: "You'll see the payer name, receiver name, amount, and transaction date." },
+        ],
+      },
+
+      { type: "heading", text: "Geo-blocking and how to handle it" },
+      { type: "callout", variant: "warning", title: "Telebirr blocks non-Ethiopian IPs", text: "Telebirr's receipt endpoint blocks all requests from IP addresses outside Ethiopia. If cheki's hosted server can't reach Telebirr, you'll get a fallback URL to open the receipt directly in your browser." },
+      { type: "text", text: "If you're in Ethiopia, verification works seamlessly. If you're outside Ethiopia:" },
+      { type: "list", items: [
+        "Use the 'Receipt URL' tab and paste the full Telebirr receipt URL. Your browser will fetch it directly using your Ethiopian IP if you're on an Ethiopian network.",
+        "Self-host cheki with Docker on an Ethiopian server for reliable server-side verification.",
+        "Use the Python library from a machine with an Ethiopian IP address.",
+      ]},
+
+      { type: "heading", text: "Verifying via API" },
+      { type: "code", lang: "bash", code: 'curl -X POST https://cheki.app/api/verify \\\n  -H "Content-Type: application/json" \\\n  -d \'{"bank":"telebirr","reference":"DET8FJGUJ4"}\'' },
+      { type: "text", text: "If the server is geo-blocked, the response includes a fallbackUrl field:" },
+      { type: "code", lang: "json", code: '{\n  "success": false,\n  "error": "Our server can\'t reach this bank...",\n  "fallbackUrl": "https://transactioninfo.ethiotelecom.et/receipt/DET8FJGUJ4"\n}' },
+
+      { type: "heading", text: "What the receipt contains" },
+      { type: "list", items: [
+        "Payer name",
+        "Payer Telebirr number",
+        "Credited party name (receiver)",
+        "Credited party account number",
+        "Amount in ETB",
+        "Transaction date and time",
+      ]},
+    ],
+    faq: [
+      { q: "Do I need an account number for Telebirr verification?", a: "No. Telebirr only requires the transaction reference number. This makes it simpler than CBE or BOA verification." },
+      { q: "Why does Telebirr verification fail from outside Ethiopia?", a: "Telebirr's receipt endpoint blocks non-Ethiopian IPs at the network level. Use the fallback URL, self-host on an Ethiopian server, or use the Python library from an Ethiopian network." },
+      { q: "Is Telebirr receipt verification free?", a: "Yes. The Telebirr receipt URL is public and free. check.et charges 499 ETB/month for accessing this same endpoint. cheki does it for free." },
+    ],
+    related: ["how-to-verify-cbe-receipt", "payment-fraud-ethiopia", "ethiopian-bank-receipt-formats"],
+    seo: {
+      title: "How to Verify a Telebirr Receipt Step by Step",
+      description: "Complete guide to verifying Telebirr transactions. Reference number format, geo-blocking workarounds, and free verification with cheki.",
+      keywords: ["verify telebirr receipt", "how to verify telebirr transaction", "telebirr reference number", "telebirr transaction ID", "ethio telecom receipt verify"],
+    },
+  },
+  {
+    slug: "how-to-verify-boa-receipt",
+    title: "How to Verify a Bank of Abyssinia (BOA) Receipt",
+    description: "Verify Bank of Abyssinia transactions for free with cheki. No Selenium needed, just the reference number and last 5 digits of your account.",
+    category: "bank",
+    bankCode: "boa",
+    excerpt: "BOA verification is simple with cheki's direct JSON API. No Selenium, no headless browser, just the reference and last 5 digits of your account.",
+    date: "2026-06-18",
+    readTime: "3 min",
+    content: [
+      { type: "text", text: "Bank of Abyssinia (BOA) is one of Ethiopia's largest private banks. BOA publishes receipt data as JSON via a public API endpoint. cheki uses this API directly, without requiring Selenium or a headless browser like some other libraries." },
+
+      { type: "heading", text: "What you need" },
+      { type: "list", items: [
+        "Transaction reference number (required) - alphanumeric, typically starts with 2 letters",
+        "Last 5 digits of your receiving BOA account number (required)",
+      ]},
+
+      { type: "heading", text: "Step-by-step verification" },
+      {
+        type: "steps",
+        items: [
+          { title: "Get the transaction reference", text: "Ask the customer for the reference number from their BOA receipt." },
+          { title: "Get your account's last 5 digits", text: "You need the last 5 digits of your receiving BOA account. For example, if your account is 1234567890, the last 5 digits are 67890." },
+          { title: "Enter both in cheki", text: "Select BOA from the bank dropdown, enter the reference, and enter the account digits." },
+          { title: "Click Verify", text: "cheki calls BOA's JSON API and returns structured payment data in 1-2 seconds." },
+        ],
+      },
+
+      { type: "callout", variant: "tip", title: "No Selenium required", text: "Unlike the ethiobank_receipts Python library which requires Chrome WebDriver for BOA, cheki uses BOA's JSON API directly. This works in serverless environments without browser dependencies." },
+
+      { type: "heading", text: "Verifying via API" },
+      { type: "code", lang: "bash", code: 'curl -X POST https://cheki.app/api/verify \\\n  -H "Content-Type: application/json" \\\n  -d \'{"bank":"boa","reference":"AB12345678","accountNumber":"67890"}\'' },
+
+      { type: "heading", text: "What the receipt contains" },
+      { type: "list", items: [
+        "Source account name (sender)",
+        "Source account number",
+        "Receiver's name",
+        "Receiver's account",
+        "Transferred amount in ETB",
+        "Transaction date",
+        "Transaction reference",
+      ]},
+    ],
+    faq: [
+      { q: "Does BOA verification require Selenium?", a: "No. cheki uses BOA's JSON API directly at cs.bankofabyssinia.com. This is faster and works in serverless environments without Chrome WebDriver." },
+      { q: "Why does BOA need the last 5 digits?", a: "BOA's API endpoint combines the transaction reference with the last 5 digits of the receiving account to form the full ID. This prevents unauthorized receipt enumeration." },
+    ],
+    related: ["how-to-verify-cbe-receipt", "how-to-verify-telebirr-receipt", "ethiopian-bank-receipt-formats"],
+    seo: {
+      title: "How to Verify a Bank of Abyssinia (BOA) Receipt",
+      description: "Verify Bank of Abyssinia transactions for free with cheki. No Selenium needed, just the reference number and last 5 digits of your account.",
+      keywords: ["verify BOA receipt", "Bank of Abyssinia verify", "BOA transaction check", "verify Abyssinia bank receipt", "BOA online slip"],
+    },
+  },
 ];
 
 export function getArticle(slug: string): Article | undefined {

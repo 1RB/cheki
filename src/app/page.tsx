@@ -3,6 +3,8 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { banks, detectBank, type BankCode, type VerifyResult } from "@/lib/banks";
 import { Nav, Footer } from "@/components/Chrome";
+import { BankLogoByName } from "@/components/BankLogo";
+import { Icon, BoltIcon, Key01Icon, Layers01Icon, CodeIcon, ReceiptTextIcon, Search01Icon, Camera01Icon, QrCode01Icon, QrCodeScanIcon, BookOpen01Icon, ContainerIcon, CheckmarkCircle01Icon, ArrowRight01Icon, GithubIcon, StarIcon, Copy01Icon, CopyCheckIcon, ChevronDownIcon, Alert01Icon } from "@/components/Icon";
 
 export default function Home() {
   const [bank, setBank] = useState<BankCode>("cbe");
@@ -17,7 +19,6 @@ export default function Home() {
   const [inputMode, setInputMode] = useState<"reference" | "url">("reference");
   const resultRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const scannerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
@@ -34,18 +35,13 @@ export default function Home() {
     } catch {}
   }, []);
 
-  // Auto-detect bank from reference format or URL
   useEffect(() => {
     if (!reference) return;
     const trimmed = reference.trim();
-
-    // If URL, try to detect bank from URL
     if (trimmed.startsWith("http")) {
       setInputMode("url");
-      // Don't auto-select bank for URLs - the API handles detection
       return;
     }
-
     setInputMode("reference");
     const detected = detectBank(trimmed);
     if (detected && detected !== bank) setBank(detected as BankCode);
@@ -86,19 +82,12 @@ export default function Home() {
     }
   }, [result]);
 
-  // QR Scanner
   const startScanner = useCallback(async () => {
     setShowScanner(true);
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment" },
-      });
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
       streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.play();
-      }
-      // Use a simple frame-by-frame QR detection
+      if (videoRef.current) { videoRef.current.srcObject = stream; videoRef.current.play(); }
       const canvas = document.createElement("canvas");
       const ctx = canvas.getContext("2d");
       const checkFrame = () => {
@@ -107,50 +96,33 @@ export default function Home() {
           canvas.width = videoRef.current.videoWidth;
           canvas.height = videoRef.current.videoHeight;
           ctx?.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
-          // Try to read QR from canvas
           const imageData = ctx?.getImageData(0, 0, canvas.width, canvas.height);
-          if (imageData) {
-            scanQRCode(imageData);
-          }
+          if (imageData) scanQRCode(imageData);
         }
         if (showScanner) requestAnimationFrame(checkFrame);
       };
       checkFrame();
-    } catch (err) {
+    } catch {
       setError("Camera access denied. Check browser permissions.");
       setShowScanner(false);
     }
   }, [showScanner]);
 
   const scanQRCode = useCallback((imageData: ImageData) => {
-    // Use jsQR if available, otherwise try BarcodeDetector API
     if ("BarcodeDetector" in window) {
-      const detector = new (window as any).BarcodeDetector({
-        formats: ["qr_code"],
-      });
+      const detector = new (window as any).BarcodeDetector({ formats: ["qr_code"] });
       detector.detect(imageData).then((codes: any[]) => {
-        if (codes.length > 0) {
-          const value = codes[0].rawValue;
-          setReference(value);
-          setShowScanner(false);
-          stopScanner();
-        }
+        if (codes.length > 0) { setReference(codes[0].rawValue); setShowScanner(false); stopScanner(); }
       }).catch(() => {});
     }
   }, []);
 
   const stopScanner = useCallback(() => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((t) => t.stop());
-      streamRef.current = null;
-    }
+    if (streamRef.current) { streamRef.current.getTracks().forEach((t) => t.stop()); streamRef.current = null; }
   }, []);
 
-  useEffect(() => {
-    return () => stopScanner();
-  }, [stopScanner]);
+  useEffect(() => { return () => stopScanner(); }, [stopScanner]);
 
-  // File upload (image QR scan)
   const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -158,24 +130,16 @@ export default function Home() {
     img.onload = () => {
       const canvas = document.createElement("canvas");
       const ctx = canvas.getContext("2d");
-      canvas.width = img.width;
-      canvas.height = img.height;
+      canvas.width = img.width; canvas.height = img.height;
       ctx?.drawImage(img, 0, 0);
       const imageData = ctx?.getImageData(0, 0, canvas.width, canvas.height);
       if (imageData && "BarcodeDetector" in window) {
         const detector = new (window as any).BarcodeDetector({ formats: ["qr_code"] });
         detector.detect(imageData).then((codes: any[]) => {
-          if (codes.length > 0) {
-            setReference(codes[0].rawValue);
-          } else {
-            setError("No QR code found in image. Try a clearer photo.");
-          }
-        }).catch(() => {
-          setError("Could not scan QR from image.");
-        });
-      } else {
-        setError("QR scanning not supported in this browser. Try Chrome on Android.");
-      }
+          if (codes.length > 0) setReference(codes[0].rawValue);
+          else setError("No QR code found in image. Try a clearer photo.");
+        }).catch(() => setError("Could not scan QR from image."));
+      } else setError("QR scanning not supported in this browser. Try Chrome on Android.");
     };
     img.src = URL.createObjectURL(file);
   }, []);
@@ -187,45 +151,42 @@ export default function Home() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const liveBanks = banks.filter((b) => b.status === "live");
-  const soonBanks = banks.filter((b) => b.status === "soon");
+  const features = [
+    { icon: BoltIcon, title: "1-3 second verification", body: "Fetch receipts from bank endpoints in real time. Fast enough for checkout counters." },
+    { icon: Key01Icon, title: "No API key, no signup", body: "Start verifying immediately. No account, no business plan, no credit limit." },
+    { icon: Layers01Icon, title: "Batch verification", body: "Verify up to 50 receipts in a single API call. Perfect for end-of-day reconciliation." },
+    { icon: ReceiptTextIcon, title: "Python library", body: "Install the Python package for server-side verification from Ethiopian networks." },
+    { icon: ContainerIcon, title: "Self-host with Docker", body: "Run cheki on your own infrastructure. Bypass geo-blocks with an Ethiopian IP." },
+    { icon: CodeIcon, title: "Structured JSON", body: "Every bank returns the same response shape. Write the integration once." },
+    { icon: Search01Icon, title: "Auto-detect bank", body: "Paste a reference or URL and cheki identifies the bank automatically." },
+    { icon: QrCodeScanIcon, title: "QR code scanning", body: "Scan receipt QR codes with your camera or upload a photo. Works on mobile." },
+    { icon: BookOpen01Icon, title: "Open source", body: "MIT licensed. Read the code, contribute, fork it. No black box." },
+  ];
 
   return (
     <>
       <Nav />
       <main>
         {/* Hero + Verify Form */}
-        <section className="container" style={{ paddingTop: "32px", paddingBottom: "32px" }}>
-          <div className="grid-2" style={{ alignItems: "start", gap: "32px" }}>
+        <section className="container" style={{ paddingTop: { base: "24px", md: "40px" } as any, paddingBottom: { base: "24px", md: "32px" } as any }}>
+          <div className="hero-grid" style={{ display: "grid", gridTemplateColumns: "1fr", gap: "28px", alignItems: "start" }}>
             {/* Left: Hero copy */}
-            <div>
+            <div className="hero-copy">
               <p style={{ fontSize: "12px", fontWeight: 600, color: "var(--green)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "12px" }}>
                 Free and open source
               </p>
               <h1 style={{
-                fontSize: "clamp(28px, 6vw, 44px)", fontWeight: 800, letterSpacing: "-0.03em",
-                lineHeight: 1.05, color: "var(--ink)", marginBottom: "16px",
+                fontSize: "clamp(28px, 6vw, 42px)", fontWeight: 800, letterSpacing: "-0.03em",
+                lineHeight: 1.08, color: "var(--ink)", marginBottom: "14px",
               }}>
                 Verify any Ethiopian receipt.
                 <br />
                 <span style={{ color: "var(--green)" }}>Free. Forever.</span>
               </h1>
-              <p style={{ color: "var(--ink-2)", fontSize: "17px", lineHeight: 1.5, maxWidth: "440px", marginBottom: "20px" }}>
+              <p style={{ color: "var(--ink-2)", fontSize: "16px", lineHeight: 1.5, maxWidth: "440px", marginBottom: "20px" }}>
                 No signup. No API key. No scam. The banks publish receipts on public URLs. We just parse them.
               </p>
-              <div style={{ display: "flex", gap: "20px", flexWrap: "wrap", marginBottom: "20px" }}>
-                {[
-                  { label: "Banks supported", value: `${banks.length}` },
-                  { label: "Cost", value: "0 ETB" },
-                  { label: "API key required", value: "No" },
-                ].map((s) => (
-                  <div key={s.label}>
-                    <p style={{ fontSize: "22px", fontWeight: 800, color: "var(--ink)" }}>{s.value}</p>
-                    <p style={{ fontSize: "11px", color: "var(--ink-3)" }}>{s.label}</p>
-                  </div>
-                ))}
-              </div>
-              <div className="hide-mobile" style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+              <div className="hide-mobile" style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
                 <a href="/docs" style={{ padding: "10px 20px", borderRadius: "8px", border: "1px solid var(--border)", color: "var(--ink)", fontSize: "14px", fontWeight: 500, background: "var(--surface)" }}>API Docs</a>
                 <a href="/guides" style={{ padding: "10px 20px", borderRadius: "8px", border: "1px solid var(--border)", color: "var(--ink)", fontSize: "14px", fontWeight: 500, background: "var(--surface)" }}>Guides</a>
                 <a href="/compare" style={{ padding: "10px 20px", borderRadius: "8px", border: "1px solid var(--border)", color: "var(--ink)", fontSize: "14px", fontWeight: 500, background: "var(--surface)" }}>vs check.et</a>
@@ -233,8 +194,8 @@ export default function Home() {
             </div>
 
             {/* Right: Verify form */}
-            <div style={{
-              background: "var(--surface)", borderRadius: "12px", padding: "20px",
+            <div className="verify-card" style={{
+              background: "var(--surface)", borderRadius: "14px", padding: "20px",
               boxShadow: "0 1px 3px rgba(0,0,0,0.04), 0 0 0 1px var(--border)",
             }}>
               {/* Input mode tabs */}
@@ -255,26 +216,11 @@ export default function Home() {
                   >{tab.label}</button>
                 ))}
                 <div style={{ marginLeft: "auto", display: "flex", gap: "4px" }}>
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    title="Scan QR from image"
-                    style={{
-                      padding: "6px 10px", fontSize: "13px", border: "1px solid var(--border)",
-                      borderRadius: "6px", background: "var(--surface)", color: "var(--ink-2)", cursor: "pointer",
-                    }}
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h7v7h-7z"/></svg>
+                  <button onClick={() => fileInputRef.current?.click()} title="Scan QR from image" style={{ padding: "6px 10px", border: "1px solid var(--border)", borderRadius: "6px", background: "var(--surface)", color: "var(--ink-2)", cursor: "pointer", display: "flex", alignItems: "center" }}>
+                    <Icon icon={QrCode01Icon} size={16} color="var(--ink-2)" />
                   </button>
-                  <button
-                    onClick={() => showScanner ? (setShowScanner(false), stopScanner()) : startScanner()}
-                    title="Scan QR with camera"
-                    style={{
-                      padding: "6px 10px", fontSize: "13px", border: "1px solid var(--border)",
-                      borderRadius: "6px", background: showScanner ? "var(--green-light)" : "var(--surface)",
-                      color: showScanner ? "var(--green-dark)" : "var(--ink-2)", cursor: "pointer",
-                    }}
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                  <button onClick={() => showScanner ? (setShowScanner(false), stopScanner()) : startScanner()} title="Scan QR with camera" style={{ padding: "6px 10px", border: "1px solid var(--border)", borderRadius: "6px", background: showScanner ? "var(--green-light)" : "var(--surface)", color: showScanner ? "var(--green-dark)" : "var(--ink-2)", cursor: "pointer", display: "flex", alignItems: "center" }}>
+                    <Icon icon={Camera01Icon} size={16} color={showScanner ? "var(--green-dark)" : "var(--ink-2)"} />
                   </button>
                   <input ref={fileInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleFileUpload} />
                 </div>
@@ -282,124 +228,72 @@ export default function Home() {
 
               {/* QR Scanner overlay */}
               {showScanner && (
-                <div ref={scannerRef} style={{
-                  marginBottom: "16px", borderRadius: "8px", overflow: "hidden",
-                  border: "2px solid var(--green)", position: "relative",
-                }}>
+                <div style={{ marginBottom: "16px", borderRadius: "10px", overflow: "hidden", border: "2px solid var(--green)", position: "relative" }}>
                   <video ref={videoRef} style={{ width: "100%", display: "block" }} playsInline muted />
-                  <div style={{
-                    position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)",
-                    width: "200px", height: "200px", border: "2px solid rgba(255,255,255,0.7)",
-                    borderRadius: "8px", boxShadow: "0 0 0 9999px rgba(0,0,0,0.3)",
-                  }} />
-                  <p style={{ position: "absolute", bottom: "8px", left: "0", right: "0", textAlign: "center", color: "#fff", fontSize: "13px", fontWeight: 500 }}>
-                    Point camera at QR code
-                  </p>
+                  <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: "200px", height: "200px", border: "2px solid rgba(255,255,255,0.7)", borderRadius: "12px", boxShadow: "0 0 0 9999px rgba(0,0,0,0.3)" }} />
+                  <p style={{ position: "absolute", bottom: "8px", left: 0, right: 0, textAlign: "center", color: "#fff", fontSize: "13px", fontWeight: 500 }}>Point camera at QR code</p>
                 </div>
               )}
 
               <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-                {/* Bank selector - hidden when URL mode */}
                 {inputMode === "reference" && (
                   <div className="fade-in">
                     <label style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink-2)", marginBottom: "6px", display: "block" }}>Bank</label>
-                    <select
-                      value={bank}
-                      onChange={(e) => { setBank(e.target.value as BankCode); setResult(null); setError(null); }}
-                      style={{ width: "100%", padding: "12px 16px", fontSize: "15px", border: "1px solid var(--border)", borderRadius: "8px", background: "var(--surface)", color: "var(--ink)", cursor: "pointer" }}
-                    >
-                      {banks.map((b) => (
-                        <option key={b.code} value={b.code}>
-                          {b.name}{b.status === "soon" ? " (in development)" : ""}
-                        </option>
-                      ))}
+                    <select value={bank} onChange={(e) => { setBank(e.target.value as BankCode); setResult(null); setError(null); }} style={{ width: "100%", padding: "12px 16px", fontSize: "15px", border: "1px solid var(--border)", borderRadius: "8px", background: "var(--surface)", color: "var(--ink)", cursor: "pointer" }}>
+                      {banks.map((b) => <option key={b.code} value={b.code}>{b.name}{b.status === "soon" ? " (in development)" : ""}</option>)}
                     </select>
                   </div>
                 )}
 
                 {isGeoBlocked && inputMode === "reference" && (
-                  <div className="fade-in" style={{
-                    padding: "10px 14px", borderRadius: "8px", background: "var(--amber-light)", border: "1px solid #fde68a",
-                  }}>
+                  <div className="fade-in" style={{ padding: "10px 14px", borderRadius: "8px", background: "var(--amber-light)", border: "1px solid #fde68a", display: "flex", gap: "8px", alignItems: "flex-start" }}>
+                    <Icon icon={Alert01Icon} size={16} color="#92400e" />
                     <p style={{ fontSize: "12px", color: "#92400e", lineHeight: 1.5 }}>
-                      {"⚠"} This bank blocks requests from outside Ethiopia. {" "}
+                      This bank blocks requests from outside Ethiopia.{" "}
                       <a href="https://github.com/1RB/cheki#self-hosting" target="_blank" rel="noopener" style={{ color: "#92400e", fontWeight: 600, textDecoration: "underline" }}>Self-host</a> or use receipt URL mode.
                     </p>
                   </div>
                 )}
 
-                {/* Reference / URL input */}
                 <div>
                   <label style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink-2)", marginBottom: "6px", display: "block" }}>
                     {inputMode === "url" ? "Receipt URL or link" : "Receipt reference number"}
                   </label>
-                  <input
-                    type="text" value={reference}
-                    onChange={(e) => setReference(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && !loading && handleVerify()}
-                    placeholder={inputMode === "url" ? "Paste receipt link, e.g. https://mbreciept.cbe.com.et/..." : "e.g. FT26140P01YB"}
-                    style={{ width: "100%", padding: "12px 16px", fontSize: "15px", border: "1px solid var(--border)", borderRadius: "8px", background: "var(--surface)", color: "var(--ink)", fontFamily: "var(--mono)" }}
-                    spellCheck={false} autoCapitalize="characters"
-                  />
+                  <input type="text" value={reference} onChange={(e) => setReference(e.target.value)} onKeyDown={(e) => e.key === "Enter" && !loading && handleVerify()} placeholder={inputMode === "url" ? "Paste receipt link..." : "e.g. FT26140P01YB"} style={{ width: "100%", padding: "12px 16px", fontSize: "15px", border: "1px solid var(--border)", borderRadius: "8px", background: "var(--surface)", color: "var(--ink)", fontFamily: "var(--mono)" }} spellCheck={false} autoCapitalize="characters" />
                   {reference && inputMode === "reference" && detectBank(reference) && (
-                    <p style={{ fontSize: "12px", color: "var(--green)", marginTop: "6px", fontWeight: 500 }}>
-                      Detected: {banks.find((b) => b.code === detectBank(reference))?.name}
+                    <p style={{ fontSize: "12px", color: "var(--green)", marginTop: "6px", fontWeight: 500, display: "flex", alignItems: "center", gap: "4px" }}>
+                      <Icon icon={Search01Icon} size={12} color="var(--green)" /> Detected: {banks.find((b) => b.code === detectBank(reference))?.name}
                     </p>
                   )}
                   {reference && inputMode === "url" && reference.startsWith("http") && (
-                    <p style={{ fontSize: "12px", color: "var(--green)", marginTop: "6px", fontWeight: 500 }}>
-                      Bank will be auto-detected from URL
+                    <p style={{ fontSize: "12px", color: "var(--green)", marginTop: "6px", fontWeight: 500, display: "flex", alignItems: "center", gap: "4px" }}>
+                      <Icon icon={Search01Icon} size={12} color="var(--green)" /> Bank will be auto-detected from URL
                     </p>
                   )}
                 </div>
 
-                {/* Account (conditional, reference mode only) */}
                 {needsAccount && inputMode === "reference" && (
                   <div className="fade-in">
-                    <label style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink-2)", marginBottom: "6px", display: "block" }}>
-                      {selectedBank.accountLabel || "Account number"}
-                    </label>
-                    <input
-                      type="text" value={accountNumber}
-                      onChange={(e) => setAccountNumber(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && !loading && handleVerify()}
-                      placeholder={`Last ${selectedBank.accountDigits} digits minimum`}
-                      style={{ width: "100%", padding: "12px 16px", fontSize: "15px", border: "1px solid var(--border)", borderRadius: "8px", background: "var(--surface)", color: "var(--ink)", fontFamily: "var(--mono)" }}
-                      spellCheck={false}
-                    />
+                    <label style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink-2)", marginBottom: "6px", display: "block" }}>{selectedBank.accountLabel || "Account number"}</label>
+                    <input type="text" value={accountNumber} onChange={(e) => setAccountNumber(e.target.value)} onKeyDown={(e) => e.key === "Enter" && !loading && handleVerify()} placeholder={`Last ${selectedBank.accountDigits} digits minimum`} style={{ width: "100%", padding: "12px 16px", fontSize: "15px", border: "1px solid var(--border)", borderRadius: "8px", background: "var(--surface)", color: "var(--ink)", fontFamily: "var(--mono)" }} spellCheck={false} />
                   </div>
                 )}
 
-                {/* Phone (conditional, reference mode only) */}
                 {needsPhone && inputMode === "reference" && (
                   <div className="fade-in">
                     <label style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink-2)", marginBottom: "6px", display: "block" }}>Payer phone number</label>
-                    <input
-                      type="text" value={accountNumber}
-                      onChange={(e) => setAccountNumber(e.target.value)}
-                      placeholder="2519XXXXXXXXX"
-                      style={{ width: "100%", padding: "12px 16px", fontSize: "15px", border: "1px solid var(--border)", borderRadius: "8px", background: "var(--surface)", color: "var(--ink)", fontFamily: "var(--mono)" }}
-                      spellCheck={false}
-                    />
+                    <input type="text" value={accountNumber} onChange={(e) => setAccountNumber(e.target.value)} placeholder="2519XXXXXXXXX" style={{ width: "100%", padding: "12px 16px", fontSize: "15px", border: "1px solid var(--border)", borderRadius: "8px", background: "var(--surface)", color: "var(--ink)", fontFamily: "var(--mono)" }} spellCheck={false} />
                   </div>
                 )}
 
-                {/* Submit */}
-                <button
-                  onClick={handleVerify}
-                  disabled={loading || (inputMode === "reference" && isDisabled) || !reference.trim()}
-                  style={{
-                    width: "100%", padding: "14px 24px", fontSize: "15px", fontWeight: 600,
-                    border: "none", borderRadius: "8px",
-                    background: loading || (inputMode === "reference" && isDisabled) || !reference.trim() ? "var(--border)" : "var(--green)",
-                    color: loading || (inputMode === "reference" && isDisabled) || !reference.trim() ? "var(--ink-3)" : "#fff",
-                    cursor: loading || (inputMode === "reference" && isDisabled) || !reference.trim() ? "not-allowed" : "pointer",
-                    transition: "all 0.15s", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", minHeight: "48px",
-                  }}
-                >
-                  {loading ? (
-                    <><span className="spin" style={{ width: "16px", height: "16px", border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "#fff", borderRadius: "50%", display: "inline-block" }} />Verifying...</>
-                  ) : (inputMode === "reference" && isDisabled) ? "In Development" : "Verify Receipt"}
+                <button onClick={handleVerify} disabled={loading || (inputMode === "reference" && isDisabled) || !reference.trim()} style={{
+                  width: "100%", padding: "14px 24px", fontSize: "15px", fontWeight: 600, border: "none", borderRadius: "8px",
+                  background: loading || (inputMode === "reference" && isDisabled) || !reference.trim() ? "var(--border)" : "var(--green)",
+                  color: loading || (inputMode === "reference" && isDisabled) || !reference.trim() ? "var(--ink-3)" : "#fff",
+                  cursor: loading || (inputMode === "reference" && isDisabled) || !reference.trim() ? "not-allowed" : "pointer",
+                  transition: "all 0.15s", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", minHeight: "48px",
+                }}>
+                  {loading ? (<><span className="spin" style={{ width: "16px", height: "16px", border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "#fff", borderRadius: "50%", display: "inline-block" }} />Verifying...</>) : (inputMode === "reference" && isDisabled) ? "In Development" : "Verify Receipt"}
                 </button>
               </div>
 
@@ -408,9 +302,7 @@ export default function Home() {
                   <p style={{ fontSize: "11px", fontWeight: 600, color: "var(--ink-3)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "8px" }}>Recent checks</p>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
                     {history.map((h, i) => (
-                      <button key={i} onClick={() => { setReference(h.ref); setInputMode("reference"); }} style={{
-                        padding: "5px 10px", fontSize: "12px", fontFamily: "var(--mono)", border: "1px solid var(--border)", borderRadius: "20px", background: "var(--surface)", color: "var(--ink-2)", cursor: "pointer",
-                      }}>{h.ref.length > 20 ? h.ref.slice(0, 20) + "..." : h.ref}</button>
+                      <button key={i} onClick={() => { setReference(h.ref); setInputMode("reference"); }} style={{ padding: "5px 10px", fontSize: "12px", fontFamily: "var(--mono)", border: "1px solid var(--border)", borderRadius: "20px", background: "var(--surface)", color: "var(--ink-2)", cursor: "pointer" }}>{h.ref.length > 20 ? h.ref.slice(0, 20) + "..." : h.ref}</button>
                     ))}
                   </div>
                 </div>
@@ -421,31 +313,23 @@ export default function Home() {
 
         {/* Result */}
         {result && result.success && (
-          <section className="container-narrow" style={{ marginBottom: "40px" }}>
-            <div ref={resultRef}>
-              <ReceiptCard result={result} copied={copied} onCopy={copyResult} />
-            </div>
+          <section className="container-narrow" style={{ marginBottom: "32px", padding: "0 24px" }}>
+            <div ref={resultRef}><ReceiptCard result={result} copied={copied} onCopy={copyResult} /></div>
           </section>
         )}
 
         {/* Error / Fallback */}
         {error && (
-          <section className="container-narrow" style={{ marginBottom: "40px" }}>
-            <div className="fade-up" style={{
-              padding: "16px 20px", borderRadius: "8px",
-              background: result?.fallbackUrl ? "var(--amber-light)" : "var(--red-light)",
-              border: `1px solid ${result?.fallbackUrl ? "#fde68a" : "#fecaca"}`,
-            }}>
+          <section className="container-narrow" style={{ marginBottom: "32px", padding: "0 24px" }}>
+            <div className="fade-up" style={{ padding: "16px 20px", borderRadius: "8px", background: result?.fallbackUrl ? "var(--amber-light)" : "var(--red-light)", border: `1px solid ${result?.fallbackUrl ? "#fde68a" : "#fecaca"}` }}>
               <p style={{ color: result?.fallbackUrl ? "#92400e" : "var(--red)", fontSize: "14px", fontWeight: 500, marginBottom: result?.fallbackUrl ? "12px" : 0 }}>{error}</p>
-              {result?.fallbackUrl && (
-                <a href={result.fallbackUrl} target="_blank" rel="noopener noreferrer" style={{ display: "inline-block", padding: "8px 16px", borderRadius: "6px", background: "var(--green)", color: "#fff", fontSize: "14px", fontWeight: 600 }}>Open Receipt</a>
-              )}
+              {result?.fallbackUrl && <a href={result.fallbackUrl} target="_blank" rel="noopener noreferrer" style={{ display: "inline-block", padding: "8px 16px", borderRadius: "6px", background: "var(--green)", color: "#fff", fontSize: "14px", fontWeight: 600 }}>Open Receipt</a>}
             </div>
           </section>
         )}
 
         {/* How it works */}
-        <section className="container" style={{ paddingTop: "32px", marginTop: "32px" }}>
+        <section className="container" style={{ paddingTop: "32px", marginTop: "24px" }}>
           <h2 style={{ fontSize: "clamp(22px, 4vw, 30px)", fontWeight: 800, letterSpacing: "-0.02em", marginBottom: "12px" }}>
             The banks publish receipts on public URLs
           </h2>
@@ -454,37 +338,27 @@ export default function Home() {
           </p>
           <div className="grid-2" style={{ gap: "16px" }}>
             {banks.filter((b) => b.status === "live").map((b) => (
-              <div key={b.code} style={{
-                padding: "18px", borderRadius: "12px", background: "var(--surface)", border: "1px solid var(--border)",
-              }}>
+              <div key={b.code} style={{ padding: "18px", borderRadius: "12px", background: "var(--surface)", border: "1px solid var(--border)" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                    <div style={{ width: "32px", height: "32px", borderRadius: "8px", background: b.color, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700, fontSize: "13px" }}>
-                      {b.shortName.slice(0, 3)}
-                    </div>
+                    <BankLogoByName code={b.code} size={32} />
                     <div>
                       <p style={{ fontSize: "15px", fontWeight: 600 }}>{b.shortName}</p>
                       <p style={{ fontSize: "11px", color: "var(--ink-3)" }}>{b.type === "mobile" ? "Mobile wallet" : "Bank"}</p>
                     </div>
                   </div>
-                  <span style={{
-                    fontSize: "11px", fontWeight: 600, padding: "3px 10px", borderRadius: "4px",
-                    background: b.geoBlocked ? "var(--amber-light)" : "var(--green-light)",
-                    color: b.geoBlocked ? "#92400e" : "var(--green-dark)",
-                  }}>{b.geoBlocked ? "Ethiopia only" : "Works globally"}</span>
+                  <span style={{ fontSize: "11px", fontWeight: 600, padding: "3px 10px", borderRadius: "4px", background: b.geoBlocked ? "var(--amber-light)" : "var(--green-light)", color: b.geoBlocked ? "#92400e" : "var(--green-dark)" }}>{b.geoBlocked ? "Ethiopia only" : "Works globally"}</span>
                 </div>
                 <p style={{ fontSize: "12px", fontFamily: "var(--mono)", color: "var(--ink-3)", wordBreak: "break-all" }}>{b.endpointFormat}</p>
-                <a href={`/banks/${b.code}`} style={{ fontSize: "13px", color: "var(--green-dark)", fontWeight: 600, marginTop: "8px", display: "inline-block" }}>Learn more</a>
+                <a href={`/banks/${b.code}`} style={{ fontSize: "13px", color: "var(--green-dark)", fontWeight: 600, marginTop: "8px", display: "inline-flex", alignItems: "center", gap: "4px" }}>Learn more <Icon icon={ArrowRight01Icon} size={12} color="var(--green-dark)" /></a>
               </div>
             ))}
           </div>
         </section>
 
         {/* The Scam / Comparison */}
-        <section className="container" style={{ marginTop: "48px" }}>
-          <div style={{
-            padding: "28px", borderRadius: "16px", background: "var(--red-light)", border: "1px solid #fecaca",
-          }}>
+        <section className="container" style={{ marginTop: "40px" }}>
+          <div style={{ padding: "28px", borderRadius: "16px", background: "var(--red-light)", border: "1px solid #fecaca" }}>
             <p style={{ fontSize: "12px", fontWeight: 600, color: "var(--red)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "8px" }}>The paid services</p>
             <h2 style={{ fontSize: "clamp(20px, 4vw, 26px)", fontWeight: 800, color: "var(--red)", marginBottom: "14px", letterSpacing: "-0.02em" }}>
               check.et and verify.et charge you for free data
@@ -509,29 +383,19 @@ export default function Home() {
                 <p style={{ fontSize: "24px", fontWeight: 800, color: "var(--green)" }}>0<span style={{ fontSize: "13px", fontWeight: 500 }}> ETB</span></p>
               </div>
             </div>
-            <a href="/compare" style={{ display: "inline-block", marginTop: "16px", padding: "10px 20px", borderRadius: "8px", background: "var(--ink)", color: "#fff", fontSize: "14px", fontWeight: 600 }}>Full comparison</a>
+            <a href="/compare" style={{ display: "inline-flex", alignItems: "center", gap: "6px", marginTop: "16px", padding: "10px 20px", borderRadius: "8px", background: "var(--ink)", color: "#fff", fontSize: "14px", fontWeight: 600 }}>Full comparison <Icon icon={ArrowRight01Icon} size={14} color="#fff" /></a>
           </div>
         </section>
 
         {/* Features */}
-        <section className="container" style={{ marginTop: "48px" }}>
-          <h2 style={{ fontSize: "clamp(22px, 4vw, 30px)", fontWeight: 800, letterSpacing: "-0.02em", marginBottom: "24px" }}>
+        <section className="container" style={{ marginTop: "40px" }}>
+          <h2 style={{ fontSize: "clamp(22px, 4vw, 30px)", fontWeight: 800, letterSpacing: "-0.02em", marginBottom: "20px" }}>
             Everything you need, nothing you don&apos;t
           </h2>
-          <div className="grid-3" style={{ gap: "16px" }}>
-            {[
-              { icon: "⚡", title: "1-3 second verification", body: "Fetch receipts from bank endpoints in real time. Fast enough for checkout counters." },
-              { icon: "🔑", title: "No API key, no signup", body: "Start verifying immediately. No account, no business plan, no credit limit." },
-              { icon: "📦", title: "Batch verification", body: "Verify up to 50 receipts in a single API call. Perfect for end-of-day reconciliation." },
-              { icon: "🐍", title: "Python library", body: "Install the Python package for server-side verification from Ethiopian networks." },
-              { icon: "🐳", title: "Self-host with Docker", body: "Run cheki on your own infrastructure. Bypass geo-blocks with an Ethiopian IP." },
-              { icon: "📋", title: "Structured JSON", body: "Every bank returns the same response shape. Write the integration once." },
-              { icon: "🔍", title: "Auto-detect bank", body: "Paste a reference or URL and cheki identifies the bank automatically." },
-              { icon: "📷", title: "QR code scanning", body: "Scan receipt QR codes with your camera or upload a photo. Works on mobile." },
-              { icon: "📖", title: "Open source", body: "MIT licensed. Read the code, contribute, fork it. No black box." },
-            ].map((f) => (
+          <div className="grid-3" style={{ gap: "14px" }}>
+            {features.map((f) => (
               <div key={f.title} style={{ padding: "20px", borderRadius: "12px", background: "var(--surface)", border: "1px solid var(--border)" }}>
-                <span style={{ fontSize: "24px", display: "block", marginBottom: "10px" }}>{f.icon}</span>
+                <div style={{ marginBottom: "10px" }}><Icon icon={f.icon} size={24} color="var(--green)" /></div>
                 <h3 style={{ fontSize: "15px", fontWeight: 700, marginBottom: "6px" }}>{f.title}</h3>
                 <p style={{ fontSize: "14px", color: "var(--ink-2)", lineHeight: 1.5 }}>{f.body}</p>
               </div>
@@ -540,27 +404,20 @@ export default function Home() {
         </section>
 
         {/* Supported Banks */}
-        <section className="container" style={{ marginTop: "48px" }}>
+        <section className="container" style={{ marginTop: "40px" }}>
           <h2 style={{ fontSize: "clamp(22px, 4vw, 30px)", fontWeight: 800, letterSpacing: "-0.02em", marginBottom: "10px" }}>
             {banks.length} banks and wallets supported
           </h2>
           <p style={{ color: "var(--ink-2)", fontSize: "15px", marginBottom: "20px" }}>
-            {liveBanks.length} live now, {soonBanks.length} in development. All use public endpoints.
+            {banks.filter((b) => b.status === "live").length} live now, {banks.filter((b) => b.status === "soon").length} in development. All use public endpoints.
           </p>
-          <div className="grid-4" style={{ gap: "12px" }}>
+          <div className="bank-grid" style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "10px" }}>
             {banks.map((b) => (
-              <a key={b.code} href={`/banks/${b.code}`} style={{
-                padding: "14px", borderRadius: "10px", background: "var(--surface)", border: "1px solid var(--border)",
-                display: "flex", alignItems: "center", gap: "10px",
-              }}>
-                <div style={{ width: "32px", height: "32px", borderRadius: "8px", background: b.color, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700, fontSize: "12px", flexShrink: 0 }}>
-                  {b.shortName.slice(0, 3)}
-                </div>
+              <a key={b.code} href={`/banks/${b.code}`} style={{ padding: "12px", borderRadius: "10px", background: "var(--surface)", border: "1px solid var(--border)", display: "flex", alignItems: "center", gap: "10px" }}>
+                <BankLogoByName code={b.code} size={32} />
                 <div style={{ minWidth: 0 }}>
                   <p style={{ fontSize: "13px", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{b.shortName}</p>
-                  <p style={{ fontSize: "10px", color: b.status === "live" ? "var(--green)" : "var(--ink-3)" }}>
-                    {b.status === "live" ? "Live" : "Soon"}
-                  </p>
+                  <p style={{ fontSize: "10px", color: b.status === "live" ? "var(--green)" : "var(--ink-3)" }}>{b.status === "live" ? "Live" : "Soon"}</p>
                 </div>
               </a>
             ))}
@@ -568,10 +425,8 @@ export default function Home() {
         </section>
 
         {/* OSS Branding */}
-        <section className="container" style={{ marginTop: "48px" }}>
-          <div style={{
-            padding: "32px", borderRadius: "16px", background: "var(--ink)", color: "#fff",
-          }}>
+        <section className="container" style={{ marginTop: "40px" }}>
+          <div style={{ padding: "28px", borderRadius: "16px", background: "var(--ink)", color: "#fff" }}>
             <div className="grid-2" style={{ alignItems: "center", gap: "24px" }}>
               <div>
                 <p style={{ fontSize: "12px", fontWeight: 600, color: "var(--green)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "8px" }}>Open source</p>
@@ -582,8 +437,12 @@ export default function Home() {
                   cheki is MIT licensed and lives on GitHub. No company owns it. No one can shut it down. If a bank changes their endpoint, anyone can submit a fix.
                 </p>
                 <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-                  <a href="https://github.com/1RB/cheki" target="_blank" rel="noopener" style={{ padding: "12px 24px", borderRadius: "8px", background: "var(--green)", color: "#fff", fontSize: "14px", fontWeight: 600 }}>Star on GitHub</a>
-                  <a href="https://github.com/1RB/cheki/blob/main/README.md#contributing" target="_blank" rel="noopener" style={{ padding: "12px 24px", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", fontSize: "14px", fontWeight: 600 }}>Contribute</a>
+                  <a href="https://github.com/1RB/cheki" target="_blank" rel="noopener" style={{ padding: "12px 24px", borderRadius: "8px", background: "var(--green)", color: "#fff", fontSize: "14px", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "8px" }}>
+                    <Icon icon={StarIcon} size={16} color="#fff" /> Star on GitHub
+                  </a>
+                  <a href="https://github.com/1RB/cheki/blob/main/README.md#contributing" target="_blank" rel="noopener" style={{ padding: "12px 24px", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", fontSize: "14px", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "8px" }}>
+                    <Icon icon={GithubIcon} size={16} color="#fff" /> Contribute
+                  </a>
                 </div>
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
@@ -628,18 +487,14 @@ function ReceiptCard({ result, copied, onCopy }: { result: VerifyResult; copied:
   const visibleRows = rows.filter((r) => r.value);
 
   return (
-    <section className="fade-up" style={{
-      borderRadius: "12px", overflow: "hidden", background: "var(--receipt-bg)", border: "1px solid var(--dotted)",
-      boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-    }}>
+    <section className="fade-up" style={{ borderRadius: "12px", overflow: "hidden", background: "var(--receipt-bg)", border: "1px solid var(--dotted)", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
       <div style={{ padding: "20px 24px", borderBottom: "2px dotted var(--dotted)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <div style={{ width: "24px", height: "24px", borderRadius: "50%", background: "var(--green)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7l3 3 5-6" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
-          </div>
+          <Icon icon={CheckmarkCircle01Icon} size={24} color="var(--green)" />
           <span style={{ fontSize: "16px", fontWeight: 700, color: "var(--ink)" }}>receipt verified</span>
         </div>
-        <button onClick={onCopy} style={{ padding: "6px 14px", fontSize: "12px", fontWeight: 500, border: "1px solid var(--border)", borderRadius: "6px", background: "var(--surface)", color: copied ? "var(--green)" : "var(--ink-2)", cursor: "pointer" }}>
+        <button onClick={onCopy} style={{ padding: "6px 14px", fontSize: "12px", fontWeight: 500, border: "1px solid var(--border)", borderRadius: "6px", background: "var(--surface)", color: copied ? "var(--green)" : "var(--ink-2)", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}>
+          <Icon icon={copied ? CopyCheckIcon : Copy01Icon} size={14} color={copied ? "var(--green)" : "var(--ink-2)"} />
           {copied ? "Copied" : "Copy JSON"}
         </button>
       </div>
