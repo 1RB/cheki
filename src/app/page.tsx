@@ -260,7 +260,7 @@ export default function Home() {
         )}
 
         {/* How it works */}
-        <section className="container" style={{ paddingY: "48px" as any, marginTop: "48px" }}>
+        <section className="container" style={{ paddingTop: "48px", marginTop: "48px" }}>
           <h2 style={{ fontSize: "clamp(24px, 4vw, 32px)", fontWeight: 800, letterSpacing: "-0.02em", marginBottom: "12px" }}>
             The banks publish receipts on public URLs
           </h2>
