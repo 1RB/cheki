@@ -1,790 +1,825 @@
-export interface Guide {
+// Block-based content system for guides and blog posts
+// Supports rich formatting: text, lists, code, callouts, tables, quotes, steps
+
+export type ContentBlock =
+  | { type: "heading"; text: string }
+  | { type: "text"; text: string }
+  | { type: "list"; items: string[] }
+  | { type: "ordered"; items: string[] }
+  | { type: "code"; lang?: string; code: string }
+  | { type: "callout"; variant: "info" | "warning" | "tip" | "success" | "danger" | "quote"; title?: string; text: string }
+  | { type: "table"; headers: string[]; rows: string[][] }
+  | { type: "quote"; text: string; cite?: string }
+  | { type: "steps"; items: { title: string; text: string }[] }
+  | { type: "divider" };
+
+export interface Article {
   slug: string;
   title: string;
   description: string;
-  category: "bank" | "fraud" | "business" | "api" | "comparison";
+  category: "bank" | "fraud" | "business" | "api" | "comparison" | "technical" | "open-source";
   bankCode?: string;
   excerpt: string;
-  content: GuideSection[];
+  date: string;
+  readTime: string;
+  content: ContentBlock[];
   seo: {
     title: string;
     description: string;
     keywords: string[];
   };
   faq?: { q: string; a: string }[];
-  relatedGuides?: string[];
+  related?: string[];
 }
 
-export interface GuideSection {
-  heading: string;
-  body: string[];
-  list?: string[];
-}
-
-export const guides: Guide[] = [
+export const articles: Article[] = [
   {
-    slug: "verify-cbe-transactions",
-    title: "How to Verify Commercial Bank of Ethiopia Transactions",
+    slug: "cbe-receipt-qr-code",
+    title: "CBE Receipt QR Codes: What They Contain and How to Scan Them",
     description:
-      "Step-by-step guide to verifying CBE (Commercial Bank of Ethiopia) transactions using FT reference numbers and account details. Free verification with cheki.",
+      "CBE's new receipt sharing system uses short URLs and QR codes. Learn what's inside them, how to scan them, and how to verify instantly with cheki.",
     category: "bank",
     bankCode: "cbe",
     excerpt:
-      "CBE is the most common settlement rail for Ethiopian businesses. Learn how to verify any CBE transfer for free using the FT reference and account number.",
+      "CBE launched a new receipt sharing system at mbreciept.cbe.com.et. Here's what the QR codes contain, how the API works, and why it makes verification easier.",
+    date: "2026-06-18",
+    readTime: "4 min",
     content: [
+      { type: "text", text: "Commercial Bank of Ethiopia recently launched a new receipt sharing system. When you complete a transfer in the CBE mobile app, you can now share a short link like https://mbreciept.cbe.com.et/fHCxyV4mg5pRIwEkJO. The recipient opens this link and sees the full receipt in their browser, no app required." },
+      { type: "text", text: "This is a significant upgrade from the old system, which required the FT reference number and the last 8 digits of the receiving account to construct a receipt URL. The new system uses a single short ID and returns clean JSON data instead of a PDF." },
+
+      { type: "heading", text: "What the QR code contains" },
+      { type: "text", text: "The QR code on a CBE receipt encodes a URL in this format:" },
+      { type: "code", code: "https://mbreciept.cbe.com.et/{SHORT_ID}" },
+      { type: "text", text: "The short ID is a random string like fHCxyV4mg5pRIwEkJO. It maps to a single transaction on CBE's backend. When you scan the QR code, you get this URL, which you can paste into cheki's URL input mode to verify instantly." },
+
+      { type: "callout", variant: "tip", title: "Try it now", text: "Open cheki.app, switch to the 'Receipt URL' tab, and paste any mbreciept.cbe.com.et link. cheki calls CBE's JSON API and returns the full transaction data in under 2 seconds." },
+
+      { type: "heading", text: "The API behind the receipts" },
+      { type: "text", text: "The mbreciept.cbe.com.et page is a Nuxt.js single-page app. When it loads, it calls a JSON API at a different domain:" },
+      { type: "code", lang: "http", code: "GET https://Mb.cbe.com.et/api/v1/transactions/public/transaction-detail/{SHORT_ID}\n\nHeaders:\n  X-App-ID: d1292e42-7400-49de-a2d3-9731caa4c819\n  X-App-Version: 0a01980b-9859-1369-8198-59f403820000" },
+      { type: "text", text: "The response is structured JSON with all the transaction details:" },
+      { type: "code", lang: "json", code: '{\n  "id": "FT2614977L8S",\n  "transactionType": "ACNX",\n  "debitAccountNo": "1********8348",\n  "creditAccountNo": "1********6171",\n  "amountCredited": "1300.00",\n  "creditCurrency": "ETB",\n  "dateTimes": ["2026-05-29T08:30:00Z"],\n  "debitAccountHolder": "Raeed Ansar Yusuf",\n  "creditAccountHolder": "Sami Adil Zekaria",\n  "paymentDetails": ["football 1mo and extratime"]\n}' },
+      { type: "text", text: "cheki uses this API directly. When you paste a mbreciept link, cheki extracts the short ID, calls the JSON API, and returns the parsed result. No PDF parsing needed, which makes it faster and more reliable than the old endpoint." },
+
+      { type: "heading", text: "Old vs new CBE receipt system" },
       {
-        heading: "What you need to verify a CBE transaction",
-        body: [
-          "To verify a Commercial Bank of Ethiopia (CBE) transaction, you need two pieces of information from the receipt:",
-        ],
-        list: [
-          "FT transaction reference number (required) — e.g. FT26140P01YB. This is a unique identifier that starts with FT followed by 10 alphanumeric characters.",
-          "Receiving CBE account number (required) — e.g. 1000213429489. cheki only needs the last 8 digits to construct the receipt URL.",
+        type: "table",
+        headers: ["Feature", "Old system (apps.cbe.com.et)", "New system (mbreciept.cbe.com.et)"],
+        rows: [
+          ["Input needed", "FT reference + last 8 digits of account", "Single short URL or QR scan"],
+          ["Response format", "PDF document", "Structured JSON"],
+          ["Parsing", "Requires PDF text extraction", "Direct JSON parsing"],
+          ["Speed", "2-4 seconds", "0.5-2 seconds"],
+          ["Account number required", "Yes", "No"],
+          ["QR code support", "No", "Yes (encodes receipt URL)"],
+          ["Share link", "Long URL with sensitive data", "Short random ID"],
         ],
       },
+
+      { type: "callout", variant: "info", title: "Backward compatible", text: "cheki supports both the old and new CBE systems. The old endpoint (apps.cbe.com.et:100) still works for receipts that use the FT reference + account format. The new endpoint (mbreciept.cbe.com.et) is used automatically when you paste a URL." },
+
+      { type: "heading", text: "How to scan a CBE QR code with cheki" },
       {
-        heading: "How CBE receipt verification works",
-        body: [
-          "CBE publishes every transaction receipt as a PDF document at a public URL. The URL is constructed by combining the FT reference number with the last 8 digits of the receiving account number.",
-          "The full URL format is: https://apps.cbe.com.et:100/?id={FT_REFERENCE}{LAST_8_DIGITS}",
-          "For example, if the FT reference is FT26140P01YB and the receiving account is 1000560536171, the URL would be: https://apps.cbe.com.et:100/?id=FT26140P01YB60536171",
-          "This URL returns an official CBE PDF receipt containing the sender name, receiver name, amount, date, branch, and transaction reference. cheki fetches this PDF, extracts the data, and returns it as structured JSON.",
+        type: "steps",
+        items: [
+          { title: "Open cheki.app on your phone", text: "The QR scanner uses your phone's camera, so mobile works best." },
+          { title: "Tap the camera icon", text: "It's in the top-right of the verify form, next to the QR icon. Allow camera access when prompted." },
+          { title: "Point at the QR code", text: "Hold your phone over the QR code on the receipt. A scan box overlay shows where to aim." },
+          { title: "Automatic verification", text: "Once the QR code is detected, the URL is extracted and verification happens automatically. The result appears in under 2 seconds." },
         ],
       },
-      {
-        heading: "Step-by-step: Verify a CBE transaction with cheki",
-        body: ["Verifying a CBE transaction with cheki takes less than 5 seconds:"],
-        list: [
-          "Go to cheki.app and select CBE from the bank dropdown (or just paste an FT reference — cheki auto-detects CBE)",
-          "Enter the FT reference number from the customer's receipt",
-          "Enter the last 8 digits of your receiving CBE account number",
-          "Click Verify — cheki fetches the official CBE PDF and extracts payment data",
-          "Review the result: sender name, receiver name, amount, date, and branch are all displayed",
-        ],
-      },
-      {
-        heading: "Who uses CBE verification",
-        body: [
-          "CBE verification is used across industries in Ethiopia:",
-        ],
-        list: [
-          "Retail counters confirming in-person CBE transfers before releasing goods",
-          "Delivery teams validating payment before handover",
-          "Finance teams reconciling daily CBE inflows against bank statements",
-          "Developers automating CBE checks through the cheki REST API",
-          "E-commerce platforms verifying CBE payments before order fulfillment",
-        ],
-      },
-      {
-        heading: "Why automate CBE verification",
-        body: [
-          "Manual screenshot checks are slow and error-prone. Customers can edit screenshots, reuse old receipts, or send fake transfer confirmations. Automated verification with cheki:",
-          "Confirms the transaction exists on CBE's official system in real time",
-          "Extracts the exact amount, sender, and date from the PDF",
-          "Eliminates disputes caused by manual checking",
-          "Scales across branches and employees with no per-person cost",
-        ],
-      },
-      {
-        heading: "Verifying CBE transactions via API",
-        body: [
-          "cheki provides a free REST API for CBE verification. No API key required.",
-          "POST https://cheki.app/api/verify with body: { \"bank\": \"cbe\", \"reference\": \"FT26140P01YB\", \"accountNumber\": \"1000560536171\" }",
-          "The response includes the verified transaction data as structured JSON. See the API docs for full details.",
-        ],
-      },
+
+      { type: "heading", text: "Privacy and security" },
+      { type: "text", text: "The new CBE receipt system masks account numbers in the API response. Instead of showing the full account number, it returns a masked version like 1********8348. This is better for privacy than the old PDF system, which included full account numbers in the document text." },
+      { type: "text", text: "The short ID in the URL is random and not guessable, which prevents receipt enumeration. You can only access a receipt if someone shares the link with you." },
+      { type: "callout", variant: "warning", title: "X-App-ID headers", text: "The new CBE API requires hardcoded X-App-ID and X-App-Version headers. These are embedded in the mbreciept.cbe.com.et JavaScript bundle. If CBE rotates these headers, cheki will need to update them. The old PDF endpoint has no such requirement." },
     ],
     faq: [
-      {
-        q: "What is a CBE FT reference number?",
-        a: "The FT reference is a unique transaction identifier assigned by CBE to every transfer. It starts with FT followed by 10 alphanumeric characters, such as FT26140P01YB. It appears on the customer's receipt and in their banking app transaction history.",
-      },
-      {
-        q: "Can I verify CBE with only the reference number?",
-        a: "No. CBE's public receipt endpoint requires both the FT reference and the last 8 digits of the receiving account number. This prevents unauthorized receipt enumeration. cheki asks for both fields when CBE is selected.",
-      },
-      {
-        q: "Does CBE charge for receipt verification?",
-        a: "No. The CBE receipt endpoint is a public URL that returns a PDF for free. check.et and verify.et charge you for hitting this same URL. cheki does it for free.",
-      },
-      {
-        q: "How fast is CBE verification?",
-        a: "CBE verification typically completes in 1-3 seconds. cheki fetches the PDF from CBE's server and extracts the data in real time.",
-      },
+      { q: "Can I still use the old CBE receipt system with FT reference and account number?", a: "Yes. cheki supports both systems. Select CBE from the bank dropdown and enter the FT reference + account digits to use the old PDF endpoint. Or paste a mbreciept.cbe.com.et URL to use the new JSON API." },
+      { q: "Do I need the CBE app to scan QR codes?", a: "No. cheki has a built-in QR scanner that uses your phone's camera. Open cheki.app, tap the camera icon, and point at the QR code on the receipt." },
+      { q: "What if the CBE receipt link doesn't work?", a: "The mbreciept.cbe.com.et service may occasionally be down. If the link returns a 502 or timeout, try again later. You can also use the old system with the FT reference and account number as a fallback." },
     ],
-    relatedGuides: ["verify-telebirr-transactions", "prevent-fake-payment-screenshots", "cbe-fake-receipt"],
+    related: ["free-receipt-verification-no-api-key", "ethiopian-bank-receipt-formats", "payment-fraud-ethiopia"],
     seo: {
-      title: "How to Verify CBE Transactions in Ethiopia",
-      description:
-        "Step-by-step guide to verifying Commercial Bank of Ethiopia (CBE) transactions using FT reference numbers. Free verification with cheki.",
-      keywords: [
-        "verify CBE transaction",
-        "CBE FT reference",
-        "CBE receipt verification",
-        "how to verify CBE transfer",
-        "Commercial Bank of Ethiopia verify",
-      ],
+      title: "CBE Receipt QR Codes: What They Contain and How to Scan Them",
+      description: "CBE's new receipt sharing system uses short URLs and QR codes. Learn what's inside, how the API works, and how to verify instantly with cheki for free.",
+      keywords: ["CBE receipt QR code", "mbreciept cbe", "CBE receipt sharing", "scan CBE QR code", "CBE new receipt system", "verify CBE receipt link"],
     },
   },
   {
-    slug: "verify-telebirr-transactions",
-    title: "How to Verify Telebirr Transactions",
+    slug: "free-receipt-verification-no-api-key",
+    title: "Free Ethiopian Receipt Verification Without API Keys or Signup",
     description:
-      "Step-by-step guide to verifying Telebirr (Ethio Telecom) transactions using transaction reference numbers. Free verification with cheki.",
-    category: "bank",
-    bankCode: "telebirr",
-    excerpt:
-      "Telebirr is Ethiopia's most used mobile wallet. Learn how to verify any Telebirr transaction for free using the transaction reference.",
-    content: [
-      {
-        heading: "What you need to verify a Telebirr transaction",
-        body: [
-          "To verify a Telebirr transaction, you only need one piece of information:",
-        ],
-        list: [
-          "Transaction reference number (required) — e.g. DET8FJGUJ4 or CHQ0FJ403O. This is sent via SMS to both the payer and receiver after each transaction.",
-        ],
-      },
-      {
-        heading: "How Telebirr receipt verification works",
-        body: [
-          "Telebirr publishes every transaction receipt as an HTML page at a public URL. The URL is constructed using only the transaction reference number.",
-          "The URL format is: https://transactioninfo.ethiotelecom.et/receipt/{REFERENCE}",
-          "For example, if the reference is DET8FJGUJ4, the URL would be: https://transactioninfo.ethiotelecom.et/receipt/DET8FJGUJ4",
-          "This URL returns an official Telebirr receipt page containing the payer name, receiver name, amount, date, and transaction status. cheki fetches this page, extracts the data, and returns it as structured JSON.",
-        ],
-      },
-      {
-        heading: "Geo-blocking: Telebirr and non-Ethiopian IPs",
-        body: [
-          "Telebirr's receipt endpoint blocks requests from IP addresses outside Ethiopia. This is a network-level restriction imposed by Ethio Telecom.",
-          "If cheki's server cannot reach Telebirr (because it runs on a cloud provider with a non-Ethiopian IP), cheki returns a fallback URL. The user can click 'Open Receipt' to open the Telebirr receipt directly in their browser, which uses their own Ethiopian IP address.",
-          "For server-side verification from outside Ethiopia, you can self-host cheki on an Ethiopian server or use the X-Forwarded-For header with an Ethiopian IP from a residential connection.",
-        ],
-      },
-      {
-        heading: "Step-by-step: Verify a Telebirr transaction",
-        body: ["Verifying a Telebirr transaction with cheki is simple:"],
-        list: [
-          "Go to cheki.app and paste the transaction reference (cheki auto-detects Telebirr from the prefix)",
-          "Click Verify — cheki fetches the official Telebirr receipt",
-          "Review the result: payer name, receiver name, amount, and date are displayed",
-          "If the server is geo-blocked, click 'Open Receipt' to verify directly in your browser",
-        ],
-      },
-      {
-        heading: "Common Telebirr reference prefixes",
-        body: [
-          "Telebirr transaction references start with a 2-3 letter prefix. Common prefixes include:",
-        ],
-        list: [
-          "DET — most common for person-to-person transfers",
-          "CHQ — cheque-related transactions",
-          "DAB — bank account transfers",
-          "DEL — merchant payments",
-          "ADQ — additional transaction types",
-        ],
-      },
-      {
-        heading: "Who uses Telebirr verification",
-        body: ["Telebirr verification is critical for:"],
-        list: [
-          "Shops confirming Telebirr payments at the counter before releasing goods",
-          "Online stores verifying Telebirr payments before order fulfillment",
-          "Delivery services validating payment before handover",
-          "Marketplaces integrating Telebirr verification via API",
-          "Logistics companies confirming payment before dispatch",
-        ],
-      },
-    ],
-    faq: [
-      {
-        q: "What does a Telebirr reference number look like?",
-        a: "Telebirr references start with a 2-3 letter prefix (DET, CHQ, DAB, DEL, ADQ) followed by 6-8 alphanumeric characters. The full reference is sent via SMS to both payer and receiver.",
-      },
-      {
-        q: "Why does Telebirr verification fail from outside Ethiopia?",
-        a: "Telebirr's receipt endpoint blocks non-Ethiopian IPs. cheki provides a fallback URL so users on Ethiopian networks can verify directly. Self-hosting on an Ethiopian server bypasses this restriction.",
-      },
-      {
-        q: "Do I need an account number to verify Telebirr?",
-        a: "No. Telebirr verification only requires the transaction reference number. This makes it simpler than CBE or BOA verification.",
-      },
-      {
-        q: "Is Telebirr receipt verification free?",
-        a: "Yes. The Telebirr receipt URL is public and free. check.et charges 499 ETB/month for accessing this same endpoint. cheki does it for free.",
-      },
-    ],
-    relatedGuides: ["verify-cbe-transactions", "prevent-fake-payment-screenshots", "telebirr-vs-cbe"],
-    seo: {
-      title: "How to Verify Telebirr Transactions in Ethiopia",
-      description:
-        "Step-by-step guide to verifying Telebirr transactions using reference numbers. Free verification with cheki. Handle geo-blocking easily.",
-      keywords: [
-        "verify telebirr transaction",
-        "telebirr receipt verification",
-        "how to verify telebirr transfer",
-        "telebirr transaction ID format",
-        "ethio telecom receipt verify",
-      ],
-    },
-  },
-  {
-    slug: "prevent-fake-payment-screenshots",
-    title: "How to Prevent Fake Payment Screenshots in Ethiopia",
-    description:
-      "Learn how Ethiopian merchants detect forged Telebirr, CBE, and bank transfer screenshots. Verification checklist and tools to stop payment fraud.",
-    category: "fraud",
-    excerpt:
-      "Fake payment screenshots cost Ethiopian businesses millions. Learn how to detect forged receipts and verify every payment for free.",
-    content: [
-      {
-        heading: "The fake screenshot problem",
-        body: [
-          "Fake payment screenshots are one of the most common fraud tactics in Ethiopia. Customers edit screenshots of Telebirr, CBE, or other bank transfer confirmations to show a payment that never happened. The merchant releases goods, then discovers the transfer was fake.",
-          "This costs Ethiopian businesses millions of birr every year. The solution is simple: never trust a screenshot. Always verify against the bank's official system.",
-        ],
-      },
-      {
-        heading: "How fake screenshots are made",
-        body: [
-          "Fraudsters use several methods to create fake payment confirmations:",
-        ],
-        list: [
-          "Editing the amount in a screenshot using photo editing apps",
-          "Reusing an old receipt screenshot for a new transaction",
-          "Sending a screenshot of a transfer to a different account",
-          "Modifying the date and time on an old receipt",
-          "Creating a completely fabricated receipt that looks like the real app",
-        ],
-      },
-      {
-        heading: "How to detect fake screenshots",
-        body: [
-          "The only reliable way to detect a fake screenshot is to verify the transaction against the bank's official system. cheki does this automatically:",
-        ],
-        list: [
-          "cheki fetches the receipt from the bank's public endpoint using the transaction reference",
-          "If the transaction exists, cheki returns the official data including amount, sender, and date",
-          "If the transaction does not exist, the bank returns a 404 or error — the screenshot is fake",
-          "cheki also shows the source URL so you can verify the data came from the bank directly",
-        ],
-      },
-      {
-        heading: "Verification checklist for merchants",
-        body: ["Before releasing goods or services, follow this checklist:"],
-        list: [
-          "Ask the customer for the transaction reference number (not just a screenshot)",
-          "Enter the reference in cheki.app or call the cheki API",
-          "Verify the amount matches what the customer owes you",
-          "Verify the receiver name matches your business name",
-          "Verify the date and time are recent (within the last few minutes)",
-          "If verification fails, do not release goods — ask the customer to retry the payment",
-        ],
-      },
-      {
-        heading: "Why manual checking fails",
-        body: [
-          "Manual screenshot checking is unreliable because:",
-          "Fake screenshots can look identical to real ones — the human eye cannot detect well-edited images",
-          "Staff under pressure at busy counters may skip verification steps",
-          "Old receipts can be reused — the same screenshot can be sent to multiple merchants",
-          "There is no way to manually verify a transaction without contacting the bank or using an automated tool",
-        ],
-      },
-      {
-        heading: "Automate fraud prevention with cheki",
-        body: [
-          "cheki automates the entire verification process. Instead of manually checking screenshots, integrate cheki into your workflow:",
-          "Use the web interface at cheki.app for one-off verifications",
-          "Use the free REST API for automated verification in your app or POS system",
-          "Use the batch verification endpoint to verify up to 50 receipts at once",
-          "Use the Python library for server-side verification from Ethiopian networks",
-        ],
-      },
-    ],
-    faq: [
-      {
-        q: "Can I detect a fake screenshot just by looking at it?",
-        a: "No. Well-edited fake screenshots can look identical to real ones. The only reliable detection method is to verify the transaction reference against the bank's official system using cheki.",
-      },
-      {
-        q: "What should I do if a customer's transaction doesn't verify?",
-        a: "Do not release goods or services. Ask the customer to check their banking app and retry the payment. If they insist they paid, ask them to show the live transaction in their app (not a screenshot).",
-      },
-      {
-        q: "How much does fake receipt fraud cost Ethiopian businesses?",
-        a: "While exact figures are not publicly available, fake receipt fraud is widely reported across Ethiopian retail, delivery, and e-commerce. Each fraudulent transaction can cost anywhere from hundreds to tens of thousands of birr.",
-      },
-    ],
-    relatedGuides: ["cbe-fake-receipt", "detect-duplicate-payment-fraud", "verify-cbe-transactions"],
-    seo: {
-      title: "How to Prevent Fake Payment Screenshots in Ethiopia",
-      description:
-        "Learn how Ethiopian merchants detect forged Telebirr, CBE, and bank transfer screenshots. Free verification tools to stop payment fraud.",
-      keywords: [
-        "fake payment screenshot Ethiopia",
-        "fake telebirr receipt",
-        "fake CBE transfer",
-        "payment fraud prevention Ethiopia",
-        "detect fake receipt",
-      ],
-    },
-  },
-  {
-    slug: "cbe-fake-receipt",
-    title: "CBE Fake Receipt: How to Spot and Stop Them",
-    description:
-      "Protect your business from fake CBE transfer screenshots in Ethiopia. Learn how forged receipts look, common patterns, and how live verification catches them.",
-    category: "fraud",
-    excerpt:
-      "CBE is the most commonly faked receipt in Ethiopia. Learn the patterns fraudsters use and how to catch them instantly with live verification.",
-    content: [
-      {
-        heading: "Why CBE receipts are faked",
-        body: [
-          "CBE (Commercial Bank of Ethiopia) is the largest bank in Ethiopia and the most common settlement rail for businesses. This makes CBE receipts the most frequent target for fraudsters.",
-          "Fake CBE receipts typically involve editing a real receipt screenshot to change the amount, date, or reference number. The fraudster then presents the fake screenshot to a merchant who releases goods without verifying.",
-        ],
-      },
-      {
-        heading: "Common CBE fake receipt patterns",
-        body: ["Fraudsters use several patterns to create fake CBE receipts:"],
-        list: [
-          "Editing the amount field in a real CBE receipt screenshot — changing 1,000 ETB to 10,000 ETB",
-          "Reusing an old receipt from a previous genuine transaction",
-          "Creating a screenshot that shows a transfer to a different account than the merchant's",
-          "Modifying the FT reference number to match a different transaction",
-          "Sending a receipt from a different bank that looks similar to CBE",
-        ],
-      },
-      {
-        heading: "How live verification catches fake CBE receipts",
-        body: [
-          "Live verification with cheki is the only reliable way to detect fake CBE receipts. Here's how it works:",
-          "cheki takes the FT reference number and the last 8 digits of your receiving account, then fetches the official CBE PDF receipt from apps.cbe.com.et:100",
-          "If the transaction is real, the PDF contains the actual amount, sender name, and date — which you can compare against what the customer claimed",
-          "If the transaction is fake (edited reference, wrong account, or fabricated), the CBE endpoint returns a 404 or an empty response",
-          "cheki displays the official data side-by-side with the source URL, so you can confirm the data came directly from CBE",
-        ],
-      },
-      {
-        heading: "Step-by-step: Verify a CBE receipt",
-        body: ["To verify a CBE receipt and detect fakes:"],
-        list: [
-          "Get the FT reference number from the customer (starts with FT, e.g. FT26140P01YB)",
-          "Get the last 8 digits of your receiving CBE account number",
-          "Enter both in cheki.app or call the API",
-          "Check the returned amount matches what the customer owes",
-          "Check the returned receiver name matches your business",
-          "Check the returned date is recent",
-          "If any field doesn't match or the receipt doesn't exist, the screenshot is fake",
-        ],
-      },
-      {
-        heading: "What to do when you catch a fake receipt",
-        body: [
-          "If verification fails or the data doesn't match:",
-          "Do not release goods or services under any circumstances",
-          "Politely inform the customer that the transaction could not be verified",
-          "Ask them to check their CBE app and ensure the transfer was completed",
-          "If they insist, ask them to show the live transaction in their CBE app (not a screenshot)",
-          "Report repeat offenders to your business association or local authorities",
-        ],
-      },
-    ],
-    faq: [
-      {
-        q: "Can a fraudster fake the CBE receipt PDF?",
-        a: "No. The PDF is generated by CBE's server and cannot be faked. cheki fetches the PDF directly from CBE's official endpoint. A fraudster would need to hack CBE's servers to forge a PDF, which is extremely unlikely.",
-      },
-      {
-        q: "What if the FT reference is real but the amount is different?",
-        a: "cheki returns the official amount from the CBE PDF. If the amount on the receipt doesn't match what the customer claimed they paid, the customer may have sent a smaller amount or the screenshot was edited.",
-      },
-      {
-        q: "How fast is CBE fake receipt detection?",
-        a: "CBE verification with cheki takes 1-3 seconds. This is fast enough to verify every transaction at the counter without slowing down operations.",
-      },
-    ],
-    relatedGuides: ["prevent-fake-payment-screenshots", "detect-duplicate-payment-fraud", "verify-cbe-transactions"],
-    seo: {
-      title: "CBE Fake Receipt: How to Spot and Stop Them",
-      description:
-        "Protect your business from fake CBE transfer screenshots. Learn how forged receipts look and how live verification catches them instantly.",
-      keywords: [
-        "fake CBE receipt",
-        "CBE fake transfer screenshot",
-        "detect fake CBE receipt",
-        "CBE receipt fraud Ethiopia",
-        "CBE FT reference fake",
-      ],
-    },
-  },
-  {
-    slug: "detect-duplicate-payment-fraud",
-    title: "How to Detect Duplicate Payment Fraud in Ethiopia",
-    description:
-      "Learn how to identify and stop duplicate payment fraud in Ethiopia. Spot reused Telebirr and CBE receipts before releasing goods or services.",
-    category: "fraud",
-    excerpt:
-      "Duplicate receipt fraud is when a customer reuses an old receipt for a new purchase. Learn how to detect and prevent it.",
-    content: [
-      {
-        heading: "What is duplicate payment fraud?",
-        body: [
-          "Duplicate payment fraud is when a customer uses a receipt from a previous genuine transaction to trick a merchant into releasing goods for a new purchase. The receipt is real — it was a genuine payment — but it was made days or weeks ago for a different purchase.",
-          "This is one of the hardest fraud types to detect manually because the receipt is legitimate. The only way to catch it is to track which receipts have already been used.",
-        ],
-      },
-      {
-        heading: "How duplicate fraud works",
-        body: ["A typical duplicate fraud scenario:"],
-        list: [
-          "A customer makes a genuine 5,000 ETB payment to your business and receives a receipt",
-          "A week later, they come back and present the same receipt for a new 5,000 ETB purchase",
-          "If you don't track receipts, you might accept it and release goods",
-          "You've now given away 5,000 ETB worth of goods for free",
-        ],
-      },
-      {
-        heading: "How to prevent duplicate fraud",
-        body: [
-          "The solution is to track every verified receipt. cheki's API and batch verification endpoint make this easy:",
-          "When you verify a receipt, store the transaction reference in your system",
-          "Before accepting a payment, check if the reference has already been used",
-          "cheki's API returns the transaction date, so you can also check if the payment was made recently (within the last hour, for example)",
-          "For businesses with multiple branches, use a shared database to track receipts across all locations",
-        ],
-      },
-      {
-        heading: "Using cheki's batch verification for fraud detection",
-        body: [
-          "cheki's batch verification endpoint allows you to verify up to 50 receipts at once. This is useful for end-of-day reconciliation:",
-          "POST https://cheki.app/api/verify/batch with an array of receipts",
-          "The response includes verification status for each receipt",
-          "Compare the results against your sales records to identify any duplicates",
-        ],
-      },
-    ],
-    faq: [
-      {
-        q: "How do I know if a receipt has been used before?",
-        a: "Track every verified transaction reference in your system. Before accepting a payment, check if the reference already exists in your records. cheki's API makes this easy to automate.",
-      },
-      {
-        q: "Can check.et detect duplicate receipts?",
-        a: "Yes, check.et has built-in duplicate detection. But it charges 499 ETB/month for this feature. cheki provides the same capability for free via the API — you just need to store the references in your own database.",
-      },
-      {
-        q: "Should I reject old receipts?",
-        a: "Yes. Set a time window for acceptable receipts (e.g. 1 hour). If a receipt's transaction date is older than your window, reject it. This prevents both duplicate fraud and stale payments.",
-      },
-    ],
-    relatedGuides: ["prevent-fake-payment-screenshots", "cbe-fake-receipt", "payment-verification-businesses"],
-    seo: {
-      title: "How to Detect Duplicate Payment Fraud in Ethiopia",
-      description:
-        "Learn how to identify and stop duplicate payment fraud in Ethiopia. Spot reused Telebirr and CBE receipts before releasing goods.",
-      keywords: [
-        "duplicate payment fraud Ethiopia",
-        "reused receipt fraud",
-        "duplicate receipt detection",
-        "payment fraud prevention",
-      ],
-    },
-  },
-  {
-    slug: "payment-verification-businesses",
-    title: "Payment Verification for Ethiopian Businesses",
-    description:
-      "Why Ethiopian shops, logistics, and SaaS teams centralize CBE, Telebirr, and bank verification. Team workspaces, API, and audit history explained.",
-    category: "business",
-    excerpt:
-      "From single shops to multi-branch businesses, learn why centralized payment verification is essential for Ethiopian commerce.",
-    content: [
-      {
-        heading: "Why businesses need payment verification",
-        body: [
-          "Ethiopian businesses face a unique payment landscape. Most transactions happen through bank transfers (CBE, BOA, Dashen) and mobile money (Telebirr, M-Pesa, CBE Birr). Unlike card payments, these transfers don't have automatic merchant confirmation.",
-          "This means businesses must manually verify every payment before releasing goods or services. Without verification, businesses are vulnerable to fake screenshots, duplicate receipts, and payment disputes.",
-        ],
-      },
-      {
-        heading: "The cost of manual verification",
-        body: [
-          "Manual verification — asking staff to visually inspect screenshots — has several costs:",
-        ],
-        list: [
-          "Time: Each manual check takes 30+ seconds, adding up at busy counters",
-          "Errors: Staff may miss edited amounts or reused receipts",
-          "Fraud: Fake screenshots can look identical to real ones",
-          "Disputes: Customers may argue when staff reject their screenshots",
-          "Training: New staff need to learn verification procedures",
-        ],
-      },
-      {
-        heading: "How cheki helps businesses",
-        body: [
-          "cheki provides free, automated payment verification that eliminates manual checking:",
-          "Web interface at cheki.app for one-off verifications by staff",
-          "Free REST API for integration into POS systems, e-commerce platforms, and ERPs",
-          "Batch verification endpoint for processing up to 50 receipts at once",
-          "Python library for server-side verification from Ethiopian networks",
-          "Docker image for self-hosting on your own infrastructure",
-        ],
-      },
-      {
-        heading: "Benefits of centralized verification",
-        body: [
-          "Centralizing verification with cheki provides:",
-        ],
-        list: [
-          "Consistency: Every transaction verified the same way, every time",
-          "Speed: Verification completes in 1-3 seconds vs 30+ seconds manual",
-          "Audit trail: API responses can be logged for reconciliation",
-          "Scalability: No per-verification cost means you can verify every transaction",
-          "Multi-branch: Use the same API across all locations with shared infrastructure",
-        ],
-      },
-      {
-        heading: "Getting started with cheki for your business",
-        body: [
-          "Getting started with cheki is free and requires no signup:",
-          "1. Visit cheki.app for the web interface — no account needed",
-          "2. For API integration, read the API documentation at cheki.app/docs",
-          "3. For self-hosting, clone the GitHub repository and run with Docker",
-          "4. For Python integration, install the library from the cheki monorepo",
-        ],
-      },
-    ],
-    faq: [
-      {
-        q: "How much does cheki cost for businesses?",
-        a: "cheki is completely free. No signup, no API key, no per-verification cost. Unlimited verifications for unlimited users. This is in contrast to check.et which charges 499 ETB/month after 200 free verifications.",
-      },
-      {
-        q: "Can I use cheki across multiple branches?",
-        a: "Yes. cheki's API can be called from any location. For multi-branch businesses, integrate the API into your POS system and track verified receipts in a shared database.",
-      },
-      {
-        q: "Is cheki reliable enough for business use?",
-        a: "Yes. cheki fetches receipts from the same official bank endpoints that check.et and verify.et use. The data is identical. The difference is that cheki is free and open source.",
-      },
-    ],
-    relatedGuides: ["prevent-fake-payment-screenshots", "payment-verification-api", "verify-cbe-transactions"],
-    seo: {
-      title: "Payment Verification for Ethiopian Businesses",
-      description:
-        "Why Ethiopian shops, logistics, and SaaS teams centralize CBE, Telebirr, and bank verification with cheki. Free API, batch verify, and audit trail.",
-      keywords: [
-        "payment verification Ethiopia business",
-        "ethiopian merchant verification",
-        "CBE Telebirr business verification",
-        "free payment verification API",
-      ],
-    },
-  },
-  {
-    slug: "payment-verification-api",
-    title: "Payment Verification API for Ethiopian Businesses",
-    description:
-      "Integrate CBE, Telebirr, Dashen, and Awash verification into your app or ERP with the cheki REST API. Automate payment checks with one free endpoint.",
-    category: "api",
-    excerpt:
-      "The cheki REST API lets you verify any Ethiopian bank receipt for free. No API key, no signup. Here's how to integrate it.",
-    content: [
-      {
-        heading: "API overview",
-        body: [
-          "cheki provides a free REST API for verifying Ethiopian bank receipts. The API requires no authentication, no API key, and no signup. You can start making requests immediately.",
-          "Base URL: https://cheki.app/api",
-          "The API supports both single verification and batch verification (up to 50 receipts at once).",
-        ],
-      },
-      {
-        heading: "POST /api/verify",
-        body: [
-          "Verify a single receipt. Send the bank code, transaction reference, and (for CBE/BOA) the account number.",
-          "Request body:",
-          '{ "bank": "cbe", "reference": "FT26140P01YB", "accountNumber": "1000560536171" }',
-          "Response:",
-          '{ "success": true, "verified": true, "bank": "CBE", "amount": 20000, "currency": "ETB", "senderName": "Mr Mohammed Abdulwasi Reshid", "receiverName": "SAMI ADIL ZEKARIA", "date": "5/20/2026 7:29:00 PM" }',
-        ],
-      },
-      {
-        heading: "POST /api/verify/batch",
-        body: [
-          "Verify up to 50 receipts at once. Send an array of receipt objects.",
-          "Request body:",
-          '{ "receipts": [ { "bank": "cbe", "reference": "FT26140P01YB", "accountNumber": "1000560536171" }, { "bank": "telebirr", "reference": "DET8FJGUJ4" } ] }',
-          "The response includes an array of results, one per receipt.",
-        ],
-      },
-      {
-        heading: "GET /api/banks",
-        body: [
-          "List all supported banks and their verification status. Returns bank codes, names, whether account numbers are required, and whether the bank is geo-blocked.",
-        ],
-      },
-      {
-        heading: "GET /api/health",
-        body: [
-          "Check the health of the API and each bank's endpoint. Returns latency in milliseconds for each bank. Use this to monitor uptime and detect issues.",
-        ],
-      },
-      {
-        heading: "Code examples",
-        body: [
-          "cURL:",
-          "curl -X POST https://cheki.app/api/verify -H 'Content-Type: application/json' -d '{\"bank\":\"cbe\",\"reference\":\"FT26140P01YB\",\"accountNumber\":\"1000560536171\"}'",
-          "",
-          "JavaScript:",
-          "const res = await fetch('https://cheki.app/api/verify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ bank: 'cbe', reference: 'FT26140P01YB', accountNumber: '1000560536171' }) }); const data = await res.json();",
-          "",
-          "Python:",
-          "import requests; r = requests.post('https://cheki.app/api/verify', json={'bank': 'cbe', 'reference': 'FT26140P01YB', 'accountNumber': '1000560536171'}); print(r.json())",
-        ],
-      },
-      {
-        heading: "Rate limits",
-        body: [
-          "cheki has no rate limits. The API is free and unlimited. However, the underlying bank endpoints may have their own rate limits. If you make too many requests too quickly, the bank may temporarily block your IP.",
-          "For high-volume verification, use the batch endpoint to reduce the number of API calls.",
-        ],
-      },
-    ],
-    faq: [
-      {
-        q: "Do I need an API key?",
-        a: "No. cheki's API requires no authentication. You can start making requests immediately without signing up or generating a key. This is different from check.et which requires a business account and API key.",
-      },
-      {
-        q: "Is the API really free?",
-        a: "Yes. cheki is open source and completely free. No trial period, no credit limit, no per-verification cost. The data comes from public bank endpoints that are free to access.",
-      },
-      {
-        q: "What happens if the bank is geo-blocked?",
-        a: "For Telebirr and M-Pesa, if cheki's server cannot reach the bank endpoint, the API returns a fallbackUrl field. You can use this URL to redirect the user's browser to the receipt page directly, which works because the user's Ethiopian IP is not blocked.",
-      },
-    ],
-    relatedGuides: ["verify-cbe-transactions", "verify-telebirr-transactions", "payment-verification-businesses"],
-    seo: {
-      title: "Payment Verification API for Ethiopian Businesses",
-      description:
-        "Integrate CBE, Telebirr, and bank verification into your app with the cheki REST API. Free, no API key, no signup. Code examples included.",
-      keywords: [
-        "ethiopian payment verification API",
-        "free receipt verification API",
-        "CBE API verify",
-        "telebirr API verify",
-        "ethiopian bank API",
-      ],
-    },
-  },
-  {
-    slug: "telebirr-vs-cbe",
-    title: "Telebirr vs CBE Verification: What Merchants Need to Know",
-    description:
-      "Compare Telebirr and CBE payment verification fields, receipt formats, and best practices for Ethiopian merchants using cheki.",
+      "Stop paying check.et 499 ETB/month. Verify CBE, Telebirr, BOA, and M-Pesa receipts for free with no signup, no API key, and no limits. Here's how.",
     category: "comparison",
     excerpt:
-      "Telebirr and CBE are the two most common payment methods in Ethiopia. Here's how their verification differs and what merchants need to know.",
+      "check.et charges 499 ETB/month after 200 free verifications. verify.et charges $20+/month. Both use the same public bank endpoints cheki uses for free. Here's the complete guide to free verification.",
+    date: "2026-06-18",
+    readTime: "5 min",
     content: [
+      { type: "text", text: "If you're an Ethiopian business owner, you've probably heard of check.et or verify.et. They verify bank receipts so you can confirm payments before releasing goods. The problem? They charge you for data that is already free." },
+      { type: "callout", variant: "warning", title: "The reality", text: "check.et and verify.et verify receipts by hitting the exact same public bank URLs that anyone can access for free. They add a pricing layer on top of public data. cheki removes that layer." },
+
+      { type: "heading", text: "What check.et and verify.et actually do" },
+      { type: "text", text: "Every Ethiopian bank publishes transaction receipts at public URLs. These URLs require no authentication. Here are the actual endpoints:" },
       {
-        heading: "Telebirr vs CBE at a glance",
-        body: [
-          "Telebirr and CBE are the two most common payment methods for Ethiopian businesses. While both can be verified with cheki, their receipt formats and verification requirements are different.",
+        type: "table",
+        headers: ["Bank", "Public endpoint", "Format", "Cost"],
+        rows: [
+          ["CBE (new)", "Mb.cbe.com.et/api/v1/transactions/public/transaction-detail/{id}", "JSON", "Free"],
+          ["CBE (old)", "apps.cbe.com.et:100/?id={ref}{account}", "PDF", "Free"],
+          ["Telebirr", "transactioninfo.ethiotelecom.et/receipt/{ref}", "HTML", "Free"],
+          ["BOA", "cs.bankofabyssinia.com/api/onlineSlip/getDetails/?id={ref}{acct}", "JSON", "Free"],
+          ["M-Pesa", "m-pesabusiness.safaricom.et/api/receipt/getReceipt?trxNo={ref}", "JSON", "Free"],
         ],
       },
+      { type: "text", text: "check.et and verify.et fetch these URLs, parse the response, and return structured JSON. That's exactly what cheki does, except cheki is free and open source." },
+
+      { type: "heading", text: "Pricing comparison" },
       {
-        heading: "Reference number format",
-        body: [
-          "CBE references always start with FT followed by 10 alphanumeric characters (e.g. FT26140P01YB). Telebirr references start with a 2-3 letter prefix (DET, CHQ, DAB, etc.) followed by 6-8 alphanumeric characters (e.g. DET8FJGUJ4).",
-          "cheki auto-detects the bank from the reference format — you don't need to manually select the bank.",
+        type: "table",
+        headers: ["Service", "Free tier", "Paid plan", "Per verification cost"],
+        rows: [
+          ["cheki", "Unlimited", "N/A (always free)", "0 ETB"],
+          ["check.et", "200 (one-time, not monthly)", "499 ETB/month or 4,990/year", "~2.5 ETB per verification at 200/mo"],
+          ["verify.et", "200 (one-time)", "$20-40/month", "~$0.10-0.20 per verification"],
         ],
       },
+      { type: "callout", variant: "info", title: "Important detail", text: "check.et's 200 free verifications are a one-time allowance, not monthly. Once you use them, you must upgrade. cheki has no such limit. Ever." },
+
+      { type: "heading", text: "How to verify receipts for free with cheki" },
       {
-        heading: "Required information",
-        body: [
-          "CBE verification requires the FT reference AND the last 8 digits of the receiving account number. This is a security measure by CBE to prevent receipt enumeration.",
-          "Telebirr verification requires only the transaction reference number. No account number is needed.",
-          "This makes Telebirr verification simpler for merchants — one field instead of two.",
+        type: "steps",
+        items: [
+          { title: "Go to cheki.app", text: "No signup, no login, no account creation. Just open the page and start verifying." },
+          { title: "Paste your receipt reference or URL", text: "Type an FT reference for CBE, a transaction ID for Telebirr, or paste a full receipt URL. cheki auto-detects the bank." },
+          { title: "Click Verify", text: "cheki fetches the receipt from the bank's public endpoint and shows you the result in 1-3 seconds." },
+          { title: "Review the data", text: "You'll see the sender name, receiver name, amount, date, and source URL. Copy the JSON if you need it for your records." },
         ],
       },
-      {
-        heading: "Receipt format",
-        body: [
-          "CBE receipts are published as PDF documents. cheki downloads the PDF and extracts text using pdf-parse, then parses the transaction fields with regex.",
-          "Telebirr receipts are published as HTML pages. cheki fetches the HTML and extracts data using Cheerio (a server-side jQuery implementation).",
-          "Both return the same structured JSON response through cheki's API, so your integration code doesn't need to handle different formats.",
-        ],
-      },
-      {
-        heading: "Geo-blocking",
-        body: [
-          "CBE's receipt endpoint (apps.cbe.com.et:100) is accessible from anywhere in the world. No geo-blocking.",
-          "Telebirr's receipt endpoint (transactioninfo.ethiotelecom.et) is geo-blocked to Ethiopian IP addresses. If cheki's server is outside Ethiopia, Telebirr verification may fail and cheki will return a fallback URL.",
-          "For businesses in Ethiopia, both work seamlessly. For businesses outside Ethiopia, CBE works globally while Telebirr requires self-hosting or the fallback URL.",
-        ],
-      },
-      {
-        heading: "Speed comparison",
-        body: [
-          "CBE verification typically takes 1-3 seconds (PDF download + parsing).",
-          "Telebirr verification typically takes 0.5-2 seconds (HTML fetch + parsing).",
-          "Both are fast enough for real-time verification at the counter.",
-        ],
-      },
-      {
-        heading: "Which should your business accept?",
-        body: [
-          "Most Ethiopian businesses accept both CBE and Telebirr. cheki supports both for free, so you don't need to choose. The API returns the same JSON structure regardless of which bank the customer used.",
-        ],
-      },
+
+      { type: "heading", text: "Using the free API" },
+      { type: "text", text: "If you're a developer, cheki provides a free REST API with no authentication:" },
+      { type: "code", lang: "bash", code: 'curl -X POST https://cheki.app/api/verify \\\n  -H "Content-Type: application/json" \\\n  -d \'{"bank":"cbe","reference":"FT26140P01YB","accountNumber":"1000560536171"}\'' },
+      { type: "text", text: "No API key header. No Bearer token. No rate limit. Just POST and get JSON back." },
+      { type: "text", text: "Compare this to check.et, which requires a business account, an API key generation step, and Authorization headers:" },
+      { type: "code", lang: "bash", code: '# check.et requires all this:\nexport CHECK_ET_API_KEY=chk_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\ncurl -X POST https://api.check.et/api/v1/verify \\\n  -H "Authorization: Bearer $CHECK_ET_API_KEY" \\\n  -H "Content-Type: application/json" \\\n  -d \'{"bank":"cbe","transaction_number":"FT26140P01YB","account_number":"1000560536171"}\'' },
+
+      { type: "callout", variant: "success", title: "Migrating from check.et", text: "If you're currently using check.et's API, migrating to cheki is simple. Change the URL from api.check.et to cheki.app, remove the Authorization header, and rename transaction_number to reference and account_number to accountNumber. The response structure is similar." },
+
+      { type: "heading", text: "What about verify.et?" },
+      { type: "text", text: "verify.et is made by Suba Software and charges in USD ($20-40/month). It has an Android app on the Play Store and supports Telegram OAuth for signup. Here's the interesting part: verify.et blocks AI crawlers in its robots.txt:" },
+      { type: "code", code: "# From verify.et/robots.txt\nUser-agent: GPTBot\nDisallow: /\n\nUser-agent: ClaudeBot\nDisallow: /\n\nUser-agent: CCBot\nDisallow: /\n\nUser-agent: Google-Extended\nDisallow: /" },
+      { type: "text", text: "This means verify.et actively prevents ChatGPT, Claude, and Google's AI from reading its content. Why? Possibly to prevent users from discovering that the underlying data is public. cheki does the opposite: our robots.txt explicitly allows all AI crawlers, and we publish an llms.txt file with key facts for AI assistants." },
+
+      { type: "heading", text: "Self-hosting for zero cost and zero dependency" },
+      { type: "text", text: "If you don't want to depend on cheki.app at all, you can self-host the entire system with Docker:" },
+      { type: "code", lang: "bash", code: "git clone https://github.com/1RB/cheki.git\ncd cheki\ndocker-compose up -d\n\n# Your API is now at http://localhost:3000/api/verify\n# No external dependencies. No API calls to cheki.app.\n# Full control. MIT licensed." },
+      { type: "text", text: "Self-hosting on an Ethiopian IP also bypasses Telebirr and M-Pesa geo-blocking, which affects both cheki's hosted version and check.et's servers." },
     ],
     faq: [
-      {
-        q: "Which is more common, Telebirr or CBE?",
-        a: "Both are extremely common. CBE is the largest bank in Ethiopia with the most account holders. Telebirr is the most used mobile wallet. Most businesses accept both. cheki supports both for free.",
-      },
-      {
-        q: "Can I verify both with one API call?",
-        a: "cheki's auto-detection identifies the bank from the reference format. If you send a reference starting with FT, cheki knows it's CBE. If it starts with DET, CHQ, etc., cheki knows it's Telebirr. You can also explicitly set the bank parameter.",
-      },
-      {
-        q: "Is one more secure than the other?",
-        a: "CBE requires the account number in addition to the reference, making it harder to enumerate receipts. Telebirr only requires the reference. However, both are official bank endpoints and the data is trustworthy.",
-      },
+      { q: "Is cheki really free forever?", a: "Yes. cheki is MIT licensed open source. The hosted version at cheki.app is free with no limits. You can also self-host with Docker at zero cost. There is no premium tier, no credit system, and no plan to add one." },
+      { q: "How is cheki different from check.et?", a: "cheki uses the same public bank endpoints as check.et. The difference is that cheki is free, open source, requires no signup or API key, and allows you to self-host. check.et charges 499 ETB/month after 200 one-time free verifications." },
+      { q: "Can I use cheki for my business?", a: "Yes. cheki has no per-business or per-user restrictions. Use the web interface, the API, or self-host with Docker. The API has no rate limits (though the underlying bank endpoints may have their own limits)." },
     ],
-    relatedGuides: ["verify-cbe-transactions", "verify-telebirr-transactions", "prevent-fake-payment-screenshots"],
+    related: ["check-et-vs-verify-et-vs-cheki", "self-hosting-docker-guide", "payment-verification-api-guide"],
     seo: {
-      title: "Telebirr vs CBE Verification: What Merchants Need to Know",
-      description:
-        "Compare Telebirr and CBE payment verification fields, receipt formats, and best practices for Ethiopian merchants.",
-      keywords: [
-        "telebirr vs CBE verification",
-        "CBE telebirr comparison",
-        "ethiopian payment methods comparison",
-        "CBE vs telebirr receipt",
-      ],
+      title: "Free Ethiopian Receipt Verification Without API Keys",
+      description: "Stop paying check.et 499 ETB/month. Verify CBE, Telebirr, BOA, and M-Pesa receipts for free with no signup, no API key, and no limits.",
+      keywords: ["free receipt verification ethiopia", "check.et alternative free", "verify.et alternative", "free CBE verification", "no API key receipt verify", "free ethiopian bank verification"],
+    },
+  },
+  {
+    slug: "payment-fraud-ethiopia",
+    title: "How Payment Fraud Works in Ethiopia (and How to Stop It)",
+    description:
+      "Fake screenshots, duplicate receipts, and social engineering. A complete guide to the payment fraud tactics used in Ethiopia and how to detect every one with automated verification.",
+    category: "fraud",
+    excerpt:
+      "Payment fraud costs Ethiopian businesses millions every year. Here are the specific tactics fraudsters use and exactly how to catch each one.",
+    date: "2026-06-18",
+    readTime: "7 min",
+    content: [
+      { type: "text", text: "Payment fraud is one of the biggest challenges for Ethiopian businesses. Unlike countries with card payments and automatic merchant confirmation, most Ethiopian transactions happen through bank transfers and mobile money. Merchants must manually verify each payment before releasing goods. This creates opportunities for fraud." },
+
+      { type: "heading", text: "The 5 most common fraud tactics in Ethiopia" },
+
+      { type: "heading", text: "1. Edited screenshots" },
+      { type: "text", text: "The most basic and most common tactic. The fraudster takes a real receipt screenshot and edits the amount or date using a photo editing app. They change 1,000 ETB to 10,000 ETB, or modify the date to make an old payment look recent." },
+      { type: "callout", variant: "danger", title: "Why it works", text: "The human eye cannot reliably detect well-edited screenshots, especially on small phone screens under pressure at a busy counter. Staff often glance at the screenshot, see the right amount, and release goods." },
+      { type: "text", text: "Detection: Verify the transaction reference against the bank's official system. If the amount on the official receipt doesn't match what the screenshot shows, it's fake. cheki does this automatically." },
+
+      { type: "heading", text: "2. Duplicate receipts" },
+      { type: "text", text: "The fraudster makes a genuine payment and receives a real receipt. A week later, they return and present the same receipt for a new purchase. The receipt is legitimate, but it was for a previous transaction." },
+      { type: "callout", variant: "warning", title: "Hard to detect manually", text: "The receipt is real. The reference number checks out. The amount matches. Without tracking which receipts have been used, staff have no way to know it's a duplicate." },
+      { type: "text", text: "Detection: Store every verified transaction reference in your system. Before accepting a payment, check if the reference has already been used. cheki's API returns the transaction date, so you can also reject receipts older than a set time window." },
+
+      { type: "heading", text: "3. Wrong account screenshots" },
+      { type: "text", text: "The fraudster sends a screenshot of a transfer to a different account. The screenshot shows a real transfer for the right amount, but the money went to someone else's account, not yours." },
+      { type: "text", text: "Detection: Verify the receiver name and account on the official receipt. cheki returns the receiver name and account number, which you can compare against your own." },
+
+      { type: "heading", text: "4. Fabricated receipts" },
+      { type: "text", text: "Some fraudsters create completely fake receipts that mimic the design of the real banking app. These are harder to make but can fool staff who don't know exactly what the real receipt looks like." },
+      { type: "text", text: "Detection: Verify the transaction reference. If the reference doesn't exist on the bank's system, the receipt is fake. The bank endpoint will return a 404 or error." },
+
+      { type: "heading", text: "5. Social engineering" },
+      { type: "text", text: "The fraudster creates urgency. They claim they're in a hurry, the transfer is processing, or they'll lose a flight. They pressure staff into releasing goods before verification is complete." },
+      { type: "text", text: "Detection: Never release goods under time pressure. If a customer is genuinely in a hurry, verify the payment first and release goods after. A real payment can be verified in 1-3 seconds with cheki." },
+
+      { type: "heading", text: "Building a fraud prevention checklist" },
+      {
+        type: "table",
+        headers: ["Fraud type", "What to check", "How cheki helps"],
+        rows: [
+          ["Edited screenshot", "Amount on official receipt vs claimed amount", "cheki returns the official amount from the bank"],
+          ["Duplicate receipt", "Has this reference been used before?", "Store references in your DB, check before accepting"],
+          ["Wrong account", "Receiver name and account match yours", "cheki returns receiver name and account number"],
+          ["Fabricated receipt", "Does the reference exist on the bank system?", "cheki returns 404 if the receipt doesn't exist"],
+          ["Social engineering", "Never skip verification under pressure", "cheki verifies in 1-3 seconds, no excuse to skip"],
+        ],
+      },
+
+      { type: "heading", text: "Automating fraud prevention" },
+      { type: "text", text: "Manual verification is unreliable because it depends on human judgment under pressure. The solution is to automate verification so every transaction is checked, every time, with no exceptions." },
+      { type: "text", text: "With cheki's API, you can integrate verification into your POS system, e-commerce checkout, or delivery app. Here's a simple integration pattern:" },
+      { type: "code", lang: "javascript", code: "// Before releasing goods, verify the payment\nconst response = await fetch('https://cheki.app/api/verify', {\n  method: 'POST',\n  headers: { 'Content-Type': 'application/json' },\n  body: JSON.stringify({\n    bank: 'cbe',\n    reference: customerReference,\n    accountNumber: myAccountNumber\n  })\n});\n\nconst result = await response.json();\n\n// Check 1: Does the receipt exist?\nif (!result.verified) return reject('Receipt not found');\n\n// Check 2: Does the amount match?\nif (result.amount !== expectedAmount) return reject('Amount mismatch');\n\n// Check 3: Is the receiver our account?\nif (result.receiverAccount !== myAccount) return reject('Wrong account');\n\n// Check 4: Is this a duplicate?\nif (await isDuplicate(result.reference)) return reject('Duplicate receipt');\n\n// Check 5: Is the payment recent?\nif (isOlderThan(result.date, 1, 'hour')) return reject('Stale payment');\n\n// All checks passed\nreturn approve();" },
+      { type: "callout", variant: "tip", title: "Use batch verification for reconciliation", text: "At the end of each day, use cheki's batch endpoint to verify all receipts at once. POST to /api/verify/batch with up to 50 receipts. This catches any fraud that slipped through during the day." },
+    ],
+    faq: [
+      { q: "How common is payment fraud in Ethiopia?", a: "While exact statistics are not publicly available, payment fraud is widely reported across Ethiopian retail, delivery, and e-commerce. Fake screenshots are the most common tactic, followed by duplicate receipts." },
+      { q: "Can cheki detect all types of fraud?", a: "cheki detects edited screenshots, fabricated receipts, and wrong-account transfers by verifying against the bank's official system. Duplicate detection requires you to store verified references in your own database. cheki provides the data; you implement the duplicate check." },
+      { q: "Is automated verification better than manual checking?", a: "Yes. Manual checking is slow, error-prone, and depends on human judgment under pressure. Automated verification with cheki completes in 1-3 seconds and eliminates human error. Every transaction should be verified, not just suspicious ones." },
+    ],
+    related: ["cbe-receipt-qr-code", "free-receipt-verification-no-api-key", "self-hosting-docker-guide"],
+    seo: {
+      title: "How Payment Fraud Works in Ethiopia and How to Stop It",
+      description: "Fake screenshots, duplicate receipts, and social engineering. A complete guide to Ethiopian payment fraud tactics and how to detect each one with automated verification.",
+      keywords: ["payment fraud ethiopia", "fake receipt ethiopia", "telebirr fraud", "CBE fake screenshot", "ethiopian payment scam", "duplicate receipt fraud"],
+    },
+  },
+  {
+    slug: "ethiopian-bank-receipt-formats",
+    title: "Ethiopian Bank Receipt Formats: A Complete Reference",
+    description:
+      "Every Ethiopian bank receipt reference format, endpoint URL, and response type in one place. CBE, Telebirr, BOA, M-Pesa, Dashen, Awash, Zemen, CBE Birr, Siinqee.",
+    category: "technical",
+    excerpt:
+      "The definitive reference for Ethiopian bank receipt formats. Reference patterns, endpoint URLs, required fields, and response types for all 9 banks and wallets.",
+    date: "2026-06-18",
+    readTime: "6 min",
+    content: [
+      { type: "text", text: "This is a complete technical reference for every Ethiopian bank and mobile wallet receipt system. If you're building a verification system, integrating payments, or just want to understand how Ethiopian bank receipts work, this is your reference." },
+
+      { type: "callout", variant: "info", title: "All endpoints are public", text: "Every endpoint listed here is publicly accessible without authentication. The data is free. cheki, check.et, and verify.et all use these same endpoints." },
+
+      { type: "heading", text: "CBE (Commercial Bank of Ethiopia)" },
+      { type: "text", text: "CBE has two receipt systems. The new system (mbreciept) is preferred for its clean JSON response." },
+      { type: "heading", text: "New system (mbreciept.cbe.com.et)" },
+      {
+        type: "table",
+        headers: ["Field", "Value"],
+        rows: [
+          ["URL format", "https://mbreciept.cbe.com.et/{SHORT_ID}"],
+          ["API endpoint", "https://Mb.cbe.com.et/api/v1/transactions/public/transaction-detail/{SHORT_ID}"],
+          ["Required headers", "X-App-ID, X-App-Version"],
+          ["Response format", "JSON"],
+          ["Input needed", "Short URL or QR code scan"],
+          ["Account number required", "No"],
+          ["Geo-blocked", "No"],
+        ],
+      },
+      { type: "heading", text: "Old system (apps.cbe.com.et)" },
+      {
+        type: "table",
+        headers: ["Field", "Value"],
+        rows: [
+          ["URL format", "https://apps.cbe.com.et:100/?id={FT_REFERENCE}{LAST_8_DIGITS}"],
+          ["Response format", "PDF"],
+          ["Input needed", "FT reference (starts with FT) + last 8 digits of receiving account"],
+          ["Account number required", "Yes (last 8 digits)"],
+          ["Geo-blocked", "No"],
+        ],
+      },
+      { type: "text", text: "Reference format: FT followed by 10 alphanumeric characters. Example: FT26140P01YB" },
+      { type: "code", code: "# Old CBE URL construction\nFT_REFERENCE = 'FT26140P01YB'\nACCOUNT = '1000560536171'\nLAST_8 = ACCOUNT[-8:]  # '60536171'\nURL = f'https://apps.cbe.com.et:100/?id={FT_REFERENCE}{LAST_8}'\n# https://apps.cbe.com.et:100/?id=FT26140P01YB60536171" },
+
+      { type: "heading", text: "Telebirr (Ethio Telecom)" },
+      {
+        type: "table",
+        headers: ["Field", "Value"],
+        rows: [
+          ["URL format", "https://transactioninfo.ethiotelecom.et/receipt/{REFERENCE}"],
+          ["Response format", "HTML"],
+          ["Input needed", "Transaction reference only"],
+          ["Account number required", "No"],
+          ["Geo-blocked", "Yes (Ethiopian IPs only)"],
+        ],
+      },
+      { type: "text", text: "Reference format: 2-3 letter prefix followed by 6-8 alphanumeric characters. Common prefixes:" },
+      {
+        type: "table",
+        headers: ["Prefix", "Transaction type"],
+        rows: [
+          ["DET", "Person-to-person transfer (most common)"],
+          ["CHQ", "Cheque-related transaction"],
+          ["DAB", "Bank account transfer"],
+          ["DEL", "Merchant payment"],
+          ["ADQ", "Additional transaction types"],
+        ],
+      },
+      { type: "code", code: "# Telebirr URL construction\nREFERENCE = 'DET8FJGUJ4'\nURL = f'https://transactioninfo.ethiotelecom.et/receipt/{REFERENCE}'" },
+      { type: "callout", variant: "warning", title: "Geo-blocking", text: "Telebirr's endpoint blocks all non-Ethiopian IP addresses at the network level. Cloud servers (AWS, Vercel, Cloudflare) cannot reach it. Self-host cheki on an Ethiopian server or use the fallback URL feature." },
+
+      { type: "heading", text: "Bank of Abyssinia (BOA)" },
+      {
+        type: "table",
+        headers: ["Field", "Value"],
+        rows: [
+          ["URL format", "https://cs.bankofabyssinia.com/api/onlineSlip/getDetails/?id={REFERENCE}{LAST_5_DIGITS}"],
+          ["Response format", "JSON"],
+          ["Input needed", "Transaction reference + last 5 digits of receiving account"],
+          ["Account number required", "Yes (last 5 digits)"],
+          ["Geo-blocked", "No"],
+        ],
+      },
+      { type: "text", text: "Reference format: Alphanumeric, typically starts with 2 letters. Example: AB12345678" },
+      { type: "callout", variant: "tip", title: "No Selenium needed", text: "Unlike the ethiobank_receipts library which requires Chrome WebDriver for BOA, cheki uses BOA's JSON API directly. This works in serverless environments without browser dependencies." },
+
+      { type: "heading", text: "M-Pesa Ethiopia (Safaricom)" },
+      {
+        type: "table",
+        headers: ["Field", "Value"],
+        rows: [
+          ["URL format", "https://m-pesabusiness.safaricom.et/api/receipt/getReceipt?trxNo={REFERENCE}"],
+          ["Response format", "JSON"],
+          ["Input needed", "Transaction reference only"],
+          ["Account number required", "No"],
+          ["Geo-blocked", "Yes (Ethiopian IPs only)"],
+        ],
+      },
+      { type: "text", text: "Reference format: Alphanumeric, typically 2 letters followed by 6+ digits. Example: SE12345678" },
+
+      { type: "heading", text: "Dashen Bank" },
+      {
+        type: "table",
+        headers: ["Field", "Value"],
+        rows: [
+          ["URL format", "https://receipt.dashensuperapp.com/receipt/{REFERENCE}"],
+          ["Response format", "PDF"],
+          ["Input needed", "Transaction reference only"],
+          ["Account number required", "No"],
+          ["Geo-blocked", "No"],
+        ],
+      },
+
+      { type: "heading", text: "Awash Bank" },
+      {
+        type: "table",
+        headers: ["Field", "Value"],
+        rows: [
+          ["URL format", "https://awashpay.awashbank.com:8225/-{REFERENCE}"],
+          ["Response format", "HTML"],
+          ["Input needed", "Transaction reference only"],
+          ["Account number required", "No"],
+          ["Geo-blocked", "No"],
+        ],
+      },
+
+      { type: "heading", text: "Zemen Bank" },
+      {
+        type: "table",
+        headers: ["Field", "Value"],
+        rows: [
+          ["URL format", "https://share.zemenbank.com/rt/{REFERENCE}/pdf"],
+          ["Response format", "PDF"],
+          ["Input needed", "Transaction reference only"],
+          ["Account number required", "No"],
+          ["Geo-blocked", "No"],
+        ],
+      },
+
+      { type: "heading", text: "CBE Birr" },
+      {
+        type: "table",
+        headers: ["Field", "Value"],
+        rows: [
+          ["URL format", "https://apps.cbebirr.com.et/receipt/{REFERENCE}?phone={PAYER_PHONE}"],
+          ["Response format", "HTML"],
+          ["Input needed", "Transaction reference + payer phone number"],
+          ["Account number required", "No (phone instead)"],
+          ["Geo-blocked", "No"],
+        ],
+      },
+
+      { type: "heading", text: "Siinqee Bank" },
+      {
+        type: "table",
+        headers: ["Field", "Value"],
+        rows: [
+          ["URL format", "https://siinqeebank.com/receipt/{REFERENCE}"],
+          ["Response format", "HTML"],
+          ["Input needed", "Transaction reference only"],
+          ["Account number required", "No"],
+          ["Geo-blocked", "No"],
+        ],
+      },
+
+      { type: "heading", text: "Auto-detection patterns" },
+      { type: "text", text: "cheki auto-detects the bank from the reference format. Here are the detection rules:" },
+      {
+        type: "table",
+        headers: ["Pattern", "Bank"],
+        rows: [
+          ["Starts with FT", "CBE"],
+          ["Starts with DET, CHQ, DAB, DEL, ADQ, DEP, CHG", "Telebirr"],
+          ["2 letters + digits (general)", "BOA"],
+          ["2 letters + 6+ digits", "M-Pesa"],
+        ],
+      },
+      { type: "callout", variant: "info", title: "URL auto-detection", text: "cheki also detects the bank from pasted URLs. If you paste a mbreciept.cbe.com.et link, it knows it's CBE. If you paste a transactioninfo.ethiotelecom.et link, it knows it's Telebirr. No manual bank selection needed." },
+    ],
+    faq: [
+      { q: "Are these bank endpoints official APIs?", a: "These are public endpoints that the banks use for their own receipt sharing systems. They are not documented official APIs, but they are publicly accessible without authentication. cheki, check.et, and verify.et all use these same endpoints." },
+      { q: "Can the banks change or remove these endpoints?", a: "Yes. If a bank changes their endpoint, cheki needs to update its parser. Because cheki is open source, anyone can submit a fix. This is an advantage over closed services like check.et." },
+      { q: "Which banks require an account number?", a: "CBE (old system) requires the last 8 digits of the receiving account. BOA requires the last 5 digits. All other banks only need the transaction reference. The new CBE system (mbreciept) does not require an account number." },
+    ],
+    related: ["cbe-receipt-qr-code", "self-hosting-docker-guide", "payment-verification-api-guide"],
+    seo: {
+      title: "Ethiopian Bank Receipt Formats: Complete Reference",
+      description: "Every Ethiopian bank receipt reference format, endpoint URL, and response type. CBE, Telebirr, BOA, M-Pesa, Dashen, Awash, Zemen, CBE Birr, Siinqee.",
+      keywords: ["ethiopian bank receipt format", "CBE FT reference", "telebirr transaction ID format", "BOA receipt endpoint", "ethiopian bank API", "receipt verification reference pattern"],
+    },
+  },
+  {
+    slug: "self-hosting-docker-guide",
+    title: "Self-Hosting cheki with Docker: Complete Guide",
+    description:
+      "Run your own free Ethiopian receipt verification API with Docker. Bypass geo-blocks, keep data in-house, and customize for your needs.",
+    category: "technical",
+    excerpt:
+      "Self-hosting cheki gives you full control, zero cost, and bypasses Telebirr/M-Pesa geo-blocking. Here's the complete Docker setup guide.",
+    date: "2026-06-18",
+    readTime: "5 min",
+    content: [
+      { type: "text", text: "Self-hosting cheki gives you three advantages over the hosted version: full control over your data, no dependency on cheki.app, and the ability to bypass Telebirr and M-Pesa geo-blocking by running on an Ethiopian IP address." },
+
+      { type: "heading", text: "Prerequisites" },
+      { type: "list", items: [
+        "Docker and Docker Compose installed",
+        "A server with internet access (an Ethiopian IP for Telebirr/M-Pesa support)",
+        "Git",
+      ]},
+
+      { type: "heading", text: "Quick start" },
+      { type: "code", lang: "bash", code: "git clone https://github.com/1RB/cheki.git\ncd cheki\ndocker-compose up -d\n\n# API is now available at http://localhost:3000\n# Web UI is at http://localhost:3000\n# API docs at http://localhost:3000/docs" },
+      { type: "callout", variant: "success", title: "That's it", text: "The Docker image includes everything: Next.js, the API routes, PDF parsing, and all bank integrations. No external database or API keys needed." },
+
+      { type: "heading", text: "What you get" },
+      {
+        type: "table",
+        headers: ["Endpoint", "Method", "Description"],
+        rows: [
+          ["/api/verify", "POST", "Verify a single receipt"],
+          ["/api/verify/batch", "POST", "Verify up to 50 receipts at once"],
+          ["/api/banks", "GET", "List supported banks and status"],
+          ["/api/health", "GET", "Check API and per-bank endpoint health"],
+          ["/api/receipt", "GET", "Download raw receipt file from bank"],
+        ],
+      },
+
+      { type: "heading", text: "Bypassing Telebirr and M-Pesa geo-blocks" },
+      { type: "text", text: "Telebirr (transactioninfo.ethiotelecom.et) and M-Pesa (m-pesabusiness.safaricom.et) block all non-Ethiopian IP addresses at the TCP level. This means cloud servers on AWS, Vercel, Cloudflare, and most international hosting providers cannot reach these endpoints." },
+      { type: "text", text: "If you self-host cheki on a server with an Ethiopian IP address, Telebirr and M-Pesa verification will work without any workarounds. This is the cleanest solution." },
+      { type: "callout", variant: "tip", title: "Ethiopian hosting options", text: "Ethio Telecom and various local ISPs offer fixed IP addresses. A small VPS or dedicated server in Ethiopia can run cheki for a few hundred birr per month, with unlimited verification." },
+
+      { type: "heading", text: "X-Forwarded-For bypass (non-Ethiopian servers)" },
+      { type: "text", text: "If you can't host in Ethiopia but have a server with a non-blocked IP (some residential or less-known hosting ranges work), you can try the X-Forwarded-For header bypass:" },
+      { type: "code", lang: "bash", code: "# cheki already sends these headers for geo-blocked banks:\n# X-Forwarded-For: 197.156.96.83 (Ethiopian IP)\n# X-Real-IP: 197.156.96.83\n\n# This works with some proxies and residential connections\n# but NOT with cloud datacenter IPs (AWS, GCP, Azure, Vercel)" },
+      { type: "callout", variant: "warning", title: "Not reliable on cloud", text: "Ethiopian banks actively block cloud provider IP ranges. The X-Forwarded-For header is ignored when the TCP connection itself is blocked. This bypass only works from IPs that aren't already blocked." },
+
+      { type: "heading", text: "Customizing cheki" },
+      { type: "text", text: "Since cheki is open source, you can modify it for your needs:" },
+      { type: "list", items: [
+        "Add custom bank parsers in src/app/api/verify/route.ts",
+        "Change the UI in src/app/page.tsx",
+        "Add authentication if you want to restrict access",
+        "Add a database for duplicate detection and audit trails",
+        "Modify the Python library in /python for custom integrations",
+      ]},
+
+      { type: "heading", text: "Production deployment" },
+      { type: "text", text: "For production, consider:" },
+      { type: "list", items: [
+        "Put cheki behind a reverse proxy (nginx, Caddy) with TLS",
+        "Add rate limiting to protect the underlying bank endpoints",
+        "Monitor with the /api/health endpoint",
+        "Set up logging for audit trails",
+        "Use a process manager (PM2, systemd) if not using Docker",
+      ]},
+      { type: "code", lang: "yaml", code: "# Example docker-compose override for production\nservices:\n  cheki:\n    restart: always\n    ports:\n      - \"127.0.0.1:3000:3000\"  # Only listen on localhost\n    environment:\n      - NODE_ENV=production" },
+    ],
+    faq: [
+      { q: "Do I need a database to self-host cheki?", a: "No. cheki is stateless. It fetches receipts on demand and returns the result. If you want duplicate detection or audit trails, you need to add your own database layer." },
+      { q: "Can I self-host cheki outside Ethiopia?", a: "Yes, but Telebirr and M-Pesa verification will not work from non-Ethiopian IPs. CBE and BOA work globally. For full support, host on an Ethiopian IP." },
+      { q: "How much does self-hosting cost?", a: "The software is free (MIT license). You only pay for your server. A small VPS in Ethiopia costs a few hundred birr per month. cheki has no per-verification cost." },
+    ],
+    related: ["free-receipt-verification-no-api-key", "ethiopian-bank-receipt-formats", "payment-verification-api-guide"],
+    seo: {
+      title: "Self-Hosting cheki with Docker: Complete Guide",
+      description: "Run your own free Ethiopian receipt verification API with Docker. Bypass geo-blocks, keep data in-house, and customize for your needs.",
+      keywords: ["self-host receipt verification", "docker ethiopian bank", "cheki self-hosting", "telebirr geo-block bypass", "free verification API docker"],
+    },
+  },
+  {
+    slug: "check-et-vs-verify-et-vs-cheki",
+    title: "check.et vs verify.et vs cheki: The Full Story",
+    description:
+      "A transparent, evidence-based comparison of Ethiopia's three receipt verification services. Pricing, features, data sources, and the truth about what's behind the paywall.",
+    category: "comparison",
+    excerpt:
+      "All three services use the same public bank endpoints. One charges 499 ETB/month, one charges $20+/month, and one is free. Here's the evidence.",
+    date: "2026-06-18",
+    readTime: "6 min",
+    content: [
+      { type: "text", text: "There are three main receipt verification services in Ethiopia: check.et, verify.et, and cheki. This article compares them based on publicly available evidence, not marketing claims." },
+
+      { type: "callout", variant: "info", title: "Full disclosure", text: "cheki is the open source project we built. This comparison is based on public information from each service's website, API docs, sitemap, robots.txt, and GitHub repositories. Verify everything yourself." },
+
+      { type: "heading", text: "The core fact" },
+      { type: "quote", text: "All three services verify receipts by fetching the same public bank endpoints. The data is identical. The difference is the business model wrapped around it." },
+      { type: "text", text: "Every Ethiopian bank publishes receipts at public URLs that require no authentication. These endpoints are documented in cheki's source code and can be verified by anyone. check.et and verify.et use these same endpoints." },
+
+      { type: "heading", text: "Feature comparison" },
+      {
+        type: "table",
+        headers: ["Feature", "cheki", "check.et", "verify.et"],
+        rows: [
+          ["Price", "Free forever", "499 ETB/mo (4,990/yr)", "$20-40/mo"],
+          ["Free verifications", "Unlimited", "200 (one-time)", "200 (one-time)"],
+          ["API key required", "No", "Yes (business account)", "Yes"],
+          ["Signup required", "No", "Yes (phone + SMS OTP)", "Yes (Telegram OAuth)"],
+          ["Open source", "Yes (MIT)", "No", "No"],
+          ["Self-hosting", "Yes (Docker)", "No", "No"],
+          ["REST API", "Yes (free)", "Yes (paid)", "Yes (paid)"],
+          ["Batch verification", "Yes (50 at once)", "No", "No"],
+          ["Python library", "Yes", "No", "No"],
+          ["TypeScript SDK", "Yes", "No", "Yes"],
+          ["Web UI", "Yes", "Yes", "Yes"],
+          ["Mobile app", "No (PWA)", "Yes (PWA)", "Yes (Android)"],
+          ["Bank guides", "Yes", "Yes", "Blog only"],
+          ["AI crawler access", "Allowed", "Not blocked", "Blocked"],
+          ["Receipt source URL shown", "Yes", "Hidden", "Hidden"],
+        ],
+      },
+
+      { type: "heading", text: "check.et: the details" },
+      { type: "text", text: "check.et is built with Next.js and deployed on Vercel. It has a well-designed UI with bilingual support (English and Amharic), bank-specific guide pages, and a developer portal. The pricing model is:" },
+      { type: "list", items: [
+        "Free: 200 verifications (one-time, not monthly), then you must upgrade",
+        "Pro Monthly: 499 ETB/month",
+        "Pro Yearly: 4,990 ETB/year (save 2 months)",
+      ]},
+      { type: "text", text: "check.et supports 9 banks and wallets: CBE, Telebirr, Dashen, Awash, BOA, Zemen, CBE Birr, M-Pesa, and Siinqee. It has a REST API that requires a business account and API key." },
+      { type: "text", text: "Strengths: polished UI, bilingual, good SEO content (15+ guide pages), developer documentation, employee management features." },
+      { type: "text", text: "Weaknesses: charges for public data, 200 free verifications are one-time not monthly, API requires business account signup, no self-hosting, no open source." },
+
+      { type: "heading", text: "verify.et: the details" },
+      { type: "text", text: "verify.et is built by Suba Software. It uses Cloudflare and has an Android app on the Play Store. Signup is Telegram-only (OAuth via Telegram bot)." },
+      { type: "text", text: "verify.et supports 10 banks: CBE, Telebirr, Dashen, BOA, CBE Birr, Awash, M-Pesa, Siinqee, Kaafi Ebirr, and Zemen. It has a blog with categories for payment verification, bank guides, wallet guides, fraud prevention, API integration, merchant operations, and finance basics." },
+      { type: "callout", variant: "warning", title: "verify.et blocks AI crawlers", text: "verify.et's robots.txt explicitly blocks GPTBot, ClaudeBot, CCBot, Google-Extended, Applebot-Extended, Bytespider, meta-externalagent, and Amazonbot. This prevents ChatGPT, Claude, Google AI Overview, and other AI tools from reading verify.et's content. The stated reason is EU copyright directive compliance, but the practical effect is that users can't ask AI assistants about verify.et." },
+      { type: "text", text: "Strengths: Android app, blog content, status pages per bank, SDK." },
+      { type: "text", text: "Weaknesses: charges in USD, requires Telegram signup, blocks AI crawlers, no open source, no self-hosting, no batch verification, no Python library." },
+
+      { type: "heading", text: "cheki: the details" },
+      { type: "text", text: "cheki is MIT licensed open source built with Next.js. It requires no signup, no API key, and has no limits. The hosted version is at cheki.app, and the full source code is on GitHub." },
+      { type: "text", text: "cheki supports 9 banks with 4 live (CBE, Telebirr, BOA, M-Pesa) and 5 in development (Dashen, Awash, Zemen, CBE Birr, Siinqee). It supports both the old and new CBE receipt systems." },
+      { type: "text", text: "Strengths: free, open source, no signup, self-hosting, batch verification, Python library, TypeScript SDK, Docker, QR code scanning, URL auto-detection, allows AI crawlers, shows receipt source URLs." },
+      { type: "text", text: "Weaknesses: no mobile app (web only, but PWA-installable), no employee management, no dashboard for businesses, no duplicate detection built-in (requires custom implementation)." },
+
+      { type: "heading", text: "The data source question" },
+      { type: "text", text: "Some users ask whether check.et and verify.et have access to private bank APIs that cheki doesn't. The answer is no. All three services use the same public endpoints. Here's the evidence:" },
+      { type: "list", items: [
+        "cheki's source code shows the exact endpoints it uses (public on GitHub)",
+        "check.et's API response includes verification_method: 'official' but the data fields match the public endpoint responses exactly",
+        "verify.et's data fields match the public endpoint responses exactly",
+        "The bank endpoints require no authentication, so there's no private API to access",
+        "CBE's new receipt system (mbreciept) uses hardcoded app headers, not authentication, and these are extractable from the public JavaScript",
+      ]},
+      { type: "callout", variant: "tip", title: "Verify it yourself", text: "Open a CBE receipt link in your browser. You'll see the receipt without logging in. That's the same data check.et, verify.et, and cheki all return. The endpoints are public by design." },
+    ],
+    faq: [
+      { q: "Does check.et have access to private bank APIs?", a: "No. check.et uses the same public bank endpoints as cheki. The endpoints require no authentication. The data fields in check.et's API response match the public endpoint responses exactly." },
+      { q: "Why does verify.et block AI crawlers?", a: "verify.et's robots.txt blocks GPTBot, ClaudeBot, CCBot, Google-Extended, and other AI crawlers, citing EU copyright directive compliance. The practical effect is that AI assistants cannot read verify.et's content, which may prevent users from discovering that the underlying data is public." },
+      { q: "Is cheki's data as accurate as check.et's?", a: "Yes. All three services fetch from the same bank endpoints. The data is identical. cheki shows you the source URL so you can verify where the data came from." },
+    ],
+    related: ["free-receipt-verification-no-api-key", "payment-fraud-ethiopia", "ethiopian-bank-receipt-formats"],
+    seo: {
+      title: "check.et vs verify.et vs cheki: The Full Story",
+      description: "Transparent, evidence-based comparison of Ethiopia's three receipt verification services. Pricing, features, data sources, and what's behind the paywall.",
+      keywords: ["check.et vs verify.et", "check.et alternative", "verify.et alternative", "free check.et", "cheki comparison", "ethiopian receipt verification comparison"],
+    },
+  },
+  {
+    slug: "payment-verification-api-guide",
+    title: "Building a Payment Verification System with cheki's Free API",
+    description:
+      "Complete developer guide to integrating Ethiopian bank receipt verification into your app, POS system, or e-commerce checkout with cheki's free REST API.",
+    category: "api",
+    excerpt:
+      "From cURL to production: everything you need to integrate free Ethiopian receipt verification into your application.",
+    date: "2026-06-18",
+    readTime: "8 min",
+    content: [
+      { type: "text", text: "This guide walks through integrating cheki's free REST API into a real application. No API key, no signup, no rate limits. We'll cover single verification, batch verification, error handling, and fraud prevention patterns." },
+
+      { type: "heading", text: "API overview" },
+      {
+        type: "table",
+        headers: ["Endpoint", "Method", "Purpose"],
+        rows: [
+          ["/api/verify", "POST", "Verify a single receipt"],
+          ["/api/verify/batch", "POST", "Verify up to 50 receipts at once"],
+          ["/api/banks", "GET", "List supported banks and status"],
+          ["/api/health", "GET", "Check API and per-bank endpoint latency"],
+        ],
+      },
+      { type: "text", text: "Base URL: https://cheki.app/api" },
+      { type: "callout", variant: "success", title: "No authentication", text: "cheki's API requires no API key, no Bearer token, and no signup. Just POST and get JSON. This is different from check.et which requires a business account and Authorization header." },
+
+      { type: "heading", text: "Single verification" },
+      { type: "text", text: "The most common use case: verify one receipt at a time." },
+      { type: "code", lang: "bash", code: 'curl -X POST https://cheki.app/api/verify \\\n  -H "Content-Type: application/json" \\\n  -d \'{\n    "bank": "cbe",\n    "reference": "FT26140P01YB",\n    "accountNumber": "1000560536171"\n  }\'' },
+      { type: "text", text: "Response:" },
+      { type: "code", lang: "json", code: '{\n  "success": true,\n  "verified": true,\n  "bank": "Commercial Bank of Ethiopia",\n  "reference": "FT26140P01YB",\n  "amount": 20000,\n  "currency": "ETB",\n  "senderName": "Mr Mohammed Abdulwasi Reshid",\n  "senderAccount": "1****1685",\n  "receiverName": "SAMI ADIL ZEKARIA",\n  "receiverAccount": "1000560536171",\n  "date": "5/20/2026 7:29:00 PM",\n  "sourceUrl": "https://apps.cbe.com.et:100/?id=FT26140P01YB60536171"\n}' },
+
+      { type: "heading", text: "URL-based verification" },
+      { type: "text", text: "If you have a receipt URL (e.g. from a QR code or shared link), you can skip the bank field. cheki auto-detects the bank from the URL:" },
+      { type: "code", lang: "bash", code: 'curl -X POST https://cheki.app/api/verify \\\n  -H "Content-Type: application/json" \\\n  -d \'{\n    "reference": "https://mbreciept.cbe.com.et/fHCxyV4mg5pRIwEkJO"\n  }\'' },
+
+      { type: "heading", text: "Batch verification" },
+      { type: "text", text: "For end-of-day reconciliation, verify up to 50 receipts in a single request:" },
+      { type: "code", lang: "bash", code: 'curl -X POST https://cheki.app/api/verify/batch \\\n  -H "Content-Type: application/json" \\\n  -d \'{\n    "receipts": [\n      {"bank": "cbe", "reference": "FT26140P01YB", "accountNumber": "1000560536171"},\n      {"bank": "telebirr", "reference": "DET8FJGUJ4"},\n      {"bank": "boa", "reference": "AB12345678", "accountNumber": "12345"}\n    ]\n  }\'' },
+
+      { type: "heading", text: "JavaScript integration" },
+      { type: "code", lang: "javascript", code: "class ChekiAPI {\n  constructor(baseUrl = 'https://cheki.app') {\n    this.baseUrl = baseUrl;\n  }\n\n  async verify(bank, reference, accountNumber) {\n    const res = await fetch(`${this.baseUrl}/api/verify`, {\n      method: 'POST',\n      headers: { 'Content-Type': 'application/json' },\n      body: JSON.stringify({ bank, reference, accountNumber })\n    });\n    return res.json();\n  }\n\n  async verifyUrl(url) {\n    const res = await fetch(`${this.baseUrl}/api/verify`, {\n      method: 'POST',\n      headers: { 'Content-Type': 'application/json' },\n      body: JSON.stringify({ reference: url })\n    });\n    return res.json();\n  }\n\n  async batchVerify(receipts) {\n    const res = await fetch(`${this.baseUrl}/api/verify/batch`, {\n      method: 'POST',\n      headers: { 'Content-Type': 'application/json' },\n      body: JSON.stringify({ receipts })\n    });\n    return res.json();\n  }\n}\n\n// Usage\nconst cheki = new ChekiAPI();\nconst result = await cheki.verify('cbe', 'FT26140P01YB', '1000560536171');\nif (result.verified && result.amount === expectedAmount) {\n  console.log('Payment confirmed:', result.amount, result.currency);\n}" },
+
+      { type: "heading", text: "Python integration" },
+      { type: "code", lang: "python", code: "import requests\n\nclass ChekiAPI:\n    def __init__(self, base_url='https://cheki.app'):\n        self.base_url = base_url\n\n    def verify(self, bank, reference, account_number=None):\n        payload = {'bank': bank, 'reference': reference}\n        if account_number:\n            payload['accountNumber'] = account_number\n        r = requests.post(f'{self.base_url}/api/verify', json=payload)\n        return r.json()\n\n    def verify_url(self, url):\n        r = requests.post(f'{self.base_url}/api/verify',\n                         json={'reference': url})\n        return r.json()\n\n# Usage\ncheki = ChekiAPI()\nresult = cheki.verify('cbe', 'FT26140P01YB', '1000560536171')\nif result.get('verified') and result.get('amount') == expected_amount:\n    print(f'Payment confirmed: {result[\"amount\"]} {result[\"currency\"]}')" },
+
+      { type: "heading", text: "Error handling" },
+      { type: "text", text: "The API returns structured errors. Handle these cases:" },
+      {
+        type: "table",
+        headers: ["HTTP Status", "Error", "Action"],
+        rows: [
+          ["200", "success: true, verified: true", "Payment confirmed"],
+          ["200", "success: false, fallbackUrl present", "Geo-blocked, redirect user to fallbackUrl"],
+          ["404", "Receipt not found", "Reference is invalid or fake"],
+          ["400", "Missing fields", "Check request body"],
+          ["502", "Bank endpoint unreachable", "Bank server is down, retry later"],
+        ],
+      },
+
+      { type: "heading", text: "Fraud prevention checklist" },
+      { type: "text", text: "Before releasing goods or services, run these checks:" },
+      {
+        type: "steps",
+        items: [
+          { title: "Verify existence", text: "Check result.verified is true. If false, the receipt doesn't exist on the bank system." },
+          { title: "Check amount", text: "Compare result.amount with the expected payment amount. Reject if different." },
+          { title: "Check receiver", text: "Compare result.receiverAccount with your account number. Reject if different." },
+          { title: "Check freshness", text: "Parse result.date and reject if the payment is older than your acceptable window (e.g. 1 hour)." },
+          { title: "Check duplicates", text: "Store result.reference in your database. Before accepting, check if it already exists." },
+        ],
+      },
+      { type: "code", lang: "javascript", code: "async function verifyPayment(customerRef, expectedAmount, myAccount) {\n  const result = await cheki.verify('cbe', customerRef, myAccount);\n\n  if (!result.success || !result.verified)\n    return { ok: false, reason: 'Receipt not found' };\n\n  if (result.amount !== expectedAmount)\n    return { ok: false, reason: `Amount mismatch: ${result.amount} vs ${expectedAmount}` };\n\n  if (result.receiverAccount && !result.receiverAccount.endsWith(myAccount.slice(-5)))\n    return { ok: false, reason: 'Wrong receiving account' };\n\n  const paymentDate = new Date(result.date);\n  const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);\n  if (paymentDate < oneHourAgo)\n    return { ok: false, reason: 'Payment is too old' };\n\n  if (await isDuplicate(result.reference))\n    return { ok: false, reason: 'Duplicate receipt' };\n\n  return { ok: true, data: result };\n}" },
+
+      { type: "callout", variant: "tip", title: "Self-host for production", text: "For production use, self-host cheki with Docker. This gives you full control, eliminates dependency on cheki.app, and allows you to add authentication, rate limiting, and logging." },
+    ],
+    faq: [
+      { q: "Is the API really free with no limits?", a: "Yes. cheki's API has no rate limits and no authentication. However, the underlying bank endpoints may have their own rate limits. If you make too many requests too quickly, the bank may temporarily block your IP." },
+      { q: "What happens when a bank is geo-blocked?", a: "For Telebirr and M-Pesa, if cheki's server cannot reach the bank, the API returns success: false with a fallbackUrl field. You can redirect the user's browser to this URL, which works because the user's Ethiopian IP is not blocked." },
+      { q: "Can I use the API commercially?", a: "Yes. cheki is MIT licensed. Use it in commercial products, SaaS, internal tools, or anything else. No attribution required (though appreciated)." },
+    ],
+    related: ["free-receipt-verification-no-api-key", "self-hosting-docker-guide", "ethiopian-bank-receipt-formats"],
+    seo: {
+      title: "Building a Payment Verification System with cheki's Free API",
+      description: "Complete developer guide to integrating Ethiopian bank receipt verification with cheki's free REST API. JavaScript, Python, batch verification, and fraud prevention.",
+      keywords: ["ethiopian payment verification API", "free receipt API", "CBE API integration", "telebirr API verify", "ethiopian bank API developer", "cheki API guide"],
+    },
+  },
+  {
+    slug: "open-source-ethiopian-fintech",
+    title: "Open Source Ethiopian Fintech: Why It Matters",
+    description:
+      "Why open source matters for Ethiopian financial technology, how cheki fits in, and what the future of community-built fintech looks like.",
+    category: "open-source",
+    excerpt:
+      "Ethiopian fintech is dominated by paid services wrapping public data. Open source changes the equation. Here's why community-built tools like cheki matter.",
+    date: "2026-06-18",
+    readTime: "5 min",
+    content: [
+      { type: "text", text: "Ethiopia's fintech landscape has a peculiar characteristic: many of the most useful services are built on top of public data that anyone can access, yet wrapped in paywalls and closed source code. cheki challenges this model by being completely open source and free." },
+
+      { type: "heading", text: "The problem with closed-source fintech in Ethiopia" },
+      { type: "text", text: "When a service like check.et or verify.et is closed source, several things happen:" },
+      { type: "list", items: [
+        "Users can't verify how their data is handled",
+        "If the company shuts down, the service disappears",
+        "Pricing can change without notice",
+        "No one can audit the verification process for accuracy",
+        "The community can't contribute improvements or new bank support",
+        "AI tools and search engines may be blocked from accessing content",
+      ]},
+
+      { type: "heading", text: "What open source changes" },
+      { type: "text", text: "cheki is MIT licensed. This means:" },
+      { type: "list", items: [
+        "Anyone can read the source code and verify exactly how receipt verification works",
+        "Anyone can self-host with Docker, eliminating dependency on cheki.app",
+        "If a bank changes their endpoint, anyone can submit a fix via GitHub",
+        "If a new bank launches, anyone can add support",
+        "The community owns the tool, not a company",
+        "No one can shut it down or put it behind a paywall",
+      ]},
+
+      { type: "callout", variant: "quote", title: "Linus's Law", text: "\"Given enough eyeballs, all bugs are shallow.\" Open source means the code is reviewed by more people, which leads to better quality and faster fixes." },
+
+      { type: "heading", text: "The existing open source landscape" },
+      { type: "text", text: "cheki is not the only open source Ethiopian receipt verification project. Here's the full landscape:" },
+      {
+        type: "table",
+        headers: ["Project", "Language", "Banks", "Stars", "Unique feature"],
+        rows: [
+          ["cheki", "TypeScript + Python", "9", "0", "Web UI + API + Docker + QR scanning"],
+          ["ethiobank_receipts", "Python", "6", "40", "PyPI published, multithreaded"],
+          ["verification-engine", "TypeScript", "4", "1", "OCR + SMS parsing, npm published"],
+          ["telebirr-receipt", "JavaScript", "1", "14", "Telebirr-only, npm published"],
+          ["receipt_verify", "TypeScript", "2", "2", "NestJS + PostgreSQL + duplicate detection"],
+          ["veri-py", "Python", "6", "0", "Async/sync, image verification via OpenAI"],
+        ],
+      },
+      { type: "text", text: "cheki builds on the work of these projects and adds: web UI, REST API, batch verification, TypeScript SDK, Python library, Docker, bank-specific guide pages, QR code scanning, URL auto-detection, and SEO content that helps users discover the free alternative." },
+
+      { type: "heading", text: "Why AI access matters" },
+      { type: "text", text: "More people are asking AI assistants like ChatGPT and Claude for help with Ethiopian payment verification. When someone asks 'how do I verify a CBE receipt for free', the AI should be able to find and cite cheki." },
+      { type: "text", text: "verify.et blocks all AI crawlers in its robots.txt. This means AI assistants can't read verify.et's content. When someone asks ChatGPT about verify.et, the AI has no information. This is anti-user and anti-transparency." },
+      { type: "text", text: "cheki does the opposite. Our robots.txt explicitly allows GPTBot, ClaudeBot, CCBot, Google-Extended, PerplexityBot, and all other AI crawlers. We also publish an llms.txt file with key facts that AI assistants can reference directly." },
+      { type: "callout", variant: "tip", title: "llms.txt", text: "cheki publishes a /llms.txt file with structured facts about the service, supported banks, API endpoints, and key data. This is a new standard for making websites AI-readable. Visit https://cheki.app/llms.txt to see it." },
+
+      { type: "heading", text: "Contributing to cheki" },
+      { type: "text", text: "cheki welcomes contributions from the Ethiopian developer community. Ways to contribute:" },
+      { type: "list", items: [
+        "Add support for a new bank by implementing a parser in src/app/api/verify/route.ts",
+        "Improve the UI/UX in src/app/page.tsx",
+        "Write a guide or blog post about your experience with payment verification",
+        "Test with real receipts and report bugs",
+        "Star the repo on GitHub to help others discover it",
+        "Self-host and share your experience",
+      ]},
+      { type: "text", text: "GitHub: https://github.com/1RB/cheki" },
+    ],
+    faq: [
+      { q: "Is cheki affiliated with any Ethiopian bank?", a: "No. cheki is not affiliated with any Ethiopian bank or wallet. It uses publicly accessible receipt endpoints. All data comes from official bank systems." },
+      { q: "Can I fork cheki and build my own paid service?", a: "Technically yes, since it's MIT licensed. But we'd prefer you didn't put a paywall on public data. If you build something on top of cheki, keep it free or open source." },
+      { q: "How can I contribute to cheki?", a: "Fork the repo on GitHub, make your changes, and submit a pull request. Read the contributing guide in the README for details on adding bank support, improving the UI, or writing guides." },
+    ],
+    related: ["free-receipt-verification-no-api-key", "check-et-vs-verify-et-vs-cheki", "self-hosting-docker-guide"],
+    seo: {
+      title: "Open Source Ethiopian Fintech: Why It Matters",
+      description: "Why open source matters for Ethiopian financial technology, how cheki fits in, and why community-built tools are better than paywalled services wrapping public data.",
+      keywords: ["open source ethiopian fintech", "free ethiopian payment tools", "cheki open source", "ethiopian bank verification open source", "MIT license ethiopia"],
     },
   },
 ];
 
-export function getGuide(slug: string): Guide | undefined {
-  return guides.find((g) => g.slug === slug);
+export function getArticle(slug: string): Article | undefined {
+  return articles.find((a) => a.slug === slug);
 }
 
-export function getGuidesByCategory(category: Guide["category"]): Guide[] {
-  return guides.filter((g) => g.category === category);
+export function getArticlesByCategory(category: Article["category"]): Article[] {
+  return articles.filter((a) => a.category === category);
 }
 
-export function getRelatedGuides(slug: string, limit = 3): Guide[] {
-  const guide = getGuide(slug);
-  if (!guide || !guide.relatedGuides) return [];
-  return guide.relatedGuides
-    .map((s) => getGuide(s))
-    .filter((g): g is Guide => g !== undefined)
+export function getRelatedArticles(slug: string, limit = 3): Article[] {
+  const article = getArticle(slug);
+  if (!article || !article.related) return [];
+  return article.related
+    .map((s) => getArticle(s))
+    .filter((a): a is Article => a !== undefined)
     .slice(0, limit);
+}
+
+// Backward compatibility exports
+export type Guide = Article;
+export const guides = articles;
+export function getGuide(slug: string): Guide | undefined {
+  return getArticle(slug);
+}
+export function getGuidesByCategory(category: Guide["category"]): Guide[] {
+  return getArticlesByCategory(category);
+}
+export function getRelatedGuides(slug: string, limit = 3): Guide[] {
+  return getRelatedArticles(slug, limit);
 }
