@@ -41,9 +41,9 @@ export default function ComparePage() {
         </p>
 
         {/* Comparison table */}
-        <div style={{ overflowX: "auto", marginBottom: "40px" }}>
+        <div className="table-wrap" style={{ marginBottom: "40px" }}>
           <table style={{
-            width: "100%", borderCollapse: "collapse", fontSize: "14px",
+            borderCollapse: "collapse", fontSize: "14px",
             background: "var(--surface)", borderRadius: "12px", overflow: "hidden",
           }}>
             <thead>

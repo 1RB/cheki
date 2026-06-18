@@ -35,7 +35,7 @@ export default function DocsPage() {
 
   const Endpoint = ({ method, path, desc }: { method: string; path: string; desc: string }) => (
     <div style={{ marginBottom: "8px" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px", flexWrap: "wrap" }}>
         <span style={{
           padding: "3px 10px", borderRadius: "4px", fontSize: "12px", fontWeight: 700,
           fontFamily: "var(--mono)",
@@ -44,7 +44,7 @@ export default function DocsPage() {
         }}>
           {method}
         </span>
-        <code style={{ fontSize: "15px", fontFamily: "var(--mono)", color: "var(--ink)" }}>
+        <code style={{ fontSize: "15px", fontFamily: "var(--mono)", color: "var(--ink)", wordBreak: "break-all", minWidth: 0 }}>
           {path}
         </code>
       </div>
