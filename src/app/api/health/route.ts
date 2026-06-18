@@ -63,7 +63,7 @@ export async function GET() {
     });
   } catch {
     checks.push({ name: "M-Pesa", status: "down", latencyMs: Date.now() - mpesaStart });
-  });
+  }
 
   const allDown = checks.every((c) => c.status === "down");
   const anyOk = checks.some((c) => c.status === "ok");
