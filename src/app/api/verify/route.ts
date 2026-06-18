@@ -390,6 +390,7 @@ export async function POST(request: NextRequest) {
         reference,
         sourceUrl: url,
         ...parsed,
+        debug_rawText: text.slice(0, 2000),
       });
     }
 
