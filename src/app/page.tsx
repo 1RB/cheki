@@ -273,6 +273,22 @@ export default function Home() {
       {/* Open Source */}
       <section style={{ marginTop: "40px", display: "flex", gap: "12px", flexWrap: "wrap" }}>
         <a
+          href="/docs"
+          style={{
+            display: "inline-block",
+            border: "2px solid var(--border)",
+            padding: "12px 24px",
+            color: "var(--accent)",
+            textDecoration: "none",
+            fontSize: "15px",
+            fontFamily: "Georgia, serif",
+            textTransform: "uppercase",
+            letterSpacing: "1px",
+          }}
+        >
+          api docs
+        </a>
+        <a
           href="https://github.com/1RB/cheki"
           target="_blank"
           rel="noopener noreferrer"
@@ -291,7 +307,7 @@ export default function Home() {
           site source
         </a>
         <a
-          href="https://github.com/1RB/ethio-receipt-verify"
+          href="https://github.com/1RB/cheki/tree/main/python"
           target="_blank"
           rel="noopener noreferrer"
           style={{
