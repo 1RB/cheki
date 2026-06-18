@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { banks } from "@/lib/banks";
 import { guides } from "@/lib/guides";
+import { seoPages } from "@/lib/seo-pages";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const base = "https://cheki.app";
@@ -29,5 +30,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.85,
   }));
 
-  return [...staticPages, ...bankPages, ...guidePages];
+  const seoPagesSitemap: MetadataRoute.Sitemap = seoPages.map((p) => ({
+    url: `${base}/verify/${p.slug}`,
+    lastModified: now,
+    changeFrequency: "weekly" as const,
+    priority: p.intent === "transactional" ? 0.92 : p.intent === "commercial" ? 0.9 : 0.85,
+  }));
+
+  return [...staticPages, ...bankPages, ...guidePages, ...seoPagesSitemap];
 }

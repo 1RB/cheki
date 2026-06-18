@@ -108,6 +108,16 @@ export function Footer() {
     { href: "/guides/payment-verification-api-guide", label: "API guide" },
     { href: "/guides/self-hosting-docker-guide", label: "Self-hosting" },
   ];
+  const seoLinks = [
+    { href: "/verify/verify-cbe-receipt-online", label: "Verify CBE receipt" },
+    { href: "/verify/verify-telebirr-receipt-online", label: "Verify Telebirr receipt" },
+    { href: "/verify/verify-boa-receipt-online", label: "Verify BOA receipt" },
+    { href: "/verify/verify-mpesa-receipt-online", label: "Verify M-Pesa receipt" },
+    { href: "/verify/free-receipt-verification-ethiopia", label: "Free verification" },
+    { href: "/verify/how-to-check-fake-receipt-ethiopia", label: "Check fake receipt" },
+    { href: "/verify/ethiopian-bank-receipt-formats", label: "Receipt formats" },
+    { href: "/verify/ethiopian-receipt-api-free", label: "Free receipt API" },
+  ];
   return (
     <footer style={{ marginTop: "64px", borderTop: "1px solid var(--border)", background: "var(--surface-alt)" }}>
       <div className="container" style={{ padding: "40px 24px" }}>
@@ -141,6 +151,14 @@ export function Footer() {
                 <a key={l.href} href={l.href} style={{ fontSize: "13px", color: "var(--ink-2)" }}>{l.label}</a>
               ))}
               <a href="/guides" style={{ fontSize: "13px", color: "var(--green-dark)", fontWeight: 600 }}>All guides</a>
+            </div>
+          </div>
+          <div>
+            <p style={{ fontSize: "12px", fontWeight: 600, color: "var(--ink-3)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "12px" }}>Verify</p>
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              {seoLinks.map((l) => (
+                <a key={l.href} href={l.href} style={{ fontSize: "13px", color: "var(--ink-2)" }}>{l.label}</a>
+              ))}
             </div>
           </div>
         </div>
