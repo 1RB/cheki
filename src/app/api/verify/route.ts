@@ -3,6 +3,7 @@ import * as cheerio from "cheerio";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const regions = ["fra1"]; // Frankfurt - closer to Ethiopia, may not be IP-blocked
 
 interface BankConfig {
   code: string;
