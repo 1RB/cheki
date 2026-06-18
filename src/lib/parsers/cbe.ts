@@ -41,6 +41,9 @@ export class CBEParser extends BaseParser {
       return { verified: false };
     }
 
+    // unpdf may output text with different formatting than pdf-parse.
+    // Handle both concatenated (label+value on same line) and separated formats.
+    
     let senderName: string | undefined;
     let receiverName: string | undefined;
     let senderAccount: string | undefined;
@@ -51,41 +54,49 @@ export class CBEParser extends BaseParser {
     let branch: string | undefined;
     let reason: string | undefined;
 
-    const payerMatch = text.match(/Payer(Mr\s+|Mrs\s+|Ms\s+)?(.+?)(?:\n|$)/);
+    // Payer: "PayerMr Mohammed..." or "Payer\nMr Mohammed..." or "Payer Mr Mohammed..."
+    const payerMatch = text.match(/Payer\s*(?:\n+|\s+)?(Mr\s+|Mrs\s+|Ms\s+)?(.+?)(?:\n|$|Account|Receiver)/);
     if (payerMatch) {
       senderName = ((payerMatch[1] || "") + (payerMatch[2] || "")).trim();
     }
 
-    const receiverMatch = text.match(/Receiver(.+?)(?:\n|$)/);
+    // Receiver: "ReceiverSAMI ADIL ZEKARIA" or "Receiver\nSAMI..."
+    const receiverMatch = text.match(/Receiver\s*(?:\n+|\s+)?(.+?)(?:\n|$|Account|Payment)/);
     if (receiverMatch) {
       receiverName = receiverMatch[1].trim();
     }
 
-    const accountMatches = text.matchAll(/Account([0-9*]+)/g);
+    // Accounts: "Account1****1685" — find all
+    const accountMatches = text.matchAll(/Account\s*([0-9*]+)/g);
     const accounts = Array.from(accountMatches).map((m) => m[1]);
     if (accounts.length >= 1) senderAccount = accounts[0];
     if (accounts.length >= 2) receiverAccount = accounts[1];
 
-    const amountMatch = text.match(/Transferred Amount([0-9,]+\.\d{2})\s*ETB/);
+    // Amount: "Transferred Amount20,000.00 ETB" or "Transferred Amount 20,000.00 ETB"
+    const amountMatch = text.match(/Transferred Amount\s*([0-9,]+\.\d{2})\s*ETB/);
     if (amountMatch) {
       amount = parseFloat(amountMatch[1].replace(/,/g, ""));
     }
 
+    // Date: "Payment Date & Time5/20/2026, 7:29:00 PM" or with spaces
     const dateMatch = text.match(
-      /Payment Date & Time(\d{1,2}\/\d{1,2}\/\d{4}),\s+(\d{1,2}:\d{2}:\d{2})\s*(AM|PM)?/
+      /Payment Date & Time\s*(\d{1,2}\/\d{1,2}\/\d{4}),?\s*(\d{1,2}:\d{2}:\d{2})\s*(AM|PM)?/
     );
     if (dateMatch) {
       date = `${dateMatch[1]} ${dateMatch[2]}`;
       if (dateMatch[3]) date += ` ${dateMatch[3]}`;
     }
 
-    const refMatch = text.match(/Reference No\. \(VAT Invoice No\)(\S+)/);
+    // Reference: "Reference No. (VAT Invoice No)FT26140P01YB" or with space
+    const refMatch = text.match(/Reference No\.?\s*\(VAT Invoice No\)?\s*(\S+)/);
     if (refMatch) reference = refMatch[1];
 
-    const branchMatch = text.match(/([A-Z][A-Z ]+?)\nPayment \/ Transaction Information/);
+    // Branch: value appears before "Payment / Transaction Information"
+    const branchMatch = text.match(/([A-Z][A-Z ]+?)\s*\n?\s*Payment\s*\/\s*Transaction Information/);
     if (branchMatch) branch = branchMatch[1].trim();
 
-    const reasonMatch = text.match(/Reason \/ Type of service(.+?)(?:\n|$)/);
+    // Reason: "Reason / Type of service..." 
+    const reasonMatch = text.match(/Reason\s*\/\s*Type of service\s*(.+?)(?:\n|$|Transferred)/);
     if (reasonMatch) reason = reasonMatch[1].trim();
 
     return {
