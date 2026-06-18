@@ -107,3 +107,26 @@ a { color: inherit; text-decoration: none; }
 .prose li { color: var(--ink-2); font-size: 15px; line-height: 1.7; margin-bottom: 6px; }
 .prose code { font-family: var(--mono); font-size: 13px; background: var(--surface-alt); padding: 2px 6px; border-radius: 4px; }
 .prose a { color: var(--green-dark); text-decoration: underline; }
+
+/* mobile: hide elements that take too much space */
+.hide-mobile { display: flex !important; }
+@media (max-width: 640px) {
+  .hide-mobile { display: none !important; }
+}
+
+/* mobile: nav adjustments */
+@media (max-width: 640px) {
+  nav .container > div:last-child > a:first-child,
+  nav .container > div:last-child > a:nth-child(2),
+  nav .container > div:last-child > a:nth-child(3),
+  nav .container > div:last-child > a:nth-child(4) {
+    display: none;
+  }
+}
+
+/* mobile: touch targets */
+@media (max-width: 640px) {
+  input, select, button {
+    min-height: 44px;
+  }
+}

@@ -273,14 +273,210 @@ function parseMpesaJson(data: string, _contentType: string): ParsedReceipt {
   }
 }
 
+// New CBE receipt API (mbreciept.cbe.com.et)
+const CBE_NEW_API = "https://Mb.cbe.com.et/api/v1/transactions/public/transaction-detail";
+const CBE_NEW_HEADERS = {
+  "X-App-ID": "d1292e42-7400-49de-a2d3-9731caa4c819",
+  "X-App-Version": "0a01980b-9859-1369-8198-59f403820000",
+  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+  "Accept": "application/json",
+};
+
+function parseCBENewJson(data: Record<string, unknown>): ParsedReceipt {
+  try {
+    const id = data.id as string;
+    const debitHolder = data.debitAccountHolder as string;
+    const creditHolder = data.creditAccountHolder as string;
+    const debitAccount = data.debitAccountNo as string;
+    const creditAccount = data.creditAccountNo as string;
+    const amountStr = (data.amountCredited as string) || (data.amountDebited as string);
+    const amount = amountStr ? parseFloat(amountStr) : undefined;
+    const currency = (data.creditCurrency as string) || "ETB";
+    const dateTimes = data.dateTimes as string[];
+    const date = dateTimes && dateTimes[0] ? dateTimes[0] : undefined;
+    const paymentDetails = data.paymentDetails as string[];
+    const reason = paymentDetails && paymentDetails[0] ? paymentDetails[0] : undefined;
+
+    if (!id) return { verified: false };
+
+    return {
+      verified: true,
+      senderName: debitHolder,
+      senderAccount: debitAccount,
+      receiverName: creditHolder,
+      receiverAccount: creditAccount,
+      amount,
+      currency,
+      date,
+      reference: id,
+      reason,
+    };
+  } catch {
+    return { verified: false };
+  }
+}
+
+// Detect and parse URL inputs
+function parseReceiptUrl(input: string): { bank: string; reference: string; accountNumber?: string } | null {
+  try {
+    const url = new URL(input);
+    const host = url.hostname.toLowerCase();
+
+    // New CBE: https://mbreciept.cbe.com.et/{shortId}
+    if (host.includes("mbreciept.cbe.com.et") || host.includes("mb.cbe.com.et")) {
+      const parts = url.pathname.split("/").filter(Boolean);
+      if (parts.length > 0) {
+        return { bank: "cbe-new", reference: parts[parts.length - 1] };
+      }
+    }
+
+    // Old CBE: https://apps.cbe.com.et:100/?id=FT26140P01YB60536171
+    if (host.includes("apps.cbe.com.et")) {
+      const id = url.searchParams.get("id");
+      if (id) {
+        // FT ref + last 8 digits of account
+        const ftMatch = id.match(/^(FT[A-Z0-9]+)/i);
+        if (ftMatch) {
+          const ref = ftMatch[1];
+          const accountSuffix = id.slice(ftMatch[1].length);
+          return { bank: "cbe", reference: ref, accountNumber: accountSuffix };
+        }
+      }
+    }
+
+    // Telebirr: https://transactioninfo.ethiotelecom.et/receipt/{REFERENCE}
+    if (host.includes("transactioninfo.ethiotelecom.et")) {
+      const parts = url.pathname.split("/").filter(Boolean);
+      if (parts.length > 0) {
+        const ref = parts[parts.length - 1];
+        return { bank: "telebirr", reference: ref };
+      }
+    }
+
+    // BOA: https://cs.bankofabyssinia.com/slip/?trx={REFERENCE} or /api/onlineSlip/getDetails/?id={REFERENCE}{SUFFIX}
+    if (host.includes("bankofabyssinia.com")) {
+      const trx = url.searchParams.get("trx");
+      const id = url.searchParams.get("id");
+      if (trx) return { bank: "boa", reference: trx };
+      if (id) {
+        // id = reference + last 5 digits
+        const refMatch = id.match(/^([A-Z]{2}\d[A-Z0-9]+)/i);
+        if (refMatch) {
+          return { bank: "boa", reference: refMatch[1], accountNumber: id.slice(refMatch[1].length) };
+        }
+        return { bank: "boa", reference: id };
+      }
+    }
+
+    // Dashen: https://receipt.dashensuperapp.com/receipt/{REFERENCE}
+    if (host.includes("dashensuperapp.com")) {
+      const parts = url.pathname.split("/").filter(Boolean);
+      if (parts.length > 0) return { bank: "dashen", reference: parts[parts.length - 1] };
+    }
+
+    // Awash: https://awashpay.awashbank.com:8225/-{REFERENCE}
+    if (host.includes("awashbank.com")) {
+      const parts = url.pathname.split("/").filter(Boolean);
+      if (parts.length > 0) {
+        const ref = parts[parts.length - 1].replace(/^-/, "");
+        return { bank: "awash", reference: ref };
+      }
+    }
+
+    // Zemen: https://share.zemenbank.com/rt/{REFERENCE}/pdf
+    if (host.includes("zemenbank.com")) {
+      const parts = url.pathname.split("/").filter(Boolean);
+      if (parts.length > 0) return { bank: "zemen", reference: parts[0] };
+    }
+
+    // M-Pesa: https://m-pesabusiness.safaricom.et/api/receipt/getReceipt?trxNo={REFERENCE}
+    if (host.includes("safaricom.et")) {
+      const trx = url.searchParams.get("trxNo");
+      if (trx) return { bank: "mpesa", reference: trx };
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { bank, reference, accountNumber, phoneNumber } = body;
+    let { bank, reference, accountNumber, phoneNumber } = body;
 
-    if (!bank || !reference) {
+    if (!reference) {
       return NextResponse.json(
-        { success: false, error: "Bank and reference are required." },
+        { success: false, error: "Reference number or receipt URL is required." },
+        { status: 400 }
+      );
+    }
+
+    // Check if input is a URL
+    const trimmedRef = (reference as string).trim();
+    if (trimmedRef.startsWith("http://") || trimmedRef.startsWith("https://")) {
+      const parsed = parseReceiptUrl(trimmedRef);
+      if (parsed) {
+        bank = parsed.bank;
+        reference = parsed.reference;
+        if (parsed.accountNumber && !accountNumber) {
+          accountNumber = parsed.accountNumber;
+        }
+      } else {
+        return NextResponse.json(
+          { success: false, error: "Could not detect bank from URL. Please paste the reference number manually." },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Handle new CBE API (mbreciept.cbe.com.et)
+    if (bank === "cbe-new") {
+      try {
+        const apiUrl = `${CBE_NEW_API}/${reference}`;
+        const resp = await fetch(apiUrl, {
+          headers: CBE_NEW_HEADERS,
+          signal: AbortSignal.timeout(10000),
+        });
+        if (resp.status === 404) {
+          return NextResponse.json(
+            { success: false, error: "Receipt not found. Check the link or reference.", bank: "Commercial Bank of Ethiopia", reference },
+            { status: 404 }
+          );
+        }
+        if (!resp.ok) {
+          return NextResponse.json(
+            { success: false, error: "CBE receipt service unavailable. Try again.", bank: "Commercial Bank of Ethiopia", reference },
+            { status: 502 }
+          );
+        }
+        const data = await resp.json();
+        const parsed = parseCBENewJson(data);
+        if (!parsed.verified) {
+          return NextResponse.json(
+            { success: false, error: "Could not parse receipt data.", bank: "Commercial Bank of Ethiopia", reference },
+            { status: 404 }
+          );
+        }
+        return NextResponse.json({
+          success: true,
+          bank: "Commercial Bank of Ethiopia",
+          reference: parsed.reference || reference,
+          sourceUrl: `https://mbreciept.cbe.com.et/${reference}`,
+          ...parsed,
+        });
+      } catch (err) {
+        return NextResponse.json(
+          { success: false, error: "Failed to reach CBE receipt service.", bank: "Commercial Bank of Ethiopia", reference },
+          { status: 502 }
+        );
+      }
+    }
+
+    if (!bank) {
+      return NextResponse.json(
+        { success: false, error: "Bank is required." },
         { status: 400 }
       );
     }

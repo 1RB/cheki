@@ -13,7 +13,13 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [history, setHistory] = useState<{ bank: string; ref: string; date: string }[]>([]);
+  const [showScanner, setShowScanner] = useState(false);
+  const [inputMode, setInputMode] = useState<"reference" | "url">("reference");
   const resultRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const scannerRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
 
   const selectedBank = banks.find((b) => b.code === bank)!;
   const needsAccount = selectedBank.requiresAccount;
@@ -28,9 +34,20 @@ export default function Home() {
     } catch {}
   }, []);
 
+  // Auto-detect bank from reference format or URL
   useEffect(() => {
     if (!reference) return;
-    const detected = detectBank(reference);
+    const trimmed = reference.trim();
+
+    // If URL, try to detect bank from URL
+    if (trimmed.startsWith("http")) {
+      setInputMode("url");
+      // Don't auto-select bank for URLs - the API handles detection
+      return;
+    }
+
+    setInputMode("reference");
+    const detected = detectBank(trimmed);
     if (detected && detected !== bank) setBank(detected as BankCode);
   }, [reference]);
 
@@ -69,6 +86,100 @@ export default function Home() {
     }
   }, [result]);
 
+  // QR Scanner
+  const startScanner = useCallback(async () => {
+    setShowScanner(true);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "environment" },
+      });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.play();
+      }
+      // Use a simple frame-by-frame QR detection
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      const checkFrame = () => {
+        if (!streamRef.current || !videoRef.current) return;
+        if (videoRef.current.readyState === videoRef.current.HAVE_ENOUGH_DATA) {
+          canvas.width = videoRef.current.videoWidth;
+          canvas.height = videoRef.current.videoHeight;
+          ctx?.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+          // Try to read QR from canvas
+          const imageData = ctx?.getImageData(0, 0, canvas.width, canvas.height);
+          if (imageData) {
+            scanQRCode(imageData);
+          }
+        }
+        if (showScanner) requestAnimationFrame(checkFrame);
+      };
+      checkFrame();
+    } catch (err) {
+      setError("Camera access denied. Check browser permissions.");
+      setShowScanner(false);
+    }
+  }, [showScanner]);
+
+  const scanQRCode = useCallback((imageData: ImageData) => {
+    // Use jsQR if available, otherwise try BarcodeDetector API
+    if ("BarcodeDetector" in window) {
+      const detector = new (window as any).BarcodeDetector({
+        formats: ["qr_code"],
+      });
+      detector.detect(imageData).then((codes: any[]) => {
+        if (codes.length > 0) {
+          const value = codes[0].rawValue;
+          setReference(value);
+          setShowScanner(false);
+          stopScanner();
+        }
+      }).catch(() => {});
+    }
+  }, []);
+
+  const stopScanner = useCallback(() => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    return () => stopScanner();
+  }, [stopScanner]);
+
+  // File upload (image QR scan)
+  const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx?.drawImage(img, 0, 0);
+      const imageData = ctx?.getImageData(0, 0, canvas.width, canvas.height);
+      if (imageData && "BarcodeDetector" in window) {
+        const detector = new (window as any).BarcodeDetector({ formats: ["qr_code"] });
+        detector.detect(imageData).then((codes: any[]) => {
+          if (codes.length > 0) {
+            setReference(codes[0].rawValue);
+          } else {
+            setError("No QR code found in image. Try a clearer photo.");
+          }
+        }).catch(() => {
+          setError("Could not scan QR from image.");
+        });
+      } else {
+        setError("QR scanning not supported in this browser. Try Chrome on Android.");
+      }
+    };
+    img.src = URL.createObjectURL(file);
+  }, []);
+
   const copyResult = () => {
     if (!result) return;
     navigator.clipboard.writeText(JSON.stringify(result, null, 2));
@@ -84,22 +195,22 @@ export default function Home() {
       <Nav />
       <main>
         {/* Hero + Verify Form */}
-        <section className="container" style={{ paddingTop: "48px", paddingBottom: "48px" }}>
-          <div className="grid-2" style={{ alignItems: "start", gap: "48px" }}>
+        <section className="container" style={{ paddingTop: "32px", paddingBottom: "32px" }}>
+          <div className="grid-2" style={{ alignItems: "start", gap: "32px" }}>
             {/* Left: Hero copy */}
             <div>
               <p style={{ fontSize: "12px", fontWeight: 600, color: "var(--green)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "12px" }}>
                 Free and open source
               </p>
               <h1 style={{
-                fontSize: "clamp(32px, 6vw, 48px)", fontWeight: 800, letterSpacing: "-0.03em",
+                fontSize: "clamp(28px, 6vw, 44px)", fontWeight: 800, letterSpacing: "-0.03em",
                 lineHeight: 1.05, color: "var(--ink)", marginBottom: "16px",
               }}>
                 Verify any Ethiopian receipt.
                 <br />
                 <span style={{ color: "var(--green)" }}>Free. Forever.</span>
               </h1>
-              <p style={{ color: "var(--ink-2)", fontSize: "18px", lineHeight: 1.5, maxWidth: "440px", marginBottom: "24px" }}>
+              <p style={{ color: "var(--ink-2)", fontSize: "17px", lineHeight: 1.5, maxWidth: "440px", marginBottom: "20px" }}>
                 No signup. No API key. No scam. The banks publish receipts on public URLs. We just parse them.
               </p>
               <div style={{ display: "flex", gap: "20px", flexWrap: "wrap", marginBottom: "20px" }}>
@@ -109,12 +220,12 @@ export default function Home() {
                   { label: "API key required", value: "No" },
                 ].map((s) => (
                   <div key={s.label}>
-                    <p style={{ fontSize: "24px", fontWeight: 800, color: "var(--ink)" }}>{s.value}</p>
-                    <p style={{ fontSize: "12px", color: "var(--ink-3)" }}>{s.label}</p>
+                    <p style={{ fontSize: "22px", fontWeight: 800, color: "var(--ink)" }}>{s.value}</p>
+                    <p style={{ fontSize: "11px", color: "var(--ink-3)" }}>{s.label}</p>
                   </div>
                 ))}
               </div>
-              <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+              <div className="hide-mobile" style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
                 <a href="/docs" style={{ padding: "10px 20px", borderRadius: "8px", border: "1px solid var(--border)", color: "var(--ink)", fontSize: "14px", fontWeight: 500, background: "var(--surface)" }}>API Docs</a>
                 <a href="/guides" style={{ padding: "10px 20px", borderRadius: "8px", border: "1px solid var(--border)", color: "var(--ink)", fontSize: "14px", fontWeight: 500, background: "var(--surface)" }}>Guides</a>
                 <a href="/compare" style={{ padding: "10px 20px", borderRadius: "8px", border: "1px solid var(--border)", color: "var(--ink)", fontSize: "14px", fontWeight: 500, background: "var(--surface)" }}>vs check.et</a>
@@ -123,55 +234,127 @@ export default function Home() {
 
             {/* Right: Verify form */}
             <div style={{
-              background: "var(--surface)", borderRadius: "12px", padding: "24px",
+              background: "var(--surface)", borderRadius: "12px", padding: "20px",
               boxShadow: "0 1px 3px rgba(0,0,0,0.04), 0 0 0 1px var(--border)",
             }}>
-              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                <div>
-                  <label style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink-2)", marginBottom: "6px", display: "block" }}>Bank</label>
-                  <select
-                    value={bank}
-                    onChange={(e) => { setBank(e.target.value as BankCode); setResult(null); setError(null); }}
-                    style={{ width: "100%", padding: "12px 16px", fontSize: "15px", border: "1px solid var(--border)", borderRadius: "8px", background: "var(--surface)", color: "var(--ink)", cursor: "pointer" }}
+              {/* Input mode tabs */}
+              <div style={{ display: "flex", gap: "0", marginBottom: "16px", borderBottom: "1px solid var(--border)" }}>
+                {[
+                  { mode: "reference" as const, label: "Reference" },
+                  { mode: "url" as const, label: "Receipt URL" },
+                ].map((tab) => (
+                  <button
+                    key={tab.mode}
+                    onClick={() => { setInputMode(tab.mode); setReference(""); setResult(null); setError(null); }}
+                    style={{
+                      padding: "8px 16px", fontSize: "13px", fontWeight: 600,
+                      border: "none", borderBottom: inputMode === tab.mode ? "2px solid var(--green)" : "2px solid transparent",
+                      background: "transparent", color: inputMode === tab.mode ? "var(--green)" : "var(--ink-3)",
+                      cursor: "pointer", transition: "all 0.15s", marginBottom: "-1px",
+                    }}
+                  >{tab.label}</button>
+                ))}
+                <div style={{ marginLeft: "auto", display: "flex", gap: "4px" }}>
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    title="Scan QR from image"
+                    style={{
+                      padding: "6px 10px", fontSize: "13px", border: "1px solid var(--border)",
+                      borderRadius: "6px", background: "var(--surface)", color: "var(--ink-2)", cursor: "pointer",
+                    }}
                   >
-                    {banks.map((b) => (
-                      <option key={b.code} value={b.code}>
-                        {b.name}{b.status === "soon" ? " (in development)" : ""}
-                      </option>
-                    ))}
-                  </select>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h7v7h-7z"/></svg>
+                  </button>
+                  <button
+                    onClick={() => showScanner ? (setShowScanner(false), stopScanner()) : startScanner()}
+                    title="Scan QR with camera"
+                    style={{
+                      padding: "6px 10px", fontSize: "13px", border: "1px solid var(--border)",
+                      borderRadius: "6px", background: showScanner ? "var(--green-light)" : "var(--surface)",
+                      color: showScanner ? "var(--green-dark)" : "var(--ink-2)", cursor: "pointer",
+                    }}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                  </button>
+                  <input ref={fileInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleFileUpload} />
                 </div>
+              </div>
 
-                {isGeoBlocked && (
+              {/* QR Scanner overlay */}
+              {showScanner && (
+                <div ref={scannerRef} style={{
+                  marginBottom: "16px", borderRadius: "8px", overflow: "hidden",
+                  border: "2px solid var(--green)", position: "relative",
+                }}>
+                  <video ref={videoRef} style={{ width: "100%", display: "block" }} playsInline muted />
+                  <div style={{
+                    position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)",
+                    width: "200px", height: "200px", border: "2px solid rgba(255,255,255,0.7)",
+                    borderRadius: "8px", boxShadow: "0 0 0 9999px rgba(0,0,0,0.3)",
+                  }} />
+                  <p style={{ position: "absolute", bottom: "8px", left: "0", right: "0", textAlign: "center", color: "#fff", fontSize: "13px", fontWeight: 500 }}>
+                    Point camera at QR code
+                  </p>
+                </div>
+              )}
+
+              <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+                {/* Bank selector - hidden when URL mode */}
+                {inputMode === "reference" && (
+                  <div className="fade-in">
+                    <label style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink-2)", marginBottom: "6px", display: "block" }}>Bank</label>
+                    <select
+                      value={bank}
+                      onChange={(e) => { setBank(e.target.value as BankCode); setResult(null); setError(null); }}
+                      style={{ width: "100%", padding: "12px 16px", fontSize: "15px", border: "1px solid var(--border)", borderRadius: "8px", background: "var(--surface)", color: "var(--ink)", cursor: "pointer" }}
+                    >
+                      {banks.map((b) => (
+                        <option key={b.code} value={b.code}>
+                          {b.name}{b.status === "soon" ? " (in development)" : ""}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {isGeoBlocked && inputMode === "reference" && (
                   <div className="fade-in" style={{
-                    padding: "12px 16px", borderRadius: "8px", background: "var(--amber-light)", border: "1px solid #fde68a",
-                    display: "flex", gap: "10px", alignItems: "flex-start",
+                    padding: "10px 14px", borderRadius: "8px", background: "var(--amber-light)", border: "1px solid #fde68a",
                   }}>
-                    <span style={{ fontSize: "16px", flexShrink: 0 }}>{"⚠"}</span>
-                    <p style={{ fontSize: "13px", color: "#92400e", lineHeight: 1.5 }}>
-                      This bank blocks requests from outside Ethiopia. <a href="https://github.com/1RB/cheki#self-hosting" target="_blank" rel="noopener" style={{ color: "#92400e", fontWeight: 600, textDecoration: "underline" }}>Self-host with Docker</a> or use the <a href="https://github.com/1RB/cheki/tree/main/python" target="_blank" rel="noopener" style={{ color: "#92400e", fontWeight: 600, textDecoration: "underline" }}>Python library</a> from an Ethiopian network.
+                    <p style={{ fontSize: "12px", color: "#92400e", lineHeight: 1.5 }}>
+                      {"⚠"} This bank blocks requests from outside Ethiopia. {" "}
+                      <a href="https://github.com/1RB/cheki#self-hosting" target="_blank" rel="noopener" style={{ color: "#92400e", fontWeight: 600, textDecoration: "underline" }}>Self-host</a> or use receipt URL mode.
                     </p>
                   </div>
                 )}
 
+                {/* Reference / URL input */}
                 <div>
-                  <label style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink-2)", marginBottom: "6px", display: "block" }}>Receipt reference number</label>
+                  <label style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink-2)", marginBottom: "6px", display: "block" }}>
+                    {inputMode === "url" ? "Receipt URL or link" : "Receipt reference number"}
+                  </label>
                   <input
                     type="text" value={reference}
                     onChange={(e) => setReference(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && !loading && handleVerify()}
-                    placeholder="e.g. FT26140P01YB"
+                    placeholder={inputMode === "url" ? "Paste receipt link, e.g. https://mbreciept.cbe.com.et/..." : "e.g. FT26140P01YB"}
                     style={{ width: "100%", padding: "12px 16px", fontSize: "15px", border: "1px solid var(--border)", borderRadius: "8px", background: "var(--surface)", color: "var(--ink)", fontFamily: "var(--mono)" }}
                     spellCheck={false} autoCapitalize="characters"
                   />
-                  {reference && detectBank(reference) && (
+                  {reference && inputMode === "reference" && detectBank(reference) && (
                     <p style={{ fontSize: "12px", color: "var(--green)", marginTop: "6px", fontWeight: 500 }}>
                       Detected: {banks.find((b) => b.code === detectBank(reference))?.name}
                     </p>
                   )}
+                  {reference && inputMode === "url" && reference.startsWith("http") && (
+                    <p style={{ fontSize: "12px", color: "var(--green)", marginTop: "6px", fontWeight: 500 }}>
+                      Bank will be auto-detected from URL
+                    </p>
+                  )}
                 </div>
 
-                {needsAccount && (
+                {/* Account (conditional, reference mode only) */}
+                {needsAccount && inputMode === "reference" && (
                   <div className="fade-in">
                     <label style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink-2)", marginBottom: "6px", display: "block" }}>
                       {selectedBank.accountLabel || "Account number"}
@@ -187,7 +370,8 @@ export default function Home() {
                   </div>
                 )}
 
-                {needsPhone && (
+                {/* Phone (conditional, reference mode only) */}
+                {needsPhone && inputMode === "reference" && (
                   <div className="fade-in">
                     <label style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink-2)", marginBottom: "6px", display: "block" }}>Payer phone number</label>
                     <input
@@ -200,32 +384,33 @@ export default function Home() {
                   </div>
                 )}
 
+                {/* Submit */}
                 <button
                   onClick={handleVerify}
-                  disabled={loading || isDisabled || !reference.trim()}
+                  disabled={loading || (inputMode === "reference" && isDisabled) || !reference.trim()}
                   style={{
                     width: "100%", padding: "14px 24px", fontSize: "15px", fontWeight: 600,
                     border: "none", borderRadius: "8px",
-                    background: loading || isDisabled || !reference.trim() ? "var(--border)" : "var(--green)",
-                    color: loading || isDisabled || !reference.trim() ? "var(--ink-3)" : "#fff",
-                    cursor: loading || isDisabled || !reference.trim() ? "not-allowed" : "pointer",
+                    background: loading || (inputMode === "reference" && isDisabled) || !reference.trim() ? "var(--border)" : "var(--green)",
+                    color: loading || (inputMode === "reference" && isDisabled) || !reference.trim() ? "var(--ink-3)" : "#fff",
+                    cursor: loading || (inputMode === "reference" && isDisabled) || !reference.trim() ? "not-allowed" : "pointer",
                     transition: "all 0.15s", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", minHeight: "48px",
                   }}
                 >
                   {loading ? (
                     <><span className="spin" style={{ width: "16px", height: "16px", border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "#fff", borderRadius: "50%", display: "inline-block" }} />Verifying...</>
-                  ) : isDisabled ? "In Development" : "Verify Receipt"}
+                  ) : (inputMode === "reference" && isDisabled) ? "In Development" : "Verify Receipt"}
                 </button>
               </div>
 
               {history.length > 0 && !result && !loading && (
-                <div style={{ marginTop: "16px" }}>
-                  <p style={{ fontSize: "12px", fontWeight: 600, color: "var(--ink-3)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "8px" }}>Recent checks</p>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                <div style={{ marginTop: "14px" }}>
+                  <p style={{ fontSize: "11px", fontWeight: 600, color: "var(--ink-3)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "8px" }}>Recent checks</p>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
                     {history.map((h, i) => (
-                      <button key={i} onClick={() => { setReference(h.ref); setBank(h.bank as BankCode); }} style={{
-                        padding: "6px 12px", fontSize: "13px", fontFamily: "var(--mono)", border: "1px solid var(--border)", borderRadius: "20px", background: "var(--surface)", color: "var(--ink-2)", cursor: "pointer",
-                      }}>{h.ref}</button>
+                      <button key={i} onClick={() => { setReference(h.ref); setInputMode("reference"); }} style={{
+                        padding: "5px 10px", fontSize: "12px", fontFamily: "var(--mono)", border: "1px solid var(--border)", borderRadius: "20px", background: "var(--surface)", color: "var(--ink-2)", cursor: "pointer",
+                      }}>{h.ref.length > 20 ? h.ref.slice(0, 20) + "..." : h.ref}</button>
                     ))}
                   </div>
                 </div>
@@ -260,26 +445,26 @@ export default function Home() {
         )}
 
         {/* How it works */}
-        <section className="container" style={{ paddingTop: "48px", marginTop: "48px" }}>
-          <h2 style={{ fontSize: "clamp(24px, 4vw, 32px)", fontWeight: 800, letterSpacing: "-0.02em", marginBottom: "12px" }}>
+        <section className="container" style={{ paddingTop: "32px", marginTop: "32px" }}>
+          <h2 style={{ fontSize: "clamp(22px, 4vw, 30px)", fontWeight: 800, letterSpacing: "-0.02em", marginBottom: "12px" }}>
             The banks publish receipts on public URLs
           </h2>
-          <p style={{ color: "var(--ink-2)", fontSize: "17px", maxWidth: "600px", marginBottom: "32px", lineHeight: 1.5 }}>
+          <p style={{ color: "var(--ink-2)", fontSize: "16px", maxWidth: "600px", marginBottom: "24px", lineHeight: 1.5 }}>
             Every Ethiopian bank and mobile wallet publishes transaction receipts at a publicly accessible URL. No authentication required. cheki fetches these URLs, parses the response, and returns clean JSON. That is all check.et and verify.et do too, except they charge you for it.
           </p>
           <div className="grid-2" style={{ gap: "16px" }}>
             {banks.filter((b) => b.status === "live").map((b) => (
               <div key={b.code} style={{
-                padding: "20px", borderRadius: "12px", background: "var(--surface)", border: "1px solid var(--border)",
+                padding: "18px", borderRadius: "12px", background: "var(--surface)", border: "1px solid var(--border)",
               }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                     <div style={{ width: "32px", height: "32px", borderRadius: "8px", background: b.color, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700, fontSize: "13px" }}>
                       {b.shortName.slice(0, 3)}
                     </div>
                     <div>
                       <p style={{ fontSize: "15px", fontWeight: 600 }}>{b.shortName}</p>
-                      <p style={{ fontSize: "12px", color: "var(--ink-3)" }}>{b.type === "mobile" ? "Mobile wallet" : "Bank"}</p>
+                      <p style={{ fontSize: "11px", color: "var(--ink-3)" }}>{b.type === "mobile" ? "Mobile wallet" : "Bank"}</p>
                     </div>
                   </div>
                   <span style={{
@@ -296,47 +481,44 @@ export default function Home() {
         </section>
 
         {/* The Scam / Comparison */}
-        <section className="container" style={{ marginTop: "64px" }}>
+        <section className="container" style={{ marginTop: "48px" }}>
           <div style={{
-            padding: "40px", borderRadius: "16px", background: "var(--red-light)", border: "1px solid #fecaca",
+            padding: "28px", borderRadius: "16px", background: "var(--red-light)", border: "1px solid #fecaca",
           }}>
             <p style={{ fontSize: "12px", fontWeight: 600, color: "var(--red)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "8px" }}>The paid services</p>
-            <h2 style={{ fontSize: "clamp(22px, 4vw, 28px)", fontWeight: 800, color: "var(--red)", marginBottom: "16px", letterSpacing: "-0.02em" }}>
+            <h2 style={{ fontSize: "clamp(20px, 4vw, 26px)", fontWeight: 800, color: "var(--red)", marginBottom: "14px", letterSpacing: "-0.02em" }}>
               check.et and verify.et charge you for free data
             </h2>
-            <p style={{ color: "#7f1d1d", fontSize: "16px", lineHeight: 1.6, marginBottom: "24px", maxWidth: "640px" }}>
+            <p style={{ color: "#7f1d1d", fontSize: "15px", lineHeight: 1.6, marginBottom: "20px", maxWidth: "640px" }}>
               These services verify receipts by hitting the exact same public bank URLs cheki uses. They resell the response with a markup. You pay for data that is already free. verify.et even blocks AI crawlers in its robots.txt to prevent you from discovering this.
             </p>
-            <div className="grid-3" style={{ gap: "16px" }}>
-              <div style={{ padding: "20px", borderRadius: "10px", background: "#fff", border: "1px solid #fecaca" }}>
-                <p style={{ fontSize: "12px", fontWeight: 600, color: "var(--red)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "8px" }}>check.et</p>
-                <p style={{ fontSize: "14px", color: "var(--ink-2)", marginBottom: "4px" }}>200 free, then paid</p>
-                <p style={{ fontSize: "28px", fontWeight: 800, color: "var(--red)" }}>499<span style={{ fontSize: "14px", fontWeight: 500 }}> ETB/mo</span></p>
-                <p style={{ fontSize: "12px", color: "var(--ink-3)", marginTop: "4px" }}>or 4,990 ETB/yr</p>
+            <div className="grid-3" style={{ gap: "14px" }}>
+              <div style={{ padding: "18px", borderRadius: "10px", background: "#fff", border: "1px solid #fecaca" }}>
+                <p style={{ fontSize: "12px", fontWeight: 600, color: "var(--red)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "6px" }}>check.et</p>
+                <p style={{ fontSize: "13px", color: "var(--ink-2)", marginBottom: "2px" }}>200 free, then paid</p>
+                <p style={{ fontSize: "24px", fontWeight: 800, color: "var(--red)" }}>499<span style={{ fontSize: "13px", fontWeight: 500 }}> ETB/mo</span></p>
               </div>
-              <div style={{ padding: "20px", borderRadius: "10px", background: "#fff", border: "1px solid #fecaca" }}>
-                <p style={{ fontSize: "12px", fontWeight: 600, color: "var(--red)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "8px" }}>verify.et</p>
-                <p style={{ fontSize: "14px", color: "var(--ink-2)", marginBottom: "4px" }}>200 free, then paid</p>
-                <p style={{ fontSize: "28px", fontWeight: 800, color: "var(--red)" }}>$20<span style={{ fontSize: "14px", fontWeight: 500 }}>+/mo</span></p>
-                <p style={{ fontSize: "12px", color: "var(--ink-3)", marginTop: "4px" }}>blocks AI crawlers</p>
+              <div style={{ padding: "18px", borderRadius: "10px", background: "#fff", border: "1px solid #fecaca" }}>
+                <p style={{ fontSize: "12px", fontWeight: 600, color: "var(--red)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "6px" }}>verify.et</p>
+                <p style={{ fontSize: "13px", color: "var(--ink-2)", marginBottom: "2px" }}>200 free, then paid</p>
+                <p style={{ fontSize: "24px", fontWeight: 800, color: "var(--red)" }}>$20<span style={{ fontSize: "13px", fontWeight: 500 }}>+/mo</span></p>
               </div>
-              <div style={{ padding: "20px", borderRadius: "10px", background: "#fff", border: "1px solid var(--green-light)" }}>
-                <p style={{ fontSize: "12px", fontWeight: 600, color: "var(--green)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "8px" }}>cheki</p>
-                <p style={{ fontSize: "14px", color: "var(--ink-2)", marginBottom: "4px" }}>unlimited, forever</p>
-                <p style={{ fontSize: "28px", fontWeight: 800, color: "var(--green)" }}>0<span style={{ fontSize: "14px", fontWeight: 500 }}> ETB</span></p>
-                <p style={{ fontSize: "12px", color: "var(--ink-3)", marginTop: "4px" }}>open source, MIT</p>
+              <div style={{ padding: "18px", borderRadius: "10px", background: "#fff", border: "1px solid var(--green-light)" }}>
+                <p style={{ fontSize: "12px", fontWeight: 600, color: "var(--green)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "6px" }}>cheki</p>
+                <p style={{ fontSize: "13px", color: "var(--ink-2)", marginBottom: "2px" }}>unlimited, forever</p>
+                <p style={{ fontSize: "24px", fontWeight: 800, color: "var(--green)" }}>0<span style={{ fontSize: "13px", fontWeight: 500 }}> ETB</span></p>
               </div>
             </div>
-            <a href="/compare" style={{ display: "inline-block", marginTop: "20px", padding: "10px 20px", borderRadius: "8px", background: "var(--ink)", color: "#fff", fontSize: "14px", fontWeight: 600 }}>Full comparison</a>
+            <a href="/compare" style={{ display: "inline-block", marginTop: "16px", padding: "10px 20px", borderRadius: "8px", background: "var(--ink)", color: "#fff", fontSize: "14px", fontWeight: 600 }}>Full comparison</a>
           </div>
         </section>
 
         {/* Features */}
-        <section className="container" style={{ marginTop: "64px" }}>
-          <h2 style={{ fontSize: "clamp(24px, 4vw, 32px)", fontWeight: 800, letterSpacing: "-0.02em", marginBottom: "32px" }}>
+        <section className="container" style={{ marginTop: "48px" }}>
+          <h2 style={{ fontSize: "clamp(22px, 4vw, 30px)", fontWeight: 800, letterSpacing: "-0.02em", marginBottom: "24px" }}>
             Everything you need, nothing you don&apos;t
           </h2>
-          <div className="grid-3" style={{ gap: "20px" }}>
+          <div className="grid-3" style={{ gap: "16px" }}>
             {[
               { icon: "⚡", title: "1-3 second verification", body: "Fetch receipts from bank endpoints in real time. Fast enough for checkout counters." },
               { icon: "🔑", title: "No API key, no signup", body: "Start verifying immediately. No account, no business plan, no credit limit." },
@@ -344,13 +526,13 @@ export default function Home() {
               { icon: "🐍", title: "Python library", body: "Install the Python package for server-side verification from Ethiopian networks." },
               { icon: "🐳", title: "Self-host with Docker", body: "Run cheki on your own infrastructure. Bypass geo-blocks with an Ethiopian IP." },
               { icon: "📋", title: "Structured JSON", body: "Every bank returns the same response shape. Write the integration once." },
-              { icon: "🔍", title: "Auto-detect bank", body: "Paste a reference and cheki identifies the bank from the format. No manual selection." },
+              { icon: "🔍", title: "Auto-detect bank", body: "Paste a reference or URL and cheki identifies the bank automatically." },
+              { icon: "📷", title: "QR code scanning", body: "Scan receipt QR codes with your camera or upload a photo. Works on mobile." },
               { icon: "📖", title: "Open source", body: "MIT licensed. Read the code, contribute, fork it. No black box." },
-              { icon: "🌐", title: "REST API", body: "Free REST API with documentation. cURL, JavaScript, Python examples included." },
             ].map((f) => (
-              <div key={f.title} style={{ padding: "24px", borderRadius: "12px", background: "var(--surface)", border: "1px solid var(--border)" }}>
-                <span style={{ fontSize: "28px", display: "block", marginBottom: "12px" }}>{f.icon}</span>
-                <h3 style={{ fontSize: "16px", fontWeight: 700, marginBottom: "8px" }}>{f.title}</h3>
+              <div key={f.title} style={{ padding: "20px", borderRadius: "12px", background: "var(--surface)", border: "1px solid var(--border)" }}>
+                <span style={{ fontSize: "24px", display: "block", marginBottom: "10px" }}>{f.icon}</span>
+                <h3 style={{ fontSize: "15px", fontWeight: 700, marginBottom: "6px" }}>{f.title}</h3>
                 <p style={{ fontSize: "14px", color: "var(--ink-2)", lineHeight: 1.5 }}>{f.body}</p>
               </div>
             ))}
@@ -358,26 +540,26 @@ export default function Home() {
         </section>
 
         {/* Supported Banks */}
-        <section className="container" style={{ marginTop: "64px" }}>
-          <h2 style={{ fontSize: "clamp(24px, 4vw, 32px)", fontWeight: 800, letterSpacing: "-0.02em", marginBottom: "12px" }}>
+        <section className="container" style={{ marginTop: "48px" }}>
+          <h2 style={{ fontSize: "clamp(22px, 4vw, 30px)", fontWeight: 800, letterSpacing: "-0.02em", marginBottom: "10px" }}>
             {banks.length} banks and wallets supported
           </h2>
-          <p style={{ color: "var(--ink-2)", fontSize: "16px", marginBottom: "24px" }}>
+          <p style={{ color: "var(--ink-2)", fontSize: "15px", marginBottom: "20px" }}>
             {liveBanks.length} live now, {soonBanks.length} in development. All use public endpoints.
           </p>
           <div className="grid-4" style={{ gap: "12px" }}>
             {banks.map((b) => (
               <a key={b.code} href={`/banks/${b.code}`} style={{
-                padding: "16px", borderRadius: "10px", background: "var(--surface)", border: "1px solid var(--border)",
-                display: "flex", alignItems: "center", gap: "12px", transition: "all 0.15s",
+                padding: "14px", borderRadius: "10px", background: "var(--surface)", border: "1px solid var(--border)",
+                display: "flex", alignItems: "center", gap: "10px",
               }}>
-                <div style={{ width: "36px", height: "36px", borderRadius: "8px", background: b.color, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700, fontSize: "14px", flexShrink: 0 }}>
+                <div style={{ width: "32px", height: "32px", borderRadius: "8px", background: b.color, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700, fontSize: "12px", flexShrink: 0 }}>
                   {b.shortName.slice(0, 3)}
                 </div>
-                <div>
-                  <p style={{ fontSize: "14px", fontWeight: 600 }}>{b.shortName}</p>
-                  <p style={{ fontSize: "11px", color: b.status === "live" ? "var(--green)" : "var(--ink-3)" }}>
-                    {b.status === "live" ? "Live" : "In development"}
+                <div style={{ minWidth: 0 }}>
+                  <p style={{ fontSize: "13px", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{b.shortName}</p>
+                  <p style={{ fontSize: "10px", color: b.status === "live" ? "var(--green)" : "var(--ink-3)" }}>
+                    {b.status === "live" ? "Live" : "Soon"}
                   </p>
                 </div>
               </a>
@@ -386,25 +568,25 @@ export default function Home() {
         </section>
 
         {/* OSS Branding */}
-        <section className="container" style={{ marginTop: "64px" }}>
+        <section className="container" style={{ marginTop: "48px" }}>
           <div style={{
-            padding: "40px", borderRadius: "16px", background: "var(--ink)", color: "#fff",
+            padding: "32px", borderRadius: "16px", background: "var(--ink)", color: "#fff",
           }}>
-            <div className="grid-2" style={{ alignItems: "center", gap: "32px" }}>
+            <div className="grid-2" style={{ alignItems: "center", gap: "24px" }}>
               <div>
                 <p style={{ fontSize: "12px", fontWeight: 600, color: "var(--green)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "8px" }}>Open source</p>
-                <h2 style={{ fontSize: "clamp(22px, 4vw, 28px)", fontWeight: 800, marginBottom: "16px", letterSpacing: "-0.02em" }}>
+                <h2 style={{ fontSize: "clamp(20px, 4vw, 26px)", fontWeight: 800, marginBottom: "14px", letterSpacing: "-0.02em" }}>
                   Built by the community, for the community
                 </h2>
-                <p style={{ fontSize: "16px", color: "rgba(255,255,255,0.7)", lineHeight: 1.6, marginBottom: "24px" }}>
-                  cheki is MIT licensed and lives on GitHub. No company owns it. No one can shut it down. If a bank changes their endpoint, anyone can submit a fix. If a new bank launches, anyone can add support.
+                <p style={{ fontSize: "15px", color: "rgba(255,255,255,0.7)", lineHeight: 1.6, marginBottom: "20px" }}>
+                  cheki is MIT licensed and lives on GitHub. No company owns it. No one can shut it down. If a bank changes their endpoint, anyone can submit a fix.
                 </p>
                 <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
                   <a href="https://github.com/1RB/cheki" target="_blank" rel="noopener" style={{ padding: "12px 24px", borderRadius: "8px", background: "var(--green)", color: "#fff", fontSize: "14px", fontWeight: 600 }}>Star on GitHub</a>
                   <a href="https://github.com/1RB/cheki/blob/main/README.md#contributing" target="_blank" rel="noopener" style={{ padding: "12px 24px", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", fontSize: "14px", fontWeight: 600 }}>Contribute</a>
                 </div>
               </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                 {[
                   { label: "License", value: "MIT" },
                   { label: "Language", value: "TypeScript + Python" },
@@ -412,9 +594,9 @@ export default function Home() {
                   { label: "Self-hosting", value: "Docker included" },
                   { label: "SDK", value: "TypeScript + Python" },
                 ].map((item) => (
-                  <div key={item.label} style={{ display: "flex", justifyContent: "space-between", padding: "12px 0", borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
-                    <span style={{ fontSize: "14px", color: "rgba(255,255,255,0.5)" }}>{item.label}</span>
-                    <span style={{ fontSize: "14px", fontWeight: 600 }}>{item.value}</span>
+                  <div key={item.label} style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
+                    <span style={{ fontSize: "13px", color: "rgba(255,255,255,0.5)" }}>{item.label}</span>
+                    <span style={{ fontSize: "13px", fontWeight: 600 }}>{item.value}</span>
                   </div>
                 ))}
               </div>
