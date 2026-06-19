@@ -9,7 +9,7 @@ const BANK_ENDPOINTS: Record<string, (ref: string, account?: string) => string> 
     return `https://apps.cbe.com.et:100/?id=${ref}${suffix}`;
   },
   zemen: (ref) => `https://share.zemenbank.com/rt/${ref}/pdf`,
-  dashen: (ref) => `https://receipt.dashensuperapp.com/receipt/${ref}`,
+  dashen: (ref) => `https://api.dashensuperapp.com/receipts/Within-Dashen-Transfer-${ref}.pdf`,
 };
 
 export async function GET(request: NextRequest) {
