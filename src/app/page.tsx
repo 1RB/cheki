@@ -3,8 +3,10 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import jsQR from "jsqr";
 import { banks, detectBank, type BankCode, type VerifyResult } from "@/lib/banks";
+import { articles } from "@/lib/guides";
 import { Nav, Footer } from "@/components/Chrome";
 import { BankLogoByName } from "@/components/BankLogo";
+import { BankSelector } from "@/components/BankSelector";
 import { Icon, BoltIcon, Key01Icon, Layers01Icon, CodeIcon, ReceiptTextIcon, Search01Icon, Camera01Icon, QrCode01Icon, QrCodeScanIcon, BookOpen01Icon, ContainerIcon, CheckmarkCircle01Icon, ArrowRight01Icon, GithubIcon, StarIcon, Copy01Icon, CopyCheckIcon, ChevronDownIcon, Alert01Icon } from "@/components/Icon";
 
 export default function Home() {
@@ -490,9 +492,7 @@ export default function Home() {
                 {inputMode === "reference" && (
                   <div className="fade-in">
                     <label style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink-2)", marginBottom: "6px", display: "block" }}>Bank</label>
-                    <select value={bank} onChange={(e) => { setBank(e.target.value as BankCode); setResult(null); setError(null); }} style={{ width: "100%", padding: "12px 16px", fontSize: "15px", border: "1px solid var(--border)", borderRadius: "8px", background: "var(--surface)", color: "var(--ink)", cursor: "pointer" }}>
-                      {banks.map((b) => <option key={b.code} value={b.code}>{b.name}{b.status === "soon" ? " (in development)" : ""}</option>)}
-                    </select>
+                    <BankSelector value={bank} onChange={(code) => { setBank(code as BankCode); setResult(null); setError(null); }} />
                   </div>
                 )}
 
@@ -720,6 +720,49 @@ export default function Home() {
                 <p style={{ fontSize: "14px", color: "var(--ink-2)", lineHeight: 1.5 }}>{f.body}</p>
               </div>
             ))}
+          </div>
+        </section>
+
+        {/* Guides discovery */}
+        <section className="container" style={{ marginTop: "40px" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
+            <h2 style={{ fontSize: "clamp(22px, 4vw, 30px)", fontWeight: 800, letterSpacing: "-0.02em" }}>
+              Guides and deep dives
+            </h2>
+            <a href="/guides" style={{ fontSize: "14px", color: "var(--green)", fontWeight: 600, textDecoration: "none", whiteSpace: "nowrap" }}>
+              All {articles.length} articles →
+            </a>
+          </div>
+          <div className="grid-3" style={{ gap: "14px" }}>
+            {articles
+              .filter((a) => ["boa-qr-code-receipts", "free-receipt-verification-no-api-key", "contribute-new-bank", "cbe-receipt-qr-code", "payment-fraud-ethiopia", "check-et-vs-verify-et-vs-cheki"].includes(a.slug))
+              .slice(0, 6)
+              .map((a) => (
+                <a
+                  key={a.slug}
+                  href={`/guides/${a.slug}`}
+                  style={{
+                    padding: "20px",
+                    borderRadius: "12px",
+                    background: "var(--surface)",
+                    border: "1px solid var(--border)",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "8px",
+                    textDecoration: "none",
+                  }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontSize: "11px", fontWeight: 600, color: "var(--green)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                      {a.category.replace("-", " ")}
+                    </span>
+                    <span style={{ fontSize: "11px", color: "var(--ink-3)" }}>{a.readTime}</span>
+                  </div>
+                  <h3 style={{ fontSize: "15px", fontWeight: 700, lineHeight: 1.3 }}>{a.title}</h3>
+                  <p style={{ fontSize: "13px", color: "var(--ink-2)", lineHeight: 1.5, flex: 1 }}>{a.excerpt}</p>
+                  <span style={{ fontSize: "13px", color: "var(--green-dark)", fontWeight: 600 }}>Read →</span>
+                </a>
+              ))}
           </div>
         </section>
 

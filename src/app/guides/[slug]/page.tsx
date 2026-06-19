@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { articles, getArticle, getRelatedArticles, type ContentBlock } from "@/lib/guides";
 import { Nav, Footer } from "@/components/Chrome";
+import { CodeBlock } from "@/components/CodeBlock";
+import { highlightCode, getLangLabel } from "@/lib/highlight";
 
 export function generateStaticParams() {
   return articles.map((a) => ({ slug: a.slug }));
@@ -29,34 +31,99 @@ const calloutStyles: Record<string, { bg: string; border: string; text: string; 
   quote: { bg: "#f5f2ec", border: "#d4d0c8", text: "#555", icon: "❝" },
 };
 
+/** Auto-link URLs and code references in text content */
+function renderRichText(text: string): React.ReactNode[] {
+  const nodes: React.ReactNode[] = [];
+  // Split on URLs, inline code (backticks), and bold (**text**)
+  const parts = text.split(
+    /(\bhttps?:\/\/[^\s<]+|\b[a-z]+\.et\b|\b[a-z]+\.com\.et\b|`[^`]+`|\*\*[^*]+\*\*)/gi
+  );
+
+  parts.forEach((part, i) => {
+    if (/^https?:\/\//.test(part)) {
+      // URL — truncate display if long
+      const display = part.length > 50 ? part.slice(0, 47) + "..." : part;
+      nodes.push(
+        <a
+          key={i}
+          href={part}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ color: "var(--green)", textDecoration: "none", borderBottom: "1px solid var(--green-light)" }}
+        >
+          {display}
+        </a>
+      );
+    } else if (/^[a-z]+\.et$/i.test(part) || /^[a-z]+\.com\.et$/i.test(part)) {
+      // Domain reference like check.et, verify.et — link to it
+      nodes.push(
+        <a
+          key={i}
+          href={`https://${part}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ color: "var(--green)", textDecoration: "none", fontWeight: 500 }}
+        >
+          {part}
+        </a>
+      );
+    } else if (/^`[^`]+`$/.test(part)) {
+      // Inline code
+      nodes.push(
+        <code
+          key={i}
+          style={{
+            fontFamily: "var(--mono)",
+            fontSize: "13px",
+            background: "var(--surface-alt)",
+            padding: "1px 5px",
+            borderRadius: "4px",
+            color: "var(--green-dark)",
+          }}
+        >
+          {part.slice(1, -1)}
+        </code>
+      );
+    } else if (/^\*\*[^*]+\*\*$/.test(part)) {
+      // Bold
+      nodes.push(<strong key={i}>{part.slice(2, -2)}</strong>);
+    } else if (part) {
+      nodes.push(part);
+    }
+  });
+
+  return nodes;
+}
+
 function renderBlock(block: ContentBlock, key: number) {
   switch (block.type) {
     case "heading":
       return <h2 key={key} id={`section-${key}`}>{block.text}</h2>;
 
     case "text":
-      return <p key={key}>{block.text}</p>;
+      return <p key={key}>{renderRichText(block.text)}</p>;
 
     case "list":
       return (
         <ul key={key}>
-          {block.items.map((item, i) => <li key={i}>{item}</li>)}
+          {block.items.map((item, i) => <li key={i}>{renderRichText(item)}</li>)}
         </ul>
       );
 
     case "ordered":
       return (
         <ol key={key} style={{ paddingLeft: "20px", marginBottom: "16px" }}>
-          {block.items.map((item, i) => <li key={i} style={{ marginBottom: "6px" }}>{item}</li>)}
+          {block.items.map((item, i) => <li key={i} style={{ marginBottom: "6px" }}>{renderRichText(item)}</li>)}
         </ol>
       );
 
-    case "code":
+    case "code": {
+      const langLabel = getLangLabel(block.lang);
+      const highlighted = highlightCode(block.code, block.lang);
       return (
-        <pre className="code-block" key={key}>
-          <code>{block.code}</code>
-        </pre>
+        <CodeBlock key={key} code={block.code} highlightedHtml={highlighted} langLabel={langLabel} />
       );
+    }
 
     case "callout": {
       const s = calloutStyles[block.variant] || calloutStyles.info;
@@ -67,8 +134,8 @@ function renderBlock(block: ContentBlock, key: number) {
         }}>
           <span style={{ fontSize: "16px", flexShrink: 0, color: s.text }}>{s.icon}</span>
           <div>
-            {block.title && <p style={{ fontWeight: 700, fontSize: "14px", color: s.text, marginBottom: "4px" }}>{block.title}</p>}
-            <p style={{ fontSize: "14px", color: s.text, lineHeight: 1.6 }}>{block.text}</p>
+            {block.title && <p style={{ fontWeight: 700, fontSize: "14px", color: s.text, marginBottom: "4px" }}>{renderRichText(block.title)}</p>}
+            <p style={{ fontSize: "14px", color: s.text, lineHeight: 1.6 }}>{renderRichText(block.text)}</p>
           </div>
         </div>
       );
@@ -123,8 +190,8 @@ function renderBlock(block: ContentBlock, key: number) {
                 color: "#fff", fontWeight: 700, fontSize: "13px", flexShrink: 0,
               }}>{i + 1}</div>
               <div>
-                <p style={{ fontWeight: 600, fontSize: "15px", marginBottom: "4px" }}>{step.title}</p>
-                <p style={{ fontSize: "14px", color: "var(--ink-2)", lineHeight: 1.5 }}>{step.text}</p>
+                <p style={{ fontWeight: 600, fontSize: "15px", marginBottom: "4px" }}>{renderRichText(step.title)}</p>
+                <p style={{ fontSize: "14px", color: "var(--ink-2)", lineHeight: 1.5 }}>{renderRichText(step.text)}</p>
               </div>
             </div>
           ))}
@@ -228,11 +295,32 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
                 {article.faq.map((f, i) => (
                   <details key={i} style={{ marginBottom: "12px", padding: "12px 16px", border: "1px solid var(--border)", borderRadius: "8px", background: "var(--surface)" }}>
                     <summary style={{ fontWeight: 600, fontSize: "15px", cursor: "pointer" }}>{f.q}</summary>
-                    <p style={{ marginTop: "8px", color: "var(--ink-2)", fontSize: "14px", lineHeight: 1.6 }}>{f.a}</p>
+                    <p style={{ marginTop: "8px", color: "var(--ink-2)", fontSize: "14px", lineHeight: 1.6 }}>{renderRichText(f.a)}</p>
                   </details>
                 ))}
               </div>
             )}
+
+            {/* GitHub edit link */}
+            <div style={{ marginTop: "32px", paddingTop: "24px", borderTop: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
+              <a
+                href={`https://github.com/1RB/cheki/blob/main/src/lib/guides.ts`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ fontSize: "13px", color: "var(--ink-3)", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "6px" }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12c0 4.42 2.87 8.17 6.84 9.5.5.09.66-.22.66-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.45-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.89 1.52 2.34 1.08 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.64 0 0 .84-.27 2.75 1.02.8-.22 1.65-.33 2.5-.33.85 0 1.7.11 2.5.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.37.2 2.39.1 2.64.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.85V21c0 .27.16.58.67.48A10 10 0 0 0 22 12c0-5.52-4.48-10-10-10z"/></svg>
+                Edit this article on GitHub
+              </a>
+              <a
+                href={`https://github.com/1RB/cheki/issues/new?labels=content&title=Feedback+on:+${encodeURIComponent(article.title)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ fontSize: "13px", color: "var(--ink-3)", textDecoration: "none" }}
+              >
+                Report an issue →
+              </a>
+            </div>
 
             {related.length > 0 && (
               <div style={{ marginTop: "48px" }}>
