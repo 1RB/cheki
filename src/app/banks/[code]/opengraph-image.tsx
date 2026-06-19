@@ -18,6 +18,8 @@ export default async function OgImage({
   const bank = getBank(code);
   const bankName = bank?.shortName || bank?.name || "Bank";
   const bankFullName = bank?.name || "Ethiopian Bank";
+  const taglineText = `${bankName} verification`;
+  const headlineText = `Verify ${bankFullName}`;
   const urlPath = `cheki.app/banks/${code}`;
 
   return new ImageResponse(
@@ -26,10 +28,10 @@ export default async function OgImage({
         <div style={{ display: "flex", alignItems: "center", gap: "14px", marginBottom: "36px" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "52px", height: "52px", backgroundColor: "#16a34a", fontSize: "28px", fontWeight: 800, color: "#fff" }}>c</div>
           <div style={{ fontSize: "36px", fontWeight: 800, letterSpacing: "-0.03em" }}>cheki</div>
-          <div style={{ fontSize: "18px", fontWeight: 600, color: "#888", marginLeft: "8px" }}>{bankName} verification</div>
+          <div style={{ fontSize: "18px", fontWeight: 600, color: "#888", marginLeft: "8px" }}>{taglineText}</div>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: "10px", flex: 1, justifyContent: "center" }}>
-          <div style={{ fontSize: "52px", fontWeight: 800, lineHeight: 1.12, letterSpacing: "-0.02em" }}>{`Verify ${bankFullName}`}</div>
+          <div style={{ fontSize: "52px", fontWeight: 800, lineHeight: 1.12, letterSpacing: "-0.02em" }}>{headlineText}</div>
           <div style={{ fontSize: "52px", fontWeight: 800, lineHeight: 1.12, letterSpacing: "-0.02em", color: "#16a34a" }}>Receipts for free.</div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "16px", borderTop: "2px solid #222", paddingTop: "24px" }}>
