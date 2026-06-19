@@ -13,6 +13,8 @@ import { MpesaParser } from "./mpesa";
 import { DashenParser } from "./dashen";
 import { EBirrParser } from "./ebirr";
 import { ZemenParser } from "./zemen";
+import { CBEBirrParser } from "./cbebirr";
+import { SiinqeeParser } from "./siinqee";
 
 // Register all parsers
 registerParser(new CBEParser());
@@ -23,6 +25,8 @@ registerParser(new MpesaParser());
 registerParser(new DashenParser());
 registerParser(new EBirrParser());
 registerParser(new ZemenParser());
+registerParser(new CBEBirrParser());
+registerParser(new SiinqeeParser());
 
 // Re-export for convenience
 export { CBEParser, CBENewParser } from "./cbe";
@@ -32,6 +36,8 @@ export { MpesaParser } from "./mpesa";
 export { DashenParser } from "./dashen";
 export { EBirrParser } from "./ebirr";
 export { ZemenParser } from "./zemen";
+export { CBEBirrParser } from "./cbebirr";
+export { SiinqeeParser } from "./siinqee";
 export { BaseParser } from "./base";
 export {
   registerParser,

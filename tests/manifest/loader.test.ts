@@ -5,14 +5,14 @@ import { describe, it, expect } from "vitest";
 import { getBank, getAllBanks, getLiveBanks, suggestBank } from "@/lib/manifest/loader";
 
 describe("manifest loader", () => {
-  it("loads all 10 banks", () => {
-    expect(getAllBanks().length).toBe(10);
+  it("loads all 11 banks", () => {
+    expect(getAllBanks().length).toBe(11);
   });
 
   it("returns live banks only", () => {
     const live = getLiveBanks();
     expect(live.every((b) => b.status === "live")).toBe(true);
-    expect(live.length).toBe(9);
+    expect(live.length).toBe(10);
   });
 
   it("finds bank by id (case insensitive)", () => {
@@ -42,7 +42,7 @@ describe("manifest loader", () => {
   });
 
   it("suggests bank for typo", () => {
-    const suggestion = suggestBank("tebirr");
+    const suggestion = suggestBank("telebir");
     expect(suggestion).toBe("telebirr");
   });
 

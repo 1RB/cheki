@@ -152,13 +152,28 @@
     "type": "bank",
     "status": "live",
     "parser": "siinqee",
-    "responseType": "pdf",
+    "responseType": "html",
     "requiresAccount": false,
     "requiresPhone": false,
-    "endpoint": "https://share.zemenbank.com/rt/{ref}/pdf",
+    "endpoint": "https://receipt.ebirr.com/siinqee/{ref}",
     "sslVerify": true,
     "color": "#006A4E",
     "initials": "SQ",
-    "notes": "Same endpoint pattern as other banks. Not yet tested with real receipt."
+    "notes": "Routed through eBirr platform. Siinqee does not have a standalone receipt endpoint."
+  },
+  {
+    "id": "ebirr",
+    "name": "eBirr",
+    "type": "wallet",
+    "status": "live",
+    "parser": "ebirr",
+    "responseType": "html",
+    "requiresAccount": false,
+    "requiresPhone": false,
+    "endpoint": "https://receipt.ebirr.com/{tenant}/{token}",
+    "sslVerify": true,
+    "color": "#059669",
+    "initials": "eB",
+    "notes": "Shared receipt platform for Nib, Wegagen, Ahadu, KAAFI, and Siinqee/Coopbank. User provides tenant/token or full URL."
   }
 ]

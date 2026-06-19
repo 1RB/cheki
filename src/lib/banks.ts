@@ -428,8 +428,8 @@ export const banks: Bank[] = [
     requiresPhone: true,
     status: "live",
     color: "#0ea5e9",
-    endpoint: "apps.cbebirr.com.et",
-    endpointFormat: "https://apps.cbebirr.com.et/receipt/{REFERENCE}?phone={PAYER_PHONE}",
+    endpoint: "cbepay1.cbe.com.et",
+    endpointFormat: "https://cbepay1.cbe.com.et/aureceipt?TID={REFERENCE}&PH={PAYER_PHONE}",
     responseType: "html",
     description:
       "CBE Birr is the Commercial Bank of Ethiopia's mobile wallet service. CBE Birr receipts require the transaction reference and the payer's phone number for verification.",
@@ -475,8 +475,8 @@ export const banks: Bank[] = [
     requiresAccount: false,
     status: "live",
     color: "#be185d",
-    endpoint: "siinqeebank.com",
-    endpointFormat: "https://siinqeebank.com/receipt/{REFERENCE}",
+    endpoint: "receipt.ebirr.com",
+    endpointFormat: "https://receipt.ebirr.com/siinqee/{token}",
     responseType: "html",
     description:
       "Siinqee Bank is an Ethiopian microfinance institution turned bank. Siinqee receipts are available via a public endpoint.",
