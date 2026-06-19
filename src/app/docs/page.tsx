@@ -91,7 +91,7 @@ health, err := client.GetHealth(ctx)`,
     shikiLang: "bash",
     code: `# pubspec.yaml
 # dependencies:
-#   cheki: ^0.1.0
+#   cheki: ^1.1.0
 
 import 'package:cheki/cheki.dart';
 

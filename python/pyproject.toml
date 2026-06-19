@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "cheki"
-version = "0.2.0"
+version = "1.1.0"
 description = "Free, open-source Ethiopian bank/wallet receipt verification. Reverse-engineered public endpoints."
 readme = "README.md"
 license = {text = "MIT"}
