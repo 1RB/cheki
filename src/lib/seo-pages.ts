@@ -136,7 +136,7 @@ export const seoPages: SeoPage[] = [
       },
       {
         heading: "QR code verification for inter-bank transfers",
-        body: "BOA's JSON API does not recognize inter-bank transfer references. However, the QR code on the receipt is an AES-256-CBC encrypted CSV payload that contains the full transaction details. cheki decrypts it locally using the key exposed in BOA's receipt web app, so you can verify transfers to CBE and other banks even when the API fails.",
+        body: "BOA's JSON API does not recognize inter-bank transfer references. However, the QR code on the receipt is an AES-256-CBC encrypted payload that contains the full transaction details. cheki decrypts it server-side using the key exposed in BOA's receipt web app, so you can verify transfers to CBE and other banks even when the API fails. See our BOA QR code deep dive for the full technical breakdown.",
       },
       {
         heading: "What you need to verify a BOA receipt",

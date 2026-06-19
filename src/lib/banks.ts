@@ -168,18 +168,20 @@ export const banks: Bank[] = [
     endpointFormat: "https://cs.bankofabyssinia.com/api/onlineSlip/getDetails/?id={REFERENCE}{LAST_5_DIGITS}",
     responseType: "json",
     description:
-      "Bank of Abyssinia (BOA) is one of Ethiopia's largest private banks. BOA publishes receipt data as JSON via a public API endpoint that requires the transaction reference and the last 5 digits of the receiving account number. Unlike some competitors, cheki does not need Selenium or a headless browser for BOA verification.",
-    referenceFormat: "Alphanumeric reference starting with 2 letters (varies by transaction type)",
+      "Bank of Abyssinia (BOA) is one of Ethiopia's largest private banks. BOA publishes receipt data as JSON via a public API endpoint that requires the transaction reference and the last 5 digits of the receiving account number. For inter-bank transfers (BOA to CBE, Dashen, etc.), BOA receipt QR codes use AES-256-CBC encryption and can be decrypted by cheki for instant verification. No Selenium or headless browser required.",
+    referenceFormat: "Alphanumeric reference starting with 2 letters (varies by transaction type). Inter-bank transfers use FT references (e.g., FT252003JZPP).",
     referenceExample: "AB12345678",
     howToVerify: [
-      "Get the transaction reference from the customer's BOA receipt",
-      "Get the last 5 digits of your receiving BOA account number",
-      "cheki calls BOA's public JSON API and returns structured payment data",
+      "For BOA-to-BOA transfers: get the transaction reference and last 5 digits of your receiving account",
+      "cheki calls BOA's public JSON API and returns structured payment data in 1-2 seconds",
+      "For inter-bank transfers (BOA to CBE/Dashen/etc.): scan the QR code on the receipt with cheki's camera scanner or upload a screenshot",
+      "cheki auto-detects BOA QR payloads, decrypts them server-side with AES-256-CBC, and returns the full transaction details. No account number needed.",
     ],
     useCases: [
       "Merchants verifying BOA transfers at checkout",
       "Businesses reconciling BOA deposits",
-      "Apps integrating BOA payment verification",
+      "Verifying inter-bank transfers (BOA to CBE, Dashen, etc.) via QR code decryption",
+      "Apps integrating BOA payment verification with QR code support",
       "Finance teams auditing BOA transactions",
     ],
     faq: [
@@ -189,17 +191,29 @@ export const banks: Bank[] = [
       },
       {
         q: "What information do I need to verify a BOA transaction?",
-        a: "You need the transaction reference number from the receipt and the last 5 digits of the receiving account number. cheki combines these to construct the BOA API URL.",
+        a: "For BOA-to-BOA transfers, you need the transaction reference number and the last 5 digits of the receiving account. For inter-bank transfers (BOA to CBE, Dashen, etc.), scan the QR code on the receipt. No account number is needed for QR-based verification.",
+      },
+      {
+        q: "Can I verify inter-bank BOA transfers (sent to CBE or other banks)?",
+        a: "Yes, but only via QR code. BOA's JSON API returns 'Invalid reference number' for inter-bank transfers (FT references). Scan the QR code on the receipt and cheki decrypts it with AES-256-CBC to extract the full transaction details. See our BOA QR code guide for the technical breakdown.",
+      },
+      {
+        q: "How does BOA QR code verification work?",
+        a: "BOA receipt QR codes contain the transaction data encrypted with AES-256-CBC using CryptoJS format. The encryption key is embedded in BOA's public receipt web app. cheki decrypts the QR payload server-side and returns structured JSON with sender, receiver, amount, date, and reference. See our BOA QR code deep dive for full details.",
       },
       {
         q: "Is the BOA receipt endpoint public?",
         a: "Yes. The BOA online slip API at cs.bankofabyssinia.com is publicly accessible without authentication. check.et and verify.et charge you for calling this same endpoint.",
       },
+      {
+        q: "Is BOA QR code verification secure?",
+        a: "The AES key is public in BOA's web app JavaScript, so anyone can decrypt (and theoretically forge) QR codes. For high-value inter-bank transfers, request additional confirmation like a bank statement or SMS alert. See our BOA QR code guide for the full security analysis.",
+      },
     ],
     seo: {
-      title: "Verify Bank of Abyssinia Transactions Online",
+      title: "Verify Bank of Abyssinia Transactions Online | BOA QR Code Verification",
       description:
-        "Verify Bank of Abyssinia (BOA) transactions for free. Check transaction references against official BOA API endpoints. No Selenium, no signup, no API key.",
+        "Verify Bank of Abyssinia (BOA) transactions for free. JSON API for BOA-to-BOA transfers, AES-256-CBC QR decryption for inter-bank transfers. No Selenium, no signup, no API key.",
       keywords: [
         "BOA receipt verification",
         "verify Bank of Abyssinia transaction",
@@ -207,6 +221,9 @@ export const banks: Bank[] = [
         "Abyssinia bank receipt",
         "ethiopian bank receipt verify",
         "BOA online slip",
+        "BOA QR code verification",
+        "BOA inter-bank transfer verify",
+        "BOA AES QR decryption",
       ],
     },
   },
