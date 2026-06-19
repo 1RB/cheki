@@ -60,11 +60,18 @@ describe("detectBankFromUrl", () => {
     expect(result!.accountNumber).toBe("67890");
   });
 
-  it("detects Dashen receipt URLs", () => {
+  it("detects Dashen legacy receipt URLs", () => {
     const result = detectBankFromUrl("https://receipt.dashensuperapp.com/receipt/ABC123");
     expect(result).not.toBeNull();
     expect(result!.bank).toBe("dashen");
     expect(result!.reference).toBe("ABC123");
+  });
+
+  it("detects Dashen PDF receipt URLs", () => {
+    const result = detectBankFromUrl("https://api.dashensuperapp.com/receipts/Within-Dashen-Transfer-B22WDTI261620001.pdf");
+    expect(result).not.toBeNull();
+    expect(result!.bank).toBe("dashen");
+    expect(result!.reference).toBe("B22WDTI261620001");
   });
 
   it("detects Awash receipt URLs", () => {

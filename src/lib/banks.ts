@@ -274,16 +274,16 @@ export const banks: Bank[] = [
     requiresAccount: false,
     status: "live",
     color: "#dc2626",
-    endpoint: "receipt.dashensuperapp.com",
-    endpointFormat: "https://receipt.dashensuperapp.com/receipt/{REFERENCE}",
+    endpoint: "api.dashensuperapp.com",
+    endpointFormat: "https://api.dashensuperapp.com/receipts/Within-Dashen-Transfer-{REFERENCE}.pdf",
     responseType: "pdf",
     description:
-      "Dashen Bank is one of Ethiopia's leading private banks. Dashen receipts are published as PDF documents accessible via a public URL containing the transaction reference. Verification does not require an account number.",
-    referenceFormat: "Alphanumeric transaction reference",
-    referenceExample: "DS12345678",
+      "Dashen Bank is one of Ethiopia's leading private banks. Dashen receipts are published as public PDF documents at api.dashensuperapp.com. The URL combines the transaction reference (FT/B22 prefix) with a fixed path. No account number is required for verification.",
+    referenceFormat: "FT/B22 prefixed reference followed by digits and letters (e.g. B22WDTI261620001)",
+    referenceExample: "B22WDTI261620001",
     howToVerify: [
-      "Get the transaction reference from the customer's Dashen receipt",
-      "cheki fetches the receipt PDF from Dashen's public endpoint",
+      "Get the transaction reference from the customer's Dashen receipt (often labeled 'FT Ref')",
+      "cheki fetches the official PDF from Dashen's public receipt endpoint",
       "Payment data is extracted from the PDF and returned as structured JSON",
     ],
     useCases: [
@@ -293,18 +293,18 @@ export const banks: Bank[] = [
     ],
     faq: [
       {
-        q: "When will Dashen verification be available?",
-        a: "Dashen verification is in development. The public endpoint is known and the parser is being built. Follow the GitHub repository for updates.",
+        q: "Does Dashen verification require an account number?",
+        a: "No. Unlike CBE and BOA, Dashen's receipt URL only requires the transaction reference number. The FT Ref (e.g. B22WDTI261620001) is what the verifier uses.",
       },
       {
-        q: "Does Dashen verification require an account number?",
-        a: "No. Unlike CBE and BOA, Dashen's receipt URL only requires the transaction reference number.",
+        q: "What is the difference between FT Ref and Transaction Ref?",
+        a: "The FT Ref is the Dashen receipt identifier used by the public PDF endpoint. The Transaction Ref (or Transfer Reference) is an internal transfer tracking number. For verification, always use the FT Ref.",
       },
     ],
     seo: {
       title: "Verify Dashen Bank Transactions Online",
       description:
-        "Verify Dashen Bank transactions for free. Check transaction references against official Dashen receipt endpoints. No signup, no API key.",
+        "Verify Dashen Bank transactions for free. Check FT/B22 reference numbers against official Dashen receipt endpoints. No signup, no API key.",
       keywords: [
         "Dashen Bank receipt verification",
         "verify Dashen transaction",

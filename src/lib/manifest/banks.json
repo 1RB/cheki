@@ -89,14 +89,14 @@
     "type": "bank",
     "status": "live",
     "parser": "dashen",
-    "responseType": "html",
+    "responseType": "pdf",
     "requiresAccount": false,
     "requiresPhone": false,
-    "endpoint": "https://receipt.dashensuperapp.com/receipt/{ref}",
+    "endpoint": "https://api.dashensuperapp.com/receipts/Within-Dashen-Transfer-{ref}.pdf",
     "sslVerify": true,
     "color": "#0066B3",
     "initials": "DB",
-    "notes": "Same endpoint pattern as other banks. Not yet tested with real receipt."
+    "notes": "Verified working. FT/B22 reference returns a public PDF receipt."
   },
   {
     "id": "awash",

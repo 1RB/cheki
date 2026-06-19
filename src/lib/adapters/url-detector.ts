@@ -67,10 +67,15 @@ export function detectBankFromUrl(input: string): DetectedReceipt | null {
       }
     }
 
-    // Dashen: https://receipt.dashensuperapp.com/receipt/{REFERENCE}
+    // Dashen: https://api.dashensuperapp.com/receipts/Within-Dashen-Transfer-{REF}.pdf
+    //          https://receipt.dashensuperapp.com/receipt/{REFERENCE}
     if (host.includes("dashensuperapp.com")) {
       const parts = url.pathname.split("/").filter(Boolean);
-      if (parts.length > 0) return { bank: "dashen", reference: parts[parts.length - 1] };
+      const last = parts[parts.length - 1] || "";
+      // PDF filename: Within-Dashen-Transfer-{REF}.pdf
+      const pdfMatch = last.match(/Within-Dashen-Transfer-(.+?)\.pdf$/i);
+      if (pdfMatch) return { bank: "dashen", reference: pdfMatch[1] };
+      if (last) return { bank: "dashen", reference: last };
     }
 
     // Awash: https://awashpay.awashbank.com:8225/-{REFERENCE}
