@@ -9,10 +9,17 @@ export function generateStaticParams() {
   return allSeoPages.map((p) => ({ slug: p.slug }));
 }
 
-export default async function OgImage({ params }: { params: { slug: string } }) {
-  const page = getSeoPage(params.slug);
+export default async function OgImage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+  const page = getSeoPage(slug);
   const title = page?.h1 || "Verify Ethiopian Receipts";
-  const tagline = page?.bankCode ? `${page.bankCode.toUpperCase()} receipt verification` : "Free receipt verification";
+  const tagline = page?.bankCode
+    ? `${page.bankCode.toUpperCase()} receipt verification`
+    : "Free receipt verification";
 
   return new ImageResponse(
     (

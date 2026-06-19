@@ -9,10 +9,16 @@ export function generateStaticParams() {
   return banks.filter(b => b.status === "live").map((b) => ({ code: b.code }));
 }
 
-export default async function OgImage({ params }: { params: { code: string } }) {
-  const bank = getBank(params.code);
+export default async function OgImage({
+  params,
+}: {
+  params: Promise<{ code: string }>;
+}) {
+  const { code } = await params;
+  const bank = getBank(code);
   const bankName = bank?.shortName || bank?.name || "Bank";
   const bankFullName = bank?.name || "Ethiopian Bank";
+  const urlPath = `cheki.app/banks/${code}`;
 
   return new ImageResponse(
     (
@@ -23,12 +29,12 @@ export default async function OgImage({ params }: { params: { code: string } }) 
           <div style={{ fontSize: "18px", fontWeight: 600, color: "#888", marginLeft: "8px" }}>{bankName} verification</div>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: "10px", flex: 1, justifyContent: "center" }}>
-          <div style={{ fontSize: "52px", fontWeight: 800, lineHeight: 1.12, letterSpacing: "-0.02em" }}>Verify {bankFullName}</div>
+          <div style={{ fontSize: "52px", fontWeight: 800, lineHeight: 1.12, letterSpacing: "-0.02em" }}>{`Verify ${bankFullName}`}</div>
           <div style={{ fontSize: "52px", fontWeight: 800, lineHeight: 1.12, letterSpacing: "-0.02em", color: "#16a34a" }}>Receipts for free.</div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "16px", borderTop: "2px solid #222", paddingTop: "24px" }}>
           <div style={{ fontSize: "20px", fontWeight: 600, color: "#16a34a", border: "2px solid #16a34a", padding: "6px 18px" }}>Free, no signup, instant</div>
-          <div style={{ marginLeft: "auto", fontSize: "16px", color: "#666" }}>cheki.app/banks/{params.code}</div>
+          <div style={{ marginLeft: "auto", fontSize: "16px", color: "#666" }}>{urlPath}</div>
         </div>
       </div>
     ),
