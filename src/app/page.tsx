@@ -17,7 +17,8 @@ export default function Home() {
   const [copied, setCopied] = useState(false);
   const [history, setHistory] = useState<{ bank: string; ref: string; date: string }[]>([]);
   const [showScanner, setShowScanner] = useState(false);
-  const [inputMode, setInputMode] = useState<"reference" | "url" | "qr">("reference");
+  const [inputMode, setInputMode] = useState<"reference" | "url">("reference");
+  const [showQrPaste, setShowQrPaste] = useState(false);
   const [qrData, setQrData] = useState("");
   const resultRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -44,46 +45,70 @@ export default function Home() {
       setInputMode("url");
       return;
     }
-    if (isBoaQrPayload(trimmed)) {
-      setInputMode("qr");
-      setQrData(trimmed);
-      setReference("");
-      return;
-    }
     setInputMode("reference");
     const detected = detectBank(trimmed);
     if (detected && detected !== bank) setBank(detected as BankCode);
   }, [reference]);
 
   const isBoaQrPayload = (s: string) => {
-    if (s.length < 50) return false;
-    if (!/^[A-Za-z0-9+/]+={0,2}$/.test(s)) return false;
-    return true;
+    const t = s.trim();
+    if (t.length < 80) return false;
+    if (!/^[A-Za-z0-9+/]+={0,2}$/.test(t)) return false;
+    try {
+      const decoded = atob(t);
+      return decoded.length % 16 === 0 && decoded.length >= 32;
+    } catch {
+      return false;
+    }
   };
 
-  const handleVerify = useCallback(async () => {
-    if (inputMode === "qr" && qrData.trim()) {
-      setLoading(true);
-      setError(null);
-      setResult(null);
-      try {
-        const resp = await fetch("/api/verify", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ bank: "boa", qrData: qrData.trim() }),
-        });
-        const data: VerifyResult = await resp.json();
-        if (!data.success) {
-          setError(data.error || "Verification failed.");
-          setResult(data);
-        } else {
-          setResult(data);
-        }
-      } catch {
-        setError("Network error. Try again.");
-      } finally {
-        setLoading(false);
+  const verifyQr = useCallback(async (payload: string) => {
+    setLoading(true);
+    setError(null);
+    setResult(null);
+    try {
+      const resp = await fetch("/api/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bank: "boa", qrData: payload.trim() }),
+      });
+      const data: VerifyResult = await resp.json();
+      if (!data.success) {
+        setError(data.error || "QR decryption failed.");
+        setResult(data);
+      } else {
+        setResult(data);
       }
+    } catch {
+      setError("Network error. Try again.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const handleQrDetected = useCallback((rawValue: string) => {
+    setShowScanner(false);
+    scannerActiveRef.current = false;
+    if (streamRef.current) { streamRef.current.getTracks().forEach((t) => t.stop()); streamRef.current = null; }
+    if (isBoaQrPayload(rawValue)) {
+      setBank("boa");
+      setQrData(rawValue);
+      setShowQrPaste(true);
+      verifyQr(rawValue);
+    } else if (rawValue.startsWith("http")) {
+      setReference(rawValue);
+      setInputMode("url");
+    } else {
+      setReference(rawValue);
+      setInputMode("reference");
+      const detected = detectBank(rawValue);
+      if (detected) setBank(detected as BankCode);
+    }
+  }, [verifyQr]);
+
+  const handleVerify = useCallback(async () => {
+    if (showQrPaste && qrData.trim()) {
+      await verifyQr(qrData);
       return;
     }
     if (!reference.trim() || isDisabled) return;
@@ -112,7 +137,7 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
-  }, [bank, reference, accountNumber, isDisabled, history, inputMode, qrData]);
+  }, [bank, reference, accountNumber, isDisabled, history, showQrPaste, qrData, verifyQr]);
 
   useEffect(() => {
     if (result && result.success && resultRef.current) {
@@ -139,32 +164,25 @@ export default function Home() {
           ctx?.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
           const imageData = ctx?.getImageData(0, 0, canvas.width, canvas.height);
           if (imageData) {
-            // Try BarcodeDetector first (Chrome), then jsQR fallback (all browsers)
+            const tryDetect = (rawValue: string | null) => {
+              if (rawValue) { handleQrDetected(rawValue); return true; }
+              return false;
+            };
             if ("BarcodeDetector" in window) {
               const detector = new (window as any).BarcodeDetector({ formats: ["qr_code"] });
               detector.detect(imageData).then((codes: any[]) => {
-                if (codes.length > 0) {
-                  setReference(codes[0].rawValue);
-                  setShowScanner(false);
-                  stopScanner();
+                if (codes.length > 0 && !tryDetect(codes[0].rawValue)) {}
+                else if (codes.length === 0) {
+                  const code = jsQR(imageData.data, imageData.width, imageData.height);
+                  if (code) tryDetect(code.data);
                 }
               }).catch(() => {
-                // BarcodeDetector failed, try jsQR
                 const code = jsQR(imageData.data, imageData.width, imageData.height);
-                if (code) {
-                  setReference(code.data);
-                  setShowScanner(false);
-                  stopScanner();
-                }
+                if (code) tryDetect(code.data);
               });
             } else {
-              // No BarcodeDetector — use jsQR (works in Firefox, Safari, etc.)
               const code = jsQR(imageData.data, imageData.width, imageData.height);
-              if (code) {
-                setReference(code.data);
-                setShowScanner(false);
-                stopScanner();
-              }
+              if (code) tryDetect(code.data);
             }
           }
         }
@@ -176,28 +194,30 @@ export default function Home() {
       setShowScanner(false);
       scannerActiveRef.current = false;
     }
-  }, []);
+  }, [handleQrDetected]);
 
   const scanQRCode = useCallback((imageData: ImageData) => {
-    // Try BarcodeDetector first, then jsQR
+    const tryDetect = (rawValue: string | null) => {
+      if (rawValue) { handleQrDetected(rawValue); return true; }
+      return false;
+    };
     if ("BarcodeDetector" in window) {
       const detector = new (window as any).BarcodeDetector({ formats: ["qr_code"] });
       detector.detect(imageData).then((codes: any[]) => {
-        if (codes.length > 0) { setReference(codes[0].rawValue); setShowScanner(false); stopScanner(); }
+        if (codes.length > 0) tryDetect(codes[0].rawValue);
         else {
-          // BarcodeDetector found nothing, try jsQR
           const code = jsQR(imageData.data, imageData.width, imageData.height);
-          if (code) { setReference(code.data); setShowScanner(false); stopScanner(); }
+          if (code) tryDetect(code.data);
         }
       }).catch(() => {
         const code = jsQR(imageData.data, imageData.width, imageData.height);
-        if (code) { setReference(code.data); setShowScanner(false); stopScanner(); }
+        if (code) tryDetect(code.data);
       });
     } else {
       const code = jsQR(imageData.data, imageData.width, imageData.height);
-      if (code) { setReference(code.data); setShowScanner(false); stopScanner(); }
+      if (code) tryDetect(code.data);
     }
-  }, []);
+  }, [handleQrDetected]);
 
   const stopScanner = useCallback(() => {
     scannerActiveRef.current = false;
@@ -217,30 +237,31 @@ export default function Home() {
       ctx?.drawImage(img, 0, 0);
       const imageData = ctx?.getImageData(0, 0, canvas.width, canvas.height);
       if (!imageData) { setError("Could not read image."); return; }
-      // Try BarcodeDetector first (Chrome), then jsQR (all browsers)
+      const tryDetect = (rawValue: string | null) => {
+        if (rawValue) { handleQrDetected(rawValue); return true; }
+        return false;
+      };
+      const onFail = () => setError("No QR code found in image. Try a clearer photo.");
       if ("BarcodeDetector" in window) {
         const detector = new (window as any).BarcodeDetector({ formats: ["qr_code"] });
         detector.detect(imageData).then((codes: any[]) => {
-          if (codes.length > 0) setReference(codes[0].rawValue);
+          if (codes.length > 0) { if (!tryDetect(codes[0].rawValue)) onFail(); }
           else {
             const code = jsQR(imageData.data, imageData.width, imageData.height);
-            if (code) setReference(code.data);
-            else setError("No QR code found in image. Try a clearer photo.");
+            if (code) { if (!tryDetect(code.data)) onFail(); } else onFail();
           }
         }).catch(() => {
           const code = jsQR(imageData.data, imageData.width, imageData.height);
-          if (code) setReference(code.data);
-          else setError("No QR code found in image. Try a clearer photo.");
+          if (code) { if (!tryDetect(code.data)) onFail(); } else onFail();
         });
       } else {
         const code = jsQR(imageData.data, imageData.width, imageData.height);
-        if (code) setReference(code.data);
-        else setError("No QR code found in image. Try a clearer photo.");
+        if (code) { if (!tryDetect(code.data)) onFail(); } else onFail();
       }
     };
     img.onerror = () => setError("Could not load image file.");
     img.src = URL.createObjectURL(file);
-  }, []);
+  }, [handleQrDetected]);
 
   const copyResult = () => {
     if (!result) return;
@@ -300,12 +321,11 @@ export default function Home() {
               <div style={{ display: "flex", gap: "0", marginBottom: "16px", borderBottom: "1px solid var(--border)" }}>
                 {[
                   { mode: "reference" as const, label: "Reference" },
-                  { mode: "qr" as const, label: "QR payload" },
                   { mode: "url" as const, label: "Receipt URL" },
                 ].map((tab) => (
                   <button
                     key={tab.mode}
-                    onClick={() => { setInputMode(tab.mode); if (tab.mode === "qr") { setBank("boa"); setQrData(""); setReference(""); setResult(null); setError(null); } else { setReference(""); setQrData(""); setResult(null); setError(null); } }}
+                    onClick={() => { setInputMode(tab.mode); setReference(""); setQrData(""); setShowQrPaste(false); setResult(null); setError(null); }}
                     style={{
                       padding: "8px 16px", fontSize: "13px", fontWeight: 600,
                       border: "none", borderBottom: inputMode === tab.mode ? "2px solid var(--green)" : "2px solid transparent",
@@ -344,15 +364,6 @@ export default function Home() {
                   </div>
                 )}
 
-                {inputMode === "qr" && (
-                  <div className="fade-in">
-                    <label style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink-2)", marginBottom: "6px", display: "block" }}>Bank</label>
-                    <select value={bank} onChange={(e) => { setBank(e.target.value as BankCode); setResult(null); setError(null); }} style={{ width: "100%", padding: "12px 16px", fontSize: "15px", border: "1px solid var(--border)", borderRadius: "8px", background: "var(--surface)", color: "var(--ink)", cursor: "pointer" }}>
-                      {banks.filter((b) => b.code === "boa").map((b) => <option key={b.code} value={b.code}>{b.name}</option>)}
-                    </select>
-                  </div>
-                )}
-
                 {isGeoBlocked && inputMode === "reference" && (
                   <div className="fade-in" style={{ padding: "10px 14px", borderRadius: "8px", background: "var(--amber-light)", border: "1px solid #fde68a", display: "flex", gap: "8px", alignItems: "flex-start" }}>
                     <Icon icon={Alert01Icon} size={16} color="#92400e" />
@@ -365,13 +376,9 @@ export default function Home() {
 
                 <div>
                   <label style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink-2)", marginBottom: "6px", display: "block" }}>
-                    {inputMode === "url" ? "Receipt URL or link" : inputMode === "qr" ? "QR code payload" : "Receipt reference number"}
+                    {inputMode === "url" ? "Receipt URL or link" : "Receipt reference number"}
                   </label>
-                  {inputMode === "qr" ? (
-                    <textarea value={qrData} onChange={(e) => setQrData(e.target.value)} onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && !loading && handleVerify()} placeholder="Paste the encrypted QR payload from a BOA receipt..." style={{ width: "100%", padding: "12px 16px", fontSize: "15px", border: "1px solid var(--border)", borderRadius: "8px", background: "var(--surface)", color: "var(--ink)", fontFamily: "var(--mono)", minHeight: "120px", resize: "vertical" }} spellCheck={false} />
-                  ) : (
-                    <input type="text" value={reference} onChange={(e) => setReference(e.target.value)} onKeyDown={(e) => e.key === "Enter" && !loading && handleVerify()} placeholder={inputMode === "url" ? "Paste receipt link..." : "e.g. FT26140P01YB"} style={{ width: "100%", padding: "12px 16px", fontSize: "15px", border: "1px solid var(--border)", borderRadius: "8px", background: "var(--surface)", color: "var(--ink)", fontFamily: "var(--mono)" }} spellCheck={false} autoCapitalize="characters" />
-                  )}
+                  <input type="text" value={reference} onChange={(e) => setReference(e.target.value)} onKeyDown={(e) => e.key === "Enter" && !loading && handleVerify()} placeholder={inputMode === "url" ? "Paste receipt link..." : "e.g. FT26140P01YB"} style={{ width: "100%", padding: "12px 16px", fontSize: "15px", border: "1px solid var(--border)", borderRadius: "8px", background: "var(--surface)", color: "var(--ink)", fontFamily: "var(--mono)" }} spellCheck={false} autoCapitalize="characters" />
                   {reference && inputMode === "reference" && detectBank(reference) && (
                     <p style={{ fontSize: "12px", color: "var(--green)", marginTop: "6px", fontWeight: 500, display: "flex", alignItems: "center", gap: "4px" }}>
                       <Icon icon={Search01Icon} size={12} color="var(--green)" /> Detected: {banks.find((b) => b.code === detectBank(reference))?.name}
@@ -382,12 +389,22 @@ export default function Home() {
                       <Icon icon={Search01Icon} size={12} color="var(--green)" /> Bank will be auto-detected from URL
                     </p>
                   )}
-                  {qrData && inputMode === "qr" && (
-                    <p style={{ fontSize: "12px", color: "var(--green)", marginTop: "6px", fontWeight: 500, display: "flex", alignItems: "center", gap: "4px" }}>
-                      <Icon icon={Search01Icon} size={12} color="var(--green)" /> BOA QR payload detected
-                    </p>
-                  )}
                 </div>
+
+                {/* QR paste collapsible (for BOA inter-bank transfers) */}
+                {showQrPaste && (
+                  <div className="fade-in">
+                    <label style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink-2)", marginBottom: "6px", display: "block" }}>BOA QR code payload</label>
+                    <textarea value={qrData} onChange={(e) => setQrData(e.target.value)} onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && !loading && handleVerify()} placeholder="Paste the encrypted QR payload from a BOA receipt..." style={{ width: "100%", padding: "12px 16px", fontSize: "15px", border: "1px solid var(--border)", borderRadius: "8px", background: "var(--surface)", color: "var(--ink)", fontFamily: "var(--mono)", minHeight: "100px", resize: "vertical" }} spellCheck={false} />
+                    <button onClick={() => { setShowQrPaste(false); setQrData(""); }} style={{ fontSize: "12px", color: "var(--ink-3)", background: "none", border: "none", cursor: "pointer", padding: "4px 0", marginTop: "4px" }}>Cancel</button>
+                  </div>
+                )}
+
+                {!showQrPaste && inputMode === "reference" && (
+                  <button onClick={() => { setShowQrPaste(true); setBank("boa"); }} style={{ fontSize: "12px", color: "var(--ink-3)", background: "none", border: "none", cursor: "pointer", padding: "0", textAlign: "left", display: "flex", alignItems: "center", gap: "4px" }}>
+                    <Icon icon={QrCode01Icon} size={12} color="var(--ink-3)" /> Or paste BOA QR payload
+                  </button>
+                )}
 
                 {needsAccount && inputMode === "reference" && (
                   <div className="fade-in">
@@ -403,11 +420,11 @@ export default function Home() {
                   </div>
                 )}
 
-                <button onClick={handleVerify} disabled={loading || (inputMode === "reference" && isDisabled) || (inputMode !== "qr" && !reference.trim()) || (inputMode === "qr" && !qrData.trim())} style={{
+                <button onClick={handleVerify} disabled={loading || (inputMode === "reference" && isDisabled) || (!showQrPaste && !reference.trim()) || (showQrPaste && !qrData.trim())} style={{
                   width: "100%", padding: "14px 24px", fontSize: "15px", fontWeight: 600, border: "none", borderRadius: "8px",
-                  background: loading || (inputMode === "reference" && isDisabled) || (inputMode !== "qr" && !reference.trim()) || (inputMode === "qr" && !qrData.trim()) ? "var(--border)" : "var(--green)",
-                  color: loading || (inputMode === "reference" && isDisabled) || (inputMode !== "qr" && !reference.trim()) || (inputMode === "qr" && !qrData.trim()) ? "var(--ink-3)" : "#fff",
-                  cursor: loading || (inputMode === "reference" && isDisabled) || (inputMode !== "qr" && !reference.trim()) || (inputMode === "qr" && !qrData.trim()) ? "not-allowed" : "pointer",
+                  background: loading || (inputMode === "reference" && isDisabled) || (!showQrPaste && !reference.trim()) || (showQrPaste && !qrData.trim()) ? "var(--border)" : "var(--green)",
+                  color: loading || (inputMode === "reference" && isDisabled) || (!showQrPaste && !reference.trim()) || (showQrPaste && !qrData.trim()) ? "var(--ink-3)" : "#fff",
+                  cursor: loading || (inputMode === "reference" && isDisabled) || (!showQrPaste && !reference.trim()) || (showQrPaste && !qrData.trim()) ? "not-allowed" : "pointer",
                   transition: "all 0.15s", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", minHeight: "48px",
                 }}>
                   {loading ? (<><span className="spin" style={{ width: "16px", height: "16px", border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "#fff", borderRadius: "50%", display: "inline-block" }} />Verifying...</>) : (inputMode === "reference" && isDisabled) ? "In Development" : "Verify Receipt"}
@@ -441,6 +458,22 @@ export default function Home() {
             <div className="fade-up" style={{ padding: "16px 20px", borderRadius: "8px", background: result?.fallbackUrl ? "var(--amber-light)" : "var(--red-light)", border: `1px solid ${result?.fallbackUrl ? "#fde68a" : "#fecaca"}` }}>
               <p style={{ color: result?.fallbackUrl ? "#92400e" : "var(--red)", fontSize: "14px", fontWeight: 500, marginBottom: result?.fallbackUrl ? "12px" : 0 }}>{error}</p>
               {result?.fallbackUrl && <a href={result.fallbackUrl} target="_blank" rel="noopener noreferrer" style={{ display: "inline-block", padding: "8px 16px", borderRadius: "6px", background: "var(--green)", color: "#fff", fontSize: "14px", fontWeight: 600 }}>Open Receipt</a>}
+              {error.includes("Invalid reference") && bank === "boa" && (
+                <div style={{ marginTop: "12px", padding: "12px 14px", borderRadius: "8px", background: "var(--surface)", border: "1px solid var(--border)" }}>
+                  <p style={{ fontSize: "13px", color: "var(--ink-2)", marginBottom: "8px" }}>This is likely an inter-bank transfer (BOA to CBE or another bank). BOA's API doesn't index these. Try scanning the QR code on the receipt instead.</p>
+                  <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                    <button onClick={() => fileInputRef.current?.click()} style={{ padding: "8px 16px", borderRadius: "6px", border: "1px solid var(--border)", background: "var(--surface)", color: "var(--ink)", fontSize: "13px", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
+                      <Icon icon={QrCode01Icon} size={14} color="var(--ink)" /> Upload QR image
+                    </button>
+                    <button onClick={() => { setShowQrPaste(true); setBank("boa"); }} style={{ padding: "8px 16px", borderRadius: "6px", border: "1px solid var(--border)", background: "var(--surface)", color: "var(--ink)", fontSize: "13px", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
+                      <Icon icon={QrCode01Icon} size={14} color="var(--ink)" /> Paste QR payload
+                    </button>
+                    <button onClick={() => showScanner ? (setShowScanner(false), stopScanner()) : startScanner()} style={{ padding: "8px 16px", borderRadius: "6px", border: "1px solid var(--border)", background: "var(--surface)", color: "var(--ink)", fontSize: "13px", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
+                      <Icon icon={Camera01Icon} size={14} color="var(--ink)" /> Scan with camera
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </section>
         )}
