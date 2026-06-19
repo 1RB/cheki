@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import responses
 
-from ethio_receipt_verify import (
+from cheki import (
     ChekiAPIError,
     ChekiClient,
     ChekiClientError,
@@ -14,7 +14,7 @@ from ethio_receipt_verify import (
     ClientHealthStatus,
     ClientVerifyResult,
 )
-from ethio_receipt_verify.client import DEFAULT_BASE_URL
+from cheki.client import DEFAULT_BASE_URL
 
 API = DEFAULT_BASE_URL
 

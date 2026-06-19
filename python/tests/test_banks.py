@@ -4,9 +4,9 @@ from unittest.mock import patch
 
 import responses
 
-from ethio_receipt_verify import supported_banks, verify
-from ethio_receipt_verify.banks.cbe import CBEVerifier
-from ethio_receipt_verify.errors import ReceiptNotFoundError, UpstreamError
+from cheki import supported_banks, verify
+from cheki.banks.cbe import CBEVerifier
+from cheki.errors import ReceiptNotFoundError, UpstreamError
 
 SAMPLE_CBE_PDF_TEXT = """
 Commercial Bank of Ethiopia

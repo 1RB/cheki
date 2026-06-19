@@ -12,7 +12,7 @@ bank/wallet receipts:
    and bank-endpoint rotation for you. This is the simplest path and
    matches the behaviour of the TypeScript, Go, PHP and Dart SDKs.
 
-2. **Direct verification (advanced).** The :func:`ethio_receipt_verify.verify`
+2. **Direct verification (advanced).** The :func:`cheki.verify`
    function fetches bank endpoints *directly* from your machine. This
    avoids the hosted API but requires network access to each bank and
    will fail for geo-blocked banks (e.g. telebirr, M-Pesa) outside
@@ -20,7 +20,7 @@ bank/wallet receipts:
 
 Example::
 
-    from ethio_receipt_verify import ChekiClient
+    from cheki import ChekiClient
 
     cheki = ChekiClient()                       # uses the public instance
     result = cheki.verify("cbe", "FT26140P01YB",
@@ -39,7 +39,7 @@ from urllib.parse import urlencode
 
 import requests
 
-from ethio_receipt_verify.client_types import (
+from cheki.client_types import (
     ChekiAPIError,
     ChekiNetworkError,
     ChekiTimeoutError,
@@ -51,7 +51,7 @@ from ethio_receipt_verify.client_types import (
 
 __all__ = ["ChekiClient", "DEFAULT_BASE_URL"]
 
-logger = logging.getLogger("ethio_receipt_verify.client")
+logger = logging.getLogger("cheki.client")
 
 #: Default cheki API endpoint.
 DEFAULT_BASE_URL = "https://cheki-pi.vercel.app"

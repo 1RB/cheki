@@ -5,9 +5,9 @@ from io import BytesIO
 import pdfplumber
 import requests
 
-from ethio_receipt_verify.banks.base import BankVerifier
-from ethio_receipt_verify.errors import ReceiptNotFoundError, UpstreamError
-from ethio_receipt_verify.result import VerificationResult, VerificationStatus
+from cheki.banks.base import BankVerifier
+from cheki.errors import ReceiptNotFoundError, UpstreamError
+from cheki.result import VerificationResult, VerificationStatus
 
 
 class CBEVerifier(BankVerifier):

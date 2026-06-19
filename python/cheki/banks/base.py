@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 
 import requests
 
-from ethio_receipt_verify.result import VerificationResult
+from cheki.result import VerificationResult
 
 
 class BankVerifier(ABC):

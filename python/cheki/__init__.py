@@ -11,13 +11,13 @@ cheki offers two complementary verification modes:
 
 Both are importable from the top-level package::
 
-    from ethio_receipt_verify import ChekiClient, verify, supported_banks
+    from cheki import ChekiClient, verify, supported_banks
 """
 
-from ethio_receipt_verify.result import VerificationResult, VerificationStatus
-from ethio_receipt_verify.registry import verify, supported_banks
-from ethio_receipt_verify.client import ChekiClient, DEFAULT_BASE_URL
-from ethio_receipt_verify.client_types import (
+from cheki.result import VerificationResult, VerificationStatus
+from cheki.registry import verify, supported_banks
+from cheki.client import ChekiClient, DEFAULT_BASE_URL
+from cheki.client_types import (
     ChekiClientError,
     ChekiAPIError,
     ChekiNetworkError,

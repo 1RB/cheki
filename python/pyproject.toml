@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "cheki"
-version = "0.1.0"
+version = "0.2.0"
 description = "Free, open-source Ethiopian bank/wallet receipt verification. Reverse-engineered public endpoints."
 readme = "README.md"
 license = {text = "MIT"}
@@ -38,7 +38,7 @@ dev = [
 ]
 
 [project.scripts]
-ethio-verify = "ethio_receipt_verify.cli:main"
+ethio-verify = "cheki.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/1RB/cheki"
@@ -46,7 +46,7 @@ Repository = "https://github.com/1RB/cheki"
 Issues = "https://github.com/1RB/cheki/issues"
 
 [tool.hatch.build.targets.wheel]
-packages = ["ethio_receipt_verify"]
+packages = ["cheki"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

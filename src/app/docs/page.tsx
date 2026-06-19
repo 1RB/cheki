@@ -226,7 +226,7 @@ const health = await cheki.getHealth();`} id="sdk" />
               <SectionTitle id="python">Python</SectionTitle>
               <Code code={`pip install cheki
 
-from ethio_receipt_verify import verify
+from cheki import verify
 
 result = verify("cbe", "FT26140P01YB", account_number="1000560536171")
 print(result.status)        # VerificationStatus.VERIFIED

@@ -1,6 +1,6 @@
-from ethio_receipt_verify.banks.base import BankVerifier
-from ethio_receipt_verify.errors import UnsupportedBankError
-from ethio_receipt_verify.result import VerificationResult, VerificationStatus
+from cheki.banks.base import BankVerifier
+from cheki.errors import UnsupportedBankError
+from cheki.result import VerificationResult, VerificationStatus
 
 
 class SiinqeeVerifier(BankVerifier):

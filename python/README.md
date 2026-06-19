@@ -19,7 +19,7 @@ The SDK offers two complementary ways to verify receipts:
 Both are importable from the top-level package:
 
 ```python
-from ethio_receipt_verify import ChekiClient, verify, supported_banks
+from cheki import ChekiClient, verify, supported_banks
 ```
 
 ---
@@ -27,7 +27,7 @@ from ethio_receipt_verify import ChekiClient, verify, supported_banks
 ## Quick start — API client
 
 ```python
-from ethio_receipt_verify import ChekiClient
+from cheki import ChekiClient
 
 cheki = ChekiClient()  # uses https://cheki-pi.vercel.app by default
 
@@ -90,7 +90,7 @@ Direct verification fetches the bank endpoint from *your* machine. It needs no
 cheki server but is subject to geo-blocking and bank-side changes.
 
 ```python
-from ethio_receipt_verify import verify, supported_banks
+from cheki import verify, supported_banks
 
 # CBE needs the full receiving account number
 result = verify("cbe", "FT26140P01YB", account_number="1000560536171")
@@ -253,7 +253,7 @@ Map of bank code → human name for the banks with direct verifiers.
 All API client errors derive from `ChekiClientError`:
 
 ```python
-from ethio_receipt_verify import (
+from cheki import (
     ChekiClient, ChekiClientError, ChekiAPIError, ChekiNetworkError, ChekiTimeoutError,
 )
 
@@ -283,8 +283,8 @@ except ChekiClientError as exc:
 ### Direct verification errors
 
 ```python
-from ethio_receipt_verify import verify
-from ethio_receipt_verify.errors import (
+from cheki import verify
+from cheki.errors import (
     VerificationError, ReceiptNotFoundError, UpstreamError, UnsupportedBankError,
 )
 ```

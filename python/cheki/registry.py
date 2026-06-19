@@ -1,5 +1,5 @@
-from ethio_receipt_verify.banks import VERIFIERS, BankVerifier
-from ethio_receipt_verify.result import VerificationResult
+from cheki.banks import VERIFIERS, BankVerifier
+from cheki.result import VerificationResult
 
 
 def supported_banks() -> dict[str, str]:

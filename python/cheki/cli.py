@@ -27,13 +27,13 @@ import json
 import sys
 from typing import Any
 
-from ethio_receipt_verify import supported_banks, verify
-from ethio_receipt_verify.client import DEFAULT_BASE_URL, ChekiClient
-from ethio_receipt_verify.client_types import (
+from cheki import supported_banks, verify
+from cheki.client import DEFAULT_BASE_URL, ChekiClient
+from cheki.client_types import (
     ChekiClientError,
     ClientVerifyResult,
 )
-from ethio_receipt_verify.errors import VerificationError
+from cheki.errors import VerificationError
 
 
 def _build_parser() -> argparse.ArgumentParser:
