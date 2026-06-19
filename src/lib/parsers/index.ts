@@ -12,6 +12,7 @@ import { BOAParser } from "./boa";
 import { MpesaParser } from "./mpesa";
 import { DashenParser } from "./dashen";
 import { EBirrParser } from "./ebirr";
+import { ZemenParser } from "./zemen";
 
 // Register all parsers
 registerParser(new CBEParser());
@@ -21,6 +22,7 @@ registerParser(new BOAParser());
 registerParser(new MpesaParser());
 registerParser(new DashenParser());
 registerParser(new EBirrParser());
+registerParser(new ZemenParser());
 
 // Re-export for convenience
 export { CBEParser, CBENewParser } from "./cbe";
@@ -29,6 +31,7 @@ export { BOAParser } from "./boa";
 export { MpesaParser } from "./mpesa";
 export { DashenParser } from "./dashen";
 export { EBirrParser } from "./ebirr";
+export { ZemenParser } from "./zemen";
 export { BaseParser } from "./base";
 export {
   registerParser,

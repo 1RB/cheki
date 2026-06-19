@@ -19,6 +19,7 @@ import { detectBankFromUrl, isUrl } from "../adapters/url-detector";
 import { CBEParser } from "../parsers/cbe";
 import { DashenParser } from "../parsers/dashen";
 import { BOAParser } from "../parsers/boa";
+import { ZemenParser } from "../parsers/zemen";
 
 export class Verifier {
   /**
@@ -197,6 +198,35 @@ export class Verifier {
           kind: "EXTRACTION_ERROR",
           bank: manifestEntry.name,
           message: "Could not parse the Dashen receipt PDF. Check the reference number.",
+        });
+      }
+      return ok({
+        ...parsed,
+        bank: manifestEntry.name,
+        bankCode: manifestEntry.id,
+        reference: parsed.reference || ref,
+        sourceUrl: fallbackUrl,
+        durationMs,
+      });
+    }
+
+    // Zemen PDF: special handling (extract text first)
+    if (bank.toLowerCase() === "zemen") {
+      const buf = Buffer.isBuffer(data) ? data : Buffer.from(data);
+      if (!buf.toString("ascii", 0, 4).includes("%PDF")) {
+        return err({
+          kind: "EXTRACTION_ERROR",
+          bank: manifestEntry.name,
+          message: "The bank did not return a valid receipt PDF. Check the reference number.",
+        });
+      }
+      const text = await ZemenParser.extractPdfText(buf);
+      const parsed = ZemenParser.parsePdfText(text);
+      if (!parsed.verified) {
+        return err({
+          kind: "EXTRACTION_ERROR",
+          bank: manifestEntry.name,
+          message: "Could not parse the Zemen receipt PDF. Check the reference number.",
         });
       }
       return ok({
