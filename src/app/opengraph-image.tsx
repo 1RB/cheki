@@ -15,114 +15,32 @@ export default function OgImage() {
           flexDirection: "column",
           backgroundColor: "#080808",
           color: "#faf9f6",
-          fontFamily: "system-ui, -apple-system, sans-serif",
+          fontFamily: "system-ui, sans-serif",
           padding: "60px",
           borderTop: "6px solid #16a34a",
         }}
       >
-        {/* Green top border via borderTop on root */}
-        
-
-        {/* Logo / wordmark */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "16px",
-            marginBottom: "40px",
-          }}
-        >
-          <div
-            style={{
-              width: "64px",
-              height: "64px",
-              backgroundColor: "#16a34a",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              border: "2px solid #16a34a",
-              fontSize: "32px",
-              fontWeight: 800,
-              color: "#fff",
-            }}
-          >
+        <div style={{ display: "flex", alignItems: "center", gap: "16px", marginBottom: "40px" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "64px", height: "64px", backgroundColor: "#16a34a", fontSize: "32px", fontWeight: 800, color: "#fff" }}>
             c
           </div>
-          <div
-            style={{
-              fontSize: "44px",
-              fontWeight: 800,
-              letterSpacing: "-0.03em",
-              color: "#faf9f6",
-            }}
-          >
+          <div style={{ fontSize: "44px", fontWeight: 800, letterSpacing: "-0.03em" }}>
             cheki
           </div>
         </div>
-
-        {/* Main headline */}
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "12px",
-            flex: 1,
-            justifyContent: "center",
-          }}
-        >
-          <div
-            style={{
-              fontSize: "56px",
-              fontWeight: 800,
-              lineHeight: 1.1,
-              letterSpacing: "-0.03em",
-              color: "#faf9f6",
-            }}
-          >
+        <div style={{ display: "flex", flexDirection: "column", gap: "12px", flex: 1, justifyContent: "center" }}>
+          <div style={{ fontSize: "56px", fontWeight: 800, lineHeight: 1.1, letterSpacing: "-0.03em" }}>
             Verify Ethiopian receipts.
           </div>
-          <div
-            style={{
-              fontSize: "56px",
-              fontWeight: 800,
-              lineHeight: 1.1,
-              letterSpacing: "-0.03em",
-              color: "#16a34a",
-            }}
-          >
+          <div style={{ fontSize: "56px", fontWeight: 800, lineHeight: 1.1, letterSpacing: "-0.03em", color: "#16a34a" }}>
             Free. Forever.
           </div>
         </div>
-
-        {/* Bottom tagline row */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "20px",
-            borderTop: "2px solid #222",
-            paddingTop: "28px",
-          }}
-        >
-          <div
-            style={{
-              fontSize: "22px",
-              fontWeight: 600,
-              color: "#888",
-            }}
-          >
-            CBE - Telebirr - BOA - M-Pesa - Dashen - Awash
+        <div style={{ display: "flex", alignItems: "center", gap: "20px", borderTop: "2px solid #222", paddingTop: "28px" }}>
+          <div style={{ fontSize: "22px", fontWeight: 600, color: "#888" }}>
+            CBE, Telebirr, BOA, M-Pesa, Dashen, Awash
           </div>
-          <div
-            style={{
-              marginLeft: "auto",
-              fontSize: "18px",
-              fontWeight: 600,
-              color: "#16a34a",
-              border: "2px solid #16a34a",
-              padding: "8px 20px",
-            }}
-          >
+          <div style={{ marginLeft: "auto", fontSize: "18px", fontWeight: 600, color: "#16a34a", border: "2px solid #16a34a", padding: "8px 20px" }}>
             No signup. No API key.
           </div>
         </div>
