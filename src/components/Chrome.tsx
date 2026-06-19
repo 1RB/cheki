@@ -104,7 +104,7 @@ export function Footer() {
     { href: "/guides/cbe-receipt-qr-code", label: "CBE QR codes" },
     { href: "/guides/free-receipt-verification-no-api-key", label: "Free verification" },
     { href: "/guides/payment-fraud-ethiopia", label: "Payment fraud" },
-    { href: "/guides/check-et-vs-verify-et-vs-cheki", label: "vs check.et" },
+    { href: "/guides/check-et-vs-verify-et-vs-cheki", label: "Compare all" },
     { href: "/guides/payment-verification-api-guide", label: "API guide" },
     { href: "/guides/self-hosting-docker-guide", label: "Self-hosting" },
   ];

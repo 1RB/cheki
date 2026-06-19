@@ -2,26 +2,146 @@ import type { Metadata } from "next";
 import { Nav, Footer } from "@/components/Chrome";
 
 export const metadata: Metadata = {
-  title: "cheki vs check.et vs verify.et — Full Comparison",
-  description: "Detailed comparison of cheki (free, open source) vs check.et (499 ETB/mo) vs verify.et ($20+/mo). Features, pricing, banks, API, and transparency.",
+  title: "cheki vs check.et vs verify.et vs qbirr vs tinaverify vs tally — Full Comparison",
+  description:
+    "Detailed comparison of Ethiopia's six receipt verification services. Pricing, features, banks, API, and transparency. cheki is free and open source; the rest charge for the same public data.",
 };
 
+const check = "\u2713";
+const dash = "\u2014";
+
+function Cell({ value, highlight }: { value: string; highlight?: boolean }) {
+  if (value === check) {
+    return <span style={{ color: highlight ? "var(--green)" : "var(--ink-2)", fontWeight: 700, fontSize: "15px" }}>{check}</span>;
+  }
+  if (value === dash) {
+    return <span style={{ color: "var(--ink-4)" }}>{dash}</span>;
+  }
+  return <span style={{ color: highlight ? "var(--green-dark)" : "var(--ink-2)", fontWeight: highlight ? 600 : 400 }}>{value}</span>;
+}
+
 export default function ComparePage() {
-  const features = [
-    { feature: "Price", cheki: "Free forever", checket: "499 ETB/mo or 4,990/yr", verifyet: "$20-40/mo" },
-    { feature: "Free verifications", cheki: "Unlimited", checket: "200 (one-time)", verifyet: "200 (one-time)" },
-    { feature: "API key required", cheki: "No", checket: "Yes (business account)", verifyet: "Yes" },
-    { feature: "Signup required", cheki: "No", checket: "Yes", verifyet: "Yes (Telegram OAuth)" },
-    { feature: "Open source", cheki: "Yes (MIT)", checket: "No", verifyet: "No" },
-    { feature: "Self-hosting", cheki: "Yes (Docker)", checket: "No", verifyet: "No" },
-    { feature: "REST API", cheki: "Yes (free)", checket: "Yes (paid)", verifyet: "Yes (paid)" },
-    { feature: "Batch verification", cheki: "Yes (50 at once)", checket: "No", verifyet: "No" },
-    { feature: "Python library", cheki: "Yes", checket: "No", verifyet: "No (SDK only)" },
-    { feature: "TypeScript SDK", cheki: "Yes", checket: "No", verifyet: "Yes" },
-    { feature: "Bank guides", cheki: "Yes", checket: "Yes", verifyet: "No (blog only)" },
-    { feature: "AI crawler access", cheki: "Allowed", checket: "Not blocked", verifyet: "Blocked (GPTBot, ClaudeBot, etc.)" },
-    { feature: "Receipt source URL", cheki: "Shown to user", checket: "Hidden", verifyet: "Hidden" },
-    { feature: "Data source", cheki: "Public bank endpoints", checket: "Same public endpoints", verifyet: "Same public endpoints" },
+  const services = [
+    { key: "cheki", name: "cheki", href: "/", color: "var(--green)" },
+    { key: "checket", name: "check.et", href: "https://check.et" },
+    { key: "verifyet", name: "verify.et", href: "https://verify.et" },
+    { key: "qbirr", name: "qbirr", href: "https://qbirr.com" },
+    { key: "tinaverify", name: "tinaverify", href: "https://tinaverify.com" },
+    { key: "tally", name: "tally", href: "https://tally.com.et" },
+  ];
+
+  const pricingData = [
+    { feature: "Price", cheki: "Free forever", checket: "499 ETB/mo", verifyet: "$20-40/mo", qbirr: "500-8K ETB/mo", tinaverify: "3K-8K ETB/90d", tally: "Unknown" },
+    { feature: "Free tier", cheki: "Unlimited", checket: "200 one-time", verifyet: "200 one-time", qbirr: "50/mo", tinaverify: dash, tally: "Unknown" },
+    { feature: "Per-verify cost", cheki: "0 ETB", checket: "~2.5 ETB at 200/mo", verifyet: "~$0.10-0.20", qbirr: "0.50-0.84 ETB", tinaverify: "0.84-0.91 ETB", tally: "Unknown" },
+    { feature: "Signup required", cheki: "No", checket: "Yes (phone+SMS)", verifyet: "Yes (Telegram)", qbirr: "Yes (email)", tinaverify: "Yes (email)", tally: "Yes (Telegram)" },
+    { feature: "API key required", cheki: "No", checket: "Yes (business)", verifyet: "Yes", qbirr: "Yes", tinaverify: dash, tally: dash },
+  ];
+
+  const platformData = [
+    { feature: "Banks supported", cheki: "9", checket: "9", verifyet: "10", qbirr: "7", tinaverify: "6", tally: "4" },
+    { feature: "Banks live", cheki: "4", checket: "9", verifyet: "9", qbirr: "7", tinaverify: "6", tally: "4" },
+    { feature: "REST API", cheki: check, checket: check, verifyet: check, qbirr: check, tinaverify: dash, tally: dash },
+    { feature: "QR code scanning", cheki: check, checket: check, verifyet: check, qbirr: dash, tinaverify: check, tally: dash },
+    { feature: "BOA QR decryption", cheki: check, checket: dash, verifyet: dash, qbirr: dash, tinaverify: dash, tally: dash },
+    { feature: "Batch verification", cheki: check, checket: dash, verifyet: dash, qbirr: dash, tinaverify: dash, tally: dash },
+    { feature: "Mobile app", cheki: "PWA", checket: "PWA", verifyet: "Android", qbirr: dash, tinaverify: "iOS+Android", tally: "Unreleased" },
+    { feature: "Geo-block bypass", cheki: dash, checket: dash, verifyet: dash, qbirr: check, tinaverify: dash, tally: check },
+    { feature: "Duplicate detection", cheki: dash, checket: "Per-branch", verifyet: "History", qbirr: "Per-merchant", tinaverify: "Audit trail", tally: dash },
+    { feature: "Amount tolerance check", cheki: dash, checket: dash, verifyet: dash, qbirr: check, tinaverify: dash, tally: dash },
+  ];
+
+  const openData = [
+    { feature: "Open source", cheki: check, checket: dash, verifyet: dash, qbirr: dash, tinaverify: dash, tally: dash },
+    { feature: "Self-hosting", cheki: check, checket: dash, verifyet: dash, qbirr: dash, tinaverify: dash, tally: dash },
+    { feature: "Source URL shown", cheki: check, checket: dash, verifyet: dash, qbirr: dash, tinaverify: dash, tally: dash },
+    { feature: "AI crawler access", cheki: check, checket: check, verifyet: dash, qbirr: check, tinaverify: check, tally: check },
+    { feature: "Python library", cheki: check, checket: dash, verifyet: dash, qbirr: "Advertised", tinaverify: dash, tally: dash },
+    { feature: "TypeScript SDK", cheki: check, checket: dash, verifyet: check, qbirr: "Advertised", tinaverify: dash, tally: dash },
+  ];
+
+  function Table({ rows }: { rows: typeof pricingData }) {
+    return (
+      <div className="table-wrap" style={{ marginBottom: "32px", overflowX: "auto" }}>
+        <table style={{ borderCollapse: "collapse", fontSize: "13px", background: "var(--surface)", borderRadius: "12px", overflow: "hidden", minWidth: "100%" }}>
+          <thead>
+            <tr style={{ borderBottom: "2px solid var(--border)" }}>
+              <th style={{ textAlign: "left", padding: "12px 14px", fontWeight: 700, whiteSpace: "nowrap" }}>Feature</th>
+              {services.map((s) => (
+                <th key={s.key} style={{ textAlign: "left", padding: "12px 14px", fontWeight: 700, whiteSpace: "nowrap", color: s.color || "var(--ink)" }}>
+                  {s.name}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row, i) => (
+              <tr key={row.feature} style={{ borderBottom: "1px solid var(--border)", background: i % 2 === 0 ? "var(--surface)" : "var(--surface-alt)" }}>
+                <td style={{ padding: "11px 14px", fontWeight: 600, color: "var(--ink)", whiteSpace: "nowrap" }}>{row.feature}</td>
+                {services.map((s) => (
+                  <td key={s.key} style={{ padding: "11px 14px", whiteSpace: "nowrap" }}>
+                    <Cell value={(row as Record<string, string>)[s.key]} highlight={s.key === "cheki"} />
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  }
+
+  const competitors = [
+    {
+      name: "check.et",
+      tagline: "The established player",
+      url: "https://check.et",
+      banks: "9 banks, all live",
+      pricing: "499 ETB/mo or 4,990/yr. 200 free (one-time, not monthly).",
+      strengths: ["Bilingual (EN + Amharic)", "Polished UI, good SEO content", "Employee management, roles", "Webhooks on Pro plan", "Affiliate program (250 ETB/referral)"],
+      weaknesses: ["Charges for public data", "200 free verifications are one-time", "API requires business account", "No self-hosting, no open source", "Receipt source URLs hidden"],
+      stack: "Next.js, Vercel, Cloudflare",
+    },
+    {
+      name: "verify.et",
+      tagline: "Suba Software's offering",
+      url: "https://verify.et",
+      banks: "10 banks, 9 live",
+      pricing: "$20-40/mo USD. 200 free (one-time).",
+      strengths: ["Android app on Play Store", "Blog content, status pages per bank", "TypeScript SDK published"],
+      weaknesses: ["Charges in USD", "Requires Telegram OAuth signup", "Blocks AI crawlers (GPTBot, ClaudeBot, CCBot)", "No open source, no self-hosting", "No batch verification, no Python library"],
+      stack: "React, Cloudflare",
+    },
+    {
+      name: "qbirr",
+      tagline: "Developer-first API (launched June 2026)",
+      url: "https://qbirr.com",
+      banks: "7 banks, all live",
+      pricing: "50/mo free. 500-8K ETB/mo for 1K-100K verifications.",
+      strengths: ["Clean REST API with rate limits", "Ethiopian relay for Telebirr/M-Pesa geo-block", "Configurable amount tolerance per merchant", "Per-merchant duplicate ref locking", "Scale plan with 99.9% SLA"],
+      weaknesses: ["Brand new (day-one launch)", "4 SDKs advertised but none published on npm/PyPI/Packagist/GitHub", "No mobile app, no QR scanning", "No web UI for verification", "English only, fewer banks than check.et/verify.et"],
+      stack: "NestJS, Contabo VPS (France)",
+    },
+    {
+      name: "tinaverify",
+      tagline: "Mobile-first for cashiers",
+      url: "https://tinaverify.com",
+      banks: "6 banks, all live",
+      pricing: "Credit-based. 3K ETB / 3,300 credits or 8K ETB / 9,500 credits. 90-day validity.",
+      strengths: ["Published iOS + Android apps", "Cashier workflow: scan, verify, audit trail", "Multi-branch support", "Search by cashier, branch, amount, reference", "Daily sales tracking"],
+      weaknesses: ["No REST API", "Credit-based pricing (expires in 90 days)", "No open source, no self-hosting", "No batch verification", "Fewer banks than check.et/verify.et"],
+      stack: "Next.js (App Router, Turbopack)",
+    },
+    {
+      name: "tally",
+      tagline: "Telegram bot by Sabi LLC",
+      url: "https://tally.com.et",
+      banks: "4 banks (CBE, Telebirr, BOA, Awash)",
+      pricing: "Not public. Pricing link is a dead anchor.",
+      strengths: ["Telegram bot delivery (low friction)", "Ethiopian-hosted (Ethio Telecom IP)", "Workspace codes for staff"],
+      weaknesses: ["Only 4 banks", "No web app, no API, no docs", "Mobile app claimed but store links are dead", "SSL certificate expired April 2026, unrenewed", "No pricing transparency", "Made by a dev shop, not a dedicated fintech"],
+      stack: "Static HTML + Tailwind CDN, nginx/Plesk, Ethiopian IP",
+    },
   ];
 
   return (
@@ -34,56 +154,90 @@ export default function ComparePage() {
           <span style={{ color: "var(--ink)" }}>Compare</span>
         </nav>
         <h1 style={{ fontSize: "clamp(28px, 5vw, 40px)", fontWeight: 800, letterSpacing: "-0.03em", marginBottom: "16px" }}>
-          cheki vs check.et vs verify.et
+          cheki vs the field
         </h1>
-        <p style={{ color: "var(--ink-2)", fontSize: "17px", maxWidth: "640px", marginBottom: "32px" }}>
-          All three services verify receipts by fetching the same public bank endpoints. The difference is that cheki is free and open source, while check.et and verify.et charge you for the same data.
+        <p style={{ color: "var(--ink-2)", fontSize: "17px", maxWidth: "640px", marginBottom: "40px" }}>
+          Six receipt verification services in Ethiopia. All use the same public bank endpoints. One is free and open source. The rest charge for the same data.
         </p>
 
-        {/* Comparison table */}
-        <div className="table-wrap" style={{ marginBottom: "40px" }}>
-          <table style={{
-            borderCollapse: "collapse", fontSize: "14px",
-            background: "var(--surface)", borderRadius: "12px", overflow: "hidden",
-          }}>
-            <thead>
-              <tr style={{ borderBottom: "2px solid var(--border)" }}>
-                <th style={{ textAlign: "left", padding: "16px", fontWeight: 700 }}>Feature</th>
-                <th style={{ textAlign: "left", padding: "16px", fontWeight: 700, color: "var(--green)" }}>cheki</th>
-                <th style={{ textAlign: "left", padding: "16px", fontWeight: 700, color: "var(--red)" }}>check.et</th>
-                <th style={{ textAlign: "left", padding: "16px", fontWeight: 700, color: "var(--red)" }}>verify.et</th>
-              </tr>
-            </thead>
-            <tbody>
-              {features.map((f, i) => (
-                <tr key={f.feature} style={{ borderBottom: "1px solid var(--border)", background: i % 2 === 0 ? "var(--surface)" : "var(--surface-alt)" }}>
-                  <td style={{ padding: "14px 16px", fontWeight: 600, color: "var(--ink)" }}>{f.feature}</td>
-                  <td style={{ padding: "14px 16px", color: "var(--green-dark)", fontWeight: 500 }}>{f.cheki}</td>
-                  <td style={{ padding: "14px 16px", color: "var(--ink-2)" }}>{f.checket}</td>
-                  <td style={{ padding: "14px 16px", color: "var(--ink-2)" }}>{f.verifyet}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        {/* Pricing */}
+        <h2 style={{ fontSize: "20px", fontWeight: 800, marginBottom: "16px" }}>Pricing and access</h2>
+        <Table rows={pricingData} />
+
+        {/* Platform */}
+        <h2 style={{ fontSize: "20px", fontWeight: 800, marginBottom: "16px" }}>Platform and features</h2>
+        <Table rows={platformData} />
+
+        {/* Openness */}
+        <h2 style={{ fontSize: "20px", fontWeight: 800, marginBottom: "16px" }}>Transparency and openness</h2>
+        <Table rows={openData} />
 
         {/* The story */}
         <div style={{
-          padding: "32px", borderRadius: "12px", background: "var(--red-light)", border: "1px solid #fecaca", marginBottom: "32px",
+          padding: "32px", borderRadius: "12px", background: "var(--red-light)", border: "1px solid #fecaca", marginBottom: "40px",
         }}>
-          <h2 style={{ fontSize: "22px", fontWeight: 800, color: "var(--red)", marginBottom: "16px" }}>The story</h2>
+          <h2 style={{ fontSize: "22px", fontWeight: 800, color: "var(--red)", marginBottom: "16px" }}>The core fact</h2>
           <p style={{ color: "#7f1d1d", fontSize: "15px", lineHeight: 1.7, marginBottom: "12px" }}>
-            Every Ethiopian bank and mobile wallet publishes transaction receipts at public URLs. These URLs require no authentication. Anyone can access them. This is not a security flaw; it is by design. Banks want merchants to be able to verify payments.
+            Every Ethiopian bank and mobile wallet publishes transaction receipts at public URLs. These URLs require no authentication. Anyone can access them. This is by design: banks want merchants to verify payments.
           </p>
           <p style={{ color: "#7f1d1d", fontSize: "15px", lineHeight: 1.7, marginBottom: "12px" }}>
-            <strong>check.et</strong> was built on top of these public endpoints. It adds authentication, a dashboard, and a pricing model. For 200 verifications, it is free. After that, it charges 499 ETB/month or 4,990 ETB/year. The data is identical to what cheki returns for free.
+            <strong>check.et</strong> wraps these endpoints with authentication, a dashboard, and a pricing model. 200 free verifications (one-time, not monthly), then 499 ETB/month. The data is identical to what cheki returns for free.
           </p>
           <p style={{ color: "#7f1d1d", fontSize: "15px", lineHeight: 1.7, marginBottom: "12px" }}>
-            <strong>verify.et</strong> does the same thing, but charges in USD ($20-40/month). It also blocks AI crawlers (GPTBot, ClaudeBot, CCBot, Google-Extended) in its robots.txt, presumably to prevent users from discovering that the data is public. Made by Suba Software.
+            <strong>verify.et</strong> does the same, but charges in USD ($20-40/month) and blocks AI crawlers in its robots.txt (GPTBot, ClaudeBot, CCBot, Google-Extended). Made by Suba Software.
           </p>
           <p style={{ color: "#7f1d1d", fontSize: "15px", lineHeight: 1.7, marginBottom: "12px" }}>
-            <strong>cheki</strong> does the same thing as both services, but is free, open source, and transparent. We show you the exact bank endpoint URL we fetched the data from. We allow AI crawlers to index our content. We let you self-host on your own infrastructure. No one owns the public bank endpoints. No one should charge you for accessing them.
+            <strong>qbirr</strong> is the newest (launched June 2026). Developer-first API with an Ethiopian relay for geo-blocked banks. Advertises 4 SDKs but none are published yet. 50 free verifications/month, then 500+ ETB/month.
           </p>
+          <p style={{ color: "#7f1d1d", fontSize: "15px", lineHeight: 1.7, marginBottom: "12px" }}>
+            <strong>tinaverify</strong> focuses on the cashier workflow with published iOS and Android apps. Credit-based pricing (3K-8K ETB per 90 days). No API, no open source.
+          </p>
+          <p style={{ color: "#7f1d1d", fontSize: "15px", lineHeight: 1.7, marginBottom: "12px" }}>
+            <strong>tally</strong> is a Telegram bot by Sabi LLC. 4 banks, no web app, no API, expired SSL certificate, unreleased mobile app, no public pricing. The smallest player.
+          </p>
+          <p style={{ color: "#7f1d1d", fontSize: "15px", lineHeight: 1.7 }}>
+            <strong>cheki</strong> does the same thing as all of them, but is free, open source, and transparent. We show you the exact bank endpoint URL. We allow AI crawlers. We let you self-host. No one owns the public bank endpoints. No one should charge you for accessing them.
+          </p>
+        </div>
+
+        {/* Competitor profiles */}
+        <h2 style={{ fontSize: "22px", fontWeight: 800, marginBottom: "20px" }}>Competitor profiles</h2>
+        <div className="grid-2" style={{ gap: "16px", marginBottom: "40px" }}>
+          {competitors.map((c) => (
+            <div key={c.name} style={{
+              padding: "24px", borderRadius: "12px", background: "var(--surface)", border: "1px solid var(--border)",
+            }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "4px" }}>
+                <a href={c.url} target="_blank" rel="noopener" style={{ fontSize: "17px", fontWeight: 700, color: "var(--ink)" }}>{c.name}</a>
+                <span style={{ fontSize: "12px", color: "var(--ink-3)" }}>{c.banks}</span>
+              </div>
+              <p style={{ fontSize: "13px", color: "var(--ink-3)", marginBottom: "16px" }}>{c.tagline}</p>
+              <p style={{ fontSize: "13px", color: "var(--ink-2)", marginBottom: "16px" }}>{c.pricing}</p>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                <div>
+                  <p style={{ fontSize: "12px", fontWeight: 700, color: "var(--green-dark)", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.04em" }}>Strengths</p>
+                  <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+                    {c.strengths.map((s) => (
+                      <li key={s} style={{ fontSize: "13px", color: "var(--ink-2)", lineHeight: 1.5, marginBottom: "4px", paddingLeft: "14px", position: "relative" }}>
+                        <span style={{ position: "absolute", left: 0, color: "var(--green)" }}>+</span>{s}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div>
+                  <p style={{ fontSize: "12px", fontWeight: 700, color: "var(--red)", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.04em" }}>Limitations</p>
+                  <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+                    {c.weaknesses.map((w) => (
+                      <li key={w} style={{ fontSize: "13px", color: "var(--ink-2)", lineHeight: 1.5, marginBottom: "4px", paddingLeft: "14px", position: "relative" }}>
+                        <span style={{ position: "absolute", left: 0, color: "var(--red)" }}>-</span>{w}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+              <p style={{ marginTop: "16px", fontSize: "12px", color: "var(--ink-3)", fontFamily: "var(--mono)" }}>{c.stack}</p>
+            </div>
+          ))}
         </div>
 
         {/* Other OSS competitors */}
@@ -102,14 +256,14 @@ export default function ComparePage() {
             }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
                 <p style={{ fontSize: "15px", fontWeight: 600, fontFamily: "var(--mono)" }}>{p.name}</p>
-                <span style={{ fontSize: "13px", color: "var(--ink-3)" }}>{"★"}{p.stars}</span>
+                <span style={{ fontSize: "13px", color: "var(--ink-3)" }}>{"\u2605"}{p.stars}</span>
               </div>
               <p style={{ fontSize: "13px", color: "var(--ink-2)", lineHeight: 1.5 }}>{p.desc}</p>
             </a>
           ))}
         </div>
         <p style={{ marginTop: "16px", fontSize: "14px", color: "var(--ink-2)" }}>
-          cheki improves on all of these: web UI, REST API, batch verification, TypeScript SDK, Python library, Docker, 9 banks, bank-specific guide pages, and zero cost.
+          cheki improves on all of these: web UI, REST API, batch verification, TypeScript SDK, Python library, Docker, 9 banks, bank-specific guide pages, BOA QR decryption, and zero cost.
         </p>
       </main>
       <Footer />
