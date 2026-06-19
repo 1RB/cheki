@@ -46,8 +46,8 @@ Repository = "https://github.com/1RB/cheki"
 Issues = "https://github.com/1RB/cheki/issues"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/ethio_receipt_verify"]
+packages = ["ethio_receipt_verify"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["src"]
+pythonpath = ["."]

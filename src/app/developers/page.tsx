@@ -27,7 +27,7 @@ print(result.to_dict())`,
 };
 
 const sdkCode: Record<string, string> = {
-  TypeScript: `npm install cheki
+  TypeScript: `npm install cheki-verify
 
 import { Cheki } from "cheki";
 const cheki = new Cheki();

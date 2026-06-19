@@ -15,7 +15,7 @@ composer require cheki/cheki
 Clone or download this package and include the autoloader, or use Composer's autoloader:
 
 ```bash
-git clone https://github.com/nicekwell/cheki.git
+git clone https://github.com/1RB/cheki.git
 cd cheki/sdks/php
 composer install  # optional — generates autoload, but not strictly required
 ```
@@ -189,21 +189,40 @@ $client = new ChekiClient($options);
 
 Returned by `verify()` and each item in `BatchResult::$results`.
 
-| Property       | Type     | Description                        |
-|----------------|----------|------------------------------------|
-| `success`      | bool     | Whether the API call succeeded     |
-| `verified`     | bool     | Whether the receipt was verified   |
-| `bank`         | ?string  | Bank code                          |
-| `reference`    | ?string  | Reference number                   |
-| `senderName`   | ?string  | Sender's name                      |
-| `receiverName` | ?string  | Receiver's name                    |
-| `amount`       | ?string  | Transaction amount                 |
-| `currency`     | ?string  | Currency code (e.g. ETB)           |
-| `date`         | ?string  | Transaction date                   |
-| `sourceUrl`    | ?string  | Source verification URL            |
-| `error`        | ?string  | Error message if any               |
-| `httpStatus`   | ?int     | HTTP status code                   |
-| `raw`          | ?array   | Raw decoded response               |
+| Property             | Type     | Description                          |
+|----------------------|----------|--------------------------------------|
+| `success`            | bool     | Whether the API call succeeded       |
+| `verified`           | bool     | Whether the receipt was verified     |
+| `bank`               | ?string  | Bank code                            |
+| `bankCode`           | ?string  | Bank code (alternate field)          |
+| `reference`          | ?string  | Reference number                     |
+| `sourceUrl`          | ?string  | Source verification URL              |
+| `senderName`         | ?string  | Sender's name                        |
+| `senderAccount`      | ?string  | Sender's account number              |
+| `receiverName`       | ?string  | Receiver's name                      |
+| `receiverAccount`    | ?string  | Receiver's account number            |
+| `amount`             | ?string  | Transaction amount                   |
+| `currency`           | ?string  | Currency code (e.g. ETB)             |
+| `date`               | ?string  | Transaction date                     |
+| `branch`             | ?string  | Bank branch                          |
+| `reason`             | ?string  | Reason/failure description           |
+| `durationMs`         | ?int     | Verification duration in ms          |
+| `invoiceNumber`      | ?string  | Invoice number                       |
+| `transactionStatus`  | ?string  | Transaction status                   |
+| `settledAmount`      | ?string  | Settled amount                       |
+| `stampDuty`          | ?string  | Stamp duty                           |
+| `discountAmount`     | ?string  | Discount amount                      |
+| `serviceFee`         | ?string  | Service fee                          |
+| `serviceFeeVat`      | ?string  | Service fee VAT                      |
+| `totalPaid`          | ?string  | Total paid                           |
+| `amountInWords`      | ?string  | Amount in words                      |
+| `paymentMode`        | ?string  | Payment mode                         |
+| `paymentChannel`     | ?string  | Payment channel                      |
+| `bankAccountNumber`  | ?string  | Bank account number                  |
+| `bankAccountName`    | ?string  | Bank account name                    |
+| `error`              | ?string  | Error message if any                 |
+| `httpStatus`         | ?int     | HTTP status code                     |
+| `raw`                | ?array   | Raw decoded response                 |
 
 Methods:
 - `isVerified(): bool` — true if `success && verified`
@@ -232,16 +251,28 @@ Methods:
 
 Returned by `getBanks()`.
 
-| Property          | Type    | Description                      |
-|-------------------|---------|----------------------------------|
-| `code`            | ?string | Bank code (e.g. `'cbe'`)         |
-| `name`            | ?string | Bank name                        |
-| `status`          | ?string | Bank status                      |
-| `requiresAccount` | bool    | Whether account number required  |
-| `raw`             | ?array  | Raw bank data                    |
+| Property           | Type    | Description                              |
+|--------------------|---------|------------------------------------------|
+| `code`             | ?string | Bank code (e.g. `'cbe'`)                 |
+| `name`             | ?string | Bank name                                |
+| `status`           | ?string | Bank status (`live`, `in-development`)   |
+| `type`             | ?string | Bank type (`bank`, `wallet`)             |
+| `requiresAccount`  | bool    | Whether account number required          |
+| `accountDigits`    | ?int    | Expected account number digit count      |
+| `requiresPhone`    | bool    | Whether phone number required            |
+| `responseType`     | ?string | Response type                            |
+| `endpoint`         | ?string | Bank verification endpoint               |
+| `sslVerify`        | bool    | Whether SSL verification is used         |
+| `notes`            | ?string | Additional notes                         |
+| `color`            | ?string | Brand color                              |
+| `initials`         | ?string | Bank initials                            |
+| `raw`              | ?array  | Raw bank data                            |
 
 Methods:
-- `isActive(): bool` — whether bank is active/online
+- `isLive(): bool` — whether bank status is `live`
+- `isActive(): bool` — whether bank is live/active/online
+- `isBank(): bool` — whether type is `bank`
+- `isWallet(): bool` — whether type is `wallet`
 
 ### `HealthStatus`
 
@@ -279,6 +310,13 @@ if ($result->error) {
     echo "Verified: {$result->amount} {$result->currency}\n";
 }
 ```
+
+## Retry Logic
+
+The client automatically retries failed requests on HTTP **429** (Too Many Requests)
+and **5xx** (Server Error) responses. Up to **3 retry attempts** are made with
+exponential backoff (200ms, 400ms, 800ms). Network-level errors (connection
+timeouts, DNS failures, etc.) are not retried.
 
 ## Examples
 

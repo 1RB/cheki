@@ -58,6 +58,7 @@ The main client class. Creates an HTTP connection to the cheki API.
 | ----------- | -------------- | ------------------------------ | ------------------------------ |
 | `baseUrl`   | `String?`      | `https://cheki-pi.vercel.app`  | Override the API base URL.     |
 | `client`    | `http.Client?` | `http.Client()`                | Inject a custom HTTP client.   |
+| `timeout`   | `Duration?`    | `Duration(seconds: 30)`        | Per-request timeout. `null` disables. |
 
 #### Methods
 
@@ -119,6 +120,16 @@ print('Status: ${health.status}');
 print('Version: ${health.version}');
 ```
 
+##### `getReceiptUrl(bank, reference)`
+
+Constructs the public-facing URL for viewing a receipt on the cheki web
+service. This is a convenience method that does not make an HTTP request.
+
+```dart
+final url = client.getReceiptUrl('cbe', 'RT123456789');
+print(url); // https://cheki-pi.vercel.app/receipt/cbe/RT123456789
+```
+
 ##### `close()`
 
 Closes the underlying HTTP client. Always call this when done, or use a
@@ -135,6 +146,23 @@ Closes the underlying HTTP client. Always call this when done, or use a
 | `HealthStatus`   | Service health status with individual checks.        |
 | `HealthCheck`    | A single health check entry.                         |
 | `VerifyOptions`  | Structured options for a verification request.       |
+
+### Timeout
+
+Each HTTP request is subject to a configurable timeout (default: 30 seconds).
+Pass a custom `Duration` or `null` to disable:
+
+```dart
+final client = ChekiClient(timeout: Duration(seconds: 60));
+final clientNoTimeout = ChekiClient(timeout: null);
+```
+
+### Retry Logic
+
+The client automatically retries failed requests on HTTP **429** (Too Many
+Requests) and **5xx** (Server Error) responses. Up to **3 retry attempts** are
+made with exponential backoff (200ms, 400ms, 800ms). Network-level errors
+(socket exceptions, client exceptions) and timeouts are not retried.
 
 ### Errors
 

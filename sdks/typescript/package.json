@@ -1,28 +1,48 @@
 {
-  "name": "cheki",
-  "version": "0.1.0",
-  "description": "Free Ethiopian receipt verification client. Verify bank transfers from CBE, Telebirr, BOA, Dashen, M-Pesa, and more.",
+  "name": "cheki-verify",
+  "version": "1.0.0",
+  "description": "Free Ethiopian receipt verification SDK. Verify bank transfers from CBE, Telebirr, BOA, Dashen, M-Pesa, and more.",
+  "type": "commonjs",
   "main": "index.js",
+  "module": "index.mjs",
   "types": "index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "import": "./index.mjs",
+      "require": "./index.js"
+    }
+  },
   "files": [
     "index.js",
+    "index.mjs",
     "index.d.ts"
   ],
   "scripts": {
     "build": "tsc",
+    "clean": "rm -f index.js index.d.ts",
     "prepublishOnly": "npm run build"
   },
   "keywords": [
+    "cheki",
     "ethiopia",
+    "ethiopian",
     "receipt",
     "verification",
+    "verify",
     "cbe",
     "telebirr",
     "boa",
     "dashen",
     "mpesa",
     "bank",
-    "payment"
+    "banking",
+    "payment",
+    "transfer",
+    "fintech",
+    "sdk",
+    "typescript",
+    "api-client"
   ],
   "license": "MIT",
   "homepage": "https://github.com/1RB/cheki",
@@ -34,5 +54,9 @@
   "bugs": {
     "url": "https://github.com/1RB/cheki/issues"
   },
-  "author": "1RB"
+  "author": "1RB",
+  "engines": {
+    "node": ">=18"
+  },
+  "sideEffects": false
 }

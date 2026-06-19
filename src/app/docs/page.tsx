@@ -201,7 +201,7 @@ export default function DocsPage() {
               <EndpointHeader method="GET" path="/api/receipt?bank=cbe&reference=FT...&account=..." desc="Download the original receipt file (PDF/HTML) from the bank endpoint." />
 
               <SectionTitle id="typescript">TypeScript / JavaScript</SectionTitle>
-              <Code code={`npm install cheki
+              <Code code={`npm install cheki-verify
 
 import { Cheki } from "cheki";
 

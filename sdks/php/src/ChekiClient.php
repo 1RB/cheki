@@ -17,6 +17,12 @@ namespace Cheki;
  */
 class ChekiClient
 {
+    /** Maximum number of retry attempts for transient failures. */
+    private const MAX_RETRIES = 3;
+
+    /** Base delay in milliseconds for exponential backoff. */
+    private const BASE_BACKOFF_MS = 200;
+
     private VerifyOptions $options;
 
     public function __construct(?VerifyOptions $options = null)
@@ -182,7 +188,11 @@ class ChekiClient
     }
 
     /**
-     * Core cURL request handler.
+     * Core cURL request handler with retry support.
+     *
+     * Retries up to MAX_RETRIES times on HTTP 429 (Too Many Requests) and
+     * 5xx (Server Error) responses using exponential backoff. Network-level
+     * cURL errors and non-retryable HTTP status codes are returned immediately.
      *
      * @param string               $method  HTTP method (GET or POST).
      * @param string               $path    API path (e.g. '/api/verify').
@@ -242,36 +252,64 @@ class ChekiClient
         $opts[CURLOPT_HTTPHEADER] = $headers;
         curl_setopt_array($ch, $opts);
 
-        $body     = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        // Retry loop with exponential backoff for 429 and 5xx responses.
+        $attempt = 0;
+        while (true) {
+            $attempt++;
+            $body     = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
-        if ($body === false) {
-            $error = curl_error($ch);
-            $errno = curl_errno($ch);
+            // Network-level failure — not retryable (no HTTP status available).
+            if ($body === false) {
+                $error = curl_error($ch);
+                $errno = curl_errno($ch);
+                curl_close($ch);
+                return (object) [
+                    'data'       => [],
+                    'error'      => 'cURL error (' . $errno . '): ' . $error,
+                    'httpStatus' => null,
+                ];
+            }
+
+            $decoded = json_decode((string) $body, true);
+
+            // Check if the HTTP status is retryable (429 or 5xx).
+            $isRetryable = $httpCode === 429 || $httpCode >= 500;
+
+            if ($isRetryable && $attempt <= self::MAX_RETRIES) {
+                $this->sleepBackoff($attempt);
+                continue;
+            }
+
             curl_close($ch);
+
+            if (!is_array($decoded)) {
+                return (object) [
+                    'data'       => [],
+                    'error'      => 'Invalid JSON response (HTTP ' . $httpCode . ')',
+                    'httpStatus' => (int) $httpCode,
+                ];
+            }
+
             return (object) [
-                'data'       => [],
-                'error'      => 'cURL error (' . $errno . '): ' . $error,
-                'httpStatus' => null,
-            ];
-        }
-
-        curl_close($ch);
-
-        $decoded = json_decode((string) $body, true);
-
-        if (!is_array($decoded)) {
-            return (object) [
-                'data'       => [],
-                'error'      => 'Invalid JSON response (HTTP ' . $httpCode . ')',
+                'data'       => $decoded,
+                'error'      => null,
                 'httpStatus' => (int) $httpCode,
             ];
         }
+    }
 
-        return (object) [
-            'data'       => $decoded,
-            'error'      => null,
-            'httpStatus' => (int) $httpCode,
-        ];
+    /**
+     * Sleep for an exponentially increasing duration before a retry attempt.
+     *
+     * Uses a base delay of BASE_BACKOFF_MS with exponential doubling:
+     * attempt 1 → 200ms, attempt 2 → 400ms, attempt 3 → 800ms.
+     *
+     * @param int $attempt The current attempt number (1-based).
+     */
+    private function sleepBackoff(int $attempt): void
+    {
+        $delayMs = self::BASE_BACKOFF_MS * (2 ** ($attempt - 1));
+        usleep($delayMs * 1000);
     }
 }

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -34,6 +35,12 @@ import 'verify_options.dart';
 /// ```dart
 /// final client = ChekiClient(baseUrl: 'http://localhost:3000');
 /// ```
+///
+/// You can also configure a custom timeout:
+///
+/// ```dart
+/// final client = ChekiClient(timeout: Duration(seconds: 60));
+/// ```
 class ChekiClient {
   /// The base URL of the cheki API (no trailing slash).
   final String baseUrl;
@@ -43,6 +50,11 @@ class ChekiClient {
   /// Exposed so callers can inject a mock client in tests.
   final http.Client httpClient;
 
+  /// The timeout for each HTTP request.
+  ///
+  /// Defaults to 30 seconds. Set to `null` to disable timeouts entirely.
+  final Duration? timeout;
+
   /// Default headers sent with every request.
   final Map<String, String> _defaultHeaders = {
     'Content-Type': 'application/json',
@@ -50,13 +62,21 @@ class ChekiClient {
     'User-Agent': 'cheki-dart-sdk/0.1.0',
   };
 
+  /// Maximum number of retry attempts for transient failures (429/5xx).
+  static const int _maxRetries = 3;
+
+  /// Base delay for exponential backoff between retries.
+  static const Duration _baseBackoff = Duration(milliseconds: 200);
+
   /// Creates a new [ChekiClient].
   ///
   /// [baseUrl] defaults to the production cheki service.
+  /// [timeout] defaults to 30 seconds. Pass `null` to disable.
   /// Pass a custom [client] to inject a mock or configured HTTP client.
   ChekiClient({
     String? baseUrl,
     http.Client? client,
+    this.timeout = const Duration(seconds: 30),
   })  : baseUrl = (baseUrl ?? 'https://cheki-pi.vercel.app').replaceAll(
             RegExp(r'/+$'),
             ''),
@@ -155,6 +175,15 @@ class ChekiClient {
     return HealthStatus.fromJson(json);
   }
 
+  /// Constructs the URL for viewing a receipt on the cheki web service.
+  ///
+  /// This is a convenience method that does not make an HTTP request.
+  /// It builds the public-facing receipt page URL from the [baseUrl],
+  /// [bank], and [reference].
+  String getReceiptUrl(String bank, String reference) {
+    return '$baseUrl/receipt/$bank/$reference';
+  }
+
   /// Closes the underlying HTTP client and releases resources.
   ///
   /// Call this when you are done with the client, or use the client
@@ -176,49 +205,91 @@ class ChekiClient {
   // Internal helpers
   // ---------------------------------------------------------------------------
 
+  /// Sends a POST request with retry support.
+  ///
+  /// Retries up to [_maxRetries] times on HTTP 429 and 5xx responses
+  /// with exponential backoff.
   Future<http.Response> _post(
     String path,
     Map<String, dynamic> body,
   ) async {
     final uri = Uri.parse('$baseUrl$path');
-    try {
-      final response = await httpClient.post(
+    return _requestWithRetry(
+      path,
+      () => httpClient.post(
         uri,
         headers: _defaultHeaders,
         body: jsonEncode(body),
-      );
-      _checkStatus(response);
-      return response;
-    } on http.ClientException catch (e) {
-      throw ChekiException(
-        'HTTP request failed: ${e.message}',
-        path: path,
-      );
-    } on SocketException catch (e) {
-      throw ChekiException(
-        'Network error: ${e.message}',
-        path: path,
-      );
-    }
+      ),
+    );
   }
 
+  /// Sends a GET request with retry support.
+  ///
+  /// Retries up to [_maxRetries] times on HTTP 429 and 5xx responses
+  /// with exponential backoff.
   Future<http.Response> _get(String path) async {
     final uri = Uri.parse('$baseUrl$path');
-    try {
-      final response = await httpClient.get(uri, headers: _defaultHeaders);
+    return _requestWithRetry(
+      path,
+      () => httpClient.get(uri, headers: _defaultHeaders),
+    );
+  }
+
+  /// Executes an HTTP request with automatic retry on 429/5xx responses.
+  ///
+  /// Up to [_maxRetries] retry attempts are made with exponential backoff
+  /// (200ms, 400ms, 800ms). Network-level errors (socket exceptions, client
+  /// exceptions) are not retried. Timeout is enforced per attempt if
+  /// [timeout] is set.
+  Future<http.Response> _requestWithRetry(
+    String path,
+    Future<http.Response> Function() requestFn,
+  ) async {
+    for (int attempt = 0; attempt <= _maxRetries; attempt++) {
+      http.Response response;
+
+      try {
+        final future = requestFn();
+        response = timeout != null
+            ? await future.timeout(timeout!)
+            : await future;
+      } on http.ClientException catch (e) {
+        throw ChekiException(
+          'HTTP request failed: ${e.message}',
+          path: path,
+        );
+      } on SocketException catch (e) {
+        throw ChekiException(
+          'Network error: ${e.message}',
+          path: path,
+        );
+      } on TimeoutException {
+        throw ChekiException(
+          'Request timed out after ${timeout?.inSeconds ?? 30}s',
+          path: path,
+        );
+      }
+
+      // Check if the response is retryable (429 or 5xx).
+      final isRetryable =
+          response.statusCode == 429 || response.statusCode >= 500;
+
+      if (isRetryable && attempt < _maxRetries) {
+        // Exponential backoff: 200ms, 400ms, 800ms.
+        final backoff = _baseBackoff * (1 << attempt);
+        await Future.delayed(backoff);
+        continue;
+      }
+
+      // Non-retryable or retries exhausted — validate status and return.
       _checkStatus(response);
       return response;
-    } on http.ClientException catch (e) {
-      throw ChekiException(
-        'HTTP request failed: ${e.message}',
-        path: path,
-      );
-    } on SocketException catch (e) {
-      throw ChekiException(
-        'Network error: ${e.message}',
-        path: path,
-      );
     }
+
+    // Unreachable: the loop always returns or throws.
+    // Included to satisfy the analyzer's flow analysis.
+    throw ChekiException('Max retries exceeded', path: path);
   }
 
   void _checkStatus(http.Response response) {

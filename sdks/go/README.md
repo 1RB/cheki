@@ -128,6 +128,16 @@ health, err := client.GetHealth(ctx)
 fmt.Printf("Status: %s, Version: %s\n", health.Status, health.Version)
 ```
 
+### `(*Client).GetReceiptURL(bank, reference string) string`
+
+Constructs the public-facing URL for viewing a receipt on the cheki web
+service. This is a convenience method that does not make an HTTP request.
+
+```go
+url := client.GetReceiptURL("cbe", "123456789")
+fmt.Println(url) // https://cheki-pi.vercel.app/receipt/cbe/123456789
+```
+
 ## Types
 
 ### `VerifyOptions`
@@ -142,28 +152,56 @@ fmt.Printf("Status: %s, Version: %s\n", health.Status, health.Version)
 
 ### `VerifyResult`
 
-| Field          | Type    | Description                      |
-|----------------|---------|----------------------------------|
-| `Success`      | bool    | Whether the request succeeded    |
-| `Verified`     | bool    | Whether the receipt was verified |
-| `Bank`         | string  | Bank code                        |
-| `Reference`    | string  | Transaction reference            |
-| `SenderName`   | string  | Sender's name                    |
-| `ReceiverName` | string  | Receiver's name                  |
-| `Amount`       | float64 | Transaction amount               |
-| `Currency`     | string  | Currency code                    |
-| `Date`         | string  | Transaction date                 |
-| `SourceURL`    | string  | Source verification URL          |
-| `Error`        | string  | Error message (if any)           |
+| Field               | Type    | Description                      |
+|---------------------|---------|----------------------------------|
+| `Success`           | bool    | Whether the request succeeded    |
+| `Verified`          | bool    | Whether the receipt was verified |
+| `Bank`              | string  | Bank code                        |
+| `BankCode`          | string  | Bank code (alternate)            |
+| `Reference`         | string  | Transaction reference            |
+| `SourceURL`         | string  | Source verification URL          |
+| `SenderName`        | string  | Sender's name                    |
+| `SenderAccount`     | string  | Sender's account number          |
+| `ReceiverName`      | string  | Receiver's name                  |
+| `ReceiverAccount`   | string  | Receiver's account number        |
+| `Amount`            | float64 | Transaction amount               |
+| `Currency`          | string  | Currency code                    |
+| `Date`              | string  | Transaction date                 |
+| `Branch`            | string  | Bank branch                      |
+| `Reason`            | string  | Reason/failure description       |
+| `DurationMs`        | int64   | Verification duration in ms      |
+| `InvoiceNumber`     | string  | Invoice number                   |
+| `TransactionStatus` | string  | Transaction status               |
+| `SettledAmount`     | float64 | Settled amount                   |
+| `StampDuty`         | float64 | Stamp duty                       |
+| `DiscountAmount`    | float64 | Discount amount                  |
+| `ServiceFee`        | float64 | Service fee                      |
+| `ServiceFeeVat`     | float64 | Service fee VAT                  |
+| `TotalPaid`         | float64 | Total paid                       |
+| `AmountInWords`     | string  | Amount in words                  |
+| `PaymentMode`       | string  | Payment mode                     |
+| `PaymentChannel`    | string  | Payment channel                  |
+| `BankAccountNumber` | string  | Bank account number              |
+| `BankAccountName`   | string  | Bank account name                |
+| `Error`             | string  | Error message (if any)           |
 
 ### `BankInfo`
 
-| Field             | Type   | Description                              |
-|-------------------|--------|------------------------------------------|
-| `Code`            | string | Bank code                                |
-| `Name`            | string | Bank name                                |
-| `Status`          | string | Bank status (e.g. `"active"`)            |
-| `RequiresAccount` | bool   | Whether account number is required       |
+| Field             | Type   | Description                                |
+|-------------------|--------|--------------------------------------------|
+| `Code`            | string | Bank code                                  |
+| `Name`            | string | Bank name                                  |
+| `Status`          | string | Bank status (`live`, `in-development`)     |
+| `Type`            | string | Bank type (`bank`, `wallet`)               |
+| `RequiresAccount` | bool   | Whether account number is required         |
+| `AccountDigits`   | int    | Expected account number digit count        |
+| `RequiresPhone`   | bool   | Whether phone number is required           |
+| `ResponseType`    | string | Response type                              |
+| `Endpoint`        | string | Bank verification endpoint                 |
+| `SslVerify`       | bool   | Whether SSL verification is used           |
+| `Notes`           | string | Additional notes                           |
+| `Color`           | string | Brand color                                |
+| `Initials`        | string | Bank initials                              |
 
 ### `BatchResult`
 
@@ -199,6 +237,16 @@ if err != nil {
     log.Fatal(err)
 }
 ```
+
+## Retry Logic
+
+The client automatically retries failed requests on HTTP **429** (Too Many Requests)
+and **5xx** (Server Error) responses. Up to **3 retry attempts** are made with
+exponential backoff starting at 500ms, doubling each retry, capped at 5s. A random
+jitter of up to 50% of the backoff is added to avoid thundering-herd effects.
+Context cancellation is respected during backoff waits — if the context is
+cancelled while waiting to retry, the context error is returned immediately.
+Network-level errors (connection failures, DNS errors, etc.) are not retried.
 
 ## Context & Timeouts
 
