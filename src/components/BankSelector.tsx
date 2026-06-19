@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef, useEffect, useMemo, useCallback } from "react";
+import { useState, useRef, useEffect, useMemo, useCallback, useLayoutEffect } from "react";
+import { createPortal } from "react-dom";
 import { banks, type Bank } from "@/lib/banks";
 
 interface BankSelectorProps {
@@ -18,11 +19,20 @@ export function BankSelector({ value, onChange }: BankSelectorProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [highlighted, setHighlighted] = useState(0);
+  const [mounted, setMounted] = useState(false);
+  const [panelRect, setPanelRect] = useState<{ top: number; left: number; width: number } | null>(null);
+
   const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
   const selectedBank = banks.find((b) => b.code === value);
+
+  // Mount check for portal (SSR safe)
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const filtered = useMemo(() => {
     if (!query.trim()) return banks;
@@ -49,14 +59,24 @@ export function BankSelector({ value, onChange }: BankSelectorProps) {
     [onChange]
   );
 
-  // Close on outside click
+  // Calculate panel position from trigger button rect
+  const updatePosition = useCallback(() => {
+    if (!triggerRef.current) return;
+    const rect = triggerRef.current.getBoundingClientRect();
+    setPanelRect({ top: rect.bottom + 2, left: rect.left, width: rect.width });
+  }, []);
+
+  // Close on outside click (check both trigger container and portal panel)
   useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false);
-        setQuery("");
-      }
+      const target = e.target as Node;
+      if (containerRef.current?.contains(target)) return;
+      // Portal panel is in document.body, check by data attribute
+      const panel = document.querySelector("[data-bank-selector-panel]");
+      if (panel?.contains(target)) return;
+      setOpen(false);
+      setQuery("");
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -65,9 +85,23 @@ export function BankSelector({ value, onChange }: BankSelectorProps) {
   // Focus input when opened
   useEffect(() => {
     if (open && inputRef.current) {
-      inputRef.current.focus();
+      requestAnimationFrame(() => inputRef.current?.focus());
     }
   }, [open]);
+
+  // Update position on open, scroll, resize
+  useLayoutEffect(() => {
+    if (!open) return;
+    updatePosition();
+    const onScroll = () => updatePosition();
+    const onResize = () => updatePosition();
+    window.addEventListener("scroll", onScroll, true);
+    window.addEventListener("resize", onResize);
+    return () => {
+      window.removeEventListener("scroll", onScroll, true);
+      window.removeEventListener("resize", onResize);
+    };
+  }, [open, updatePosition]);
 
   // Keyboard navigation
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -113,15 +147,25 @@ export function BankSelector({ value, onChange }: BankSelectorProps) {
     }
   }, [highlighted, open]);
 
+  // Clamp panel height to viewport
+  const maxPanelHeight = panelRect ? Math.min(380, window.innerHeight - panelRect.top - 8) : 380;
+
   return (
     <div ref={containerRef} style={{ position: "relative" }}>
-      {/* Hidden native select for form compatibility */}
       <input type="hidden" value={value} />
 
       {/* Trigger button */}
       <button
+        ref={triggerRef}
         type="button"
-        onClick={() => setOpen(!open)}
+        onClick={() => {
+          if (open) {
+            setOpen(false);
+            setQuery("");
+          } else {
+            setOpen(true);
+          }
+        }}
         onKeyDown={handleKeyDown}
         aria-expanded={open}
         aria-haspopup="listbox"
@@ -196,24 +240,27 @@ export function BankSelector({ value, onChange }: BankSelectorProps) {
         </svg>
       </button>
 
-      {/* Dropdown panel */}
-      {open && (
+      {/* Dropdown panel — rendered via portal to escape stacking contexts */}
+      {open && mounted && panelRect && createPortal(
         <div
+          data-bank-selector-panel
           role="listbox"
+          onClick={(e) => e.stopPropagation()}
           style={{
-            position: "absolute",
-            top: "100%",
-            left: 0,
-            right: 0,
+            position: "fixed",
+            top: `${panelRect.top}px`,
+            left: `${panelRect.left}px`,
+            width: `${panelRect.width}px`,
             background: "var(--surface)",
             border: "1px solid var(--green)",
             borderTop: "none",
             borderRadius: "0 0 8px 8px",
-            zIndex: 50,
-            maxHeight: "380px",
+            zIndex: 99999,
+            maxHeight: `${maxPanelHeight}px`,
             display: "flex",
             flexDirection: "column",
-            boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
+            boxShadow: "0 12px 32px rgba(0,0,0,0.12), 0 0 0 1px var(--border)",
+            animation: "bankSelectorSlideIn 0.12s ease-out",
           }}
         >
           {/* Search input */}
@@ -227,7 +274,7 @@ export function BankSelector({ value, onChange }: BankSelectorProps) {
                 setHighlighted(0);
               }}
               onKeyDown={handleKeyDown}
-              placeholder="Search 31 banks..."
+              placeholder={`Search ${banks.length} banks...`}
               style={{
                 width: "100%",
                 padding: "8px 12px",
@@ -408,15 +455,16 @@ export function BankSelector({ value, onChange }: BankSelectorProps) {
           >
             <span>{filtered.length} of {banks.length} banks</span>
             <span>
-              <kbd style={{ fontSize: "10px", padding: "1px 5px", border: "1px solid var(--border)", borderRadius: "3px" }}>↑↓</kbd>{" "}
+              <kbd style={{ fontSize: "10px", padding: "1px 5px", border: "1px solid var(--border)", borderRadius: "3px" }}>arrows</kbd>{" "}
               navigate{" "}
-              <kbd style={{ fontSize: "10px", padding: "1px 5px", border: "1px solid var(--border)", borderRadius: "3px" }}>Enter</kbd>{" "}
+              <kbd style={{ fontSize: "10px", padding: "1px 5px", border: "1px solid var(--border)", borderRadius: "3px" }}>enter</kbd>{" "}
               select{" "}
-              <kbd style={{ fontSize: "10px", padding: "1px 5px", border: "1px solid var(--border)", borderRadius: "3px" }}>Esc</kbd>{" "}
+              <kbd style={{ fontSize: "10px", padding: "1px 5px", border: "1px solid var(--border)", borderRadius: "3px" }}>esc</kbd>{" "}
               close
             </span>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

@@ -490,7 +490,7 @@ export default function Home() {
 
               <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
                 {inputMode === "reference" && (
-                  <div className="fade-in">
+                  <div>
                     <label style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink-2)", marginBottom: "6px", display: "block" }}>Bank</label>
                     <BankSelector value={bank} onChange={(code) => { setBank(code as BankCode); setResult(null); setError(null); }} />
                   </div>
@@ -648,35 +648,56 @@ export default function Home() {
           </section>
         )}
 
-        {/* How it works */}
+        {/* How it works — terminal-style list, not cards */}
         <section className="container" style={{ paddingTop: "32px", marginTop: "24px" }}>
           <h2 style={{ fontSize: "clamp(22px, 4vw, 30px)", fontWeight: 800, letterSpacing: "-0.02em", marginBottom: "12px" }}>
             The banks publish receipts on public URLs
           </h2>
-          <p style={{ color: "var(--ink-2)", fontSize: "16px", maxWidth: "600px", marginBottom: "24px", lineHeight: 1.5 }}>
+          <p style={{ color: "var(--ink-2)", fontSize: "16px", maxWidth: "600px", marginBottom: "20px", lineHeight: 1.5 }}>
             Every Ethiopian bank and mobile wallet publishes transaction receipts at a publicly accessible URL. No authentication required. cheki fetches these URLs, parses the response, and returns clean JSON. That is all check.et and verify.et do too, except they charge you for it.
           </p>
-          <div className="grid-2" style={{ gap: "16px" }}>
-            {banks.filter((b) => b.status === "live").map((b) => (
-              <div key={b.code} style={{ padding: "18px", borderRadius: "12px", background: "var(--surface)", border: "1px solid var(--border)" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                    <BankLogoByName code={b.code} size={32} />
-                    <div>
-                      <p style={{ fontSize: "15px", fontWeight: 600 }}>{b.shortName}</p>
-                      <p style={{ fontSize: "11px", color: "var(--ink-3)" }}>{b.type === "mobile" ? "Mobile wallet" : "Bank"}</p>
-                    </div>
-                  </div>
-                  <span style={{ fontSize: "11px", fontWeight: 600, padding: "3px 10px", borderRadius: "4px", background: b.geoBlocked ? "var(--amber-light)" : "var(--green-light)", color: b.geoBlocked ? "#92400e" : "var(--green-dark)" }}>{b.geoBlocked ? "Ethiopia only" : "Works globally"}</span>
-                </div>
-                <p style={{ fontSize: "12px", fontFamily: "var(--mono)", color: "var(--ink-3)", wordBreak: "break-all" }}>{b.endpointFormat}</p>
-                <a href={`/banks/${b.code}`} style={{ fontSize: "13px", color: "var(--green-dark)", fontWeight: 600, marginTop: "8px", display: "inline-flex", alignItems: "center", gap: "4px" }}>Learn more <Icon icon={ArrowRight01Icon} size={12} color="var(--green-dark)" /></a>
-              </div>
-            ))}
+          <div style={{ borderRadius: "10px", overflow: "hidden", border: "1px solid var(--border)", background: "var(--bg)" }}>
+            <div style={{ padding: "8px 14px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: "8px", background: "var(--surface)" }}>
+              <span style={{ width: "10px", height: "10px", borderRadius: "50%", background: "#ff5f57" }} />
+              <span style={{ width: "10px", height: "10px", borderRadius: "50%", background: "#febc2e" }} />
+              <span style={{ width: "10px", height: "10px", borderRadius: "50%", background: "#28c840" }} />
+              <span style={{ fontSize: "12px", color: "var(--ink-3)", marginLeft: "8px", fontFamily: "var(--mono)" }}>cheki --list-endpoints</span>
+            </div>
+            <div className="endpoint-list" style={{ padding: "6px 0" }}>
+              {banks.filter((b) => b.status === "live").map((b) => (
+                <a
+                  key={b.code}
+                  href={`/banks/${b.code}`}
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "120px 1fr auto",
+                    gap: "12px",
+                    padding: "10px 16px",
+                    alignItems: "center",
+                    textDecoration: "none",
+                    borderBottom: `1px solid var(--border)`,
+                    transition: "background 0.1s",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = "var(--surface)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                >
+                  <span style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink)" }}>
+                    <span style={{ display: "inline-block", width: "8px", height: "8px", borderRadius: "2px", background: b.color, marginRight: "8px", verticalAlign: "middle" }} />
+                    {b.shortName}
+                  </span>
+                  <span style={{ fontSize: "12px", fontFamily: "var(--mono)", color: "var(--ink-3)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {b.endpointFormat}
+                  </span>
+                  <span style={{ fontSize: "10px", fontWeight: 600, padding: "2px 8px", borderRadius: "3px", background: b.geoBlocked ? "var(--amber-light)" : "var(--green-light)", color: b.geoBlocked ? "#92400e" : "var(--green-dark)", whiteSpace: "nowrap" }}>
+                    {b.geoBlocked ? "ET only" : "Global"}
+                  </span>
+                </a>
+              ))}
+            </div>
           </div>
         </section>
 
-        {/* The Scam / Comparison */}
+        {/* The Scam / Comparison — single panel, inline columns */}
         <section className="container" style={{ marginTop: "40px" }}>
           <div style={{ padding: "28px", borderRadius: "16px", background: "var(--red-light)", border: "1px solid #fecaca" }}>
             <p style={{ fontSize: "12px", fontWeight: 600, color: "var(--red)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "8px" }}>The paid services</p>
@@ -686,20 +707,20 @@ export default function Home() {
             <p style={{ color: "#7f1d1d", fontSize: "15px", lineHeight: 1.6, marginBottom: "20px", maxWidth: "640px" }}>
               These services verify receipts by hitting the exact same public bank URLs cheki uses. They resell the response with a markup. You pay for data that is already free. verify.et even blocks AI crawlers in its robots.txt to prevent you from discovering this.
             </p>
-            <div className="grid-3" style={{ gap: "14px" }}>
-              <div style={{ padding: "18px", borderRadius: "10px", background: "#fff", border: "1px solid #fecaca" }}>
-                <p style={{ fontSize: "12px", fontWeight: 600, color: "var(--red)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "6px" }}>check.et</p>
-                <p style={{ fontSize: "13px", color: "var(--ink-2)", marginBottom: "2px" }}>200 free, then paid</p>
+            <div className="price-compare" style={{ display: "flex", borderRadius: "10px", overflow: "hidden", border: "1px solid #fecaca", background: "#fff" }}>
+              <div style={{ flex: 1, padding: "18px 20px", borderRight: "1px solid #fecaca" }}>
+                <p style={{ fontSize: "12px", fontWeight: 600, color: "var(--red)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "4px" }}>check.et</p>
+                <p style={{ fontSize: "13px", color: "var(--ink-3)", marginBottom: "2px" }}>200 free, then paid</p>
                 <p style={{ fontSize: "24px", fontWeight: 800, color: "var(--red)" }}>499<span style={{ fontSize: "13px", fontWeight: 500 }}> ETB/mo</span></p>
               </div>
-              <div style={{ padding: "18px", borderRadius: "10px", background: "#fff", border: "1px solid #fecaca" }}>
-                <p style={{ fontSize: "12px", fontWeight: 600, color: "var(--red)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "6px" }}>verify.et</p>
-                <p style={{ fontSize: "13px", color: "var(--ink-2)", marginBottom: "2px" }}>200 free, then paid</p>
+              <div style={{ flex: 1, padding: "18px 20px", borderRight: "1px solid #fecaca" }}>
+                <p style={{ fontSize: "12px", fontWeight: 600, color: "var(--red)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "4px" }}>verify.et</p>
+                <p style={{ fontSize: "13px", color: "var(--ink-3)", marginBottom: "2px" }}>200 free, then paid</p>
                 <p style={{ fontSize: "24px", fontWeight: 800, color: "var(--red)" }}>$20<span style={{ fontSize: "13px", fontWeight: 500 }}>+/mo</span></p>
               </div>
-              <div style={{ padding: "18px", borderRadius: "10px", background: "#fff", border: "1px solid var(--green-light)" }}>
-                <p style={{ fontSize: "12px", fontWeight: 600, color: "var(--green)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "6px" }}>cheki</p>
-                <p style={{ fontSize: "13px", color: "var(--ink-2)", marginBottom: "2px" }}>unlimited, forever</p>
+              <div style={{ flex: 1, padding: "18px 20px", background: "var(--green-light)" }}>
+                <p style={{ fontSize: "12px", fontWeight: 600, color: "var(--green)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "4px" }}>cheki</p>
+                <p style={{ fontSize: "13px", color: "var(--ink-3)", marginBottom: "2px" }}>unlimited, forever</p>
                 <p style={{ fontSize: "24px", fontWeight: 800, color: "var(--green)" }}>0<span style={{ fontSize: "13px", fontWeight: 500 }}> ETB</span></p>
               </div>
             </div>
@@ -707,23 +728,38 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Features */}
+        {/* Features — bento grid, varied sizes */}
         <section className="container" style={{ marginTop: "40px" }}>
           <h2 style={{ fontSize: "clamp(22px, 4vw, 30px)", fontWeight: 800, letterSpacing: "-0.02em", marginBottom: "20px" }}>
             Everything you need, nothing you don&apos;t
           </h2>
-          <div className="grid-3" style={{ gap: "14px" }}>
-            {features.map((f) => (
-              <div key={f.title} style={{ padding: "20px", borderRadius: "12px", background: "var(--surface)", border: "1px solid var(--border)" }}>
-                <div style={{ marginBottom: "10px" }}><Icon icon={f.icon} size={24} color="var(--green)" /></div>
-                <h3 style={{ fontSize: "15px", fontWeight: 700, marginBottom: "6px" }}>{f.title}</h3>
-                <p style={{ fontSize: "14px", color: "var(--ink-2)", lineHeight: 1.5 }}>{f.body}</p>
+          <div className="bento-grid">
+            {features.map((f, i) => (
+              <div
+                key={f.title}
+                className={i === 0 ? "bento-wide" : ""}
+                style={{
+                  padding: "20px",
+                  borderRadius: "12px",
+                  background: "var(--surface)",
+                  border: "1px solid var(--border)",
+                  display: "flex",
+                  flexDirection: i === 0 ? "row" : "column",
+                  alignItems: i === 0 ? "center" : "flex-start",
+                  gap: i === 0 ? "16px" : "10px",
+                }}
+              >
+                <div style={{ marginBottom: i === 0 ? 0 : "10px", flexShrink: 0 }}><Icon icon={f.icon} size={i === 0 ? 32 : 24} color="var(--green)" /></div>
+                <div>
+                  <h3 style={{ fontSize: i === 0 ? "18px" : "15px", fontWeight: 700, marginBottom: "4px" }}>{f.title}</h3>
+                  <p style={{ fontSize: "14px", color: "var(--ink-2)", lineHeight: 1.5 }}>{f.body}</p>
+                </div>
               </div>
             ))}
           </div>
         </section>
 
-        {/* Guides discovery */}
+        {/* Guides discovery — featured + list layout */}
         <section className="container" style={{ marginTop: "40px" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
             <h2 style={{ fontSize: "clamp(22px, 4vw, 30px)", fontWeight: 800, letterSpacing: "-0.02em" }}>
@@ -733,34 +769,36 @@ export default function Home() {
               All {articles.length} articles →
             </a>
           </div>
-          <div className="grid-3" style={{ gap: "14px" }}>
+          <div className="bento-grid">
             {articles
               .filter((a) => ["boa-qr-code-receipts", "free-receipt-verification-no-api-key", "contribute-new-bank", "cbe-receipt-qr-code", "payment-fraud-ethiopia", "check-et-vs-verify-et-vs-cheki"].includes(a.slug))
               .slice(0, 6)
-              .map((a) => (
+              .map((a, i) => (
                 <a
                   key={a.slug}
                   href={`/guides/${a.slug}`}
+                  className={i === 0 ? "bento-wide" : ""}
                   style={{
-                    padding: "20px",
+                    padding: i === 0 ? "28px" : "20px",
                     borderRadius: "12px",
-                    background: "var(--surface)",
-                    border: "1px solid var(--border)",
+                    background: i === 0 ? "var(--surface)" : "var(--surface)",
+                    border: i === 0 ? "1px solid var(--green-light)" : "1px solid var(--border)",
                     display: "flex",
                     flexDirection: "column",
-                    gap: "8px",
+                    gap: i === 0 ? "12px" : "8px",
                     textDecoration: "none",
+                    minHeight: i === 0 ? "auto" : "100%",
                   }}
                 >
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{ fontSize: "11px", fontWeight: 600, color: "var(--green)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                    <span style={{ fontSize: "11px", fontWeight: 600, color: i === 0 ? "var(--green)" : "var(--green)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
                       {a.category.replace("-", " ")}
                     </span>
                     <span style={{ fontSize: "11px", color: "var(--ink-3)" }}>{a.readTime}</span>
                   </div>
-                  <h3 style={{ fontSize: "15px", fontWeight: 700, lineHeight: 1.3 }}>{a.title}</h3>
-                  <p style={{ fontSize: "13px", color: "var(--ink-2)", lineHeight: 1.5, flex: 1 }}>{a.excerpt}</p>
-                  <span style={{ fontSize: "13px", color: "var(--green-dark)", fontWeight: 600 }}>Read →</span>
+                  <h3 style={{ fontSize: i === 0 ? "22px" : "15px", fontWeight: 700, lineHeight: 1.3 }}>{a.title}</h3>
+                  <p style={{ fontSize: i === 0 ? "15px" : "13px", color: "var(--ink-2)", lineHeight: 1.5, flex: 1 }}>{a.excerpt}</p>
+                  <span style={{ fontSize: "13px", color: "var(--green-dark)", fontWeight: 600 }}>{i === 0 ? "Read full article →" : "Read →"}</span>
                 </a>
               ))}
           </div>

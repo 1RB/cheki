@@ -160,6 +160,40 @@ a { color: inherit; text-decoration: none; }
   .bank-grid { grid-template-columns: repeat(5, 1fr) !important; }
 }
 
+/* price compare: stack on mobile, inline on desktop */
+.price-compare { flex-direction: column !important; }
+.price-compare > div { borderRight: none !important; borderBottom: 1px solid #fecaca; }
+.price-compare > div:last-child { borderBottom: none !important; }
+@media (min-width: 640px) {
+  .price-compare { flex-direction: row !important; }
+  .price-compare > div { borderRight: 1px solid #fecaca !important; borderBottom: none !important; }
+  .price-compare > div:last-child { borderRight: none !important; }
+}
+
+/* terminal endpoint list: stack columns on mobile */
+.endpoint-list a { grid-template-columns: 1fr auto !important; }
+.endpoint-list span:nth-child(2) { display: none !important; }
+@media (min-width: 640px) {
+  .endpoint-list a { grid-template-columns: 120px 1fr auto !important; }
+  .endpoint-list span:nth-child(2) { display: block !important; }
+}
+
+/* bento grid: 1 col mobile, 2 tablet, 3 desktop, with span support */
+.bento-grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
+.bento-grid .bento-wide { grid-column: span 1; }
+@media (min-width: 640px) {
+  .bento-grid { grid-template-columns: repeat(2, 1fr); }
+  .bento-grid .bento-wide { grid-column: span 2; }
+}
+@media (min-width: 900px) {
+  .bento-grid { grid-template-columns: repeat(3, 1fr); gap: 18px; }
+  .bento-grid .bento-wide { grid-column: span 2; }
+}
+
+/* guide list item hover */
+.guide-list-item { transition: background 0.1s; }
+.guide-list-item:hover { background: var(--surface); }
+
 /* nav: show desktop links, hide mobile toggle by default */
 .nav-desktop { display: flex !important; }
 .nav-mobile-toggle { display: none !important; }
@@ -180,6 +214,7 @@ a { color: inherit; text-decoration: none; }
 @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes spin { to { transform: rotate(360deg); } }
+@keyframes bankSelectorSlideIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
 .fade-up { animation: fadeUp 0.3s ease-out both; }
 .fade-in { animation: fadeIn 0.2s ease-out both; }
 .spin { animation: spin 0.8s linear infinite; }
