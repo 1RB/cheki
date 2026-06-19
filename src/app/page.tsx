@@ -601,7 +601,7 @@ export default function Home() {
                   { label: "Language", value: "TypeScript + Python" },
                   { label: "Framework", value: "Next.js 16" },
                   { label: "Architecture", value: "Hexagonal / Ports" },
-                  { label: "Tests", value: "66 (vitest)" },
+                  { label: "Tests", value: "74 (vitest)" },
                   { label: "CLI", value: "cheki verify, info, health" },
                   { label: "Self-hosting", value: "Docker included" },
                   { label: "SDK", value: "TypeScript + Python" },
