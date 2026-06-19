@@ -458,7 +458,7 @@ export default function Home() {
             <div className="fade-up" style={{ padding: "16px 20px", borderRadius: "8px", background: result?.fallbackUrl ? "var(--amber-light)" : "var(--red-light)", border: `1px solid ${result?.fallbackUrl ? "#fde68a" : "#fecaca"}` }}>
               <p style={{ color: result?.fallbackUrl ? "#92400e" : "var(--red)", fontSize: "14px", fontWeight: 500, marginBottom: result?.fallbackUrl ? "12px" : 0 }}>{error}</p>
               {result?.fallbackUrl && <a href={result.fallbackUrl} target="_blank" rel="noopener noreferrer" style={{ display: "inline-block", padding: "8px 16px", borderRadius: "6px", background: "var(--green)", color: "#fff", fontSize: "14px", fontWeight: 600 }}>Open Receipt</a>}
-              {error.includes("Invalid reference") && bank === "boa" && (
+              {error && bank === "boa" && (error.includes("Invalid reference") || error.includes("Receipt not found") || error.includes("not found or invalid")) && (
                 <div style={{ marginTop: "12px", padding: "12px 14px", borderRadius: "8px", background: "var(--surface)", border: "1px solid var(--border)" }}>
                   <p style={{ fontSize: "13px", color: "var(--ink-2)", marginBottom: "8px" }}>This is likely an inter-bank transfer (BOA to CBE or another bank). BOA's API doesn't index these. Try scanning the QR code on the receipt instead.</p>
                   <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
