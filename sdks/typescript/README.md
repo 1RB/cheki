@@ -1,6 +1,6 @@
 # cheki
 
-> TypeScript SDK for the [cheki](https://cheki-pi.vercel.app) receipt verification API.
+> TypeScript SDK for the [cheki](https://chekiapp.vercel.app) receipt verification API.
 
 Verify Ethiopian bank transfer receipts from CBE, Telebirr, BOA, Dashen, M-Pesa, and more, with zero runtime dependencies.
 
@@ -25,11 +25,11 @@ npm install cheki-verify
 ```
 
 ```bash
-yarn add cheki
+yarn add cheki-verify
 ```
 
 ```bash
-pnpm add cheki
+pnpm add cheki-verify
 ```
 
 ---
@@ -91,7 +91,7 @@ Pass a configuration object (or a base URL string) to the `Cheki` constructor:
 
 ```typescript
 const cheki = new Cheki({
-  baseUrl: "https://cheki-pi.vercel.app",
+  baseUrl: "https://chekiapp.vercel.app",
   timeoutMs: 10_000,
   maxRetries: 5,
   apiKey: "sk_live_...",
@@ -102,7 +102,7 @@ const cheki = new Cheki({
 
 | Option | Type | Default | Description |
 |---|---|---|---|
-| `baseUrl` | `string` | `"https://cheki-pi.vercel.app"` | Base URL of the cheki API. |
+| `baseUrl` | `string` | `"https://chekiapp.vercel.app"` | Base URL of the cheki API. |
 | `timeoutMs` | `number` | `30000` | Default request timeout in milliseconds. |
 | `maxRetries` | `number` | `3` | Default maximum retry attempts for transient failures. |
 | `apiKey` | `string` | `undefined` | Optional API key sent as `Bearer` token in the `Authorization` header. |
@@ -112,7 +112,7 @@ const cheki = new Cheki({
 You can also pass just a URL string:
 
 ```typescript
-const cheki = new Cheki("https://cheki-pi.vercel.app");
+const cheki = new Cheki("https://chekiapp.vercel.app");
 ```
 
 ### Per-Call Overrides
@@ -405,7 +405,7 @@ import { Cheki } from "cheki-verify";
 
 ```javascript
 // CommonJS
-const { Cheki } = require("cheki");
+const { Cheki } = require("cheki-verify");
 ```
 
 The `exports` field in `package.json` routes automatically based on the consumer's module system.

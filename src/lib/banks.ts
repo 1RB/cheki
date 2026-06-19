@@ -199,7 +199,7 @@ export const banks: Bank[] = [
       },
       {
         q: "How does BOA QR code verification work?",
-        a: "BOA receipt QR codes contain the transaction data encrypted with AES-256-CBC using CryptoJS format. The encryption key is embedded in BOA's public receipt web app. cheki decrypts the QR payload server-side and returns structured JSON with sender, receiver, amount, date, and reference. See our BOA QR code deep dive for full details.",
+        a: "BOA receipt QR codes contain the transaction data encrypted with AES-256-CBC using CryptoJS format. The encryption key is embedded in BOA's public receipt web app. cheki decrypts the QR payload server-side and returns structured JSON with sender, receiver, amount, date, and reference. See our BOA QR code breakdown for full details.",
       },
       {
         q: "Is the BOA receipt endpoint public?",
@@ -697,7 +697,7 @@ export const banks: Bank[] = [
     responseType: "json",
     description:
       "Abay Bank is a private commercial bank established in 2010 with 279 branches. No public receipt verification endpoint has been identified yet. Digital banking is available via abaybank.com.et.",
-    referenceFormat: "Unknown - researching",
+    referenceFormat: "Unknown, researching",
     referenceExample: "",
     howToVerify: ["Researching receipt verification options for Abay Bank"],
     useCases: ["Future support for Abay Bank receipt verification"],
@@ -723,7 +723,7 @@ export const banks: Bank[] = [
     responseType: "json",
     description:
       "Addis International Bank was established in 2011 with 146 branches. No public receipt verification endpoint has been identified yet.",
-    referenceFormat: "Unknown - researching",
+    referenceFormat: "Unknown, researching",
     referenceExample: "",
     howToVerify: ["Researching receipt verification options for Addis International Bank"],
     useCases: ["Future support for Addis International Bank receipt verification"],
@@ -749,7 +749,7 @@ export const banks: Bank[] = [
     responseType: "json",
     description:
       "Amhara Bank is a newer private bank established in 2022 with 320 branches. Website at amharabank.com.et. No public receipt verification endpoint has been identified yet.",
-    referenceFormat: "Unknown - researching",
+    referenceFormat: "Unknown, researching",
     referenceExample: "",
     howToVerify: ["Researching receipt verification options for Amhara Bank"],
     useCases: ["Future support for Amhara Bank receipt verification"],
@@ -775,7 +775,7 @@ export const banks: Bank[] = [
     responseType: "json",
     description:
       "Berhan International Bank was established in 2009. No public receipt verification endpoint has been identified yet.",
-    referenceFormat: "Unknown - researching",
+    referenceFormat: "Unknown, researching",
     referenceExample: "",
     howToVerify: ["Researching receipt verification options for Berhan International Bank"],
     useCases: ["Future support for Berhan International Bank receipt verification"],
@@ -801,7 +801,7 @@ export const banks: Bank[] = [
     responseType: "json",
     description:
       "Bunna International Bank was established in 2009. No public receipt verification endpoint has been identified yet.",
-    referenceFormat: "Unknown - researching",
+    referenceFormat: "Unknown, researching",
     referenceExample: "",
     howToVerify: ["Researching receipt verification options for Bunna International Bank"],
     useCases: ["Future support for Bunna International Bank receipt verification"],
@@ -827,7 +827,7 @@ export const banks: Bank[] = [
     responseType: "json",
     description:
       "Enat Bank is a women-focused bank established in 2013. No public receipt verification endpoint has been identified yet.",
-    referenceFormat: "Unknown - researching",
+    referenceFormat: "Unknown, researching",
     referenceExample: "",
     howToVerify: ["Researching receipt verification options for Enat Bank"],
     useCases: ["Future support for Enat Bank receipt verification"],
@@ -853,7 +853,7 @@ export const banks: Bank[] = [
     responseType: "json",
     description:
       "Global Bank Ethiopia was established in 2012. No public receipt verification endpoint has been identified yet.",
-    referenceFormat: "Unknown - researching",
+    referenceFormat: "Unknown, researching",
     referenceExample: "",
     howToVerify: ["Researching receipt verification options for Global Bank Ethiopia"],
     useCases: ["Future support for Global Bank Ethiopia receipt verification"],
@@ -879,7 +879,7 @@ export const banks: Bank[] = [
     responseType: "json",
     description:
       "Lion International Bank (also known as Anbessa Bank) was established in 2006. No public receipt verification endpoint has been identified yet.",
-    referenceFormat: "Unknown - researching",
+    referenceFormat: "Unknown, researching",
     referenceExample: "",
     howToVerify: ["Researching receipt verification options for Lion International Bank"],
     useCases: ["Future support for Lion International Bank receipt verification"],
@@ -905,7 +905,7 @@ export const banks: Bank[] = [
     responseType: "json",
     description:
       "Oromia International Bank was established in 2008. No public receipt verification endpoint has been identified yet.",
-    referenceFormat: "Unknown - researching",
+    referenceFormat: "Unknown, researching",
     referenceExample: "",
     howToVerify: ["Researching receipt verification options for Oromia International Bank"],
     useCases: ["Future support for Oromia International Bank receipt verification"],
@@ -931,7 +931,7 @@ export const banks: Bank[] = [
     responseType: "json",
     description:
       "Hibret Bank (formerly United Bank) was established in 1998. No public receipt verification endpoint has been identified yet.",
-    referenceFormat: "Unknown - researching",
+    referenceFormat: "Unknown, researching",
     referenceExample: "",
     howToVerify: ["Researching receipt verification options for Hibret Bank"],
     useCases: ["Future support for Hibret Bank receipt verification"],
@@ -957,7 +957,7 @@ export const banks: Bank[] = [
     responseType: "json",
     description:
       "ZamZam Bank is an Islamic bank established in 2021. No public receipt verification endpoint has been identified yet.",
-    referenceFormat: "Unknown - researching",
+    referenceFormat: "Unknown, researching",
     referenceExample: "",
     howToVerify: ["Researching receipt verification options for ZamZam Bank"],
     useCases: ["Future support for ZamZam Bank receipt verification"],
@@ -983,7 +983,7 @@ export const banks: Bank[] = [
     responseType: "json",
     description:
       "Hijra Bank is an Islamic bank established in 2021. No public receipt verification endpoint has been identified yet.",
-    referenceFormat: "Unknown - researching",
+    referenceFormat: "Unknown, researching",
     referenceExample: "",
     howToVerify: ["Researching receipt verification options for Hijra Bank"],
     useCases: ["Future support for Hijra Bank receipt verification"],
@@ -1009,7 +1009,7 @@ export const banks: Bank[] = [
     responseType: "json",
     description:
       "Shabelle Bank was established in 2021. No public receipt verification endpoint has been identified yet.",
-    referenceFormat: "Unknown - researching",
+    referenceFormat: "Unknown, researching",
     referenceExample: "",
     howToVerify: ["Researching receipt verification options for Shabelle Bank"],
     useCases: ["Future support for Shabelle Bank receipt verification"],
@@ -1035,7 +1035,7 @@ export const banks: Bank[] = [
     responseType: "json",
     description:
       "Goh Betoch Bank SC is a mortgage and housing bank established in 2021. As a specialized housing bank, it may not have standard retail transfer receipts. No public receipt verification endpoint has been identified.",
-    referenceFormat: "Unknown - researching",
+    referenceFormat: "Unknown, researching",
     referenceExample: "",
     howToVerify: ["Researching receipt verification options for Goh Betoch Bank"],
     useCases: ["Future support for Goh Betoch Bank receipt verification"],
@@ -1061,7 +1061,7 @@ export const banks: Bank[] = [
     responseType: "json",
     description:
       "Tsedey Bank was established in 2022. No public receipt verification endpoint has been identified yet.",
-    referenceFormat: "Unknown - researching",
+    referenceFormat: "Unknown, researching",
     referenceExample: "",
     howToVerify: ["Researching receipt verification options for Tsedey Bank"],
     useCases: ["Future support for Tsedey Bank receipt verification"],
@@ -1087,7 +1087,7 @@ export const banks: Bank[] = [
     responseType: "json",
     description:
       "Gadaa Bank SC was established in 2022. No public receipt verification endpoint has been identified yet.",
-    referenceFormat: "Unknown - researching",
+    referenceFormat: "Unknown, researching",
     referenceExample: "",
     howToVerify: ["Researching receipt verification options for Gadaa Bank"],
     useCases: ["Future support for Gadaa Bank receipt verification"],
@@ -1113,7 +1113,7 @@ export const banks: Bank[] = [
     responseType: "json",
     description:
       "Rammis Bank is one of Ethiopia's newest banks, established in 2022. Website at rammisbank.et. No public receipt verification endpoint has been identified yet.",
-    referenceFormat: "Unknown - researching",
+    referenceFormat: "Unknown, researching",
     referenceExample: "",
     howToVerify: ["Researching receipt verification options for Rammis Bank"],
     useCases: ["Future support for Rammis Bank receipt verification"],

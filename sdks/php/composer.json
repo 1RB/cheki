@@ -3,7 +3,7 @@
     "version": "1.0.0",
     "description": "PHP SDK for cheki, a free Ethiopian receipt verification service",
     "type": "library",
-    "homepage": "https://cheki-pi.vercel.app",
+    "homepage": "https://chekiapp.vercel.app",
     "license": "MIT",
     "keywords": [
         "cheki",
@@ -17,7 +17,7 @@
     "authors": [
         {
             "name": "cheki",
-            "homepage": "https://cheki-pi.vercel.app"
+            "homepage": "https://chekiapp.vercel.app"
         }
     ],
     "support": {

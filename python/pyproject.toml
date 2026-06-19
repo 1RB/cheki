@@ -38,7 +38,7 @@ dev = [
 ]
 
 [project.scripts]
-ethio-verify = "cheki.cli:main"
+cheki-verify = "cheki.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/1RB/cheki"

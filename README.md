@@ -113,12 +113,12 @@ if ($result->isVerified()) {
 
 ### Web UI
 
-Visit https://cheki-pi.vercel.app. No signup required.
+Visit https://chekiapp.vercel.app. No signup required.
 
 ### API
 
 ```bash
-curl -X POST https://cheki-pi.vercel.app/api/verify \
+curl -X POST https://chekiapp.vercel.app/api/verify \
   -H "Content-Type: application/json" \
   -d '{"bank":"cbe","reference":"FT26140P01YB","accountNumber":"1000560536171"}'
 ```
@@ -370,7 +370,7 @@ Include the reference number you tested with (or note that you tested from an Et
 
 ### Need help?
 
-- [Contribution guide](https://cheki-pi.vercel.app/guides/contribute-new-bank): three ways to contribute without writing code
+- [Contribution guide](https://chekiapp.vercel.app/guides/contribute-new-bank): three ways to contribute without writing code
 - [Open an issue](https://github.com/1RB/cheki/issues) with a receipt screenshot or reference and we'll help reverse-engineer the endpoint
 - Share a receipt reference and bank name, and we'll write the parser for you
 

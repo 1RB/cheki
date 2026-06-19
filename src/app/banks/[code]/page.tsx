@@ -113,15 +113,15 @@ export default async function BankPage({ params }: { params: Promise<{ code: str
             <h2>Required information</h2>
             <ul>
               {bank.requiresAccount ? (
-                <li><strong>Transaction reference</strong> (required) - e.g. {bank.referenceExample}</li>
+                <li><strong>Transaction reference</strong> (required), e.g. {bank.referenceExample}</li>
               ) : (
-                <li><strong>Transaction reference</strong> (required) - e.g. {bank.referenceExample}</li>
+                <li><strong>Transaction reference</strong> (required), e.g. {bank.referenceExample}</li>
               )}
               {bank.requiresAccount && (
-                <li><strong>{bank.accountLabel || "Account number"}</strong> (required) - last {bank.accountDigits} digits minimum</li>
+                <li><strong>{bank.accountLabel || "Account number"}</strong> (required), last {bank.accountDigits} digits minimum</li>
               )}
               {bank.requiresPhone && (
-                <li><strong>Payer phone number</strong> (required) - format: 2519XXXXXXXXX</li>
+                <li><strong>Payer phone number</strong> (required), format: 2519XXXXXXXXX</li>
               )}
             </ul>
 

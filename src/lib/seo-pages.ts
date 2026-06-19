@@ -54,8 +54,8 @@ export const seoPages: SeoPage[] = [
         heading: "What you need to verify a CBE receipt",
         body: "To verify a CBE receipt, you need two pieces of information:",
         bullets: [
-          "FT reference number (e.g. FT26140P01YB) - found on the receipt or in the CBE mobile app transaction details",
-          "Last 8 digits of the receiving account number (e.g. 60536171) - the account that received the payment",
+          "FT reference number (e.g. FT26140P01YB), found on the receipt or in the CBE mobile app transaction details",
+          "Last 8 digits of the receiving account number (e.g. 60536171), the account that received the payment",
         ],
       },
       {
@@ -107,7 +107,7 @@ export const seoPages: SeoPage[] = [
           "Verify the transaction ID exists in Telebirr's system",
           "Check that the payer name matches the expected sender",
           "Confirm the amount is correct",
-          "Be suspicious of screenshots - they can be edited",
+          "Be suspicious of screenshots, they can be edited",
         ],
       },
     ],
@@ -136,7 +136,7 @@ export const seoPages: SeoPage[] = [
       },
       {
         heading: "QR code verification for inter-bank transfers",
-        body: "BOA's JSON API does not recognize inter-bank transfer references. However, the QR code on the receipt is an AES-256-CBC encrypted payload that contains the full transaction details. cheki decrypts it server-side using the key exposed in BOA's receipt web app, so you can verify transfers to CBE and other banks even when the API fails. See our BOA QR code deep dive for the full technical breakdown.",
+        body: "BOA's JSON API does not recognize inter-bank transfer references. However, the QR code on the receipt is an AES-256-CBC encrypted payload that contains the full transaction details. cheki decrypts it server-side using the key exposed in BOA's receipt web app, so you can verify transfers to CBE and other banks even when the API fails. See our BOA QR code breakdown for the full technical details.",
       },
       {
         heading: "What you need to verify a BOA receipt",
@@ -356,17 +356,17 @@ export const seoPages: SeoPage[] = [
       },
       {
         heading: "Quick start",
-        body: "POST to https://cheki-pi.vercel.app/api/verify with a JSON body containing the bank code, reference number, and (for CBE/BOA) the account number. The response includes sender name, receiver name, amount, date, and the source URL from the bank.",
+        body: "POST to https://chekiapp.vercel.app/api/verify with a JSON body containing the bank code, reference number, and (for CBE/BOA) the account number. The response includes sender name, receiver name, amount, date, and the source URL from the bank.",
       },
       {
         heading: "Available endpoints",
         body: "",
         bullets: [
-          "POST /api/verify - verify a single receipt",
-          "POST /api/verify/batch - verify up to 50 receipts in parallel",
-          "GET /api/banks - list all supported banks",
-          "GET /api/health - check endpoint health and latency",
-          "GET /api/receipt - download the original receipt file",
+          "POST /api/verify: verify a single receipt",
+          "POST /api/verify/batch: verify up to 50 receipts in parallel",
+          "GET /api/banks: list all supported banks",
+          "GET /api/health: check endpoint health and latency",
+          "GET /api/receipt: download the original receipt file",
         ],
       },
     ],

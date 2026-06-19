@@ -1,6 +1,6 @@
 # cheki Go SDK
 
-A Go client library for the [cheki](https://cheki-pi.vercel.app) receipt verification API, a free Ethiopian receipt verification service.
+A Go client library for the [cheki](https://chekiapp.vercel.app) receipt verification API, a free Ethiopian receipt verification service.
 
 ## Features
 
@@ -72,7 +72,7 @@ client := cheki.NewClient(cheki.WithTimeout(60 * time.Second))
 
 | Option            | Description                                  | Default                          |
 |-------------------|----------------------------------------------|----------------------------------|
-| `WithBaseURL`     | Override the API base URL                    | `https://cheki-pi.vercel.app`    |
+| `WithBaseURL`     | Override the API base URL                    | `https://chekiapp.vercel.app`    |
 | `WithHTTPClient`  | Provide a custom `*http.Client`              | `&http.Client{Timeout: 30s}`     |
 | `WithTimeout`     | Set the default client timeout               | `30s`                            |
 
@@ -135,7 +135,7 @@ service. This is a convenience method that does not make an HTTP request.
 
 ```go
 url := client.GetReceiptURL("cbe", "123456789")
-fmt.Println(url) // https://cheki-pi.vercel.app/receipt/cbe/123456789
+fmt.Println(url) // https://chekiapp.vercel.app/receipt/cbe/123456789
 ```
 
 ## Types

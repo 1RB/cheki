@@ -763,7 +763,7 @@ export default function Home() {
         <section className="container" style={{ marginTop: "40px" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
             <h2 style={{ fontSize: "clamp(22px, 4vw, 30px)", fontWeight: 800, letterSpacing: "-0.02em" }}>
-              Guides and deep dives
+              Guides and articles
             </h2>
             <a href="/guides" style={{ fontSize: "14px", color: "var(--green)", fontWeight: 600, textDecoration: "none", whiteSpace: "nowrap" }}>
               All {articles.length} articles →

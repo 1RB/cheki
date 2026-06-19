@@ -3,7 +3,7 @@
  *
  * Usage:
  *   import { Cheki } from "cheki";
- *   const cheki = new Cheki("https://cheki-pi.vercel.app");
+ *   const cheki = new Cheki("https://chekiapp.vercel.app");
  *   const result = await cheki.verify("cbe", "FT26140P01YB", { accountNumber: "1000560536171" });
  */
 
@@ -59,7 +59,7 @@ export interface HealthStatus {
 }
 
 export class Cheki {
-  constructor(private baseUrl: string = "https://cheki-pi.vercel.app") {}
+  constructor(private baseUrl: string = "https://chekiapp.vercel.app") {}
 
   async verify(bank: string, reference: string, options?: VerifyOptions): Promise<VerifyResult> {
     const resp = await fetch(`${this.baseUrl}/api/verify`, {

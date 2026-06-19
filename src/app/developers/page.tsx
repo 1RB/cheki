@@ -5,7 +5,7 @@ import { Nav, Footer } from "@/components/Chrome";
 import { Icon, ArrowRight01Icon } from "@/components/Icon";
 
 const codeExamples: Record<string, string> = {
-  cURL: `curl -X POST https://cheki-pi.vercel.app/api/verify \\
+  cURL: `curl -X POST https://chekiapp.vercel.app/api/verify \\
   -H "Content-Type: application/json" \\
   -d '{
     "bank": "cbe",
@@ -14,12 +14,12 @@ const codeExamples: Record<string, string> = {
   }'`,
   JavaScript: `import { Cheki } from "cheki";
 
-const cheki = new Cheki("https://cheki-pi.vercel.app");
+const cheki = new Cheki("https://chekiapp.vercel.app");
 const result = await cheki.verify("cbe", "FT26140P01YB", {
   accountNumber: "1000560536171"
 });
 console.log(result.amount, result.senderName);`,
-  Python: `from ethio_receipt_verify import verify
+  Python: `from cheki import verify
 
 result = verify("cbe", "FT26140P01YB",
   account_number="1000560536171")
@@ -34,9 +34,9 @@ const cheki = new Cheki();
 const result = await cheki.verify("cbe", "FT...", {
   accountNumber: "1000560536171"
 });`,
-  Python: `pip install git+https://github.com/1RB/cheki.git#subdirectory=python
+  Python: `pip install cheki
 
-from ethio_receipt_verify import verify
+from cheki import verify
 result = verify("cbe", "FT...",
   account_number="1000560536171")`,
   CLI: `npx cheki verify cbe FT26140P01YB -a 1000560536171

@@ -1,6 +1,6 @@
 # cheki PHP SDK
 
-A PHP SDK for [cheki](https://cheki-pi.vercel.app), the free Ethiopian receipt verification service.
+A PHP SDK for [cheki](https://chekiapp.vercel.app), the free Ethiopian receipt verification service.
 
 ## Installation
 
@@ -46,7 +46,7 @@ require_once 'vendor/autoload.php';
 
 use Cheki\ChekiClient;
 
-// Create a client - uses https://cheki-pi.vercel.app by default
+// Create a client - uses https://chekiapp.vercel.app by default
 $client = new ChekiClient();
 
 // Verify a single receipt
@@ -168,7 +168,7 @@ Configure the client with custom options.
 use Cheki\VerifyOptions;
 
 $options = (new VerifyOptions())
-    ->withBaseUrl('https://cheki-pi.vercel.app')
+    ->withBaseUrl('https://chekiapp.vercel.app')
     ->withTimeout(15)
     ->withApiKey('your-api-key')           // optional
     ->withHeaders(['X-Custom-Header' => 'value']);
@@ -178,7 +178,7 @@ $client = new ChekiClient($options);
 
 | Option            | Type     | Default                        | Description                    |
 |-------------------|----------|--------------------------------|--------------------------------|
-| `baseUrl`         | string   | `https://cheki-pi.vercel.app`  | API base URL                   |
+| `baseUrl`         | string   | `https://chekiapp.vercel.app`  | API base URL                   |
 | `timeout`         | int      | `30`                           | Request timeout (seconds)      |
 | `connectTimeout`  | int      | `10`                           | Connection timeout (seconds)   |
 | `apiKey`          | ?string  | `null`                         | Bearer token for auth          |

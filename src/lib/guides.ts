@@ -349,7 +349,7 @@ export const articles: Article[] = [
         ],
       },
       { type: "text", text: "Reference format: Alphanumeric, typically starts with 2 letters. Example: AB12345678 or FT26167ZVPCJ" },
-      { type: "callout", variant: "tip", title: "QR verification works for inter-bank transfers", text: "BOA's online slip API does not recognize inter-bank transfer references (e.g., FT... sent to CBE). However, the QR code on the receipt is an AES-256-CBC encrypted payload that contains the full transaction details. cheki decrypts it server-side with the key exposed in BOA's receipt web app, so QR-based verification works even when the JSON API returns 'Invalid reference number'. See our BOA QR code deep dive for encryption parameters and security analysis." },
+      { type: "callout", variant: "tip", title: "QR verification works for inter-bank transfers", text: "BOA's online slip API does not recognize inter-bank transfer references (e.g., FT... sent to CBE). However, the QR code on the receipt is an AES-256-CBC encrypted payload that contains the full transaction details. cheki decrypts it server-side with the key exposed in BOA's receipt web app, so QR-based verification works even when the JSON API returns 'Invalid reference number'. See our BOA QR code breakdown for encryption parameters and security analysis." },
       { type: "callout", variant: "tip", title: "No Selenium needed", text: "Unlike the ethiobank_receipts library which requires Chrome WebDriver for BOA, cheki uses BOA's JSON API directly. This works in serverless environments without browser dependencies." },
 
       { type: "heading", text: "M-Pesa Ethiopia (Safaricom)" },
@@ -958,7 +958,7 @@ export const articles: Article[] = [
       { type: "heading", text: "Verifying CBE receipts via API" },
       { type: "code", lang: "bash", code: '# New system (URL):\ncurl -X POST https://chekiapp.vercel.app/api/verify \\\n  -H "Content-Type: application/json" \\\n  -d \'{"reference":"https://mbreciept.cbe.com.et/fHCxyV4mg5pRIwEkJO"}\'\n\n# Classic system (FT ref + account):\ncurl -X POST https://chekiapp.vercel.app/api/verify \\\n  -H "Content-Type: application/json" \\\n  -d \'{"bank":"cbe","reference":"FT26140P01YB","accountNumber":"1000560536171"}\'' },
 
-      { type: "callout", variant: "info", title: "Both methods are free", text: "Whether you use the new QR/URL system or the classic FT reference method, verification is free with cheki. check.et charges 499 ETB/month for the same data after 200 free verifications." },
+      { type: "callout", variant: "info", title: "Both methods are free", text: "Both the new QR/URL system and the classic FT reference method are free with cheki. check.et charges 499 ETB/month for the same data after 200 free verifications." },
     ],
     faq: [
       { q: "Do I need the account number for the new CBE system?", a: "No. The new mbreciept system only requires the short URL or QR code. The account number is only needed for the classic FT reference method." },
@@ -1200,12 +1200,12 @@ export const articles: Article[] = [
           { title: "Get your account's last 5 digits", text: "You need the last 5 digits of your receiving BOA account. For example, if your account is 1234567890, the last 5 digits are 67890." },
           { title: "Enter both in cheki", text: "Select BOA from the bank dropdown, enter the reference, and enter the account digits." },
           { title: "Click Verify", text: "cheki calls BOA's JSON API and returns structured payment data in 1-2 seconds." },
-          { title: "For inter-bank transfers, use the QR code", text: "If BOA's API returns 'Invalid reference number' (common for transfers sent to CBE or other banks), scan the QR code on the receipt. cheki auto-detects BOA QR payloads, decrypts them server-side with AES-256-CBC, and returns the full transaction details. No account number needed. See our deep dive on BOA QR codes for the full technical breakdown." },
+          { title: "For inter-bank transfers, use the QR code", text: "If BOA's API returns 'Invalid reference number' (common for transfers sent to CBE or other banks), scan the QR code on the receipt. cheki auto-detects BOA QR payloads, decrypts them server-side with AES-256-CBC, and returns the full transaction details. No account number needed. See our BOA QR code breakdown for the full technical details." },
         ],
       },
 
       { type: "callout", variant: "tip", title: "No Selenium required", text: "Unlike the ethiobank_receipts Python library which requires Chrome WebDriver for BOA, cheki uses BOA's JSON API directly. This works in serverless environments without browser dependencies." },
-      { type: "callout", variant: "tip", title: "QR codes work for inter-bank transfers", text: "BOA's online slip API does not recognize inter-bank transfer references (e.g., FT... sent to CBE). The QR code on the receipt is an AES-256-CBC encrypted payload containing the full transaction details. cheki decrypts it server-side, so QR-based verification works even when the API lookup fails. Read the BOA QR code deep dive for encryption details." },
+      { type: "callout", variant: "tip", title: "QR codes work for inter-bank transfers", text: "BOA's online slip API does not recognize inter-bank transfer references (e.g., FT... sent to CBE). The QR code on the receipt is an AES-256-CBC encrypted payload containing the full transaction details. cheki decrypts it server-side, so QR-based verification works even when the API lookup fails. Read the BOA QR code breakdown for encryption details." },
 
       { type: "heading", text: "Verifying via API" },
       { type: "text", text: "Use the reference and account digits for normal BOA-to-BOA transfers:" },
@@ -1233,13 +1233,13 @@ export const articles: Article[] = [
           ["QR code decryption", "Inter-bank transfers (BOA to CBE/Dashen/etc.)", "No", "~500ms"],
         ],
       },
-      { type: "text", text: "For a full technical breakdown of how BOA QR codes work (AES-256-CBC encryption, CryptoJS format, key derivation, security implications), see our BOA QR code deep dive." },
+      { type: "text", text: "For a full technical breakdown of how BOA QR codes work (AES-256-CBC encryption, CryptoJS format, key derivation, security implications), see our BOA QR code breakdown." },
     ],
     faq: [
       { q: "Does BOA verification require Selenium?", a: "No. cheki uses BOA's JSON API directly at cs.bankofabyssinia.com. This is faster and works in serverless environments without Chrome WebDriver." },
       { q: "Why does BOA need the last 5 digits?", a: "BOA's API endpoint combines the transaction reference with the last 5 digits of the receiving account to form the full ID. This prevents unauthorized receipt enumeration." },
-      { q: "What if BOA's API returns 'Invalid reference number'?", a: "This happens for inter-bank transfers (e.g., FT... references sent to CBE). In that case, scan the QR code on the receipt and send the payload in the qrData field. cheki decrypts it with AES-256-CBC using the key embedded in BOA's receipt app. See the BOA QR code deep dive for details." },
-      { q: "Is QR-based verification secure?", a: "The key is hardcoded in BOA's public receipt web app, which means anyone can decrypt QR codes (and forge them). For high-value inter-bank transfers, request additional confirmation. See our BOA QR code deep dive for the full security analysis." },
+      { q: "What if BOA's API returns 'Invalid reference number'?", a: "This happens for inter-bank transfers (e.g., FT... references sent to CBE). In that case, scan the QR code on the receipt and send the payload in the qrData field. cheki decrypts it with AES-256-CBC using the key embedded in BOA's receipt app. See the BOA QR code breakdown for details." },
+      { q: "Is QR-based verification secure?", a: "The key is hardcoded in BOA's public receipt web app, which means anyone can decrypt QR codes (and forge them). For high-value inter-bank transfers, request additional confirmation. See our BOA QR code breakdown for the full security analysis." },
       { q: "Can I verify inter-bank BOA transfers without the QR code?", a: "No. BOA's JSON API does not recognize inter-bank transfer references. The QR code is the only way to verify these transactions. If you don't have the QR code, ask the sender for a screenshot of the receipt or check your bank statement for the incoming transfer." },
     ],
     related: ["boa-qr-code-receipts", "how-to-verify-cbe-receipt", "how-to-verify-telebirr-receipt", "ethiopian-bank-receipt-formats"],
@@ -1320,7 +1320,7 @@ export const articles: Article[] = [
 
       { type: "heading", text: "Why community matters for Ethiopian fintech" },
       { type: "text", text: "Ethiopia has 30+ licensed banks, but most receipt verification services (check.et, verify.et, qbirr, tinaverify) only support 6-10. The long tail of smaller and newer banks gets ignored because it's not profitable enough for paid services." },
-      { type: "text", text: "Open source changes this. Every contribution - whether it's a receipt screenshot or a full parser - helps cover a bank that paid services won't bother with. The community can move faster than any single company." },
+      { type: "text", text: "Open source changes this. Every contribution, whether it's a receipt screenshot or a full parser, helps cover a bank that paid services won't bother with. The community can move faster than any single company." },
       { type: "callout", variant: "success", title: "Every receipt counts", text: "Even one receipt from a bank we don't support can unlock verification for every cheki user. You don't need to write code to make a difference." },
     ],
     faq: [

@@ -75,7 +75,7 @@ type ChekiError =
   | { kind: "INTERNAL_ERROR"; message: string };
 ```
 
-Each error maps to a specific HTTP status code. Exhaustive switch checking ensures all cases are handled at compile time.
+Each error maps to a specific HTTP status code. Exhaustive switch checking catches all cases at compile time.
 
 ## Adding a new bank
 
