@@ -16,35 +16,111 @@ check.et charges 499 ETB/month. verify.et charges $20-40/month. Both verify rece
 | Telebirr (Ethio Telecom) | `telebirr` | Live | No | Yes (Ethiopia only) |
 | Bank of Abyssinia | `boa` | Live | Yes (last 5 digits) | No |
 | M-Pesa Ethiopia | `mpesa` | Live | No | Yes (Ethiopia only) |
-| Dashen Bank | `dashen` | In development | No | No |
+| Dashen Bank | `dashen` | Live | No | No |
 | Awash Bank | `awash` | In development | No | No |
-| Zemen Bank | `zemen` | In development | No | No |
-| CBE Birr | `cbebirr` | In development | Phone required | No |
-| Siinqee Bank | `siinqee` | In development | No | No |
+| Zemen Bank | `zemen` | Live | No | No |
+| CBE Birr | `cbebirr` | Live | Phone required | No |
+| Siinqee Bank | `siinqee` | Live | No | No |
 
-## Quick start
+## SDKs
 
-### Web UI
+cheki ships SDKs in 5 languages. All wrap the same REST API with idiomatic patterns, typed errors, retry with exponential backoff, and timeout support.
 
-Visit https://cheki.app — no signup required.
+| Language | Install | Package | Registry |
+|----------|---------|---------|----------|
+| **TypeScript** | `npm install cheki-verify` | `cheki-verify` | [npm](https://www.npmjs.com/package/cheki-verify) |
+| **Python** | `pip install cheki` | `cheki` | [PyPI](https://pypi.org/project/cheki/) |
+| **Go** | `go get github.com/1RB/cheki/sdks/go` | `github.com/1RB/cheki/sdks/go` | [Go modules](https://pkg.go.dev/github.com/1RB/cheki/sdks/go) |
+| **Dart** | `dart pub add cheki` | `cheki` | [pub.dev](https://pub.dev) |
+| **PHP** | `composer require cheki/cheki` | `cheki/cheki` | [Packagist](https://packagist.org/packages/cheki/cheki) |
 
-### API
+### TypeScript
 
 ```bash
-curl -X POST https://cheki.app/api/verify \
-  -H "Content-Type: application/json" \
-  -d '{"bank":"cbe","reference":"FT26140P01YB","accountNumber":"1000560536171"}'
+npm install cheki-verify
+```
+
+```ts
+import { Cheki } from "cheki-verify";
+
+const cheki = new Cheki();
+const result = await cheki.verify("cbe", "FT26140P01YB", {
+  accountNumber: "1000560536171",
+});
+console.log(result.verified, result.amount, result.senderName);
 ```
 
 ### Python
 
 ```bash
-pip install git+https://github.com/1RB/cheki.git#subdirectory=python
+pip install cheki
 ```
 
 ```python
-from ethio_receipt_verify import verify
-result = verify("cbe", "FT26140P01YB", account="1000560536171")
+from cheki import ChekiClient
+
+cheki = ChekiClient()
+result = cheki.verify("cbe", "FT26140P01YB", account_number="1000560536171")
+print(result.is_verified, result.amount, result.sender_name)
+```
+
+Also includes direct verification (no API server needed):
+
+```python
+from cheki import verify
+
+result = verify("cbe", "FT26140P01YB", account_number="1000560536171")
+```
+
+### Go
+
+```bash
+go get github.com/1RB/cheki/sdks/go
+```
+
+```go
+client := cheki.NewClient()
+result, err := client.Verify(ctx, cheki.VerifyOptions{
+    Bank:      "cbe",
+    Reference: "FT26140P01YB",
+    AccountNumber: "1000560536171",
+})
+```
+
+### Dart
+
+```dart
+final client = ChekiClient();
+final result = await client.verify(
+  bank: 'cbe',
+  reference: 'FT26140P01YB',
+  accountNumber: '1000560536171',
+);
+client.close();
+```
+
+### PHP
+
+```php
+$client = new ChekiClient();
+$result = $client->verify('cbe', 'FT26140P01YB', '1000560536171');
+if ($result->isVerified()) {
+    echo "$result->senderName sent $result->amount $result->currency";
+}
+```
+
+## Quick start
+
+### Web UI
+
+Visit https://cheki-pi.vercel.app — no signup required.
+
+### API
+
+```bash
+curl -X POST https://cheki-pi.vercel.app/api/verify \
+  -H "Content-Type: application/json" \
+  -d '{"bank":"cbe","reference":"FT26140P01YB","accountNumber":"1000560536171"}'
 ```
 
 ### Self-hosting
@@ -62,8 +138,7 @@ Self-hosting on an Ethiopian IP bypasses Telebirr/M-Pesa geo-blocks.
 - **Web UI** — receipt aesthetic, auto-detect bank from reference format
 - **REST API** — free, no API key, no rate limit
 - **Batch verification** — up to 50 receipts at once
-- **TypeScript SDK** — included in monorepo
-- **Python library** — install from monorepo
+- **5 SDKs** — TypeScript, Python, Go, Dart, PHP
 - **Docker** — self-hosting with docker-compose
 - **SEO** — bank-specific pages, guides, sitemap, structured data
 - **AI-friendly** — llms.txt, allows all AI crawlers in robots.txt
@@ -107,7 +182,12 @@ src/
     guides.ts             # Guide articles data
   components/
     Chrome.tsx            # Nav and Footer
-python/                   # Python library
+sdks/
+  typescript/             # TypeScript SDK (npm: cheki-verify)
+  go/                     # Go SDK (go get)
+  dart/                   # Dart SDK (pub.dev)
+  php/                    # PHP SDK (Packagist)
+python/                   # Python SDK (PyPI: cheki)
 Dockerfile
 docker-compose.yml
 public/llms.txt           # LLM-friendly content summary
@@ -117,10 +197,12 @@ public/llms.txt           # LLM-friendly content summary
 
 1. Fork the repo
 2. Create a branch: `git checkout -b feature/bank-name`
-3. Add the bank parser in `src/app/api/verify/route.ts`
-4. Add bank data in `src/lib/banks.ts`
+3. Add the bank parser in `src/lib/parsers/`
+4. Add bank data in `src/lib/banks.ts` and `src/lib/banks.json`
 5. Test with a real receipt reference
 6. Submit a PR
+
+See our [contribution guide](https://cheki-pi.vercel.app/guides/contribute-new-bank) for details on adding new banks.
 
 ## License
 
