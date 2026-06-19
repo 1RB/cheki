@@ -103,7 +103,7 @@
     "name": "Awash Bank",
     "swift": "AWINETAA",
     "type": "bank",
-    "status": "live",
+    "status": "in-development",
     "parser": "awash",
     "responseType": "html",
     "requiresAccount": false,

@@ -274,16 +274,16 @@ export const banks: Bank[] = [
     requiresAccount: false,
     status: "live",
     color: "#dc2626",
-    endpoint: "api.dashensuperapp.com",
-    endpointFormat: "https://api.dashensuperapp.com/receipts/Within-Dashen-Transfer-{REFERENCE}.pdf",
+    endpoint: "receipt.dashensuperapp.com",
+    endpointFormat: "https://receipt.dashensuperapp.com/receipt/{REFERENCE}",
     responseType: "pdf",
     description:
-      "Dashen Bank is one of Ethiopia's leading private banks. Dashen receipts are published as public PDF documents at api.dashensuperapp.com. The URL combines the transaction reference (FT/B22 prefix) with a fixed path. No account number is required for verification.",
-    referenceFormat: "FT/B22 prefixed reference followed by digits and letters (e.g. B22WDTI261620001)",
-    referenceExample: "B22WDTI261620001",
+      "Dashen Bank publishes transaction receipts as public PDF documents. The URL works for both within-Dashen and Other Bank Transfer (inter-bank) receipts. Only the FT Ref / Transaction Reference is needed.",
+    referenceFormat: "Alphanumeric Dashen transaction reference (FT Ref / Transaction Reference on the receipt). Do not use the Transfer Reference.",
+    referenceExample: "B22WDTI261620001 or D31OBTI251720001",
     howToVerify: [
-      "Get the transaction reference from the customer's Dashen receipt (often labeled 'FT Ref')",
-      "cheki fetches the official PDF from Dashen's public receipt endpoint",
+      "Get the FT Ref / Transaction Reference from the customer's Dashen receipt",
+      "cheki fetches the official PDF from receipt.dashensuperapp.com",
       "Payment data is extracted from the PDF and returned as structured JSON",
     ],
     useCases: [
@@ -294,17 +294,21 @@ export const banks: Bank[] = [
     faq: [
       {
         q: "Does Dashen verification require an account number?",
-        a: "No. Unlike CBE and BOA, Dashen's receipt URL only requires the transaction reference number. The FT Ref (e.g. B22WDTI261620001) is what the verifier uses.",
+        a: "No. Dashen's receipt URL only requires the transaction reference number. Use the FT Ref (also labeled Transaction Reference), which looks like B22WDTI... or D31OBTI...",
       },
       {
         q: "What is the difference between FT Ref and Transaction Ref?",
-        a: "The FT Ref is the Dashen receipt identifier used by the public PDF endpoint. The Transaction Ref (or Transfer Reference) is an internal transfer tracking number. For verification, always use the FT Ref.",
+        a: "Use the FT Ref (also labeled Transaction Reference). It looks like B22WDTI... or D31OBTI... The Transfer Reference is an external network tracking number and does not fetch a PDF from Dashen's API.",
+      },
+      {
+        q: "Does Dashen verification work for inter-bank transfers?",
+        a: "Yes. The updated endpoint works for both within-Dashen and Other Bank Transfer (inter-bank) receipts.",
       },
     ],
     seo: {
       title: "Verify Dashen Bank Transactions Online",
       description:
-        "Verify Dashen Bank transactions for free. Check FT/B22 reference numbers against official Dashen receipt endpoints. No signup, no API key.",
+        "Verify Dashen Bank transactions for free. Check transaction references against official Dashen receipt endpoints. Works for within-Dashen and inter-bank transfers. No signup, no API key.",
       keywords: [
         "Dashen Bank receipt verification",
         "verify Dashen transaction",
@@ -319,29 +323,28 @@ export const banks: Bank[] = [
     shortName: "Awash",
     type: "bank",
     requiresAccount: false,
-    status: "live",
+    status: "soon",
     color: "#f59e0b",
     endpoint: "awashpay.awashbank.com:8225",
     endpointFormat: "https://awashpay.awashbank.com:8225/-{REFERENCE}",
     responseType: "html",
     description:
-      "Awash Bank is one of Ethiopia's largest private banks. Awash receipts are published as HTML pages accessible via a public URL containing the transaction reference.",
-    referenceFormat: "Alphanumeric transaction reference",
-    referenceExample: "AW12345678",
+      "Awash Bank receipts are published by a Servicecops app. The endpoint is known but the correct receipt reference format is not yet confirmed for the visible transaction ID.",
+    referenceFormat: "Unknown — the visible transaction ID does not work with the known endpoint. A share link from the Awash app is needed.",
+    referenceExample: "260328171079006 (does not work with current endpoint)",
     howToVerify: [
-      "Get the transaction reference from the customer's Awash receipt",
-      "cheki fetches the receipt from Awash's public endpoint",
-      "Payment data is extracted from the HTML and returned as structured JSON",
+      "Get the correct receipt reference from the Awash app share link",
+      "cheki will fetch the receipt from Awash's public endpoint",
+      "Payment data will be extracted from the HTML and returned as structured JSON",
     ],
     useCases: [
       "Merchants verifying Awash transfers",
       "Businesses reconciling Awash deposits",
-      "Apps integrating Awash payment verification",
     ],
     faq: [
       {
         q: "When will Awash verification be available?",
-        a: "Awash verification is in development. The public endpoint is known and the parser is being built. Follow the GitHub repository for updates.",
+        a: "Awash verification is in development. The known endpoint (awashpay.awashbank.com:8225/-{ref}) returns 'Invalid receipt id' for the visible transaction ID. We need a valid share link from the Awash app to determine the correct reference format.",
       },
     ],
     seo: {
