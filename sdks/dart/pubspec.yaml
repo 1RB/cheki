@@ -2,7 +2,7 @@ name: cheki
 description: >
   A Dart client library for cheki, a free Ethiopian receipt verification service.
   Verify bank transfer receipts from Ethiopian banks via the cheki REST API.
-version: 1.1.0
+version: 1.4.0
 homepage: https://github.com/1RB/cheki
 repository: https://github.com/1RB/cheki
 issue_tracker: https://github.com/1RB/cheki/issues

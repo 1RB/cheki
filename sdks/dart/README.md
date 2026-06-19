@@ -10,7 +10,7 @@ Add `cheki` to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  cheki: ^1.1.0
+  cheki: ^1.4.0
 ```
 
 Or use the command line:
