@@ -38,8 +38,8 @@ export class Verifier {
     }
 
     // Auto-detect bank from URL
-    const trimmedRef = reference.trim();
-    if (isUrl(trimmedRef)) {
+    const trimmedRef = (reference || "").trim();
+    if (trimmedRef && isUrl(trimmedRef)) {
       const detected = detectBankFromUrl(trimmedRef);
       if (detected) {
         bank = detected.bank;
@@ -115,7 +115,7 @@ export class Verifier {
       const boaParser = parser as BOAParser;
       const parsed = boaParser.decryptQr(qrData);
       const durationMs = Date.now() - startTime;
-      if (!parsed.verified) {
+      if (!parsed.verified || !parsed.reference) {
         return err({
           kind: "EXTRACTION_ERROR",
           bank: manifestEntry.name,
@@ -126,7 +126,7 @@ export class Verifier {
         ...parsed,
         bank: manifestEntry.name,
         bankCode: manifestEntry.id,
-        reference: parsed.reference || reference,
+        reference: parsed.reference,
         sourceUrl: "qr://boa",
         durationMs,
       });
