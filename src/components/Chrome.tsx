@@ -1,10 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Icon, GithubIcon, Menu01Icon, Cancel01Icon, ArrowRight01Icon } from "@/components/Icon";
 
 export function Nav() {
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  // Lock body scroll when mobile menu is open
+  useEffect(() => {
+    if (mobileOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => { document.body.style.overflow = ""; };
+  }, [mobileOpen]);
   const links = [
     { href: "/", label: "Verify" },
     { href: "/banks", label: "Banks" },
@@ -60,6 +70,8 @@ export function Nav() {
           position: "fixed", top: "var(--nav-h)", left: 0, right: 0, bottom: 0,
           background: "var(--bg)", zIndex: 99, padding: "24px",
           display: "flex", flexDirection: "column", gap: "8px",
+          overflowY: "auto", overscrollBehavior: "contain",
+          WebkitOverflowScrolling: "touch",
         }}>
           {links.map((l) => (
             <a key={l.href} href={l.href} onClick={() => setMobileOpen(false)} style={{

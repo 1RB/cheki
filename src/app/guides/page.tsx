@@ -233,17 +233,6 @@ export default function GuidesPage() {
                         overflow: "hidden",
                       }}
                     >
-                      {/* Color accent bar */}
-                      <div style={{
-                        position: "absolute",
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        height: "3px",
-                        background: color,
-                        opacity: 0.8,
-                      }} />
-
                       {/* Category + read time */}
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                         <span style={{
