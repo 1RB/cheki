@@ -89,6 +89,20 @@ export interface Receipt {
   branch?: string;
   reason?: string;
   durationMs?: number;
+  // Telebirr / wallet-specific
+  invoiceNumber?: string;
+  transactionStatus?: string;
+  settledAmount?: number;
+  stampDuty?: number;
+  discountAmount?: number;
+  serviceFee?: number;
+  serviceFeeVat?: number;
+  totalPaid?: number;
+  amountInWords?: string;
+  paymentMode?: string;
+  paymentChannel?: string;
+  bankAccountNumber?: string;
+  bankAccountName?: string;
 }
 
 // ─── Verify Request (input) ─────────────────────────────────────────
@@ -128,6 +142,20 @@ export interface ParsedReceipt {
   branch?: string;
   reason?: string;
   raw?: string;
+  // Telebirr / wallet-specific fields
+  invoiceNumber?: string;
+  transactionStatus?: string;
+  settledAmount?: number;
+  stampDuty?: number;
+  discountAmount?: number;
+  serviceFee?: number;
+  serviceFeeVat?: number;
+  totalPaid?: number;
+  amountInWords?: string;
+  paymentMode?: string;
+  paymentChannel?: string;
+  bankAccountNumber?: string;
+  bankAccountName?: string;
 }
 
 // ─── HTTP Port (interface for fetching from banks) ──────────────────

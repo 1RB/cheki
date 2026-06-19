@@ -531,4 +531,18 @@ export interface VerifyResult {
   branch?: string;
   reason?: string;
   raw?: string;
+  // Telebirr / wallet-specific
+  invoiceNumber?: string;
+  transactionStatus?: string;
+  settledAmount?: number;
+  stampDuty?: number;
+  discountAmount?: number;
+  serviceFee?: number;
+  serviceFeeVat?: number;
+  totalPaid?: number;
+  amountInWords?: string;
+  paymentMode?: string;
+  paymentChannel?: string;
+  bankAccountNumber?: string;
+  bankAccountName?: string;
 }

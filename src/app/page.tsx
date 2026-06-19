@@ -247,19 +247,28 @@ export default function Home() {
   const scanImageMultiScale = useCallback(async (img: HTMLImageElement): Promise<string | null> => {
     const w = img.width;
     const h = img.height;
+    const MAX_DIM = 1920; // cap canvas size to avoid memory/perf issues
 
-    // Helper: render a region of the image to ImageData
+    // Helper: render a region of the image to ImageData, capping total size
     const renderRegion = (sx: number, sy: number, sw: number, sh: number, scale: number): ImageData | null => {
       const canvas = document.createElement("canvas");
       const ctx = canvas.getContext("2d", { willReadFrequently: true });
       if (!ctx) return null;
-      canvas.width = Math.round(sw * scale);
-      canvas.height = Math.round(sh * scale);
-      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
-      return ctx.getImageData(0, 0, canvas.width, canvas.height);
+      let cw = Math.round(sw * scale);
+      let ch = Math.round(sh * scale);
+      // Cap to MAX_DIM
+      if (cw > MAX_DIM || ch > MAX_DIM) {
+        const r = Math.min(MAX_DIM / cw, MAX_DIM / ch);
+        cw = Math.round(cw * r);
+        ch = Math.round(ch * r);
+      }
+      canvas.width = cw;
+      canvas.height = ch;
+      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, cw, ch);
+      return ctx.getImageData(0, 0, cw, ch);
     };
 
-    // Helper: try both BarcodeDetector and jsQR on an ImageData
+    // Helper: try both BarcodeDetector and jsQR
     const tryScan = async (imageData: ImageData): Promise<string | null> => {
       if ("BarcodeDetector" in window) {
         try {
@@ -272,7 +281,7 @@ export default function Home() {
       return code ? code.data : null;
     };
 
-    // Step 1: Full image at native resolution
+    // Pass 1: Full image at native resolution (BarcodeDetector handles multi-scale internally)
     {
       const imageData = renderRegion(0, 0, w, h, 1);
       if (imageData) {
@@ -281,43 +290,19 @@ export default function Home() {
       }
     }
 
-    // Step 2: Full image at 2x upscale (helps with small QRs in large screenshots)
-    if (w < 2000 || h < 2000) {
-      const imageData = renderRegion(0, 0, w, h, 2);
-      if (imageData) {
-        const result = await tryScan(imageData);
-        if (result) return result;
-      }
-    }
-
-    // Step 3: Bottom half (QR is usually at the bottom of receipts)
+    // Pass 2: Bottom 50% at 2x (QR is almost always at the bottom of receipts)
     {
-      const imageData = renderRegion(0, Math.floor(h * 0.4), w, Math.ceil(h * 0.6), 1.5);
+      const imageData = renderRegion(0, Math.floor(h * 0.5), w, Math.ceil(h * 0.5), 2);
       if (imageData) {
         const result = await tryScan(imageData);
         if (result) return result;
       }
     }
 
-    // Step 4: Quadrant crops at 2x scale
-    const quadrants = [
-      [0, 0, Math.floor(w / 2), Math.floor(h / 2)],                     // top-left
-      [Math.floor(w / 2), 0, Math.ceil(w / 2), Math.floor(h / 2)],     // top-right
-      [0, Math.floor(h / 2), Math.floor(w / 2), Math.ceil(h / 2)],     // bottom-left
-      [Math.floor(w / 2), Math.floor(h / 2), Math.ceil(w / 2), Math.ceil(h / 2)], // bottom-right
-    ];
-    for (const [qx, qy, qw, qh] of quadrants) {
-      const imageData = renderRegion(qx, qy, qw, qh, 2);
-      if (imageData) {
-        const result = await tryScan(imageData);
-        if (result) return result;
-      }
-    }
-
-    // Step 5: Center 60% crop at 3x scale (last resort for tiny QRs)
+    // Pass 3: Center 40% at 3x (last resort for tiny QRs)
     {
-      const cw = Math.floor(w * 0.6);
-      const ch = Math.floor(h * 0.6);
+      const cw = Math.floor(w * 0.4);
+      const ch = Math.floor(h * 0.4);
       const cx = Math.floor((w - cw) / 2);
       const cy = Math.floor((h - ch) / 2);
       const imageData = renderRegion(cx, cy, cw, ch, 3);
@@ -812,16 +797,33 @@ function ReceiptCard({ result, copied, onCopy }: { result: VerifyResult; copied:
   const rows: { label: string; value: string | undefined; mono?: boolean }[] = [
     { label: "Bank", value: result.bank },
     { label: "Reference", value: result.reference, mono: true },
-    { label: "Status", value: "Verified" },
-    { label: "Amount", value: result.amount ? `${result.amount.toLocaleString()} ${result.currency || "ETB"}` : undefined, mono: true },
+    { label: "Invoice No", value: result.invoiceNumber, mono: true },
+    { label: "Status", value: result.transactionStatus || "Verified" },
+    { label: "Amount", value: result.amount != null ? `${result.amount.toLocaleString()} ${result.currency || "ETB"}` : undefined, mono: true },
     { label: "Sender", value: result.senderName },
     { label: "Sender Account", value: result.senderAccount, mono: true },
     { label: "Receiver", value: result.receiverName },
     { label: "Receiver Account", value: result.receiverAccount, mono: true },
+    { label: "Bank Account", value: result.bankAccountNumber, mono: true },
+    { label: "Bank Account Name", value: result.bankAccountName },
     { label: "Date", value: result.date, mono: true },
     { label: "Branch", value: result.branch },
     { label: "Reason", value: result.reason },
+    { label: "Payment Mode", value: result.paymentMode },
+    { label: "Payment Channel", value: result.paymentChannel },
   ];
+
+  // Fee breakdown section (Telebirr)
+  const hasFees = result.settledAmount != null || result.serviceFee != null || result.totalPaid != null;
+  const feeRows: { label: string; value: string | undefined; mono?: boolean; bold?: boolean }[] = [
+    { label: "Settled Amount", value: result.settledAmount != null ? `${result.settledAmount.toLocaleString()} ETB` : undefined, mono: true },
+    { label: "Stamp Duty", value: result.stampDuty != null ? `${result.stampDuty} ETB` : undefined, mono: true },
+    { label: "Discount", value: result.discountAmount != null ? `${result.discountAmount} ETB` : undefined, mono: true },
+    { label: "Service Fee", value: result.serviceFee != null ? `${result.serviceFee} ETB` : undefined, mono: true },
+    { label: "Service Fee VAT", value: result.serviceFeeVat != null ? `${result.serviceFeeVat} ETB` : undefined, mono: true },
+    { label: "Total Paid", value: result.totalPaid != null ? `${result.totalPaid.toLocaleString()} ETB` : undefined, mono: true, bold: true },
+  ];
+  const visibleFeeRows = feeRows.filter((r) => r.value);
   const visibleRows = rows.filter((r) => r.value);
 
   return (
@@ -847,6 +849,23 @@ function ReceiptCard({ result, copied, onCopy }: { result: VerifyResult; copied:
           </div>
         ))}
       </div>
+      {visibleFeeRows.length > 0 && (
+        <div style={{ padding: "8px 24px", borderTop: "2px dotted var(--dotted)" }}>
+          <p style={{ fontSize: "11px", color: "var(--ink-3)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", padding: "12px 0 4px" }}>Fee breakdown</p>
+          {visibleFeeRows.map((row, i) => (
+            <div key={i}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", padding: "10px 0" }}>
+                <span style={{ fontSize: "13px", color: "var(--ink-3)", fontWeight: 500, flexShrink: 0 }}>{row.label}</span>
+                <span style={{ fontSize: "14px", color: row.bold ? "var(--ink)" : "var(--ink-2)", textAlign: "right", fontFamily: "var(--mono)", fontWeight: row.bold ? 700 : 400 }}>{row.value}</span>
+              </div>
+              {i < visibleFeeRows.length - 1 && <hr className="dotted-line" />}
+            </div>
+          ))}
+          {result.amountInWords && (
+            <p style={{ fontSize: "12px", color: "var(--ink-3)", fontStyle: "italic", padding: "10px 0 4px", textTransform: "capitalize" }}>{result.amountInWords}</p>
+          )}
+        </div>
+      )}
       {result.sourceUrl && (
         <div style={{ padding: "16px 24px", borderTop: "2px dotted var(--dotted)", background: "rgba(0,0,0,0.02)" }}>
           <p style={{ fontSize: "11px", color: "var(--ink-3)", marginBottom: "4px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Source (public bank endpoint)</p>
