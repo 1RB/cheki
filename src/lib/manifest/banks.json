@@ -92,11 +92,11 @@
     "responseType": "pdf",
     "requiresAccount": false,
     "requiresPhone": false,
-    "endpoint": "https://api.dashensuperapp.com/receipts/Within-Dashen-Transfer-{ref}.pdf",
+    "endpoint": "https://receipt.dashensuperapp.com/receipt/{ref}",
     "sslVerify": true,
     "color": "#0066B3",
     "initials": "DB",
-    "notes": "Verified working. FT/B22 reference returns a public PDF receipt."
+    "notes": "Verified working. Use the Dashen Transaction Reference (e.g. D31OBTI251720001). Works for both within-Dashen and Other Bank Transfer receipts."
   },
   {
     "id": "awash",
@@ -112,7 +112,7 @@
     "sslVerify": false,
     "color": "#E2231A",
     "initials": "AB",
-    "notes": "Confirmed working via live test. SSL broken, needs bypass."
+    "notes": "Endpoint awashpay.awashbank.com:8225/-{ref} returns 'Invalid receipt id' for the visible Transaction ID. The exact receipt URL format may require a different field than the one shown on the mobile receipt."
   },
   {
     "id": "zemen",

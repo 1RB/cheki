@@ -1,7 +1,7 @@
 /**
  * Dashen Bank parser.
  *
- * Endpoint: https://api.dashensuperapp.com/receipts/Within-Dashen-Transfer-{ref}.pdf
+ * Endpoint: https://receipt.dashensuperapp.com/receipt/{ref}
  * Response: PDF with structured text
  * Requires: only the transaction reference number (no account needed)
  */
@@ -17,7 +17,7 @@ export class DashenParser extends BaseParser {
   readonly requiresPhone = false;
 
   buildUrl(ref: string): string {
-    return `https://api.dashensuperapp.com/receipts/Within-Dashen-Transfer-${ref}.pdf`;
+    return `https://receipt.dashensuperapp.com/receipt/${ref}`;
   }
 
   parse(data: string | Buffer, _contentType: string): ParsedReceipt {

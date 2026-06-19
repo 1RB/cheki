@@ -360,7 +360,7 @@ export const articles: Article[] = [
           ["Geo-blocked", "Yes (Ethiopian IPs only)"],
         ],
       },
-      { type: "text", text: "Reference format: Alphanumeric, typically 2 letters followed by 6+ digits. Example: SE12345678" },
+      { type: "text", text: "Reference format: Alphanumeric Dashen transaction reference. Example: B22WDTI261620001 (within-Dashen) or D31OBTI251720001 (Other Bank Transfer)." },
 
       { type: "heading", text: "Dashen Bank" },
       {
@@ -374,6 +374,7 @@ export const articles: Article[] = [
           ["Geo-blocked", "No"],
         ],
       },
+      { type: "text", text: "Reference format: Alphanumeric Dashen transaction reference. Use the Transaction Reference, not the Transfer Reference. Works for both within-Dashen and Other Bank Transfer (inter-bank) receipts." },
 
       { type: "heading", text: "Awash Bank" },
       {

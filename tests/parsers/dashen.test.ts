@@ -11,7 +11,7 @@ describe("DashenParser", () => {
     it("builds URL with FT/B22 reference", () => {
       const url = parser.buildUrl("B22WDTI261620001");
       expect(url).toBe(
-        "https://api.dashensuperapp.com/receipts/Within-Dashen-Transfer-B22WDTI261620001.pdf",
+        "https://receipt.dashensuperapp.com/receipt/B22WDTI261620001",
       );
     });
   });
