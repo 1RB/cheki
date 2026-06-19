@@ -224,7 +224,7 @@ const { banks } = await cheki.getBanks();
 const health = await cheki.getHealth();`} id="sdk" />
 
               <SectionTitle id="python">Python</SectionTitle>
-              <Code code={`pip install ethio-receipt-verify
+              <Code code={`pip install cheki
 
 from ethio_receipt_verify import verify
 

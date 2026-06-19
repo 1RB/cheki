@@ -1,4 +1,4 @@
-# ethio-receipt-verify (cheki Python SDK)
+# cheki Python SDK
 
 Free, open-source **Ethiopian bank/wallet receipt verification** for Python.
 
@@ -112,7 +112,7 @@ client's `ClientVerifyResult`). See the [API reference](#api-reference) below.
 ## Installation
 
 ```bash
-pip install ethio-receipt-verify
+pip install cheki
 ```
 
 From source (development):

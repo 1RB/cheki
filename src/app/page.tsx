@@ -408,7 +408,7 @@ export default function Home() {
     { icon: BoltIcon, title: "1-3 second verification", body: "Fetch receipts from bank endpoints in real time. Fast enough for checkout counters." },
     { icon: Key01Icon, title: "No API key, no signup", body: "Start verifying immediately. No account, no business plan, no credit limit." },
     { icon: Layers01Icon, title: "Batch verification", body: "Verify up to 50 receipts in a single API call. Perfect for end-of-day reconciliation." },
-    { icon: ReceiptTextIcon, title: "Python library", body: "pip install ethio-receipt-verify. Server-side verification from Ethiopian networks. CLI included." },
+    { icon: ReceiptTextIcon, title: "Python library", body: "pip install cheki. Server-side verification from Ethiopian networks. CLI included." },
     { icon: ContainerIcon, title: "Self-host with Docker", body: "Run cheki on your own infrastructure. Bypass geo-blocks with an Ethiopian IP." },
     { icon: CodeIcon, title: "Structured JSON", body: "Every bank returns the same response shape. Write the integration once." },
     { icon: Search01Icon, title: "Auto-detect bank", body: "Paste a reference or URL and cheki identifies the bank automatically." },

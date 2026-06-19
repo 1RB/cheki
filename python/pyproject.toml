@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "ethio-receipt-verify"
+name = "cheki"
 version = "0.1.0"
 description = "Free, open-source Ethiopian bank/wallet receipt verification. Reverse-engineered public endpoints."
 readme = "README.md"
