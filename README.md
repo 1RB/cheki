@@ -193,16 +193,186 @@ docker-compose.yml
 public/llms.txt           # LLM-friendly content summary
 ```
 
-## Contributing
+## Adding a bank
 
-1. Fork the repo
-2. Create a branch: `git checkout -b feature/bank-name`
-3. Add the bank parser in `src/lib/parsers/`
-4. Add bank data in `src/lib/banks.ts` and `src/lib/banks.json`
-5. Test with a real receipt reference
-6. Submit a PR
+cheki uses a hexagonal architecture: each bank has a **parser** (adapter) that knows how to fetch and parse that bank's receipt format. The verifier (core) is bank-agnostic and dispatches based on the bank code.
 
-See our [contribution guide](https://cheki-pi.vercel.app/guides/contribute-new-bank) for details on adding new banks.
+### Architecture
+
+```
+src/lib/
+  core/types.ts          # ParserPort interface, ParsedReceipt, Receipt types
+  parsers/
+    base.ts              # BaseParser abstract class
+    registry.ts          # registerParser(), getParser(), isBankSupported()
+    index.ts             # Auto-registers all parsers (import to activate)
+    cbe.ts               # One file per bank
+    dashen.ts
+    ...
+  manifest/
+    banks.json           # Bank metadata: endpoint, type, status, requirements
+  banks.ts               # Bank detection from reference format, UI metadata
+```
+
+### Step-by-step
+
+1. **Fork and branch**
+
+```bash
+git clone https://github.com/1RB/cheki.git
+cd cheki
+git checkout -b feature/add-awash
+```
+
+2. **Create the parser**
+
+Create `src/lib/parsers/awash.ts`. Extend `BaseParser` and implement the abstract properties and methods:
+
+```ts
+import { BaseParser } from "./base";
+import type { ParsedReceipt } from "../core/types";
+
+export class AwashParser extends BaseParser {
+  readonly bankId = "awash";
+  readonly bankName = "Awash Bank";
+  readonly responseType = "pdf" as const;  // "pdf" | "html" | "json"
+  readonly requiresAccount = false;
+  readonly accountDigits = undefined;
+  readonly requiresPhone = false;
+
+  buildUrl(ref: string, account?: string, phone?: string): string {
+    return `https://awashpay.awashbank.com:8225/-${ref}`;
+  }
+
+  parse(data: string | Buffer, contentType: string): ParsedReceipt {
+    // For JSON responses: parse and extract fields
+    // For HTML responses: regex/slice the receipt fields
+    // For PDF responses: return { verified: false } and implement
+    //   a static parsePdfText() method (verifier handles PDF extraction)
+    // ...
+  }
+}
+```
+
+The `ParsedReceipt` type supports these fields (all optional except `verified`):
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `verified` | `boolean` | Whether the receipt was found and parsed |
+| `senderName` | `string` | Sender's full name |
+| `senderAccount` | `string` | Sender's account number |
+| `receiverName` | `string` | Receiver's full name |
+| `receiverAccount` | `string` | Receiver's account number |
+| `amount` | `number` | Transfer amount |
+| `currency` | `string` | Currency code (usually `"ETB"`) |
+| `date` | `string` | Transaction date |
+| `reference` | `string` | Transaction reference |
+| `branch` | `string` | Bank branch |
+| `reason` | `string` | Failure reason if not verified |
+| `invoiceNumber` | `string` | Invoice number (Telebirr/wallets) |
+| `transactionStatus` | `string` | Status string from the bank |
+| `settledAmount` | `number` | Settled amount (may differ from amount) |
+| `stampDuty` | `number` | Stamp duty fee |
+| `serviceFee` | `number` | Service charge |
+| `serviceFeeVat` | `number` | VAT on service charge |
+| `totalPaid` | `number` | Total amount paid including fees |
+| `amountInWords` | `string` | Amount written in words |
+| `paymentMode` | `string` | Payment mode (e.g. `"account-transfer"`) |
+| `paymentChannel` | `string` | Channel (e.g. `"mobile-banking"`) |
+
+3. **Register the parser**
+
+Add an import and `registerParser()` call in `src/lib/parsers/index.ts`:
+
+```ts
+import { AwashParser } from "./awash";
+// ...
+registerParser(new AwashParser());
+```
+
+4. **Add bank metadata**
+
+Add an entry to `src/lib/manifest/banks.json`:
+
+```json
+{
+  "id": "awash",
+  "name": "Awash Bank",
+  "swift": "AWAUETAA",
+  "type": "bank",
+  "status": "live",
+  "parser": "awash",
+  "responseType": "pdf",
+  "requiresAccount": false,
+  "requiresPhone": false,
+  "endpoint": "https://awashpay.awashbank.com:8225/-{ref}",
+  "sslVerify": true,
+  "color": "#E63946",
+  "initials": "AW",
+  "notes": "Receives share link from Awash mobile app."
+}
+```
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `id` | yes | Lowercase bank code used in API calls |
+| `name` | yes | Full bank name |
+| `swift` | no | SWIFT/BIC code |
+| `type` | yes | `"bank"` or `"wallet"` |
+| `status` | yes | `"live"` or `"in-development"` |
+| `parser` | yes | Must match the parser's `bankId` |
+| `responseType` | yes | `"pdf"`, `"html"`, or `"json"` |
+| `requiresAccount` | yes | Whether verification needs an account number |
+| `accountDigits` | no | How many digits are needed (e.g. CBE needs 8) |
+| `requiresPhone` | yes | Whether verification needs a phone number |
+| `endpoint` | yes | URL template. Use `{ref}`, `{account}`, `{phone}` placeholders |
+| `sslVerify` | yes | Set to `false` for banks with self-signed certs (e.g. CBE) |
+| `headers` | no | Custom headers required by the bank's API |
+| `color` | yes | Brand color for UI (hex) |
+| `initials` | yes | Short initials for UI badges |
+| `notes` | no | Integration notes, geo-blocking warnings, etc. |
+
+5. **Add bank detection (optional)**
+
+If the bank has a recognizable reference format, add a pattern to `src/lib/banks.ts` so cheki can auto-detect the bank from the reference alone:
+
+```ts
+{
+  id: "awash",
+  pattern: /^AW\d{10,}$/i,
+  // ...
+}
+```
+
+6. **Test with a real receipt**
+
+```bash
+# Run the test suite
+npm test
+
+# Test against the live API
+curl -X POST http://localhost:3000/api/verify \
+  -H "Content-Type: application/json" \
+  -d '{"bank":"awash","reference":"YOUR_REAL_REFERENCE"}'
+```
+
+If the bank is geo-blocked, test from an Ethiopian IP or a self-hosted instance.
+
+7. **Submit a PR**
+
+Include the reference number you tested with (or note that you tested from an Ethiopian IP if geo-blocked).
+
+### Response type notes
+
+- **JSON** banks (BOA, M-Pesa, CBE new): parse the JSON body in `parse()`, extract fields with standard property access
+- **HTML** banks (Telebirr): fetch returns HTML, extract fields with regex or string slicing. Use `unpdf` or `cheerio` if needed
+- **PDF** banks (CBE, Dashen, Zemen): `parse()` should return `{ verified: false }` since PDF text extraction is async. Implement a `static parsePdfText(text: string): ParsedReceipt` method instead. The verifier calls `unpdf` to extract text, then calls your parser's `parsePdfText`
+
+### Need help?
+
+- [Contribution guide](https://cheki-pi.vercel.app/guides/contribute-new-bank) — three ways to contribute without writing code
+- [Open an issue](https://github.com/1RB/cheki/issues) with a receipt screenshot or reference and we'll help reverse-engineer the endpoint
+- Share a receipt reference and bank name — we'll write the parser for you
 
 ## License
 
