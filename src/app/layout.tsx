@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
-const SITE_URL = "https://cheki.app";
+const SITE_URL = "https://chekiapp.vercel.app";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -10,7 +10,7 @@ export const metadata: Metadata = {
     template: "%s | cheki",
   },
   description:
-    "Free, open-source Ethiopian bank receipt verification. Verify CBE, Telebirr, BOA, M-Pesa, and more. No signup, no API key, no scam. The bank receipt endpoints are public - we just parse them.",
+    "Free, open-source Ethiopian bank receipt verification. Verify CBE, Telebirr, BOA, M-Pesa, and more. No signup, no API key, no scam. The bank receipt endpoints are public. We just parse them.",
   applicationName: "cheki",
   category: "finance",
   creator: "cheki open source",

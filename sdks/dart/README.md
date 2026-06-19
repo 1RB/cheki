@@ -1,4 +1,4 @@
-# cheki - Dart SDK
+# cheki Dart SDK
 
 A Dart client library for [cheki](https://cheki-pi.vercel.app), a free
 Ethiopian receipt verification service. Verify bank transfer receipts from

@@ -12,7 +12,7 @@ export const metadata: Metadata = {
     description:
       "Practical guides on Ethiopian receipt verification, payment fraud, API integration, and open source fintech.",
     type: "website",
-    url: "https://cheki.app/guides",
+    url: "https://chekiapp.vercel.app/guides",
   },
   twitter: {
     card: "summary_large_image",

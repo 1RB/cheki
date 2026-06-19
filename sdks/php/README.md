@@ -1,6 +1,6 @@
 # cheki PHP SDK
 
-A PHP SDK for [cheki](https://cheki-pi.vercel.app) - the free Ethiopian receipt verification service.
+A PHP SDK for [cheki](https://cheki-pi.vercel.app), the free Ethiopian receipt verification service.
 
 ## Installation
 
@@ -35,7 +35,7 @@ require_once 'src/HealthStatus.php';
 
 - PHP 8.0 or higher
 - `ext-curl` (cURL extension)
-- `ext-json` (JSON extension - included by default since PHP 8.0)
+- `ext-json` (JSON extension, included by default since PHP 8.0)
 
 ## Quick Start
 
@@ -225,8 +225,8 @@ Returned by `verify()` and each item in `BatchResult::$results`.
 | `raw`                | ?array   | Raw decoded response                 |
 
 Methods:
-- `isVerified(): bool` - true if `success && verified`
-- `getRaw(): ?array` - raw response data
+- `isVerified(): bool`: true if `success && verified`
+- `getRaw(): ?array`: raw response data
 
 ### `BatchResult`
 
@@ -244,8 +244,8 @@ Returned by `verifyBatch()`.
 | `raw`        | ?array          | Raw decoded response         |
 
 Methods:
-- `getVerified(): VerifyResult[]` - only verified results
-- `getFailed(): VerifyResult[]` - only failed results
+- `getVerified(): VerifyResult[]`: only verified results
+- `getFailed(): VerifyResult[]`: only failed results
 
 ### `Bank`
 
@@ -269,10 +269,10 @@ Returned by `getBanks()`.
 | `raw`              | ?array  | Raw bank data                            |
 
 Methods:
-- `isLive(): bool` - whether bank status is `live`
-- `isActive(): bool` - whether bank is live/active/online
-- `isBank(): bool` - whether type is `bank`
-- `isWallet(): bool` - whether type is `wallet`
+- `isLive(): bool`: whether bank status is `live`
+- `isActive(): bool`: whether bank is live/active/online
+- `isBank(): bool`: whether type is `bank`
+- `isWallet(): bool`: whether type is `wallet`
 
 ### `HealthStatus`
 
@@ -289,7 +289,7 @@ Returned by `getHealth()`.
 | `raw`        | ?array   | Raw response             |
 
 Methods:
-- `isHealthy(): bool` - whether the service is healthy
+- `isHealthy(): bool`: whether the service is healthy
 
 ## Error Handling
 

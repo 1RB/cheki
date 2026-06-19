@@ -113,7 +113,7 @@ if ($result->isVerified()) {
 
 ### Web UI
 
-Visit https://cheki-pi.vercel.app - no signup required.
+Visit https://cheki-pi.vercel.app. No signup required.
 
 ### API
 
@@ -135,13 +135,13 @@ Self-hosting on an Ethiopian IP bypasses Telebirr/M-Pesa geo-blocks.
 
 ## Features
 
-- **Web UI** - receipt aesthetic, auto-detect bank from reference format
-- **REST API** - free, no API key, no rate limit
-- **Batch verification** - up to 50 receipts at once
-- **5 SDKs** - TypeScript, Python, Go, Dart, PHP
-- **Docker** - self-hosting with docker-compose
-- **SEO** - bank-specific pages, guides, sitemap, structured data
-- **AI-friendly** - llms.txt, allows all AI crawlers in robots.txt
+- **Web UI**: receipt aesthetic, auto-detect bank from reference format
+- **REST API**: free, no API key, no rate limit
+- **Batch verification**: up to 50 receipts at once
+- **5 SDKs**: TypeScript, Python, Go, Dart, PHP
+- **Docker**: self-hosting with docker-compose
+- **SEO**: bank-specific pages, guides, sitemap, structured data
+- **AI-friendly**: llms.txt, allows all AI crawlers in robots.txt
 
 ## How it works
 
@@ -370,9 +370,9 @@ Include the reference number you tested with (or note that you tested from an Et
 
 ### Need help?
 
-- [Contribution guide](https://cheki-pi.vercel.app/guides/contribute-new-bank) - three ways to contribute without writing code
+- [Contribution guide](https://cheki-pi.vercel.app/guides/contribute-new-bank): three ways to contribute without writing code
 - [Open an issue](https://github.com/1RB/cheki/issues) with a receipt screenshot or reference and we'll help reverse-engineer the endpoint
-- Share a receipt reference and bank name - we'll write the parser for you
+- Share a receipt reference and bank name, and we'll write the parser for you
 
 ## License
 

@@ -21,7 +21,7 @@ export function generateMetadata({ params }: { params: Promise<{ code: string }>
         title: bank.seo.title,
         description: bank.seo.description,
         type: "article",
-        url: `https://cheki.app/banks/${bank.code}`,
+        url: `https://chekiapp.vercel.app/banks/${bank.code}`,
       },
       twitter: {
         card: "summary_large_image",
@@ -51,9 +51,9 @@ export default async function BankPage({ params }: { params: Promise<{ code: str
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Home", item: "https://cheki.app/" },
-      { "@type": "ListItem", position: 2, name: "Banks", item: "https://cheki.app/banks" },
-      { "@type": "ListItem", position: 3, name: bank.shortName, item: `https://cheki.app/banks/${bank.code}` },
+      { "@type": "ListItem", position: 1, name: "Home", item: "https://chekiapp.vercel.app/" },
+      { "@type": "ListItem", position: 2, name: "Banks", item: "https://chekiapp.vercel.app/banks" },
+      { "@type": "ListItem", position: 3, name: bank.shortName, item: `https://chekiapp.vercel.app/banks/${bank.code}` },
     ],
   };
 
@@ -152,7 +152,7 @@ export default async function BankPage({ params }: { params: Promise<{ code: str
 
             <h2>Verifying {bank.shortName} via API</h2>
             <p>cheki provides a free REST API for {bank.shortName} verification:</p>
-            <p><code>POST https://cheki.app/api/verify</code></p>
+            <p><code>POST https://chekiapp.vercel.app/api/verify</code></p>
             <p>Request body: <code>{`{ "bank": "${bank.code}", "reference": "${bank.referenceExample}"${bank.requiresAccount ? `, "accountNumber": "1000XXXXXXX"` : ""} }`}</code></p>
             <p>See the <a href="/docs">API documentation</a> for full details.</p>
 

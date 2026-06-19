@@ -12,7 +12,7 @@ export const metadata: Metadata = {
     description:
       "Free REST API, 5 SDKs, CLI tool, and Docker self-hosting. No API key, no signup, no rate limit.",
     type: "website",
-    url: "https://cheki.app/developers",
+    url: "https://chekiapp.vercel.app/developers",
   },
   twitter: {
     card: "summary_large_image",

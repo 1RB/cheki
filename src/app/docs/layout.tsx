@@ -12,7 +12,7 @@ export const metadata: Metadata = {
     description:
       "Free REST API for verifying Ethiopian bank receipts. No auth, no rate limit. Supports CBE, Telebirr, BOA, M-Pesa, and more.",
     type: "website",
-    url: "https://cheki.app/docs",
+    url: "https://chekiapp.vercel.app/docs",
   },
   twitter: {
     card: "summary_large_image",

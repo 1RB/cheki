@@ -667,7 +667,7 @@ const developerPages: SeoPage[] = [
         heading: "Direct verification vs API verification",
         body: "The library supports two modes:",
         bullets: [
-          "API mode: calls cheki's REST API (requires internet access to cheki.app)",
+          "API mode: calls cheki's REST API (requires internet access to chekiapp.vercel.app)",
           "Direct mode: fetches receipts directly from bank endpoints (bypasses cheki's API)",
           "Direct mode is useful for self-hosting on an Ethiopian IP to bypass geo-blocking",
           "Both modes return the same structured data format",
@@ -697,7 +697,7 @@ const developerPages: SeoPage[] = [
         heading: "Integration options",
         body: "cheki offers multiple integration paths depending on your technical resources:",
         bullets: [
-          "Web UI: send staff to cheki.app for manual verification (no integration needed)",
+          "Web UI: send staff to chekiapp.vercel.app for manual verification (no integration needed)",
           "REST API: POST /api/verify from your backend for automated verification",
           "Batch API: POST /api/verify/batch for bulk end-of-day reconciliation",
           "TypeScript SDK: import into your Node.js or frontend project",

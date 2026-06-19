@@ -1,6 +1,6 @@
 # cheki Go SDK
 
-A Go client library for the [cheki](https://cheki-pi.vercel.app) receipt verification API - a free Ethiopian receipt verification service.
+A Go client library for the [cheki](https://cheki-pi.vercel.app) receipt verification API, a free Ethiopian receipt verification service.
 
 ## Features
 
@@ -10,7 +10,7 @@ A Go client library for the [cheki](https://cheki-pi.vercel.app) receipt verific
 - ✅ Service health checks
 - ✅ Context-aware requests (cancellation & timeouts)
 - ✅ Configurable base URL, HTTP client, and timeout
-- ✅ Standard library only - no external dependencies
+- ✅ Standard library only: no external dependencies
 - ✅ Idiomatic Go with typed errors
 
 ## Installation
@@ -244,7 +244,7 @@ The client automatically retries failed requests on HTTP **429** (Too Many Reque
 and **5xx** (Server Error) responses. Up to **3 retry attempts** are made with
 exponential backoff starting at 500ms, doubling each retry, capped at 5s. A random
 jitter of up to 50% of the backoff is added to avoid thundering-herd effects.
-Context cancellation is respected during backoff waits - if the context is
+Context cancellation is respected during backoff waits. If the context is
 cancelled while waiting to retry, the context error is returned immediately.
 Network-level errors (connection failures, DNS errors, etc.) are not retried.
 

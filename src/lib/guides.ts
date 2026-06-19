@@ -53,7 +53,7 @@ export const articles: Article[] = [
       { type: "code", code: "https://mbreciept.cbe.com.et/{SHORT_ID}" },
       { type: "text", text: "The short ID is a random string like fHCxyV4mg5pRIwEkJO. It maps to a single transaction on CBE's backend. When you scan the QR code, you get this URL, which you can paste into cheki's URL input mode to verify instantly." },
 
-      { type: "callout", variant: "tip", title: "Try it now", text: "Open cheki.app, switch to the 'Receipt URL' tab, and paste any mbreciept.cbe.com.et link. cheki calls CBE's JSON API and returns the full transaction data in under 2 seconds." },
+      { type: "callout", variant: "tip", title: "Try it now", text: "Open chekiapp.vercel.app, switch to the 'Receipt URL' tab, and paste any mbreciept.cbe.com.et link. cheki calls CBE's JSON API and returns the full transaction data in under 2 seconds." },
 
       { type: "heading", text: "The API behind the receipts" },
       { type: "text", text: "The mbreciept.cbe.com.et page is a Nuxt.js single-page app. When it loads, it calls a JSON API at a different domain:" },
@@ -83,7 +83,7 @@ export const articles: Article[] = [
       {
         type: "steps",
         items: [
-          { title: "Open cheki.app on your phone", text: "The QR scanner uses your phone's camera, so mobile works best." },
+          { title: "Open chekiapp.vercel.app on your phone", text: "The QR scanner uses your phone's camera, so mobile works best." },
           { title: "Tap the camera icon", text: "It's in the top-right of the verify form, next to the QR icon. Allow camera access when prompted." },
           { title: "Point at the QR code", text: "Hold your phone over the QR code on the receipt. A scan box overlay shows where to aim." },
           { title: "Automatic verification", text: "Once the QR code is detected, the URL is extracted and verification happens automatically. The result appears in under 2 seconds." },
@@ -97,7 +97,7 @@ export const articles: Article[] = [
     ],
     faq: [
       { q: "Can I still use the old CBE receipt system with FT reference and account number?", a: "Yes. cheki supports both systems. Select CBE from the bank dropdown and enter the FT reference + account digits to use the old PDF endpoint. Or paste a mbreciept.cbe.com.et URL to use the new JSON API." },
-      { q: "Do I need the CBE app to scan QR codes?", a: "No. cheki has a built-in QR scanner that uses your phone's camera. Open cheki.app, tap the camera icon, and point at the QR code on the receipt." },
+      { q: "Do I need the CBE app to scan QR codes?", a: "No. cheki has a built-in QR scanner that uses your phone's camera. Open chekiapp.vercel.app, tap the camera icon, and point at the QR code on the receipt." },
       { q: "What if the CBE receipt link doesn't work?", a: "The mbreciept.cbe.com.et service may occasionally be down. If the link returns a 502 or timeout, try again later. You can also use the old system with the FT reference and account number as a fallback." },
     ],
     related: ["free-receipt-verification-no-api-key", "ethiopian-bank-receipt-formats", "payment-fraud-ethiopia"],
@@ -156,7 +156,7 @@ export const articles: Article[] = [
       {
         type: "steps",
         items: [
-          { title: "Go to cheki.app", text: "No signup, no login, no account creation. Just open the page and start verifying." },
+          { title: "Go to chekiapp.vercel.app", text: "No signup, no login, no account creation. Just open the page and start verifying." },
           { title: "Paste your receipt reference or URL", text: "Type an FT reference for CBE, a transaction ID for Telebirr, or paste a full receipt URL. cheki auto-detects the bank." },
           { title: "Click Verify", text: "cheki fetches the receipt from the bank's public endpoint and shows you the result in 1-3 seconds." },
           { title: "Review the data", text: "You'll see the sender name, receiver name, amount, date, and source URL. Copy the JSON if you need it for your records." },
@@ -165,12 +165,12 @@ export const articles: Article[] = [
 
       { type: "heading", text: "Using the free API" },
       { type: "text", text: "If you're a developer, cheki provides a free REST API with no authentication:" },
-      { type: "code", lang: "bash", code: 'curl -X POST https://cheki.app/api/verify \\\n  -H "Content-Type: application/json" \\\n  -d \'{"bank":"cbe","reference":"FT26140P01YB","accountNumber":"1000560536171"}\'' },
+      { type: "code", lang: "bash", code: 'curl -X POST https://chekiapp.vercel.app/api/verify \\\n  -H "Content-Type: application/json" \\\n  -d \'{"bank":"cbe","reference":"FT26140P01YB","accountNumber":"1000560536171"}\'' },
       { type: "text", text: "No API key header. No Bearer token. No rate limit. Just POST and get JSON back." },
       { type: "text", text: "Compare this to check.et, which requires a business account, an API key generation step, and Authorization headers:" },
       { type: "code", lang: "bash", code: '# check.et requires all this:\nexport CHECK_ET_API_KEY=chk_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\ncurl -X POST https://api.check.et/api/v1/verify \\\n  -H "Authorization: Bearer $CHECK_ET_API_KEY" \\\n  -H "Content-Type: application/json" \\\n  -d \'{"bank":"cbe","transaction_number":"FT26140P01YB","account_number":"1000560536171"}\'' },
 
-      { type: "callout", variant: "success", title: "Migrating from check.et", text: "If you're currently using check.et's API, migrating to cheki is simple. Change the URL from api.check.et to cheki.app, remove the Authorization header, and rename transaction_number to reference and account_number to accountNumber. The response structure is similar." },
+      { type: "callout", variant: "success", title: "Migrating from check.et", text: "If you're currently using check.et's API, migrating to cheki is simple. Change the URL from api.check.et to chekiapp.vercel.app, remove the Authorization header, and rename transaction_number to reference and account_number to accountNumber. The response structure is similar." },
 
       { type: "heading", text: "What about verify.et?" },
       { type: "text", text: "verify.et is made by Suba Software and charges in USD ($20-40/month). It has an Android app on the Play Store and supports Telegram OAuth for signup. Here's the interesting part: verify.et blocks AI crawlers in its robots.txt:" },
@@ -178,12 +178,12 @@ export const articles: Article[] = [
       { type: "text", text: "This means verify.et actively prevents ChatGPT, Claude, and Google's AI from reading its content. Why? Possibly to prevent users from discovering that the underlying data is public. cheki does the opposite: our robots.txt explicitly allows all AI crawlers, and we publish an llms.txt file with key facts for AI assistants." },
 
       { type: "heading", text: "Self-hosting for zero cost and zero dependency" },
-      { type: "text", text: "If you don't want to depend on cheki.app at all, you can self-host the entire system with Docker:" },
-      { type: "code", lang: "bash", code: "git clone https://github.com/1RB/cheki.git\ncd cheki\ndocker-compose up -d\n\n# Your API is now at http://localhost:3000/api/verify\n# No external dependencies. No API calls to cheki.app.\n# Full control. MIT licensed." },
+      { type: "text", text: "If you don't want to depend on chekiapp.vercel.app at all, you can self-host the entire system with Docker:" },
+      { type: "code", lang: "bash", code: "git clone https://github.com/1RB/cheki.git\ncd cheki\ndocker-compose up -d\n\n# Your API is now at http://localhost:3000/api/verify\n# No external dependencies. No API calls to chekiapp.vercel.app.\n# Full control. MIT licensed." },
       { type: "text", text: "Self-hosting on an Ethiopian IP also bypasses Telebirr and M-Pesa geo-blocking, which affects both cheki's hosted version and check.et's servers." },
     ],
     faq: [
-      { q: "Is cheki really free forever?", a: "Yes. cheki is MIT licensed open source. The hosted version at cheki.app is free with no limits. You can also self-host with Docker at zero cost. There is no premium tier, no credit system, and no plan to add one." },
+      { q: "Is cheki really free forever?", a: "Yes. cheki is MIT licensed open source. The hosted version at chekiapp.vercel.app is free with no limits. You can also self-host with Docker at zero cost. There is no premium tier, no credit system, and no plan to add one." },
       { q: "How is cheki different from check.et?", a: "cheki uses the same public bank endpoints as check.et. The difference is that cheki is free, open source, requires no signup or API key, and allows you to self-host. check.et charges 499 ETB/month after 200 one-time free verifications." },
       { q: "Can I use cheki for my business?", a: "Yes. cheki has no per-business or per-user restrictions. Use the web interface, the API, or self-host with Docker. The API has no rate limits (though the underlying bank endpoints may have their own limits)." },
     ],
@@ -247,7 +247,7 @@ export const articles: Article[] = [
       { type: "heading", text: "Automating fraud prevention" },
       { type: "text", text: "Manual verification is unreliable because it depends on human judgment under pressure. The solution is to automate verification so every transaction is checked, every time, with no exceptions." },
       { type: "text", text: "With cheki's API, you can integrate verification into your POS system, e-commerce checkout, or delivery app. Here's a simple integration pattern:" },
-      { type: "code", lang: "javascript", code: "// Before releasing goods, verify the payment\nconst response = await fetch('https://cheki.app/api/verify', {\n  method: 'POST',\n  headers: { 'Content-Type': 'application/json' },\n  body: JSON.stringify({\n    bank: 'cbe',\n    reference: customerReference,\n    accountNumber: myAccountNumber\n  })\n});\n\nconst result = await response.json();\n\n// Check 1: Does the receipt exist?\nif (!result.verified) return reject('Receipt not found');\n\n// Check 2: Does the amount match?\nif (result.amount !== expectedAmount) return reject('Amount mismatch');\n\n// Check 3: Is the receiver our account?\nif (result.receiverAccount !== myAccount) return reject('Wrong account');\n\n// Check 4: Is this a duplicate?\nif (await isDuplicate(result.reference)) return reject('Duplicate receipt');\n\n// Check 5: Is the payment recent?\nif (isOlderThan(result.date, 1, 'hour')) return reject('Stale payment');\n\n// All checks passed\nreturn approve();" },
+      { type: "code", lang: "javascript", code: "// Before releasing goods, verify the payment\nconst response = await fetch('https://chekiapp.vercel.app/api/verify', {\n  method: 'POST',\n  headers: { 'Content-Type': 'application/json' },\n  body: JSON.stringify({\n    bank: 'cbe',\n    reference: customerReference,\n    accountNumber: myAccountNumber\n  })\n});\n\nconst result = await response.json();\n\n// Check 1: Does the receipt exist?\nif (!result.verified) return reject('Receipt not found');\n\n// Check 2: Does the amount match?\nif (result.amount !== expectedAmount) return reject('Amount mismatch');\n\n// Check 3: Is the receiver our account?\nif (result.receiverAccount !== myAccount) return reject('Wrong account');\n\n// Check 4: Is this a duplicate?\nif (await isDuplicate(result.reference)) return reject('Duplicate receipt');\n\n// Check 5: Is the payment recent?\nif (isOlderThan(result.date, 1, 'hour')) return reject('Stale payment');\n\n// All checks passed\nreturn approve();" },
       { type: "callout", variant: "tip", title: "Use batch verification for reconciliation", text: "At the end of each day, use cheki's batch endpoint to verify all receipts at once. POST to /api/verify/batch with up to 50 receipts. This catches any fraud that slipped through during the day." },
     ],
     faq: [
@@ -364,7 +364,7 @@ export const articles: Article[] = [
           ["Geo-blocked", "Yes (Ethiopian IPs only)"],
         ],
       },
-      { type: "text", text: "Reference format: Alphanumeric Dashen transaction reference. Example: B22WDTI261620001 (within-Dashen) or D31OBTI251720001 (Other Bank Transfer)." },
+      { type: "text", text: "Reference format: Alphanumeric Safaricom transaction reference." },
 
       { type: "heading", text: "Dashen Bank" },
       {
@@ -516,7 +516,7 @@ export const articles: Article[] = [
     date: "2026-06-18",
     readTime: "5 min",
     content: [
-      { type: "text", text: "Self-hosting cheki gives you three advantages over the hosted version: full control over your data, no dependency on cheki.app, and the ability to bypass Telebirr and M-Pesa geo-blocking by running on an Ethiopian IP address." },
+      { type: "text", text: "Self-hosting cheki gives you three advantages over the hosted version: full control over your data, no dependency on chekiapp.vercel.app, and the ability to bypass Telebirr and M-Pesa geo-blocking by running on an Ethiopian IP address." },
 
       { type: "heading", text: "Prerequisites" },
       { type: "list", items: [
@@ -692,7 +692,7 @@ export const articles: Article[] = [
       { type: "text", text: "Weaknesses: only 4 banks, no web app, no API, no docs, mobile app claimed but store links are dead, SSL certificate expired April 2026 (unrenewed for 2+ months), no pricing transparency, made by a dev shop not a dedicated fintech." },
 
       { type: "heading", text: "cheki: the details" },
-      { type: "text", text: "cheki is MIT licensed open source built with Next.js. It requires no signup, no API key, and has no limits. The hosted version is at cheki.app, and the full source code is on GitHub." },
+      { type: "text", text: "cheki is MIT licensed open source built with Next.js. It requires no signup, no API key, and has no limits. The hosted version is at chekiapp.vercel.app, and the full source code is on GitHub." },
       { type: "text", text: "cheki supports 31 banks with 9 live (CBE, Telebirr, BOA, M-Pesa, Dashen, Zemen, CBE Birr, Siinqee, eBirr) and 22 in development. eBirr alone covers 4 additional banks through a single integration (Nib International, Wegagen, Ahadu, KAAFI Microfinance). It supports both the old and new CBE receipt systems, BOA QR code decryption, and unified QR scanning with multi-scale auto-detection." },
       { type: "text", text: "Strengths: free, open source, no signup, self-hosting, batch verification, Python library, TypeScript SDK, Docker, QR code scanning with BOA AES decryption, URL auto-detection, allows AI crawlers, shows receipt source URLs." },
       { type: "text", text: "Weaknesses: no mobile app (web only, but PWA-installable), no employee management, no dashboard for businesses, no duplicate detection built-in, no geo-block bypass relay, fewer live banks than check.et/verify.et/qbirr/tinaverify." },
@@ -749,28 +749,28 @@ export const articles: Article[] = [
           ["/api/health", "GET", "Check API and per-bank endpoint latency"],
         ],
       },
-      { type: "text", text: "Base URL: https://cheki.app/api" },
+      { type: "text", text: "Base URL: https://chekiapp.vercel.app/api" },
       { type: "callout", variant: "success", title: "No authentication", text: "cheki's API requires no API key, no Bearer token, and no signup. Just POST and get JSON. This is different from check.et which requires a business account and Authorization header." },
 
       { type: "heading", text: "Single verification" },
       { type: "text", text: "The most common use case: verify one receipt at a time." },
-      { type: "code", lang: "bash", code: 'curl -X POST https://cheki.app/api/verify \\\n  -H "Content-Type: application/json" \\\n  -d \'{\n    "bank": "cbe",\n    "reference": "FT26140P01YB",\n    "accountNumber": "1000560536171"\n  }\'' },
+      { type: "code", lang: "bash", code: 'curl -X POST https://chekiapp.vercel.app/api/verify \\\n  -H "Content-Type: application/json" \\\n  -d \'{\n    "bank": "cbe",\n    "reference": "FT26140P01YB",\n    "accountNumber": "1000560536171"\n  }\'' },
       { type: "text", text: "Response:" },
       { type: "code", lang: "json", code: '{\n  "success": true,\n  "verified": true,\n  "bank": "Commercial Bank of Ethiopia",\n  "reference": "FT26140P01YB",\n  "amount": 20000,\n  "currency": "ETB",\n  "senderName": "Mr Mohammed Abdulwasi Reshid",\n  "senderAccount": "1****1685",\n  "receiverName": "SAMI ADIL ZEKARIA",\n  "receiverAccount": "1000560536171",\n  "date": "5/20/2026 7:29:00 PM",\n  "sourceUrl": "https://apps.cbe.com.et:100/?id=FT26140P01YB60536171"\n}' },
 
       { type: "heading", text: "URL-based verification" },
       { type: "text", text: "If you have a receipt URL (e.g. from a QR code or shared link), you can skip the bank field. cheki auto-detects the bank from the URL:" },
-      { type: "code", lang: "bash", code: 'curl -X POST https://cheki.app/api/verify \\\n  -H "Content-Type: application/json" \\\n  -d \'{\n    "reference": "https://mbreciept.cbe.com.et/fHCxyV4mg5pRIwEkJO"\n  }\'' },
+      { type: "code", lang: "bash", code: 'curl -X POST https://chekiapp.vercel.app/api/verify \\\n  -H "Content-Type: application/json" \\\n  -d \'{\n    "reference": "https://mbreciept.cbe.com.et/fHCxyV4mg5pRIwEkJO"\n  }\'' },
 
       { type: "heading", text: "Batch verification" },
       { type: "text", text: "For end-of-day reconciliation, verify up to 50 receipts in a single request:" },
-      { type: "code", lang: "bash", code: 'curl -X POST https://cheki.app/api/verify/batch \\\n  -H "Content-Type: application/json" \\\n  -d \'{\n    "receipts": [\n      {"bank": "cbe", "reference": "FT26140P01YB", "accountNumber": "1000560536171"},\n      {"bank": "telebirr", "reference": "DET8FJGUJ4"},\n      {"bank": "boa", "reference": "AB12345678", "accountNumber": "12345"}\n    ]\n  }\'' },
+      { type: "code", lang: "bash", code: 'curl -X POST https://chekiapp.vercel.app/api/verify/batch \\\n  -H "Content-Type: application/json" \\\n  -d \'{\n    "receipts": [\n      {"bank": "cbe", "reference": "FT26140P01YB", "accountNumber": "1000560536171"},\n      {"bank": "telebirr", "reference": "DET8FJGUJ4"},\n      {"bank": "boa", "reference": "AB12345678", "accountNumber": "12345"}\n    ]\n  }\'' },
 
       { type: "heading", text: "JavaScript integration" },
-      { type: "code", lang: "javascript", code: "class ChekiAPI {\n  constructor(baseUrl = 'https://cheki.app') {\n    this.baseUrl = baseUrl;\n  }\n\n  async verify(bank, reference, accountNumber) {\n    const res = await fetch(`${this.baseUrl}/api/verify`, {\n      method: 'POST',\n      headers: { 'Content-Type': 'application/json' },\n      body: JSON.stringify({ bank, reference, accountNumber })\n    });\n    return res.json();\n  }\n\n  async verifyUrl(url) {\n    const res = await fetch(`${this.baseUrl}/api/verify`, {\n      method: 'POST',\n      headers: { 'Content-Type': 'application/json' },\n      body: JSON.stringify({ reference: url })\n    });\n    return res.json();\n  }\n\n  async batchVerify(receipts) {\n    const res = await fetch(`${this.baseUrl}/api/verify/batch`, {\n      method: 'POST',\n      headers: { 'Content-Type': 'application/json' },\n      body: JSON.stringify({ receipts })\n    });\n    return res.json();\n  }\n}\n\n// Usage\nconst cheki = new ChekiAPI();\nconst result = await cheki.verify('cbe', 'FT26140P01YB', '1000560536171');\nif (result.verified && result.amount === expectedAmount) {\n  console.log('Payment confirmed:', result.amount, result.currency);\n}" },
+      { type: "code", lang: "javascript", code: "class ChekiAPI {\n  constructor(baseUrl = 'https://chekiapp.vercel.app') {\n    this.baseUrl = baseUrl;\n  }\n\n  async verify(bank, reference, accountNumber) {\n    const res = await fetch(`${this.baseUrl}/api/verify`, {\n      method: 'POST',\n      headers: { 'Content-Type': 'application/json' },\n      body: JSON.stringify({ bank, reference, accountNumber })\n    });\n    return res.json();\n  }\n\n  async verifyUrl(url) {\n    const res = await fetch(`${this.baseUrl}/api/verify`, {\n      method: 'POST',\n      headers: { 'Content-Type': 'application/json' },\n      body: JSON.stringify({ reference: url })\n    });\n    return res.json();\n  }\n\n  async batchVerify(receipts) {\n    const res = await fetch(`${this.baseUrl}/api/verify/batch`, {\n      method: 'POST',\n      headers: { 'Content-Type': 'application/json' },\n      body: JSON.stringify({ receipts })\n    });\n    return res.json();\n  }\n}\n\n// Usage\nconst cheki = new ChekiAPI();\nconst result = await cheki.verify('cbe', 'FT26140P01YB', '1000560536171');\nif (result.verified && result.amount === expectedAmount) {\n  console.log('Payment confirmed:', result.amount, result.currency);\n}" },
 
       { type: "heading", text: "Python integration" },
-      { type: "code", lang: "python", code: "import requests\n\nclass ChekiAPI:\n    def __init__(self, base_url='https://cheki.app'):\n        self.base_url = base_url\n\n    def verify(self, bank, reference, account_number=None):\n        payload = {'bank': bank, 'reference': reference}\n        if account_number:\n            payload['accountNumber'] = account_number\n        r = requests.post(f'{self.base_url}/api/verify', json=payload)\n        return r.json()\n\n    def verify_url(self, url):\n        r = requests.post(f'{self.base_url}/api/verify',\n                         json={'reference': url})\n        return r.json()\n\n# Usage\ncheki = ChekiAPI()\nresult = cheki.verify('cbe', 'FT26140P01YB', '1000560536171')\nif result.get('verified') and result.get('amount') == expected_amount:\n    print(f'Payment confirmed: {result[\"amount\"]} {result[\"currency\"]}')" },
+      { type: "code", lang: "python", code: "import requests\n\nclass ChekiAPI:\n    def __init__(self, base_url='https://chekiapp.vercel.app'):\n        self.base_url = base_url\n\n    def verify(self, bank, reference, account_number=None):\n        payload = {'bank': bank, 'reference': reference}\n        if account_number:\n            payload['accountNumber'] = account_number\n        r = requests.post(f'{self.base_url}/api/verify', json=payload)\n        return r.json()\n\n    def verify_url(self, url):\n        r = requests.post(f'{self.base_url}/api/verify',\n                         json={'reference': url})\n        return r.json()\n\n# Usage\ncheki = ChekiAPI()\nresult = cheki.verify('cbe', 'FT26140P01YB', '1000560536171')\nif result.get('verified') and result.get('amount') == expected_amount:\n    print(f'Payment confirmed: {result[\"amount\"]} {result[\"currency\"]}')" },
 
       { type: "heading", text: "Error handling" },
       { type: "text", text: "The API returns structured errors. Handle these cases:" },
@@ -800,7 +800,7 @@ export const articles: Article[] = [
       },
       { type: "code", lang: "javascript", code: "async function verifyPayment(customerRef, expectedAmount, myAccount) {\n  const result = await cheki.verify('cbe', customerRef, myAccount);\n\n  if (!result.success || !result.verified)\n    return { ok: false, reason: 'Receipt not found' };\n\n  if (result.amount !== expectedAmount)\n    return { ok: false, reason: `Amount mismatch: ${result.amount} vs ${expectedAmount}` };\n\n  if (result.receiverAccount && !result.receiverAccount.endsWith(myAccount.slice(-5)))\n    return { ok: false, reason: 'Wrong receiving account' };\n\n  const paymentDate = new Date(result.date);\n  const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);\n  if (paymentDate < oneHourAgo)\n    return { ok: false, reason: 'Payment is too old' };\n\n  if (await isDuplicate(result.reference))\n    return { ok: false, reason: 'Duplicate receipt' };\n\n  return { ok: true, data: result };\n}" },
 
-      { type: "callout", variant: "tip", title: "Self-host for production", text: "For production use, self-host cheki with Docker. This gives you full control, eliminates dependency on cheki.app, and allows you to add authentication, rate limiting, and logging." },
+      { type: "callout", variant: "tip", title: "Self-host for production", text: "For production use, self-host cheki with Docker. This gives you full control, eliminates dependency on chekiapp.vercel.app, and allows you to add authentication, rate limiting, and logging." },
     ],
     faq: [
       { q: "Is the API really free with no limits?", a: "Yes. cheki's API has no rate limits and no authentication. However, the underlying bank endpoints may have their own rate limits. If you make too many requests too quickly, the bank may temporarily block your IP." },
@@ -842,7 +842,7 @@ export const articles: Article[] = [
       { type: "text", text: "cheki is MIT licensed. This means:" },
       { type: "list", items: [
         "Anyone can read the source code and verify exactly how receipt verification works",
-        "Anyone can self-host with Docker, eliminating dependency on cheki.app",
+        "Anyone can self-host with Docker, eliminating dependency on chekiapp.vercel.app",
         "If a bank changes their endpoint, anyone can submit a fix via GitHub",
         "If a new bank launches, anyone can add support",
         "The community owns the tool, not a company",
@@ -871,7 +871,7 @@ export const articles: Article[] = [
       { type: "text", text: "More people are asking AI assistants like ChatGPT and Claude for help with Ethiopian payment verification. When someone asks 'how do I verify a CBE receipt for free', the AI should be able to find and cite cheki." },
       { type: "text", text: "verify.et blocks all AI crawlers in its robots.txt. This means AI assistants can't read verify.et's content. When someone asks ChatGPT about verify.et, the AI has no information. This is anti-user and anti-transparency." },
       { type: "text", text: "cheki does the opposite. Our robots.txt explicitly allows GPTBot, ClaudeBot, CCBot, Google-Extended, PerplexityBot, and all other AI crawlers. We also publish an llms.txt file with key facts that AI assistants can reference directly." },
-      { type: "callout", variant: "tip", title: "llms.txt", text: "cheki publishes a /llms.txt file with structured facts about the service, supported banks, API endpoints, and key data. This is a new standard for making websites AI-readable. Visit https://cheki.app/llms.txt to see it." },
+      { type: "callout", variant: "tip", title: "llms.txt", text: "cheki publishes a /llms.txt file with structured facts about the service, supported banks, API endpoints, and key data. This is a new standard for making websites AI-readable. Visit https://chekiapp.vercel.app/llms.txt to see it." },
 
       { type: "heading", text: "Contributing to cheki" },
       { type: "text", text: "cheki welcomes contributions from the Ethiopian developer community. Ways to contribute:" },
@@ -915,7 +915,7 @@ export const articles: Article[] = [
         type: "steps",
         items: [
           { title: "Get the receipt link or QR code", text: "Ask the customer to share the receipt link from their CBE app, or scan the QR code on the printed receipt." },
-          { title: "Paste the URL in cheki", text: "Open cheki.app, switch to the 'Receipt URL' tab, and paste the mbreciept.cbe.com.et link. Or scan the QR code directly with cheki's camera scanner." },
+          { title: "Paste the URL in cheki", text: "Open chekiapp.vercel.app, switch to the 'Receipt URL' tab, and paste the mbreciept.cbe.com.et link. Or scan the QR code directly with cheki's camera scanner." },
           { title: "Click Verify", text: "cheki calls CBE's JSON API and returns the transaction data in under 2 seconds. You'll see the FT reference, amount, sender, receiver, and date." },
         ],
       },
@@ -956,7 +956,7 @@ export const articles: Article[] = [
       ]},
 
       { type: "heading", text: "Verifying CBE receipts via API" },
-      { type: "code", lang: "bash", code: '# New system (URL):\ncurl -X POST https://cheki.app/api/verify \\\n  -H "Content-Type: application/json" \\\n  -d \'{"reference":"https://mbreciept.cbe.com.et/fHCxyV4mg5pRIwEkJO"}\'\n\n# Classic system (FT ref + account):\ncurl -X POST https://cheki.app/api/verify \\\n  -H "Content-Type: application/json" \\\n  -d \'{"bank":"cbe","reference":"FT26140P01YB","accountNumber":"1000560536171"}\'' },
+      { type: "code", lang: "bash", code: '# New system (URL):\ncurl -X POST https://chekiapp.vercel.app/api/verify \\\n  -H "Content-Type: application/json" \\\n  -d \'{"reference":"https://mbreciept.cbe.com.et/fHCxyV4mg5pRIwEkJO"}\'\n\n# Classic system (FT ref + account):\ncurl -X POST https://chekiapp.vercel.app/api/verify \\\n  -H "Content-Type: application/json" \\\n  -d \'{"bank":"cbe","reference":"FT26140P01YB","accountNumber":"1000560536171"}\'' },
 
       { type: "callout", variant: "info", title: "Both methods are free", text: "Whether you use the new QR/URL system or the classic FT reference method, verification is free with cheki. check.et charges 499 ETB/month for the same data after 200 free verifications." },
     ],
@@ -986,7 +986,7 @@ export const articles: Article[] = [
 
       { type: "heading", text: "What you need" },
       { type: "list", items: [
-        "Transaction reference number (required) - e.g. DET8FJGUJ4 or CHQ0FJ403O",
+        "Transaction reference number (required), e.g. DET8FJGUJ4 or CHQ0FJ403O",
         "That's it. No account number needed.",
       ]},
 
@@ -1009,7 +1009,7 @@ export const articles: Article[] = [
         type: "steps",
         items: [
           { title: "Get the transaction reference", text: "Ask the customer for the reference number from their Telebirr SMS or app. It starts with a 2-3 letter prefix like DET, CHQ, or DAB." },
-          { title: "Enter it in cheki", text: "Open cheki.app, select Telebirr from the bank dropdown (or just paste the reference, cheki auto-detects Telebirr from the prefix)." },
+          { title: "Enter it in cheki", text: "Open chekiapp.vercel.app, select Telebirr from the bank dropdown (or just paste the reference, cheki auto-detects Telebirr from the prefix)." },
           { title: "Click Verify", text: "cheki fetches the receipt from Telebirr's public endpoint at transactioninfo.ethiotelecom.et/receipt/{REFERENCE}" },
           { title: "Review the result", text: "You'll see the payer name, receiver name, amount, and transaction date." },
         ],
@@ -1025,7 +1025,7 @@ export const articles: Article[] = [
       ]},
 
       { type: "heading", text: "Verifying via API" },
-      { type: "code", lang: "bash", code: 'curl -X POST https://cheki.app/api/verify \\\n  -H "Content-Type: application/json" \\\n  -d \'{"bank":"telebirr","reference":"DET8FJGUJ4"}\'' },
+      { type: "code", lang: "bash", code: 'curl -X POST https://chekiapp.vercel.app/api/verify \\\n  -H "Content-Type: application/json" \\\n  -d \'{"bank":"telebirr","reference":"DET8FJGUJ4"}\'' },
       { type: "text", text: "If the server is geo-blocked, the response includes a fallbackUrl field:" },
       { type: "code", lang: "json", code: '{\n  "success": false,\n  "error": "Our server can\'t reach this bank...",\n  "fallbackUrl": "https://transactioninfo.ethiotelecom.et/receipt/DET8FJGUJ4"\n}' },
 
@@ -1150,7 +1150,7 @@ export const articles: Article[] = [
 
       { type: "heading", text: "Verifying BOA QR codes via API" },
       { type: "text", text: "Send the QR payload in the qrData field. No reference or account number is needed:" },
-      { type: "code", lang: "bash", code: 'curl -X POST https://cheki.app/api/verify \\\n  -H "Content-Type: application/json" \\\n  -d \'{"bank":"boa","qrData":"3cHRaxVjn/pySpNXEHQE61JOQ2poZRMwnDHwMiX7YO9UVtJZT/ndmwHEzWkJoloEf4dIQIzJf5zmvbBo5qHTdm/23nc6NRzTSfxEjIHa7Ju4Ti+xydrVn8qF+9/OPAF5LIfMEvxFqZ6wlKMvSN/jrQ=="}\'' },
+      { type: "code", lang: "bash", code: 'curl -X POST https://chekiapp.vercel.app/api/verify \\\n  -H "Content-Type: application/json" \\\n  -d \'{"bank":"boa","qrData":"3cHRaxVjn/pySpNXEHQE61JOQ2poZRMwnDHwMiX7YO9UVtJZT/ndmwHEzWkJoloEf4dIQIzJf5zmvbBo5qHTdm/23nc6NRzTSfxEjIHa7Ju4Ti+xydrVn8qF+9/OPAF5LIfMEvxFqZ6wlKMvSN/jrQ=="}\'' },
       { type: "text", text: "Response:" },
       { type: "code", lang: "json", code: '{\n  "verified": true,\n  "bank": "Bank of Abyssinia",\n  "senderName": "EYOUEL ARAGAW HAILE",\n  "senderAccount": "1000370251685",\n  "receiverName": "MOHAMMED ABDULWASI RESHID",\n  "receiverAccount": "1000370251685",\n  "amount": 1107.59,\n  "currency": "ETB",\n  "date": "19/07/2025",\n  "reference": "FT252003JZPP"\n}' },
 
@@ -1187,9 +1187,9 @@ export const articles: Article[] = [
 
       { type: "heading", text: "What you need" },
       { type: "list", items: [
-        "Transaction reference number (required for API lookup) - alphanumeric, typically starts with 2 letters",
+        "Transaction reference number (required for API lookup), alphanumeric, typically starts with 2 letters",
         "Last 5 digits of your receiving BOA account number (required for API lookup)",
-        "QR code payload (alternative for inter-bank transfers) - the encrypted string shown when scanning the QR code",
+        "QR code payload (alternative for inter-bank transfers), the encrypted string shown when scanning the QR code",
       ]},
 
       { type: "heading", text: "Step-by-step verification" },
@@ -1209,9 +1209,9 @@ export const articles: Article[] = [
 
       { type: "heading", text: "Verifying via API" },
       { type: "text", text: "Use the reference and account digits for normal BOA-to-BOA transfers:" },
-      { type: "code", lang: "bash", code: 'curl -X POST https://cheki.app/api/verify \\\n  -H "Content-Type: application/json" \\\n  -d \'{"bank":"boa","reference":"AB12345678","accountNumber":"67890"}\'' },
+      { type: "code", lang: "bash", code: 'curl -X POST https://chekiapp.vercel.app/api/verify \\\n  -H "Content-Type: application/json" \\\n  -d \'{"bank":"boa","reference":"AB12345678","accountNumber":"67890"}\'' },
       { type: "text", text: "For inter-bank transfers, pass the QR code payload instead (reference is optional):" },
-      { type: "code", lang: "bash", code: 'curl -X POST https://cheki.app/api/verify \\\n  -H "Content-Type: application/json" \\\n  -d \'{"bank":"boa","qrData":"3cHRaxVjn/pySp..."}\'' },
+      { type: "code", lang: "bash", code: 'curl -X POST https://chekiapp.vercel.app/api/verify \\\n  -H "Content-Type: application/json" \\\n  -d \'{"bank":"boa","qrData":"3cHRaxVjn/pySp..."}\'' },
 
       { type: "heading", text: "What the receipt contains" },
       { type: "list", items: [
@@ -1253,7 +1253,7 @@ export const articles: Article[] = [
     slug: "contribute-new-bank",
     title: "How to Add a New Bank to cheki (Community Guide)",
     description:
-      "cheki supports 31 Ethiopian banks but only 9 are live. Here's how you can help add the rest - no coding required, just share a receipt. For developers: how to write a parser and submit a PR.",
+      "cheki supports 31 Ethiopian banks but only 9 are live. Here's how you can help add the rest. No coding required, just share a receipt. For developers: how to write a parser and submit a PR.",
     category: "open-source",
     excerpt:
       "18 Ethiopian banks still need receipt endpoints. You can help by sharing a receipt, writing a parser, or reporting broken endpoints. Here's the complete community contribution guide.",
@@ -1270,22 +1270,22 @@ export const articles: Article[] = [
         type: "list",
         items: [
           "A screenshot of the full receipt (or the receipt URL if the bank has a share feature)",
-          "The QR code on the receipt (if there is one) - scan it with any QR reader and send us the decoded text",
+          "The QR code on the receipt (if there is one), scan it with any QR reader and send us the decoded text",
           "The transaction reference number",
           "The bank name",
         ],
       },
       { type: "text", text: "Send it via GitHub (open an issue with the 'new-bank' label) or via Telegram. We'll reverse-engineer the endpoint and add the bank to cheki, usually within a day." },
-      { type: "callout", variant: "warning", title: "Privacy", text: "Redact or blur sensitive information like full account numbers before sharing. We only need the receipt structure, the reference number, and the QR code payload - not your full account details." },
+      { type: "callout", variant: "warning", title: "Privacy", text: "Redact or blur sensitive information like full account numbers before sharing. We only need the receipt structure, the reference number, and the QR code payload, not your full account details." },
 
       { type: "heading", text: "Option 2: Write a parser (for developers)" },
-      { type: "text", text: "If you can code, you can add a bank yourself. cheki's architecture is hexagonal - each bank is a self-contained parser module. Here's the process:" },
+      { type: "text", text: "If you can code, you can add a bank yourself. cheki's architecture is hexagonal. Each bank is a self-contained parser module. Here's the process:" },
       {
         type: "steps",
         items: [
           { title: "Fork the repo", text: "Go to github.com/1RB/cheki, click Fork, clone your fork locally." },
           { title: "Create a parser file", text: "Create src/lib/parsers/{bankcode}.ts. Extend BaseParser and implement buildUrl() and parse(). Look at telebirr.ts or dashen.ts for examples." },
-          { title: "Register the parser", text: "Add your parser to src/lib/parsers/index.ts - one import and one registerParser() call." },
+          { title: "Register the parser", text: "Add your parser to src/lib/parsers/index.ts. It takes one import and one registerParser() call." },
           { title: "Add the bank to banks.ts", text: "Add a bank entry with code, name, endpoint, description, FAQ, and SEO metadata. Set status to 'live' if the endpoint works." },
           { title: "Write tests", text: "Create tests/parsers/{bankcode}.test.ts. Test buildUrl(), parse() with sample data, and edge cases (not found, empty response)." },
           { title: "Submit a PR", text: "Push to your fork and open a pull request. Include the receipt URL format in the PR description so we can verify." },
@@ -1305,7 +1305,7 @@ export const articles: Article[] = [
           "What the receipt looks like in the bank's own app (screenshot if possible)",
         ],
       },
-      { type: "text", text: "Because cheki is open source, anyone can submit a fix - not just the original developers. This is the advantage of community-built tools over closed services like check.et and verify.et." },
+      { type: "text", text: "Because cheki is open source, anyone can submit a fix, not just the original developers. This is the advantage of community-built tools over closed services like check.et and verify.et." },
 
       { type: "heading", text: "Current coverage status" },
       {

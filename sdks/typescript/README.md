@@ -2,19 +2,19 @@
 
 > TypeScript SDK for the [cheki](https://cheki-pi.vercel.app) receipt verification API.
 
-Verify Ethiopian bank transfer receipts from CBE, Telebirr, BOA, Dashen, M-Pesa, and more - with zero runtime dependencies.
+Verify Ethiopian bank transfer receipts from CBE, Telebirr, BOA, Dashen, M-Pesa, and more, with zero runtime dependencies.
 
 ---
 
 ## Features
 
-- **Full type safety** - every API field is typed, including transaction details, fees, and metadata.
-- **Typed error hierarchy** - `ChekiError` → `ChekiAPIError`, `ChekiNetworkError`, `ChekiTimeoutError`.
+- **Full type safety**: every API field is typed, including transaction details, fees, and metadata.
+- **Typed error hierarchy**: `ChekiError` → `ChekiAPIError`, `ChekiNetworkError`, `ChekiTimeoutError`.
 - **Automatic retry** with exponential backoff + jitter on transient failures (429, 5xx, network errors).
-- **Per-request timeout** via `AbortController` - configurable globally and per-call.
-- **Per-call overrides** - override timeout, retries, and pass an external `AbortSignal` on any method.
-- **Dual ESM/CJS** - works with both `import` and `require`.
-- **Zero dependencies** - uses the global `fetch` API (Node.js ≥ 18 or any modern browser).
+- **Per-request timeout** via `AbortController`: configurable globally and per-call.
+- **Per-call overrides**: override timeout, retries, and pass an external `AbortSignal` on any method.
+- **Dual ESM/CJS**: works with both `import` and `require`.
+- **Zero dependencies**: uses the global `fetch` API (Node.js ≥ 18 or any modern browser).
 
 ---
 
@@ -183,17 +183,17 @@ Verify multiple receipts in one request.
 
 List all supported banks and wallets.
 
-**Returns:** `Promise<BankListResponse>` - `{ success, count, banks: BankInfo[] }`
+**Returns:** `Promise<BankListResponse>` (`{ success, count, banks: BankInfo[] }`)
 
 ### `cheki.getHealth(requestOptions?)`
 
 Check the service health.
 
-**Returns:** `Promise<HealthStatus>` - `{ success, status, version, timestamp, checks }`
+**Returns:** `Promise<HealthStatus>` (`{ success, status, version, timestamp, checks }`)
 
 ### `cheki.getReceiptUrl(bank, reference, accountNumber?)`
 
-Build the URL for viewing a receipt in the cheki web interface. This is a pure helper - no network request is made.
+Build the URL for viewing a receipt in the cheki web interface. This is a pure helper. No network request is made.
 
 **Returns:** `string`
 
@@ -348,7 +348,7 @@ The SDK automatically retries transient failures with exponential backoff and ji
 - Network errors (connection refused, DNS failure, TLS error, etc.)
 
 **Not retried:**
-- HTTP `4xx` client errors (except `429`) - these are thrown immediately.
+- HTTP `4xx` client errors (except `429`). These are thrown immediately.
 
 **Backoff algorithm:**
 

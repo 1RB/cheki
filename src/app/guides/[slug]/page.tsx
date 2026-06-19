@@ -24,7 +24,7 @@ export function generateMetadata({ params }: { params: Promise<{ slug: string }>
         description: article.seo.description,
         type: "article",
         publishedTime: article.date,
-        url: `https://cheki.app/guides/${article.slug}`,
+        url: `https://chekiapp.vercel.app/guides/${article.slug}`,
       },
       twitter: {
         card: "summary_large_image",
@@ -108,7 +108,7 @@ function renderRichText(text: string): React.ReactNode[] {
   return nodes;
 }
 
-function renderBlock(block: ContentBlock, key: number) {
+async function renderBlock(block: ContentBlock, key: number): Promise<React.ReactNode> {
   switch (block.type) {
     case "heading":
       return <h2 key={key} id={`section-${key}`}>{block.text}</h2>;
@@ -132,7 +132,7 @@ function renderBlock(block: ContentBlock, key: number) {
 
     case "code": {
       const langLabel = getLangLabel(block.lang);
-      const highlighted = highlightCode(block.code, block.lang);
+      const highlighted = await highlightCode(block.code, block.lang);
       return (
         <CodeBlock key={key} code={block.code} highlightedHtml={highlighted} langLabel={langLabel} />
       );
@@ -249,9 +249,9 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Home", item: "https://cheki.app/" },
-      { "@type": "ListItem", position: 2, name: "Guides", item: "https://cheki.app/guides" },
-      { "@type": "ListItem", position: 3, name: article.title, item: `https://cheki.app/guides/${article.slug}` },
+      { "@type": "ListItem", position: 1, name: "Home", item: "https://chekiapp.vercel.app/" },
+      { "@type": "ListItem", position: 2, name: "Guides", item: "https://chekiapp.vercel.app/guides" },
+      { "@type": "ListItem", position: 3, name: article.title, item: `https://chekiapp.vercel.app/guides/${article.slug}` },
     ],
   };
 
@@ -300,7 +300,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
               {article.description}
             </p>
 
-            {article.content.map((block, i) => renderBlock(block, i))}
+            {await Promise.all(article.content.map((block, i) => renderBlock(block, i)))}
 
             {article.faq && article.faq.length > 0 && (
               <div>

@@ -34,7 +34,7 @@ export default async function OgImage({
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "16px", borderTop: "2px solid #222", paddingTop: "24px" }}>
           <div style={{ fontSize: "20px", fontWeight: 600, color: "#16a34a", border: "2px solid #16a34a", padding: "6px 18px" }}>Free, no signup, no API key</div>
-          <div style={{ marginLeft: "auto", fontSize: "16px", color: "#666" }}>cheki.app</div>
+          <div style={{ marginLeft: "auto", fontSize: "16px", color: "#666" }}>chekiapp.vercel.app</div>
         </div>
       </div>
     ),

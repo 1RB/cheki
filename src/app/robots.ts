@@ -50,7 +50,7 @@ export default function robots(): MetadataRoute.Robots {
         allow: "/",
       },
     ],
-    sitemap: "https://cheki.app/sitemap.xml",
-    host: "https://cheki.app",
+    sitemap: "https://chekiapp.vercel.app/sitemap.xml",
+    host: "https://chekiapp.vercel.app",
   };
 }

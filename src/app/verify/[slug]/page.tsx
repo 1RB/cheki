@@ -23,7 +23,7 @@ export function generateMetadata({ params }: { params: Promise<{ slug: string }>
         title: page.title,
         description: page.metaDescription,
         type: "article",
-        url: `https://cheki.app/verify/${page.slug}`,
+        url: `https://chekiapp.vercel.app/verify/${page.slug}`,
       },
       twitter: {
         card: "summary_large_image",
@@ -55,8 +55,8 @@ export default function SeoPage({ params }: { params: Promise<{ slug: string }> 
       "@context": "https://schema.org",
       "@type": "BreadcrumbList",
       itemListElement: [
-        { "@type": "ListItem", position: 1, name: "Home", item: "https://cheki.app/" },
-        { "@type": "ListItem", position: 2, name: page.h1, item: `https://cheki.app/verify/${page.slug}` },
+        { "@type": "ListItem", position: 1, name: "Home", item: "https://chekiapp.vercel.app/" },
+        { "@type": "ListItem", position: 2, name: page.h1, item: `https://chekiapp.vercel.app/verify/${page.slug}` },
       ],
     };
 

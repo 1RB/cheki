@@ -3,7 +3,7 @@
 Free, open-source **Ethiopian bank/wallet receipt verification** for Python.
 
 cheki verifies that a payment receipt is real by fetching it directly from the
-bank's own public receipt endpoint - no API keys, no paywalls, no scraping with
+bank's own public receipt endpoint. No API keys, no paywalls, no scraping with
 Selenium. This SDK mirrors the [cheki](https://github.com/1RB/cheki) project's
 other official SDKs (TypeScript, Go, PHP, Dart).
 
@@ -24,7 +24,7 @@ from cheki import ChekiClient, verify, supported_banks
 
 ---
 
-## Quick start - API client
+## Quick start: API client
 
 ```python
 from cheki import ChekiClient
@@ -84,7 +84,7 @@ with ChekiClient(timeout=10, max_retries=5) as cheki:
 
 ---
 
-## Quick start - Direct verification (advanced)
+## Quick start: Direct verification (advanced)
 
 Direct verification fetches the bank endpoint from *your* machine. It needs no
 cheki server but is subject to geo-blocking and bank-side changes.
@@ -276,7 +276,7 @@ except ChekiClientError as exc:
 | `ChekiNetworkError` | Connection failure. |
 | `ChekiTimeoutError` | Request timed out (subclass of `ChekiNetworkError`). |
 
-> **Note:** a verification that *finds no receipt* is **not** an error - the API
+> **Note:** a verification that *finds no receipt* is **not** an error. The API
 > returns `success: false` with an `error` message in the `ClientVerifyResult`.
 > Exceptions are reserved for transport/server failures.
 
@@ -369,7 +369,7 @@ cheki = ChekiClient(timeout=10, max_retries=5)
 ## Supported banks
 
 cbe, telebirr, boa, mpesa, dashen, zemen, cbebirr, siinqee, kaafiebirr (and
-more - run `cheki.get_banks()` or `ethio-verify --list-banks --api` for the
+more. Run `cheki.get_banks()` or `ethio-verify --list-banks --api` for the
 current list). Availability depends on the bank endpoint's status and
 geo-restrictions.
 
