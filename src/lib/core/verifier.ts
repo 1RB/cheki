@@ -18,6 +18,7 @@ import { getBank, suggestBank } from "../manifest/loader";
 import { detectBankFromUrl, isUrl } from "../adapters/url-detector";
 import { CBEParser } from "../parsers/cbe";
 import { DashenParser } from "../parsers/dashen";
+import { BOAParser } from "../parsers/boa";
 
 export class Verifier {
   /**
@@ -25,14 +26,14 @@ export class Verifier {
    */
   async verify(request: VerifyRequest): Promise<Result<Receipt, ChekiError>> {
     const startTime = Date.now();
-    let { bank, reference, accountNumber, phoneNumber } = request;
+    let { bank, reference, accountNumber, phoneNumber, qrData } = request;
 
-    // Validate reference
-    if (!reference) {
+    // Validate reference (or QR data for BOA)
+    if (!reference && !qrData) {
       return err({
         kind: "MISSING_INPUT",
         field: "reference",
-        message: "Reference number or receipt URL is required.",
+        message: "Reference number, receipt URL, or QR data is required.",
       });
     }
 
@@ -83,8 +84,8 @@ export class Verifier {
       } as ChekiError);
     }
 
-    // Validate account number if required
-    if (manifestEntry.requiresAccount && !accountNumber) {
+    // Validate account number if required (skip for QR-based verification)
+    if (manifestEntry.requiresAccount && !accountNumber && !qrData) {
       return err({
         kind: "MISSING_INPUT",
         field: "accountNumber",
@@ -100,6 +101,35 @@ export class Verifier {
         bank,
         message: `No parser registered for ${manifestEntry.name}.`,
       } as ChekiError);
+    }
+
+    // QR-based verification (BOA only for now)
+    if (qrData) {
+      if (parser.bankId !== "boa") {
+        return err({
+          kind: "EXTRACTION_ERROR",
+          bank: manifestEntry.name,
+          message: "QR code verification is only supported for Bank of Abyssinia receipts.",
+        });
+      }
+      const boaParser = parser as BOAParser;
+      const parsed = boaParser.decryptQr(qrData);
+      const durationMs = Date.now() - startTime;
+      if (!parsed.verified) {
+        return err({
+          kind: "EXTRACTION_ERROR",
+          bank: manifestEntry.name,
+          message: "Could not decrypt the QR code. It may be malformed or not a BOA receipt.",
+        });
+      }
+      return ok({
+        ...parsed,
+        bank: manifestEntry.name,
+        bankCode: manifestEntry.id,
+        reference: parsed.reference || reference,
+        sourceUrl: "qr://boa",
+        durationMs,
+      });
     }
 
     // Fetch receipt data

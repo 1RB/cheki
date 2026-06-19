@@ -98,6 +98,7 @@ export interface VerifyRequest {
   reference: string;
   accountNumber?: string;
   phoneNumber?: string;
+  qrData?: string;
 }
 
 // ─── Parser Port (interface that bank parsers implement) ────────────

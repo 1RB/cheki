@@ -57,4 +57,25 @@ describe("BOAParser", () => {
       expect(result.verified).toBe(false);
     });
   });
+
+  describe("decryptQr", () => {
+    it("decrypts a valid BOA QR payload and returns receipt data", () => {
+      const qr = "3cHRaxVjn/pySpNXEHQE61JOQ2poZRMwnDHwMiX7YO9UVtJZT/ndmwHEzWkJoloEf4dIQIzJf5zmvbBo5qHTdm/23nc6NRzTSfxEjIHa7Ju4Ti+xydrVn8qF+9/OPAF5LIfMEvxFqZ6wlKMvSN/jrQ==";
+      const result = parser.decryptQr(qr);
+      expect(result.verified).toBe(true);
+      expect(result.senderName).toBe("HABIB DAOUD OMAR");
+      expect(result.senderAccount).toBe("2****3957");
+      expect(result.receiverName).toBe("ABADIR MESGID");
+      expect(result.receiverAccount).toBe("1000005842674");
+      expect(result.amount).toBe(30124.2);
+      expect(result.currency).toBe("ETB");
+      expect(result.reference).toBe("FT26167ZVPCJ");
+      expect(result.date).toBe("16/06/2026  20:29:42");
+    });
+
+    it("returns verified=false for malformed QR data", () => {
+      const result = parser.decryptQr("not-valid-base64!!!");
+      expect(result.verified).toBe(false);
+    });
+  });
 });

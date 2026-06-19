@@ -15,6 +15,7 @@ export async function POST(request: NextRequest) {
       reference: body.reference,
       accountNumber: body.accountNumber,
       phoneNumber: body.phoneNumber,
+      qrData: body.qrData,
     });
 
     if (!result.ok) {

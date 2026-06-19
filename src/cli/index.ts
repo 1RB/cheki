@@ -21,6 +21,7 @@ async function main() {
 Usage:
   cheki info                                      List supported banks
   cheki verify <bank> <ref> [-a <account>]        Verify a receipt
+  cheki verify-qr <bank> <qr-data>                Verify from QR code (BOA only)
   cheki health                                    Check endpoint health
   cheki --version                                 Show version
 
@@ -28,6 +29,7 @@ Examples:
   cheki verify cbe FT26140P01YB -a 1000560536171
   cheki verify telebirr CHQ0FJ403O
   cheki verify boa AB12345 -a 1234567890
+  cheki verify-qr boa <base64-qr-payload>
   cheki verify cbe-new fHCxyV4mg5p
 `);
     process.exit(0);
@@ -107,6 +109,39 @@ Examples:
     if (r.date) console.log(`  Date:       ${r.date}`);
     if (r.branch) console.log(`  Branch:     ${r.branch}`);
     if (r.reason) console.log(`  Reason:     ${r.reason}`);
+    console.log(`  Source:     ${r.sourceUrl}`);
+    if (r.durationMs) console.log(`  Duration:   ${r.durationMs}ms`);
+    console.log("");
+    process.exit(0);
+  }
+
+  if (command === "verify-qr") {
+    const bank = args[1];
+    const qrData = args[2];
+
+    if (!bank || !qrData) {
+      console.error("Usage: cheki verify-qr <bank> <qr-data>");
+      process.exit(1);
+    }
+
+    const verifier = new Verifier();
+    const result = await verifier.verify({ bank, reference: "", qrData });
+
+    if (!result.ok) {
+      console.error(`\n  FAIL: ${errorToMessage(result.error)}\n`);
+      process.exit(1);
+    }
+
+    const r = result.value;
+    console.log("\n  Receipt verified from QR code\n");
+    console.log(`  Bank:       ${r.bank}`);
+    console.log(`  Reference:  ${r.reference}`);
+    if (r.senderName) console.log(`  Sender:     ${r.senderName}`);
+    if (r.senderAccount) console.log(`  Acct:       ${r.senderAccount}`);
+    if (r.receiverName) console.log(`  Receiver:   ${r.receiverName}`);
+    if (r.receiverAccount) console.log(`  Acct:       ${r.receiverAccount}`);
+    if (r.amount) console.log(`  Amount:     ${r.amount.toLocaleString()} ${r.currency || "ETB"}`);
+    if (r.date) console.log(`  Date:       ${r.date}`);
     console.log(`  Source:     ${r.sourceUrl}`);
     if (r.durationMs) console.log(`  Duration:   ${r.durationMs}ms`);
     console.log("");
