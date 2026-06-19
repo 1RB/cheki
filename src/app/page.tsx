@@ -20,6 +20,7 @@ export default function Home() {
   const [inputMode, setInputMode] = useState<"reference" | "url">("reference");
   const [showQrPaste, setShowQrPaste] = useState(false);
   const [qrData, setQrData] = useState("");
+  const [batchResults, setBatchResults] = useState<{ fileName: string; status: "scanning" | "verifying" | "done" | "error"; data?: VerifyResult; error?: string }[]>([]);
   const resultRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -226,42 +227,188 @@ export default function Home() {
 
   useEffect(() => { return () => stopScanner(); }, [stopScanner]);
 
-  const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const img = new Image();
-    img.onload = () => {
+  // ── Multi-scale QR scanning ──────────────────────────────────────────────
+  // Tries the full image, then upscaled, then quadrant/region crops.
+  // This finds small QR codes in large receipt screenshots without needing
+  // the user to crop manually.
+
+  const scanImageDataForQR = useCallback((imageData: ImageData): string | null => {
+    // 1. Try BarcodeDetector (native, handles multi-scale internally)
+    if ("BarcodeDetector" in window) {
+      // BarcodeDetector is async, but we need sync here for the multi-scale loop.
+      // We'll use it separately in scanImageMultiScale.
+    }
+    // 2. Try jsQR on the full image
+    const code = jsQR(imageData.data, imageData.width, imageData.height);
+    if (code) return code.data;
+    return null;
+  }, []);
+
+  const scanImageMultiScale = useCallback(async (img: HTMLImageElement): Promise<string | null> => {
+    const w = img.width;
+    const h = img.height;
+
+    // Helper: render a region of the image to ImageData
+    const renderRegion = (sx: number, sy: number, sw: number, sh: number, scale: number): ImageData | null => {
       const canvas = document.createElement("canvas");
       const ctx = canvas.getContext("2d", { willReadFrequently: true });
-      canvas.width = img.width; canvas.height = img.height;
-      ctx?.drawImage(img, 0, 0);
-      const imageData = ctx?.getImageData(0, 0, canvas.width, canvas.height);
-      if (!imageData) { setError("Could not read image."); return; }
-      const tryDetect = (rawValue: string | null) => {
-        if (rawValue) { handleQrDetected(rawValue); return true; }
-        return false;
-      };
-      const onFail = () => setError("No QR code found in image. Try a clearer photo.");
-      if ("BarcodeDetector" in window) {
-        const detector = new (window as any).BarcodeDetector({ formats: ["qr_code"] });
-        detector.detect(imageData).then((codes: any[]) => {
-          if (codes.length > 0) { if (!tryDetect(codes[0].rawValue)) onFail(); }
-          else {
-            const code = jsQR(imageData.data, imageData.width, imageData.height);
-            if (code) { if (!tryDetect(code.data)) onFail(); } else onFail();
-          }
-        }).catch(() => {
-          const code = jsQR(imageData.data, imageData.width, imageData.height);
-          if (code) { if (!tryDetect(code.data)) onFail(); } else onFail();
-        });
-      } else {
-        const code = jsQR(imageData.data, imageData.width, imageData.height);
-        if (code) { if (!tryDetect(code.data)) onFail(); } else onFail();
-      }
+      if (!ctx) return null;
+      canvas.width = Math.round(sw * scale);
+      canvas.height = Math.round(sh * scale);
+      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+      return ctx.getImageData(0, 0, canvas.width, canvas.height);
     };
-    img.onerror = () => setError("Could not load image file.");
-    img.src = URL.createObjectURL(file);
-  }, [handleQrDetected]);
+
+    // Helper: try both BarcodeDetector and jsQR on an ImageData
+    const tryScan = async (imageData: ImageData): Promise<string | null> => {
+      if ("BarcodeDetector" in window) {
+        try {
+          const detector = new (window as any).BarcodeDetector({ formats: ["qr_code"] });
+          const codes = await detector.detect(imageData);
+          if (codes.length > 0) return codes[0].rawValue;
+        } catch { /* fall through to jsQR */ }
+      }
+      const code = jsQR(imageData.data, imageData.width, imageData.height);
+      return code ? code.data : null;
+    };
+
+    // Step 1: Full image at native resolution
+    {
+      const imageData = renderRegion(0, 0, w, h, 1);
+      if (imageData) {
+        const result = await tryScan(imageData);
+        if (result) return result;
+      }
+    }
+
+    // Step 2: Full image at 2x upscale (helps with small QRs in large screenshots)
+    if (w < 2000 || h < 2000) {
+      const imageData = renderRegion(0, 0, w, h, 2);
+      if (imageData) {
+        const result = await tryScan(imageData);
+        if (result) return result;
+      }
+    }
+
+    // Step 3: Bottom half (QR is usually at the bottom of receipts)
+    {
+      const imageData = renderRegion(0, Math.floor(h * 0.4), w, Math.ceil(h * 0.6), 1.5);
+      if (imageData) {
+        const result = await tryScan(imageData);
+        if (result) return result;
+      }
+    }
+
+    // Step 4: Quadrant crops at 2x scale
+    const quadrants = [
+      [0, 0, Math.floor(w / 2), Math.floor(h / 2)],                     // top-left
+      [Math.floor(w / 2), 0, Math.ceil(w / 2), Math.floor(h / 2)],     // top-right
+      [0, Math.floor(h / 2), Math.floor(w / 2), Math.ceil(h / 2)],     // bottom-left
+      [Math.floor(w / 2), Math.floor(h / 2), Math.ceil(w / 2), Math.ceil(h / 2)], // bottom-right
+    ];
+    for (const [qx, qy, qw, qh] of quadrants) {
+      const imageData = renderRegion(qx, qy, qw, qh, 2);
+      if (imageData) {
+        const result = await tryScan(imageData);
+        if (result) return result;
+      }
+    }
+
+    // Step 5: Center 60% crop at 3x scale (last resort for tiny QRs)
+    {
+      const cw = Math.floor(w * 0.6);
+      const ch = Math.floor(h * 0.6);
+      const cx = Math.floor((w - cw) / 2);
+      const cy = Math.floor((h - ch) / 2);
+      const imageData = renderRegion(cx, cy, cw, ch, 3);
+      if (imageData) {
+        const result = await tryScan(imageData);
+        if (result) return result;
+      }
+    }
+
+    return null;
+  }, []);
+
+  const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    // Single file: use existing flow with multi-scale scanning
+    if (files.length === 1) {
+      const file = files[0];
+      const img = new Image();
+      img.onload = async () => {
+        const result = await scanImageMultiScale(img);
+        if (result) {
+          handleQrDetected(result);
+        } else {
+          setError("No QR code found in image. Try a clearer photo or crop around the QR code.");
+        }
+      };
+      img.onerror = () => setError("Could not load image file.");
+      img.src = URL.createObjectURL(file);
+      return;
+    }
+
+    // Multiple files: batch mode
+    setLoading(true);
+    setError(null);
+    setResult(null);
+    const batchResults: { fileName: string; status: "scanning" | "verifying" | "done" | "error"; data?: VerifyResult; error?: string }[] = [];
+    setBatchResults(batchResults.map((r, i) => ({ ...r, fileName: files[i].name, status: "scanning" as const })));
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      try {
+        const qrValue = await new Promise<string | null>((resolve) => {
+          const img = new Image();
+          img.onload = async () => {
+            const result = await scanImageMultiScale(img);
+            resolve(result);
+          };
+          img.onerror = () => resolve(null);
+          img.src = URL.createObjectURL(file);
+        });
+
+        if (!qrValue) {
+          batchResults[i] = { fileName: file.name, status: "error", error: "No QR found" };
+          setBatchResults([...batchResults]);
+          continue;
+        }
+
+        batchResults[i] = { fileName: file.name, status: "verifying" };
+        setBatchResults([...batchResults]);
+
+        let verifyResult: VerifyResult;
+        if (isBoaQrPayload(qrValue)) {
+          const resp = await fetch("/api/verify", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ bank: "boa", qrData: qrValue.trim() }),
+          });
+          verifyResult = await resp.json();
+        } else {
+          const detected = detectBank(qrValue);
+          const bankCode = detected || "cbe";
+          const resp = await fetch("/api/verify", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ bank: bankCode, reference: qrValue.trim() }),
+          });
+          verifyResult = await resp.json();
+        }
+
+        batchResults[i] = { fileName: file.name, status: "done", data: verifyResult };
+        setBatchResults([...batchResults]);
+      } catch {
+        batchResults[i] = { fileName: file.name, status: "error", error: "Scan failed" };
+        setBatchResults([...batchResults]);
+      }
+    }
+
+    setLoading(false);
+  }, [handleQrDetected, scanImageMultiScale]);
 
   const copyResult = () => {
     if (!result) return;
@@ -335,13 +482,13 @@ export default function Home() {
                   >{tab.label}</button>
                 ))}
                 <div style={{ marginLeft: "auto", display: "flex", gap: "4px" }}>
-                  <button onClick={() => fileInputRef.current?.click()} title="Scan QR from image" style={{ padding: "6px 10px", border: "1px solid var(--border)", borderRadius: "6px", background: "var(--surface)", color: "var(--ink-2)", cursor: "pointer", display: "flex", alignItems: "center" }}>
+                  <button onClick={() => fileInputRef.current?.click()} title="Upload QR image (or multiple for batch)" style={{ padding: "6px 10px", border: "1px solid var(--border)", borderRadius: "6px", background: "var(--surface)", color: "var(--ink-2)", cursor: "pointer", display: "flex", alignItems: "center" }}>
                     <Icon icon={QrCode01Icon} size={16} color="var(--ink-2)" />
                   </button>
                   <button onClick={() => showScanner ? (setShowScanner(false), stopScanner()) : startScanner()} title="Scan QR with camera" style={{ padding: "6px 10px", border: "1px solid var(--border)", borderRadius: "6px", background: showScanner ? "var(--green-light)" : "var(--surface)", color: showScanner ? "var(--green-dark)" : "var(--ink-2)", cursor: "pointer", display: "flex", alignItems: "center" }}>
                     <Icon icon={Camera01Icon} size={16} color={showScanner ? "var(--green-dark)" : "var(--ink-2)"} />
                   </button>
-                  <input ref={fileInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleFileUpload} />
+                  <input ref={fileInputRef} type="file" accept="image/*" multiple style={{ display: "none" }} onChange={handleFileUpload} />
                 </div>
               </div>
 
@@ -449,6 +596,44 @@ export default function Home() {
         {result && result.success && (
           <section className="container-narrow" style={{ marginBottom: "32px", padding: "0 24px" }}>
             <div ref={resultRef}><ReceiptCard result={result} copied={copied} onCopy={copyResult} /></div>
+          </section>
+        )}
+
+        {/* Batch Results */}
+        {batchResults.length > 0 && (
+          <section className="container-narrow" style={{ marginBottom: "32px", padding: "0 24px" }}>
+            <div className="fade-up" style={{ padding: "20px", borderRadius: "12px", background: "var(--surface)", border: "1px solid var(--border)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }}>
+                <h3 style={{ fontSize: "16px", fontWeight: 700, color: "var(--ink)" }}>Batch verification</h3>
+                <button onClick={() => setBatchResults([])} style={{ fontSize: "12px", color: "var(--ink-3)", background: "none", border: "none", cursor: "pointer" }}>Clear</button>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                {batchResults.map((r, i) => (
+                  <div key={i} style={{ padding: "12px 14px", borderRadius: "8px", border: "1px solid var(--border)", background: r.status === "done" && r.data?.success ? "var(--green-light)" : r.status === "error" ? "var(--red-light)" : "var(--surface)" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: r.data?.success ? "8px" : 0 }}>
+                      <span style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink)", fontFamily: "var(--mono)", wordBreak: "break-all" }}>{r.fileName}</span>
+                      <span style={{ fontSize: "11px", fontWeight: 600, padding: "2px 8px", borderRadius: "4px", background: r.status === "done" && r.data?.success ? "var(--green)" : r.status === "error" ? "var(--red)" : "var(--border)", color: r.status === "done" && r.data?.success || r.status === "error" ? "#fff" : "var(--ink-3)" }}>
+                        {r.status === "scanning" ? "Scanning..." : r.status === "verifying" ? "Verifying..." : r.status === "error" ? "Failed" : r.data?.success ? "Verified" : "Not found"}
+                      </span>
+                    </div>
+                    {r.data?.success && (
+                      <div style={{ fontSize: "12px", color: "var(--ink-2)", display: "flex", flexWrap: "wrap", gap: "12px" }}>
+                        {r.data.senderName && <span>From: {r.data.senderName}</span>}
+                        {r.data.receiverName && <span>To: {r.data.receiverName}</span>}
+                        {r.data.amount != null && <span style={{ fontWeight: 600 }}>{r.data.amount} {r.data.currency || "ETB"}</span>}
+                        {r.data.reference && <span style={{ fontFamily: "var(--mono)", color: "var(--ink-3)" }}>{r.data.reference}</span>}
+                      </div>
+                    )}
+                    {r.status === "error" && r.error && (
+                      <p style={{ fontSize: "12px", color: "var(--red)", marginTop: "4px" }}>{r.error}</p>
+                    )}
+                    {r.status === "done" && !r.data?.success && r.data?.error && (
+                      <p style={{ fontSize: "12px", color: "var(--red)", marginTop: "4px" }}>{r.data.error}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
           </section>
         )}
 
