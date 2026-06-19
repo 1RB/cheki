@@ -54,6 +54,69 @@ export default function BanksPage() {
             </a>
           ))}
         </div>
+
+        {/* Community contribution CTA */}
+        <div style={{
+          marginTop: "48px", padding: "32px", borderRadius: "16px",
+          background: "var(--surface)", border: "1px solid var(--border)",
+        }}>
+          <div style={{ display: "flex", alignItems: "baseline", gap: "12px", marginBottom: "16px" }}>
+            <h2 style={{ fontSize: "22px", fontWeight: 800, letterSpacing: "-0.02em" }}>
+              Help us add more banks
+            </h2>
+            <span style={{ fontSize: "13px", color: "var(--green)", fontWeight: 600 }}>Open source</span>
+          </div>
+          <p style={{ fontSize: "15px", color: "var(--ink-2)", lineHeight: 1.7, marginBottom: "20px" }}>
+            {banks.filter((b) => b.status === "soon").length - 4} Ethiopian banks still need receipt endpoints. If you use one of these banks and can share a receipt with a QR code or receipt URL, we can reverse-engineer the endpoint and add it to cheki for free. No technical knowledge needed — just send us a screenshot or link.
+          </p>
+          <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+            <a href="https://github.com/1RB/cheki/issues/new?labels=new-bank&title=Add+support+for+%5Bbank+name%5D&body=Bank%3A%20%0AReceipt%20URL%20or%20QR%20screenshot%3A%20%0AReference%20number%3A%20" target="_blank" rel="noopener" style={{
+              padding: "12px 24px", borderRadius: "8px", background: "var(--green)", color: "#fff",
+              fontSize: "14px", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "8px",
+            }}>
+              Submit a bank on GitHub
+            </a>
+            <a href="https://t.me/raysterminalbot" target="_blank" rel="noopener" style={{
+              padding: "12px 24px", borderRadius: "8px", border: "1px solid var(--border)",
+              color: "var(--ink)", fontSize: "14px", fontWeight: 600,
+            }}>
+              Send via Telegram
+            </a>
+          </div>
+          <div style={{ marginTop: "24px", paddingTop: "20px", borderTop: "1px solid var(--border)" }}>
+            <p style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink)", marginBottom: "10px" }}>Banks we need receipts from:</p>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+              {banks.filter((b) => b.status === "soon" && !["nib", "wegagen", "ahadu", "kaafi"].includes(b.code)).map((b) => (
+                <span key={b.code} style={{
+                  fontSize: "12px", padding: "4px 12px", borderRadius: "6px",
+                  background: "var(--surface-alt)", color: "var(--ink-2)", border: "1px solid var(--border)",
+                }}>{b.shortName}</span>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* How to contribute */}
+        <div style={{
+          marginTop: "24px", padding: "28px", borderRadius: "14px",
+          background: "var(--surface-alt)", border: "1px solid var(--border)",
+        }}>
+          <h3 style={{ fontSize: "16px", fontWeight: 700, marginBottom: "12px" }}>Three ways to contribute</h3>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "20px" }}>
+            <div>
+              <p style={{ fontSize: "14px", fontWeight: 600, color: "var(--green-dark)", marginBottom: "6px" }}>1. Share a receipt</p>
+              <p style={{ fontSize: "13px", color: "var(--ink-2)", lineHeight: 1.5 }}>Send us a receipt screenshot or URL from a bank we don't support yet. We'll figure out the endpoint.</p>
+            </div>
+            <div>
+              <p style={{ fontSize: "14px", fontWeight: 600, color: "var(--green-dark)", marginBottom: "6px" }}>2. Write a parser</p>
+              <p style={{ fontSize: "13px", color: "var(--ink-2)", lineHeight: 1.5 }}>If you code, fork the repo and add a parser. The architecture is hexagonal — each bank is a self-contained module.</p>
+            </div>
+            <div>
+              <p style={{ fontSize: "14px", fontWeight: 600, color: "var(--green-dark)", marginBottom: "6px" }}>3. Report broken endpoints</p>
+              <p style={{ fontSize: "13px", color: "var(--ink-2)", lineHeight: 1.5 }}>If a bank changes their receipt URL format, open an issue on GitHub. We fix it fast because the community can submit patches.</p>
+            </div>
+          </div>
+        </div>
       </main>
       <Footer />
     </>

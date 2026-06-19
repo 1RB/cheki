@@ -107,6 +107,7 @@ export function Footer() {
     { href: "/guides/check-et-vs-verify-et-vs-cheki", label: "Compare all" },
     { href: "/guides/payment-verification-api-guide", label: "API guide" },
     { href: "/guides/self-hosting-docker-guide", label: "Self-hosting" },
+    { href: "/guides/contribute-new-bank", label: "Add a bank" },
   ];
   const seoLinks = [
     { href: "/verify/verify-cbe-receipt-online", label: "Verify CBE receipt" },

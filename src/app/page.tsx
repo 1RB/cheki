@@ -742,9 +742,10 @@ export default function Home() {
               </a>
             ))}
           </div>
+          <p style={{ marginTop: "16px", fontSize: "13px", color: "var(--ink-3)" }}>
+            {banks.filter((b) => b.status === "soon").length - 4} more banks researching. <a href="/banks" style={{ color: "var(--green)", fontWeight: 600 }}>Help us add them →</a>
+          </p>
         </section>
-
-        {/* OSS Branding */}
         <section className="container" style={{ marginTop: "40px" }}>
           <div style={{ padding: "28px", borderRadius: "16px", background: "var(--ink)", color: "#fff" }}>
             <div className="grid-2" style={{ alignItems: "center", gap: "24px" }}>
@@ -771,7 +772,8 @@ export default function Home() {
                   { label: "Language", value: "TypeScript + Python" },
                   { label: "Framework", value: "Next.js 16" },
                   { label: "Architecture", value: "Hexagonal / Ports" },
-                  { label: "Tests", value: "74 (vitest)" },
+                  { label: "Tests", value: "87 (vitest)" },
+                  { label: "Banks", value: `${banks.length} (${banks.filter((b) => b.status === "live").length} live)` },
                   { label: "CLI", value: "cheki verify, info, health" },
                   { label: "Self-hosting", value: "Docker included" },
                   { label: "SDK", value: "TypeScript + Python" },

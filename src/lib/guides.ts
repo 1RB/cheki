@@ -1249,6 +1249,94 @@ export const articles: Article[] = [
       keywords: ["verify BOA receipt", "Bank of Abyssinia verify", "BOA transaction check", "verify Abyssinia bank receipt", "BOA online slip", "BOA QR verification"],
     },
   },
+  {
+    slug: "contribute-new-bank",
+    title: "How to Add a New Bank to cheki (Community Guide)",
+    description:
+      "cheki supports 31 Ethiopian banks but only 9 are live. Here's how you can help add the rest — no coding required, just share a receipt. For developers: how to write a parser and submit a PR.",
+    category: "open-source",
+    excerpt:
+      "18 Ethiopian banks still need receipt endpoints. You can help by sharing a receipt, writing a parser, or reporting broken endpoints. Here's the complete community contribution guide.",
+    date: "2026-06-19",
+    readTime: "5 min",
+    content: [
+      { type: "text", text: "cheki lists 31 Ethiopian banks and wallets, but only 9 are live. The remaining 22 are listed as 'in development' because we haven't confirmed their public receipt endpoints yet. This is where the community comes in." },
+
+      { type: "callout", variant: "tip", title: "No coding required", text: "The most valuable contribution is a receipt. If you use a bank we don't support yet, share a receipt screenshot or URL and we'll do the technical work." },
+
+      { type: "heading", text: "Option 1: Share a receipt (easiest)" },
+      { type: "text", text: "If you have a receipt from a bank marked 'Soon' on cheki, here's what we need:" },
+      {
+        type: "list",
+        items: [
+          "A screenshot of the full receipt (or the receipt URL if the bank has a share feature)",
+          "The QR code on the receipt (if there is one) — scan it with any QR reader and send us the decoded text",
+          "The transaction reference number",
+          "The bank name",
+        ],
+      },
+      { type: "text", text: "Send it via GitHub (open an issue with the 'new-bank' label) or via Telegram. We'll reverse-engineer the endpoint and add the bank to cheki, usually within a day." },
+      { type: "callout", variant: "warning", title: "Privacy", text: "Redact or blur sensitive information like full account numbers before sharing. We only need the receipt structure, the reference number, and the QR code payload — not your full account details." },
+
+      { type: "heading", text: "Option 2: Write a parser (for developers)" },
+      { type: "text", text: "If you can code, you can add a bank yourself. cheki's architecture is hexagonal — each bank is a self-contained parser module. Here's the process:" },
+      {
+        type: "steps",
+        items: [
+          { title: "Fork the repo", text: "Go to github.com/1RB/cheki, click Fork, clone your fork locally." },
+          { title: "Create a parser file", text: "Create src/lib/parsers/{bankcode}.ts. Extend BaseParser and implement buildUrl() and parse(). Look at telebirr.ts or dashen.ts for examples." },
+          { title: "Register the parser", text: "Add your parser to src/lib/parsers/index.ts — one import and one registerParser() call." },
+          { title: "Add the bank to banks.ts", text: "Add a bank entry with code, name, endpoint, description, FAQ, and SEO metadata. Set status to 'live' if the endpoint works." },
+          { title: "Write tests", text: "Create tests/parsers/{bankcode}.test.ts. Test buildUrl(), parse() with sample data, and edge cases (not found, empty response)." },
+          { title: "Submit a PR", text: "Push to your fork and open a pull request. Include the receipt URL format in the PR description so we can verify." },
+        ],
+      },
+      { type: "text", text: "The parser interface is simple:" },
+      { type: "code", lang: "typescript", code: "class MyBankParser extends BaseParser {\n  readonly bankId = \"mybank\";\n  readonly bankName = \"My Bank\";\n  readonly responseType = \"html\" as const; // or \"json\" or \"pdf\"\n  readonly requiresAccount = false;\n  readonly requiresPhone = false;\n\n  buildUrl(ref: string, account?: string): string {\n    return `https://mybank.com/receipt/${ref}`;\n  }\n\n  parse(data: string | Buffer, contentType: string): ParsedReceipt {\n    // Parse the HTML/JSON/PDF response\n    // Return { verified: true, senderName, receiverName, amount, ... }\n  }\n}" },
+
+      { type: "heading", text: "Option 3: Report broken endpoints" },
+      { type: "text", text: "Banks occasionally change their receipt URL formats. If you notice that a bank that used to work on cheki is now returning errors, open a GitHub issue with:" },
+      {
+        type: "list",
+        items: [
+          "The bank name",
+          "The error message you see",
+          "The reference number you tried (so we can test)",
+          "What the receipt looks like in the bank's own app (screenshot if possible)",
+        ],
+      },
+      { type: "text", text: "Because cheki is open source, anyone can submit a fix — not just the original developers. This is the advantage of community-built tools over closed services like check.et and verify.et." },
+
+      { type: "heading", text: "Current coverage status" },
+      {
+        type: "table",
+        headers: ["Status", "Count", "Banks"],
+        rows: [
+          ["Live", "9", "CBE, Telebirr, BOA, M-Pesa, Dashen, Zemen, CBE Birr, Siinqee, eBirr"],
+          ["Via eBirr (ready)", "4", "Nib International, Wegagen, Ahadu, KAAFI"],
+          ["Researching", "18", "Abay, Addis, Amhara, Berhan, Bunna, Enat, Global, Lion, Oromia Int'l, Hibret, ZamZam, Hijra, Shabelle, Goh Betoch, Tsedey, Gadaa, Rammis, DBE"],
+        ],
+      },
+
+      { type: "heading", text: "Why community matters for Ethiopian fintech" },
+      { type: "text", text: "Ethiopia has 30+ licensed banks, but most receipt verification services (check.et, verify.et, qbirr, tinaverify) only support 6-10. The long tail of smaller and newer banks gets ignored because it's not profitable enough for paid services." },
+      { type: "text", text: "Open source changes this. Every contribution — whether it's a receipt screenshot or a full parser — helps cover a bank that paid services won't bother with. The community can move faster than any single company." },
+      { type: "callout", variant: "success", title: "Every receipt counts", text: "Even one receipt from a bank we don't support can unlock verification for every cheki user. You don't need to write code to make a difference." },
+    ],
+    faq: [
+      { q: "Do I need to know how to code to contribute?", a: "No. The most valuable contribution is a receipt from a bank we don't support yet. Send us a screenshot or URL and we'll handle the technical work." },
+      { q: "Is it safe to share my receipt?", a: "Redact or blur your full account number before sharing. We only need the receipt structure, reference number, and QR code payload. Never share your PIN, password, or OTP." },
+      { q: "How long does it take to add a new bank?", a: "If we have a receipt to reverse-engineer, usually within a day. If a developer submits a complete parser with tests, we merge it the same day." },
+      { q: "Can I add a bank that no verification service supports?", a: "Yes. That's the whole point. If you find the receipt endpoint, we'll add it. cheki is the only verification tool that lists all 31 Ethiopian banks, not just the profitable ones." },
+      { q: "What if a bank doesn't have a public receipt endpoint?", a: "Some banks may not have receipt sharing yet. In that case, we list them as 'researching' and wait until they launch a digital receipt system. We don't fake it." },
+    ],
+    related: ["open-source-ethiopian-fintech", "ethiopian-bank-receipt-formats", "self-hosting-docker-guide"],
+    seo: {
+      title: "How to Add a New Bank to cheki (Community Guide)",
+      description: "Help cheki support all Ethiopian banks. Share a receipt, write a parser, or report broken endpoints. No coding required to contribute.",
+      keywords: ["cheki contribute", "add bank to cheki", "ethiopian bank receipt endpoint", "open source ethiopian fintech", "cheki community", "help add banks"],
+    },
+  },
 ];
 
 export function getArticle(slug: string): Article | undefined {
