@@ -41,9 +41,9 @@ dev = [
 ethio-verify = "ethio_receipt_verify.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/1RB/ethio-receipt-verify"
-Repository = "https://github.com/1RB/ethio-receipt-verify"
-Issues = "https://github.com/1RB/ethio-receipt-verify/issues"
+Homepage = "https://github.com/1RB/cheki"
+Repository = "https://github.com/1RB/cheki"
+Issues = "https://github.com/1RB/cheki/issues"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/ethio_receipt_verify"]

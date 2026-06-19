@@ -11,8 +11,11 @@ const sections = [
   { id: "banks", label: "GET /api/banks" },
   { id: "health", label: "GET /api/health" },
   { id: "receipt", label: "GET /api/receipt" },
-  { id: "typescript", label: "TypeScript SDK" },
+  { id: "typescript", label: "TypeScript" },
   { id: "python", label: "Python" },
+  { id: "dart", label: "Dart / Flutter" },
+  { id: "php", label: "PHP" },
+  { id: "go", label: "Go" },
   { id: "cli", label: "CLI" },
   { id: "curl", label: "cURL" },
   { id: "errors", label: "Errors" },
@@ -197,14 +200,20 @@ export default function DocsPage() {
               <SectionTitle id="receipt">GET /api/receipt</SectionTitle>
               <EndpointHeader method="GET" path="/api/receipt?bank=cbe&reference=FT...&account=..." desc="Download the original receipt file (PDF/HTML) from the bank endpoint." />
 
-              <SectionTitle id="typescript">TypeScript SDK</SectionTitle>
-              <Code code={`import { Cheki } from "cheki";
+              <SectionTitle id="typescript">TypeScript / JavaScript</SectionTitle>
+              <Code code={`npm install cheki
 
-const cheki = new Cheki("https://cheki-pi.vercel.app");
+import { Cheki } from "cheki";
+
+const cheki = new Cheki();
 
 const result = await cheki.verify("cbe", "FT26140P01YB", {
   accountNumber: "1000560536171"
 });
+
+console.log(result.verified);   // true
+console.log(result.senderName);
+console.log(result.amount);
 
 const batch = await cheki.verifyBatch([
   { bank: "cbe", reference: "FT26140P01YB", accountNumber: "1000560536171" },
@@ -215,12 +224,91 @@ const { banks } = await cheki.getBanks();
 const health = await cheki.getHealth();`} id="sdk" />
 
               <SectionTitle id="python">Python</SectionTitle>
-              <Code code={`pip install git+https://github.com/1RB/cheki.git#subdirectory=python
+              <Code code={`pip install ethio-receipt-verify
 
 from ethio_receipt_verify import verify
 
 result = verify("cbe", "FT26140P01YB", account_number="1000560536171")
-print(result.to_dict())`} id="py" />
+print(result.status)        # VerificationStatus.VERIFIED
+print(result.amount)
+print(result.payer_name)
+
+# CLI also available
+# ethio-verify cbe FT26140P01YB -a 1000560536171`} id="py" />
+
+              <SectionTitle id="dart">Dart / Flutter</SectionTitle>
+              <Code code={`# pubspec.yaml
+# dependencies:
+#   cheki: ^0.1.0
+
+import 'package:cheki/cheki.dart';
+
+final client = ChekiClient();
+
+final result = await client.verify(
+  bank: 'cbe',
+  reference: 'FT26140P01YB',
+  accountNumber: '1000560536171',
+);
+
+print(result.verified);
+print(result.senderName);
+print(result.amount);
+
+final batch = await client.verifyBatch([
+  VerifyRequest(bank: 'cbe', reference: 'FT26140P01YB', accountNumber: '1000560536171'),
+  VerifyRequest(bank: 'telebirr', reference: 'DET8FJGUJ4'),
+]);
+
+client.close();`} id="dart" />
+
+              <SectionTitle id="php">PHP</SectionTitle>
+              <Code code={`composer require cheki/cheki
+
+use Cheki\\ChekiClient;
+
+$client = new ChekiClient();
+
+$result = $client->verify('cbe', 'FT26140P01YB', [
+    'accountNumber' => '1000560536171',
+]);
+
+echo $result->verified ? 'verified' : 'not verified';
+echo $result->senderName;
+echo $result->amount;
+
+$batch = $client->verifyBatch([
+    ['bank' => 'cbe', 'reference' => 'FT26140P01YB', 'accountNumber' => '1000560536171'],
+    ['bank' => 'telebirr', 'reference' => 'DET8FJGUJ4'],
+]);
+
+$banks = $client->getBanks();
+$health = $client->getHealth();`} id="php" />
+
+              <SectionTitle id="go">Go</SectionTitle>
+              <Code code={`go get github.com/1RB/cheki/sdks/go
+
+import cheki "github.com/1RB/cheki/sdks/go"
+
+client := cheki.NewClient()
+
+result, err := client.Verify(ctx, &cheki.VerifyOptions{
+    Bank:          "cbe",
+    Reference:     "FT26140P01YB",
+    AccountNumber: "1000560536171",
+})
+
+fmt.Println(result.Verified)
+fmt.Println(result.SenderName)
+fmt.Println(result.Amount)
+
+batch, err := client.VerifyBatch(ctx, []cheki.VerifyOptions{
+    {Bank: "cbe", Reference: "FT26140P01YB", AccountNumber: "1000560536171"},
+    {Bank: "telebirr", Reference: "DET8FJGUJ4"},
+})
+
+banks, err := client.GetBanks(ctx)
+health, err := client.GetHealth(ctx)`} id="go" />
 
               <SectionTitle id="cli">CLI</SectionTitle>
               <Code code={`npx cheki info

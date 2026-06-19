@@ -58,6 +58,9 @@ export default function ComparePage() {
     { feature: "AI crawler access", cheki: check, checket: check, verifyet: dash, qbirr: check, tinaverify: check, tally: check },
     { feature: "Python library", cheki: check, checket: dash, verifyet: dash, qbirr: "Advertised", tinaverify: dash, tally: dash },
     { feature: "TypeScript SDK", cheki: check, checket: dash, verifyet: check, qbirr: "Advertised", tinaverify: dash, tally: dash },
+    { feature: "Dart / Flutter SDK", cheki: check, checket: dash, verifyet: dash, qbirr: dash, tinaverify: dash, tally: dash },
+    { feature: "PHP SDK", cheki: check, checket: dash, verifyet: dash, qbirr: dash, tinaverify: dash, tally: dash },
+    { feature: "Go SDK", cheki: check, checket: dash, verifyet: dash, qbirr: dash, tinaverify: dash, tally: dash },
   ];
 
   function Table({ rows }: { rows: typeof pricingData }) {
@@ -119,7 +122,7 @@ export default function ComparePage() {
       banks: "7 banks, all live",
       pricing: "50/mo free. 500-8K ETB/mo for 1K-100K verifications.",
       strengths: ["Clean REST API with rate limits", "Ethiopian relay for Telebirr/M-Pesa geo-block", "Configurable amount tolerance per merchant", "Per-merchant duplicate ref locking", "Scale plan with 99.9% SLA"],
-      weaknesses: ["Brand new (day-one launch)", "4 SDKs advertised but none published on npm/PyPI/Packagist/GitHub", "No mobile app, no QR scanning", "No web UI for verification", "English only, fewer banks than check.et/verify.et"],
+      weaknesses: ["Brand new (day-one launch)", "4 SDKs advertised but none published on npm/PyPI/Packagist/GitHub", "No mobile app, no QR scanning", "No web UI for verification", "English only, fewer banks than check.et/verify.et", "No Dart/PHP/Go SDK"],
       stack: "NestJS, Contabo VPS (France)",
     },
     {

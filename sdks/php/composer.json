@@ -1,0 +1,38 @@
+{
+    "name": "cheki/cheki",
+    "version": "1.0.0",
+    "description": "PHP SDK for cheki — free Ethiopian receipt verification service",
+    "type": "library",
+    "homepage": "https://cheki-pi.vercel.app",
+    "license": "MIT",
+    "keywords": [
+        "cheki",
+        "ethiopia",
+        "receipt",
+        "verification",
+        "banking",
+        "payment",
+        "sdk"
+    ],
+    "authors": [
+        {
+            "name": "cheki",
+            "homepage": "https://cheki-pi.vercel.app"
+        }
+    ],
+    "support": {
+        "issues": "https://github.com/nicekwell/cheki/issues",
+        "source": "https://github.com/nicekwell/cheki"
+    },
+    "require": {
+        "php": ">=8.0",
+        "ext-json": "*",
+        "ext-curl": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "Cheki\\": "src/"
+        }
+    },
+    "minimum-stability": "stable"
+}
