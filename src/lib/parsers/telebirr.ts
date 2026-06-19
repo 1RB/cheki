@@ -1,5 +1,5 @@
 /**
- * Telebirr parser — Ethio Telecom mobile wallet.
+ * Telebirr parser - Ethio Telecom mobile wallet.
  *
  * Endpoint: https://transactioninfo.ethiotelecom.et/receipt/{ref}
  * Response: HTML receipt page with table-based layout

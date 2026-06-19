@@ -1,5 +1,5 @@
 /**
- * CBE Birr parser — Commercial Bank of Ethiopia mobile wallet.
+ * CBE Birr parser - Commercial Bank of Ethiopia mobile wallet.
  *
  * Endpoint: https://cbepay1.cbe.com.et/aureceipt?TID={ref}&PH={phone}
  * Response: HTML (ASP.NET page with Telerik report viewer)
@@ -28,7 +28,7 @@ export class CBEBirrParser extends BaseParser {
   parse(data: string | Buffer, _contentType: string): ParsedReceipt {
     const html = data.toString();
 
-    // ASP.NET empty form — no receipt data
+    // ASP.NET empty form - no receipt data
     if (html.length < 500) {
       return { verified: false };
     }

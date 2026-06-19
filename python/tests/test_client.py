@@ -442,7 +442,7 @@ def test_retry_respects_retry_after():
     assert result.is_verified is True
 
 
-# ─── from_dict robustness ──────────────────────────────────────────
+# ─── from_dict edge cases ──────────────────────────────────────────
 
 
 def test_verify_result_from_dict_ignores_unknown_keys():

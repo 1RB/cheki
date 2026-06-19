@@ -1,7 +1,7 @@
 <?php
 
 /**
- * cheki PHP SDK — Basic usage example.
+ * cheki PHP SDK - Basic usage example.
  *
  * Run: php examples/basic.php
  * (Make sure ext-curl and ext-json are enabled in your PHP installation.)
@@ -18,7 +18,7 @@ use Cheki\ChekiClient;
 use Cheki\VerifyOptions;
 
 echo "═══════════════════════════════════════════\n";
-echo "  cheki PHP SDK — Basic Example\n";
+echo "  cheki PHP SDK - Basic Example\n";
 echo "═══════════════════════════════════════════\n\n";
 
 // --- 1. Create a client (default base URL: https://cheki-pi.vercel.app)
@@ -43,7 +43,7 @@ echo "→ Supported banks...\n";
 $banks = $client->getBanks();
 foreach ($banks as $bank) {
     $flag = $bank->requiresAccount ? ' [requires account]' : '';
-    echo "  • {$bank->code} — {$bank->name}{$flag}\n";
+    echo "  • {$bank->code} - {$bank->name}{$flag}\n";
 }
 echo "  Total: " . count($banks) . " banks\n\n";
 
@@ -67,7 +67,7 @@ if ($result->isVerified()) {
 } else {
     echo "  ❌ Not verified";
     if ($result->error) {
-        echo " — {$result->error}";
+        echo " - {$result->error}";
     }
     echo "\n";
 }

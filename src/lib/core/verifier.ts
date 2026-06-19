@@ -1,5 +1,5 @@
 /**
- * Verifier — the orchestrator. Pure business logic, no direct I/O.
+ * Verifier - the orchestrator. Pure business logic, no direct I/O.
  *
  * Flow:
  *   1. Validate input (bank exists, reference present, account if required)

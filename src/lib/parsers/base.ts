@@ -1,5 +1,5 @@
 /**
- * Base parser — shared HTTP client with retries, timeout, geo-block handling.
+ * Base parser - shared HTTP client with retries, timeout, geo-block handling.
  *
  * Each bank parser extends this class and implements:
  *   - buildUrl(ref, account?, phone?) → receipt URL
@@ -40,7 +40,7 @@ export abstract class BaseParser {
   abstract buildUrl(ref: string, account?: string, phone?: string): string;
   abstract parse(data: string | Buffer, contentType: string): ParsedReceipt;
   // Note: parse is sync for simple HTML/JSON parsers. CBE PDF uses static async extractPdfText.
-  // Future async parsers can override parse to be async — the verifier handles both.
+  // Future async parsers can override parse to be async - the verifier handles both.
 
   /**
    * Fetch receipt data from the bank endpoint with retries and geo-block handling.

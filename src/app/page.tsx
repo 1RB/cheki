@@ -559,7 +559,7 @@ export default function Home() {
                   cursor: loading || (inputMode === "reference" && isDisabled) || (!showQrPaste && !reference.trim()) || (showQrPaste && !qrData.trim()) ? "not-allowed" : "pointer",
                   transition: "all 0.15s", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", minHeight: "48px",
                 }}>
-                  {loading ? (<><span className="spin" style={{ width: "16px", height: "16px", border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "#fff", borderRadius: "50%", display: "inline-block" }} />Verifying...</>) : (inputMode === "reference" && isDisabled) ? "In Development" : "Verify Receipt"}
+                  {loading ? (<><span className="spin" style={{ width: "16px", height: "16px", border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "#fff", borderRadius: "50%", display: "inline-block" }} /><span key="loading" className="t-text-swap-enter">Verifying...</span></>) : (inputMode === "reference" && isDisabled) ? <span key="disabled" className="t-text-swap-enter">In Development</span> : <span key="idle" className="t-text-swap-enter">Verify Receipt</span>}
                 </button>
               </div>
 
@@ -625,7 +625,7 @@ export default function Home() {
         {/* Error / Fallback */}
         {error && (
           <section className="container-narrow" style={{ marginBottom: "32px", padding: "0 24px" }}>
-            <div className="fade-up" style={{ padding: "16px 20px", borderRadius: "8px", background: result?.fallbackUrl ? "var(--amber-light)" : "var(--red-light)", border: `1px solid ${result?.fallbackUrl ? "#fde68a" : "#fecaca"}` }}>
+            <div className="t-shake" style={{ padding: "16px 20px", borderRadius: "8px", background: result?.fallbackUrl ? "var(--amber-light)" : "var(--red-light)", border: `1px solid ${result?.fallbackUrl ? "#fde68a" : "#fecaca"}` }}>
               <p style={{ color: result?.fallbackUrl ? "#92400e" : "var(--red)", fontSize: "14px", fontWeight: 500, marginBottom: result?.fallbackUrl ? "12px" : 0 }}>{error}</p>
               {result?.fallbackUrl && <a href={result.fallbackUrl} target="_blank" rel="noopener noreferrer" style={{ display: "inline-block", padding: "8px 16px", borderRadius: "6px", background: "var(--green)", color: "#fff", fontSize: "14px", fontWeight: 600 }}>Open Receipt</a>}
               {error && bank === "boa" && (error.includes("Invalid reference") || error.includes("Receipt not found") || error.includes("not found or invalid")) && (
@@ -648,7 +648,7 @@ export default function Home() {
           </section>
         )}
 
-        {/* How it works — terminal-style list, not cards */}
+        {/* How it works - terminal-style list, not cards */}
         <section className="container" style={{ paddingTop: "32px", marginTop: "24px" }}>
           <h2 style={{ fontSize: "clamp(22px, 4vw, 30px)", fontWeight: 800, letterSpacing: "-0.02em", marginBottom: "12px" }}>
             The banks publish receipts on public URLs
@@ -697,7 +697,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* The Scam / Comparison — single panel, inline columns */}
+        {/* The Scam / Comparison - single panel, inline columns */}
         <section className="container" style={{ marginTop: "40px" }}>
           <div style={{ padding: "28px", borderRadius: "16px", background: "var(--red-light)", border: "1px solid #fecaca" }}>
             <p style={{ fontSize: "12px", fontWeight: 600, color: "var(--red)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "8px" }}>The paid services</p>
@@ -728,7 +728,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Features — bento grid, varied sizes */}
+        {/* Features - bento grid, varied sizes */}
         <section className="container" style={{ marginTop: "40px" }}>
           <h2 style={{ fontSize: "clamp(22px, 4vw, 30px)", fontWeight: 800, letterSpacing: "-0.02em", marginBottom: "20px" }}>
             Everything you need, nothing you don&apos;t
@@ -759,7 +759,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Guides discovery — featured + list layout */}
+        {/* Guides discovery - featured + list layout */}
         <section className="container" style={{ marginTop: "40px" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
             <h2 style={{ fontSize: "clamp(22px, 4vw, 30px)", fontWeight: 800, letterSpacing: "-0.02em" }}>
@@ -875,7 +875,34 @@ export default function Home() {
   );
 }
 
+function AnimatedAmount({ value }: { value: string }) {
+  // transitions.dev number pop-in: split into digit spans with stagger
+  const chars = [...value];
+  let digitIdx = 0;
+  return (
+    <span className="t-digit-group is-animating">
+      {chars.map((ch, i) => {
+        if (/\d/.test(ch)) {
+          const stagger = Math.min(digitIdx % 3, 2);
+          digitIdx++;
+          return <span key={i} className="t-digit" data-stagger={stagger}>{ch}</span>;
+        }
+        return <span key={i}>{ch}</span>;
+      })}
+    </span>
+  );
+}
+
 function ReceiptCard({ result, copied, onCopy }: { result: VerifyResult; copied: boolean; onCopy: () => void }) {
+  // transitions.dev: panel reveal + success check animations
+  const [revealed, setRevealed] = useState(false);
+  const [checkState, setCheckState] = useState<"out" | "in">("out");
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => setRevealed(true));
+    const timer = setTimeout(() => setCheckState("in"), 120);
+    return () => { cancelAnimationFrame(raf); clearTimeout(timer); };
+  }, []);
+
   if (!result.verified) return null;
   const rows: { label: string; value: string | undefined; mono?: boolean }[] = [
     { label: "Bank", value: result.bank },
@@ -910,10 +937,12 @@ function ReceiptCard({ result, copied, onCopy }: { result: VerifyResult; copied:
   const visibleRows = rows.filter((r) => r.value);
 
   return (
-    <section className="fade-up" style={{ borderRadius: "12px", overflow: "hidden", background: "var(--receipt-bg)", border: "1px solid var(--dotted)", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
+    <section className="t-panel-slide" data-open={revealed} style={{ borderRadius: "12px", overflow: "hidden", background: "var(--receipt-bg)", border: "1px solid var(--dotted)", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
       <div style={{ padding: "20px 24px", borderBottom: "2px dotted var(--dotted)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <Icon icon={CheckmarkCircle01Icon} size={24} color="var(--green)" />
+          <span className="t-success-check" data-state={checkState}>
+            <Icon icon={CheckmarkCircle01Icon} size={24} color="var(--green)" />
+          </span>
           <span style={{ fontSize: "16px", fontWeight: 700, color: "var(--ink)" }}>receipt verified</span>
         </div>
         <button onClick={onCopy} style={{ padding: "6px 14px", fontSize: "12px", fontWeight: 500, border: "1px solid var(--border)", borderRadius: "6px", background: "var(--surface)", color: copied ? "var(--green)" : "var(--ink-2)", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}>
@@ -926,7 +955,7 @@ function ReceiptCard({ result, copied, onCopy }: { result: VerifyResult; copied:
           <div key={i}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", padding: "12px 0" }}>
               <span style={{ fontSize: "13px", color: "var(--ink-3)", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.03em", flexShrink: 0 }}>{row.label}</span>
-              <span style={{ fontSize: "15px", color: "var(--ink)", textAlign: "right", fontFamily: row.mono ? "var(--mono)" : "var(--sans)", fontWeight: row.mono ? 500 : 400, wordBreak: "break-word" }}>{row.value}</span>
+              <span style={{ fontSize: "15px", color: "var(--ink)", textAlign: "right", fontFamily: row.mono ? "var(--mono)" : "var(--sans)", fontWeight: row.mono ? 500 : 400, wordBreak: "break-word" }}>{row.label === "Amount" && row.value ? <AnimatedAmount value={row.value} /> : row.value}</span>
             </div>
             {i < visibleRows.length - 1 && <hr className="dotted-line" />}
           </div>

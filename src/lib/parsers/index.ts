@@ -1,5 +1,5 @@
 /**
- * Parser index — auto-registers all bank parsers.
+ * Parser index - auto-registers all bank parsers.
  *
  * Import this module to make all parsers available.
  * To add a new bank parser: create a file, extend BaseParser,

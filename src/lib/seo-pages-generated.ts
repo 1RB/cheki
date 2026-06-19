@@ -44,7 +44,7 @@ const bankVerificationPages: SeoPage[] = banks
   .filter((b) => banksWithoutManualPage.includes(b.code))
   .map((b): SeoPage => ({
     slug: `verify-${b.code}-receipt-online`,
-    title: `Verify ${b.name} Receipt Online — Free & Instant | cheki`,
+    title: `Verify ${b.name} Receipt Online - Free & Instant | cheki`,
     h1: `Verify a ${b.name} Receipt Online`,
     metaDescription: `Check if a ${b.shortName} receipt is real or fake. Free, instant, no signup. ${b.requiresAccount ? `Paste your reference and account number` : `Paste your transaction reference`} to verify any ${b.shortName} payment in seconds.`,
     keywords: [
@@ -92,12 +92,12 @@ const bankVerificationPages: SeoPage[] = banks
         body: `To verify a ${b.shortName} receipt, you need ${accountRequirement(b)}.`,
         bullets: b.requiresAccount
           ? [
-              `Transaction reference number (e.g. ${b.referenceExample}) — found on the receipt or in the ${b.shortName} app`,
-              `Last ${b.accountDigits} digits of the receiving account number — the account that received the payment`,
+              `Transaction reference number (e.g. ${b.referenceExample}) - found on the receipt or in the ${b.shortName} app`,
+              `Last ${b.accountDigits} digits of the receiving account number - the account that received the payment`,
             ]
           : [
-              `Transaction reference number (e.g. ${b.referenceExample}) — found on the receipt or in the ${b.shortName} app`,
-              `No account number required — ${b.shortName} returns the full receipt with just the reference`,
+              `Transaction reference number (e.g. ${b.referenceExample}) - found on the receipt or in the ${b.shortName} app`,
+              `No account number required - ${b.shortName} returns the full receipt with just the reference`,
             ],
       },
       {
@@ -118,7 +118,7 @@ const bankVerificationPages: SeoPage[] = banks
 
 const checkPaymentPages: SeoPage[] = banks.map((b): SeoPage => ({
   slug: `check-${b.code}-payment-online`,
-  title: `Check ${b.name} Payment Online — Free | cheki`,
+  title: `Check ${b.name} Payment Online - Free | cheki`,
   h1: `Check a ${b.name} Payment Online`,
   metaDescription: `Check if a ${b.shortName} payment went through. Free, instant, no signup. Verify any ${b.shortName} transaction by reference number${b.requiresAccount ? ` and account` : ``}.`,
   keywords: [
@@ -153,7 +153,7 @@ const checkPaymentPages: SeoPage[] = banks.map((b): SeoPage => ({
     },
     {
       heading: `What information you need`,
-      body: `To check a ${b.shortName} payment, ask the sender for the transaction reference number from their receipt${b.requiresAccount ? ` and make sure you know the last ${b.accountDigits} digits of your receiving account` : ``}. ${b.requiresAccount ? `Both pieces of information are required by the endpoint.` : `That's all you need — no account number required.`}`,
+      body: `To check a ${b.shortName} payment, ask the sender for the transaction reference number from their receipt${b.requiresAccount ? ` and make sure you know the last ${b.accountDigits} digits of your receiving account` : ``}. ${b.requiresAccount ? `Both pieces of information are required by the endpoint.` : `That's all you need - no account number required.`}`,
       bullets: [
         `Transaction reference (e.g. ${b.referenceExample})`,
         ...(b.requiresAccount ? [`Last ${b.accountDigits} digits of your account number`] : []),
@@ -241,7 +241,7 @@ const receiptFormatPages: SeoPage[] = banks
   .filter((b) => top5Banks.includes(b.code))
   .map((b): SeoPage => ({
     slug: `${b.code}-receipt-format-explained`,
-    title: `${b.name} Receipt Format Explained — Technical Reference | cheki`,
+    title: `${b.name} Receipt Format Explained - Technical Reference | cheki`,
     h1: `${b.name} Receipt Format`,
     metaDescription: `Complete technical reference for ${b.shortName} receipt format. Endpoint URL, ${b.responseType.toUpperCase()} response structure, field mappings, and parsing details.`,
     keywords: [
@@ -288,13 +288,13 @@ const receiptFormatPages: SeoPage[] = banks
         heading: `Field mappings for ${b.shortName}`,
         body: `cheki normalizes ${b.shortName} receipts into a standard JSON shape regardless of the source format:`,
         bullets: [
-          `senderName — the account holder who sent the payment`,
-          `receiverName — the account holder who received the payment`,
-          `amount — the transferred amount in ETB`,
-          `currency — always ETB for domestic transfers`,
-          `date — transaction date and time`,
-          `reference — the ${b.shortName} transaction reference number`,
-          `sourceUrl — the full URL cheki fetched the receipt from`,
+          `senderName - the account holder who sent the payment`,
+          `receiverName - the account holder who received the payment`,
+          `amount - the transferred amount in ETB`,
+          `currency - always ETB for domestic transfers`,
+          `date - transaction date and time`,
+          `reference - the ${b.shortName} transaction reference number`,
+          `sourceUrl - the full URL cheki fetched the receipt from`,
         ],
       },
     ],
@@ -306,9 +306,9 @@ const receiptFormatPages: SeoPage[] = banks
 const apiEndpointPages: SeoPage[] = [
   {
     slug: "verify-receipt-api-endpoint",
-    title: "POST /api/verify — Receipt Verification API | cheki",
+    title: "POST /api/verify - Receipt Verification API | cheki",
     h1: "Verify Receipt API Endpoint",
-    metaDescription: "POST /api/verify — verify a single Ethiopian bank receipt. No API key, no auth, no rate limit. Supports CBE, Telebirr, BOA, M-Pesa, and more.",
+    metaDescription: "POST /api/verify - verify a single Ethiopian bank receipt. No API key, no auth, no rate limit. Supports CBE, Telebirr, BOA, M-Pesa, and more.",
     keywords: ["receipt verification api", "verify receipt endpoint", "post api verify", "cheki api", "ethiopian receipt api endpoint"],
     intent: "transactional",
     faq: [
@@ -319,15 +319,15 @@ const apiEndpointPages: SeoPage[] = [
     sections: [
       {
         heading: "Endpoint specification",
-        body: "POST /api/verify — Verifies a single Ethiopian bank receipt. Accepts a JSON body with bank, reference, and optionally accountNumber. Returns a JSON response with the receipt data or an error message.",
+        body: "POST /api/verify - Verifies a single Ethiopian bank receipt. Accepts a JSON body with bank, reference, and optionally accountNumber. Returns a JSON response with the receipt data or an error message.",
       },
       {
         heading: "Request format",
         body: "Send a POST request with Content-Type: application/json. The body must contain the bank code (e.g. 'cbe', 'telebirr', 'boa'), the transaction reference number, and for banks that require it, the account number.",
         bullets: [
-          "bank (required) — bank code: cbe, telebirr, boa, mpesa, dashen, awash, zemen, cbebirr, siinqee",
-          "reference (required) — transaction reference number (e.g. FT26140P01YB)",
-          "accountNumber (conditional) — last 8 digits for CBE, last 5 for BOA, not required for Telebirr/M-Pesa",
+          "bank (required) - bank code: cbe, telebirr, boa, mpesa, dashen, awash, zemen, cbebirr, siinqee",
+          "reference (required) - transaction reference number (e.g. FT26140P01YB)",
+          "accountNumber (conditional) - last 8 digits for CBE, last 5 for BOA, not required for Telebirr/M-Pesa",
         ],
       },
       {
@@ -339,7 +339,7 @@ const apiEndpointPages: SeoPage[] = [
   },
   {
     slug: "batch-verification-api",
-    title: "POST /api/verify/batch — Batch Receipt Verification | cheki",
+    title: "POST /api/verify/batch - Batch Receipt Verification | cheki",
     h1: "Batch Verification API",
     metaDescription: "Verify up to 50 Ethiopian bank receipts in a single API call. No API key, no auth. Perfect for end-of-day reconciliation and bulk payment checking.",
     keywords: ["batch receipt verification", "bulk verify receipts", "batch api ethiopia", "verify multiple receipts", "reconciliation api ethiopia"],
@@ -352,7 +352,7 @@ const apiEndpointPages: SeoPage[] = [
     sections: [
       {
         heading: "Batch endpoint overview",
-        body: "POST /api/verify/batch — Verifies up to 50 Ethiopian bank receipts in a single request. Accepts a JSON body with a 'receipts' array. Each receipt object has the same shape as the single verify endpoint: bank, reference, and optionally accountNumber. Returns an array of results.",
+        body: "POST /api/verify/batch - Verifies up to 50 Ethiopian bank receipts in a single request. Accepts a JSON body with a 'receipts' array. Each receipt object has the same shape as the single verify endpoint: bank, reference, and optionally accountNumber. Returns an array of results.",
       },
       {
         heading: "Use cases for batch verification",
@@ -373,9 +373,9 @@ const apiEndpointPages: SeoPage[] = [
   },
   {
     slug: "bank-listing-api-endpoint",
-    title: "GET /api/banks — List Supported Banks | cheki",
+    title: "GET /api/banks - List Supported Banks | cheki",
     h1: "Bank Listing API",
-    metaDescription: "GET /api/banks — list all supported Ethiopian banks and wallets. Returns bank codes, names, endpoint URLs, and verification requirements. Free, no auth.",
+    metaDescription: "GET /api/banks - list all supported Ethiopian banks and wallets. Returns bank codes, names, endpoint URLs, and verification requirements. Free, no auth.",
     keywords: ["ethiopian bank list api", "supported banks api", "cheki banks endpoint", "bank codes ethiopia", "bank listing api"],
     intent: "transactional",
     faq: [
@@ -386,21 +386,21 @@ const apiEndpointPages: SeoPage[] = [
     sections: [
       {
         heading: "Endpoint specification",
-        body: "GET /api/banks — Returns a list of all supported banks and wallets. No parameters, no authentication. The response is a JSON array of bank objects with full metadata including endpoint URLs, response types, and verification requirements.",
+        body: "GET /api/banks - Returns a list of all supported banks and wallets. No parameters, no authentication. The response is a JSON array of bank objects with full metadata including endpoint URLs, response types, and verification requirements.",
       },
       {
         heading: "Bank object fields",
         body: "Each bank in the response array contains:",
         bullets: [
-          "code — short identifier (cbe, telebirr, boa, mpesa, etc.)",
-          "name — full bank name",
-          "shortName — abbreviated name for UI display",
-          "type — 'bank', 'wallet', or 'mobile'",
-          "requiresAccount — whether account number is needed for verification",
-          "accountDigits — how many digits of the account are required",
-          "endpoint — the bank's receipt endpoint domain",
-          "responseType — 'pdf', 'json', or 'html'",
-          "status — 'live' or 'soon'",
+          "code - short identifier (cbe, telebirr, boa, mpesa, etc.)",
+          "name - full bank name",
+          "shortName - abbreviated name for UI display",
+          "type - 'bank', 'wallet', or 'mobile'",
+          "requiresAccount - whether account number is needed for verification",
+          "accountDigits - how many digits of the account are required",
+          "endpoint - the bank's receipt endpoint domain",
+          "responseType - 'pdf', 'json', or 'html'",
+          "status - 'live' or 'soon'",
         ],
       },
       {
@@ -412,9 +412,9 @@ const apiEndpointPages: SeoPage[] = [
   },
   {
     slug: "receipt-health-check-api",
-    title: "GET /api/health — Bank Endpoint Health Check | cheki",
+    title: "GET /api/health - Bank Endpoint Health Check | cheki",
     h1: "Bank Endpoint Health Check API",
-    metaDescription: "GET /api/health — check the status and latency of all Ethiopian bank receipt endpoints. See which banks are up, down, or geo-blocked. Free, no auth.",
+    metaDescription: "GET /api/health - check the status and latency of all Ethiopian bank receipt endpoints. See which banks are up, down, or geo-blocked. Free, no auth.",
     keywords: ["bank endpoint health", "ethiopian bank status api", "receipt endpoint check", "bank api health", "cheki health check"],
     intent: "transactional",
     faq: [
@@ -425,7 +425,7 @@ const apiEndpointPages: SeoPage[] = [
     sections: [
       {
         heading: "Health check overview",
-        body: "GET /api/health — Tests the connectivity and latency of all supported bank receipt endpoints. For each bank, it makes a lightweight request to the bank's endpoint and reports whether the endpoint is reachable, how fast it responded, and whether it's geo-blocked.",
+        body: "GET /api/health - Tests the connectivity and latency of all supported bank receipt endpoints. For each bank, it makes a lightweight request to the bank's endpoint and reports whether the endpoint is reachable, how fast it responded, and whether it's geo-blocked.",
       },
       {
         heading: "Response structure",
@@ -451,7 +451,7 @@ const apiEndpointPages: SeoPage[] = [
 const fraudScenarioPages: SeoPage[] = [
   {
     slug: "telebirr-sms-spoofing-fraud",
-    title: "Telebirr SMS Spoofing Fraud — How It Works & How to Stop It | cheki",
+    title: "Telebirr SMS Spoofing Fraud - How It Works & How to Stop It | cheki",
     h1: "Telebirr SMS Spoofing Fraud",
     metaDescription: "How fraudsters spoof Telebirr SMS payment notifications to trick merchants. Learn how SMS spoofing works, how to detect it, and how to protect your business.",
     keywords: ["telebirr sms spoofing", "sms fraud ethiopia", "fake sms payment notification", "telebirr fraud", "sms spoofing detection"],
@@ -528,7 +528,7 @@ const fraudScenarioPages: SeoPage[] = [
   },
   {
     slug: "old-receipt-reuse-fraud",
-    title: "Old Receipt Reuse Fraud — Reusing Past Payments | cheki",
+    title: "Old Receipt Reuse Fraud - Reusing Past Payments | cheki",
     h1: "Old Receipt Reuse Fraud",
     metaDescription: "How fraudsters reuse old, genuine bank receipts to claim they've made a new payment. Learn how old receipt fraud works and how to verify the transaction date.",
     keywords: ["old receipt fraud", "reused receipt ethiopia", "duplicate receipt fraud", "receipt reuse scam", "old payment receipt fraud"],
@@ -569,13 +569,13 @@ const fraudScenarioPages: SeoPage[] = [
   },
   {
     slug: "reference-number-fraud-ethiopia",
-    title: "Reference Number Fraud in Ethiopia — Fabricated Transaction IDs | cheki",
+    title: "Reference Number Fraud in Ethiopia - Fabricated Transaction IDs | cheki",
     h1: "Reference Number Fraud in Ethiopia",
     metaDescription: "How fraudsters fabricate Ethiopian bank reference numbers that look real but don't exist. Learn the format of CBE FT numbers, Telebirr IDs, and how to detect fakes.",
     keywords: ["reference number fraud", "fake ft number", "fabricated transaction id ethiopia", "cbe reference number fake", "telebirr reference fraud"],
     intent: "informational",
     faq: [
-      { q: "Can someone guess a valid CBE FT reference number?", a: "It's very unlikely. CBE FT reference numbers follow a specific format (FT + date + sequence + code) but the sequence and code portions are not sequential. Guessing a valid reference that also matches a specific account number is computationally infeasible. However, fraudsters don't need to guess valid numbers — they just need numbers that look plausible enough to fool someone who doesn't verify." },
+      { q: "Can someone guess a valid CBE FT reference number?", a: "It's very unlikely. CBE FT reference numbers follow a specific format (FT + date + sequence + code) but the sequence and code portions are not sequential. Guessing a valid reference that also matches a specific account number is computationally infeasible. However, fraudsters don't need to guess valid numbers - they just need numbers that look plausible enough to fool someone who doesn't verify." },
       { q: "What does a real CBE FT reference look like?", a: "A CBE FT reference starts with 'FT' followed by 10 alphanumeric characters. The format is roughly FT + YYMMDD + sequence + code. Example: FT26140P01YB. The key point is that fake numbers often have the right format but don't exist in CBE's system." },
       { q: "How do I know if a reference number is real?", a: "You can't tell by looking at it. A fake reference number can have the correct format and look completely genuine. The only way to know is to verify it against the bank's system using cheki. If the bank's endpoint returns no data for that reference, it doesn't exist." },
     ],
@@ -615,7 +615,7 @@ const developerPages: SeoPage[] = [
     keywords: ["typescript receipt sdk", "ethiopian receipt sdk", "cheki typescript", "receipt verification npm", "bank receipt npm package"],
     intent: "transactional",
     faq: [
-      { q: "How do I install the cheki TypeScript SDK?", a: "The SDK is included in the cheki monorepo on GitHub. Clone the repo and import the SDK from the /sdk/typescript directory. Alternatively, you can copy the single-file SDK into your project. No npm install needed — it's a lightweight fetch wrapper." },
+      { q: "How do I install the cheki TypeScript SDK?", a: "The SDK is included in the cheki monorepo on GitHub. Clone the repo and import the SDK from the /sdk/typescript directory. Alternatively, you can copy the single-file SDK into your project. No npm install needed - it's a lightweight fetch wrapper." },
       { q: "Can I use the SDK in the browser?", a: "Yes. The SDK uses the fetch API and works in both Node.js and the browser. However, browser-based calls to cheki's API are subject to CORS. For production use, we recommend calling the API from your backend." },
       { q: "Does the SDK handle errors?", a: "Yes. The SDK throws typed errors for common scenarios: receipt not found, geo-blocked endpoint, invalid reference format, and network errors. Each error has a code and message that you can use for user-facing error handling." },
     ],
@@ -632,11 +632,11 @@ const developerPages: SeoPage[] = [
         heading: "Available methods",
         body: "The SDK exposes four methods matching the REST API endpoints:",
         bullets: [
-          "verify(bank, reference, accountNumber?) — verify a single receipt",
-          "verifyUrl(url) — verify by receipt URL (auto-detects bank)",
-          "verifyBatch(receipts) — verify up to 50 receipts in parallel",
-          "listBanks() — get all supported banks with metadata",
-          "healthCheck() — check endpoint status and latency",
+          "verify(bank, reference, accountNumber?) - verify a single receipt",
+          "verifyUrl(url) - verify by receipt URL (auto-detects bank)",
+          "verifyBatch(receipts) - verify up to 50 receipts in parallel",
+          "listBanks() - get all supported banks with metadata",
+          "healthCheck() - check endpoint status and latency",
         ],
       },
     ],

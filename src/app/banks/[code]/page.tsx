@@ -14,7 +14,20 @@ export function generateMetadata({ params }: { params: Promise<{ code: string }>
       title: bank.seo.title,
       description: bank.seo.description,
       keywords: bank.seo.keywords,
-      openGraph: { title: bank.seo.title, description: bank.seo.description, type: "article" },
+      alternates: {
+        canonical: `/banks/${bank.code}`,
+      },
+      openGraph: {
+        title: bank.seo.title,
+        description: bank.seo.description,
+        type: "article",
+        url: `https://cheki.app/banks/${bank.code}`,
+      },
+      twitter: {
+        card: "summary_large_image",
+        title: bank.seo.title,
+        description: bank.seo.description,
+      },
     };
   });
 }
@@ -100,15 +113,15 @@ export default async function BankPage({ params }: { params: Promise<{ code: str
             <h2>Required information</h2>
             <ul>
               {bank.requiresAccount ? (
-                <li><strong>Transaction reference</strong> (required) — e.g. {bank.referenceExample}</li>
+                <li><strong>Transaction reference</strong> (required) - e.g. {bank.referenceExample}</li>
               ) : (
-                <li><strong>Transaction reference</strong> (required) — e.g. {bank.referenceExample}</li>
+                <li><strong>Transaction reference</strong> (required) - e.g. {bank.referenceExample}</li>
               )}
               {bank.requiresAccount && (
-                <li><strong>{bank.accountLabel || "Account number"}</strong> (required) — last {bank.accountDigits} digits minimum</li>
+                <li><strong>{bank.accountLabel || "Account number"}</strong> (required) - last {bank.accountDigits} digits minimum</li>
               )}
               {bank.requiresPhone && (
-                <li><strong>Payer phone number</strong> (required) — format: 2519XXXXXXXXX</li>
+                <li><strong>Payer phone number</strong> (required) - format: 2519XXXXXXXXX</li>
               )}
             </ul>
 

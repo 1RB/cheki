@@ -1,5 +1,5 @@
 /**
- * eBirr parser — eBirr mobile money platform.
+ * eBirr parser - eBirr mobile money platform.
  *
  * Covers 5 partner banks through a single receipt endpoint:
  *   - Nib International Bank (tenant: nib)
@@ -57,7 +57,7 @@ export class EBirrParser extends BaseParser {
   parse(data: string | Buffer, _contentType: string): ParsedReceipt {
     const html = data.toString();
 
-    // Check for "Not Found Page" — eBirr returns this for invalid tokens
+    // Check for "Not Found Page" - eBirr returns this for invalid tokens
     if (html.includes("Not Found Page") || html.includes('color: red')) {
       return { verified: false, raw: html.slice(0, 500) };
     }

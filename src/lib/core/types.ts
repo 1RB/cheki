@@ -1,5 +1,5 @@
 /**
- * cheki core — Result types, Receipt entity, errors.
+ * cheki core - Result types, Receipt entity, errors.
  *
  * This module has ZERO runtime dependencies. It defines the domain model
  * and the contracts (ports) that adapters implement.

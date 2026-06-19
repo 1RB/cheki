@@ -16,10 +16,14 @@ export function generateMetadata({ params }: { params: Promise<{ slug: string }>
       title: page.title,
       description: page.metaDescription,
       keywords: page.keywords,
+      alternates: {
+        canonical: `/verify/${page.slug}`,
+      },
       openGraph: {
         title: page.title,
         description: page.metaDescription,
         type: "article",
+        url: `https://cheki.app/verify/${page.slug}`,
       },
       twitter: {
         card: "summary_large_image",

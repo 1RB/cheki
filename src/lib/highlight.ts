@@ -2,7 +2,7 @@
  * Lightweight syntax highlighter for guide code blocks.
  *
  * Supports: bash, json, typescript, javascript, http, python
- * Zero dependencies — uses regex tokenization with CSS classes.
+ * Zero dependencies - uses regex tokenization with CSS classes.
  *
  * The output is HTML string with <span> tags that map to CSS classes
  * defined in globals.css under .code-highlight-*.
@@ -26,7 +26,7 @@ function tokenizeBash(code: string): Token[] {
   // Comments
   let remaining = code;
   const parts = remaining.split(/(#.*?$)/m);
-  // This approach is messy — let's do a simpler line-based approach
+  // This approach is messy - let's do a simpler line-based approach
   return lineTokenize(code, (line) => {
     const tokens: Token[] = [];
     // Comment

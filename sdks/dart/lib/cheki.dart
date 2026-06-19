@@ -1,4 +1,4 @@
-/// cheki — a Dart client library for the cheki receipt verification service.
+/// cheki - a Dart client library for the cheki receipt verification service.
 ///
 /// cheki is a free Ethiopian receipt verification service that allows you to
 /// verify bank transfer receipts from Ethiopian banks via a simple REST API.

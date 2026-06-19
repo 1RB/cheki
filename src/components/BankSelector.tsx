@@ -21,6 +21,9 @@ export function BankSelector({ value, onChange }: BankSelectorProps) {
   const [highlighted, setHighlighted] = useState(0);
   const [mounted, setMounted] = useState(false);
   const [panelRect, setPanelRect] = useState<{ top: number; left: number; width: number } | null>(null);
+  // transitions.dev menu dropdown: start hidden, reveal via rAF so the
+  // CSS transition from .t-dropdown → .t-dropdown.is-open actually plays.
+  const [panelOpen, setPanelOpen] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -102,6 +105,18 @@ export function BankSelector({ value, onChange }: BankSelectorProps) {
       window.removeEventListener("resize", onResize);
     };
   }, [open, updatePosition]);
+
+  // transitions.dev menu dropdown: trigger enter animation via rAF.
+  // Panel mounts with .t-dropdown (pre-scale, opacity 0); adding
+  // .is-open on the next frame makes the CSS transition play.
+  useEffect(() => {
+    if (!open) {
+      setPanelOpen(false);
+      return;
+    }
+    const raf = requestAnimationFrame(() => setPanelOpen(true));
+    return () => cancelAnimationFrame(raf);
+  }, [open]);
 
   // Keyboard navigation
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -240,12 +255,13 @@ export function BankSelector({ value, onChange }: BankSelectorProps) {
         </svg>
       </button>
 
-      {/* Dropdown panel — rendered via portal to escape stacking contexts */}
+      {/* Dropdown panel - rendered via portal to escape stacking contexts */}
       {open && mounted && panelRect && createPortal(
         <div
           data-bank-selector-panel
           role="listbox"
           onClick={(e) => e.stopPropagation()}
+          className={`t-dropdown${panelOpen ? " is-open" : ""}`}
           style={{
             position: "fixed",
             top: `${panelRect.top}px`,
@@ -260,7 +276,6 @@ export function BankSelector({ value, onChange }: BankSelectorProps) {
             display: "flex",
             flexDirection: "column",
             boxShadow: "0 12px 32px rgba(0,0,0,0.12), 0 0 0 1px var(--border)",
-            animation: "bankSelectorSlideIn 0.12s ease-out",
           }}
         >
           {/* Search input */}

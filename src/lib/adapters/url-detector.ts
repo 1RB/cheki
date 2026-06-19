@@ -1,5 +1,5 @@
 /**
- * URL detector — parses receipt URLs and detects the bank + reference.
+ * URL detector - parses receipt URLs and detects the bank + reference.
  *
  * Supports all known bank receipt URL formats:
  *   - mbreciept.cbe.com.et/{id}           → CBE new API
@@ -90,7 +90,7 @@ export function detectBankFromUrl(input: string): DetectedReceipt | null {
     // Zemen: https://share.zemenbank.com/rt/{REFERENCE}/pdf
     if (host.includes("zemenbank.com")) {
       const parts = url.pathname.split("/").filter(Boolean);
-      // parts = ["rt", "REFERENCE", "pdf"] — take the middle part
+      // parts = ["rt", "REFERENCE", "pdf"] - take the middle part
       if (parts.length >= 2) return { bank: "zemen", reference: parts[1] };
       if (parts.length === 1) return { bank: "zemen", reference: parts[0] };
     }

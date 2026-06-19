@@ -1,8 +1,8 @@
 /**
- * cheki — TypeScript SDK for the cheki receipt verification API.
+ * cheki - TypeScript SDK for the cheki receipt verification API.
  *
  * Verify Ethiopian bank transfer receipts from CBE, Telebirr, BOA, Dashen,
- * M-Pesa, and more. Zero runtime dependencies — uses the global Fetch API
+ * M-Pesa, and more. Zero runtime dependencies - uses the global Fetch API
  * (Node.js >= 18 or any modern browser).
  *
  * @example
@@ -23,7 +23,7 @@
 // Constants
 // ============================================================================
 
-/** SDK version — reflected in the default User-Agent header. */
+/** SDK version - reflected in the default User-Agent header. */
 const VERSION = "1.0.0";
 
 /** Default API base URL. */
@@ -48,7 +48,7 @@ const MAX_BACKOFF_MS = 5_000;
 const RETRYABLE_STATUS_CODES = new Set([429, 500, 502, 503, 504]);
 
 // ============================================================================
-// Types — Request
+// Types - Request
 // ============================================================================
 
 /**
@@ -66,7 +66,7 @@ export interface VerifyOptions {
 }
 
 /**
- * A receipt to verify — used as input to batch verification.
+ * A receipt to verify - used as input to batch verification.
  *
  * Passed as elements of the array to {@link Cheki.verifyBatch}.
  */
@@ -84,7 +84,7 @@ export interface Receipt {
 }
 
 // ============================================================================
-// Types — Response
+// Types - Response
 // ============================================================================
 
 /**
@@ -295,7 +295,7 @@ export class ChekiError extends Error {
 export class ChekiAPIError extends ChekiError {
   /** HTTP status code returned by the API. */
   readonly statusCode: number;
-  /** Response body — parsed JSON if possible, otherwise the raw text. */
+  /** Response body - parsed JSON if possible, otherwise the raw text. */
   readonly body: unknown;
   /** API endpoint path that was called (e.g. `"/api/verify"`). */
   readonly endpoint: string;
@@ -411,7 +411,7 @@ export interface RequestOptions {
   signal?: AbortSignal;
 }
 
-/** Internal resolved configuration — all defaults applied. */
+/** Internal resolved configuration - all defaults applied. */
 interface ResolvedConfig {
   baseUrl: string;
   timeoutMs: number;
@@ -599,7 +599,7 @@ export class Cheki {
   /**
    * Build the URL for viewing a receipt in the cheki web interface.
    *
-   * This is a pure helper — it does **not** make a network request.
+   * This is a pure helper - it does **not** make a network request.
    *
    * @param bank - Bank code.
    * @param reference - Transaction reference number.
@@ -826,7 +826,7 @@ export class Cheki {
         }
 
         // Re-throw ChekiNetworkError from sleepWithBackoff (caller abort
-        // during backoff — thrown from inside the try block).
+        // during backoff - thrown from inside the try block).
         if (err instanceof ChekiNetworkError) {
           throw err;
         }
@@ -861,7 +861,7 @@ export class Cheki {
       }
     }
 
-    // Unreachable — the loop always returns or throws on every iteration.
+    // Unreachable - the loop always returns or throws on every iteration.
     throw new ChekiError("cheki: unreachable state in request loop");
   }
 }

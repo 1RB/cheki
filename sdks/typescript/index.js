@@ -1,9 +1,9 @@
 "use strict";
 /**
- * cheki — TypeScript SDK for the cheki receipt verification API.
+ * cheki - TypeScript SDK for the cheki receipt verification API.
  *
  * Verify Ethiopian bank transfer receipts from CBE, Telebirr, BOA, Dashen,
- * M-Pesa, and more. Zero runtime dependencies — uses the global Fetch API
+ * M-Pesa, and more. Zero runtime dependencies - uses the global Fetch API
  * (Node.js >= 18 or any modern browser).
  *
  * @example
@@ -24,7 +24,7 @@ exports.Cheki = exports.ChekiTimeoutError = exports.ChekiNetworkError = exports.
 // ============================================================================
 // Constants
 // ============================================================================
-/** SDK version — reflected in the default User-Agent header. */
+/** SDK version - reflected in the default User-Agent header. */
 const VERSION = "1.0.0";
 /** Default API base URL. */
 const DEFAULT_BASE_URL = "https://cheki-pi.vercel.app";
@@ -253,7 +253,7 @@ class Cheki {
     /**
      * Build the URL for viewing a receipt in the cheki web interface.
      *
-     * This is a pure helper — it does **not** make a network request.
+     * This is a pure helper - it does **not** make a network request.
      *
      * @param bank - Bank code.
      * @param reference - Transaction reference number.
@@ -443,7 +443,7 @@ class Cheki {
                     throw err;
                 }
                 // Re-throw ChekiNetworkError from sleepWithBackoff (caller abort
-                // during backoff — thrown from inside the try block).
+                // during backoff - thrown from inside the try block).
                 if (err instanceof ChekiNetworkError) {
                     throw err;
                 }
@@ -465,7 +465,7 @@ class Cheki {
                 throw networkError;
             }
         }
-        // Unreachable — the loop always returns or throws on every iteration.
+        // Unreachable - the loop always returns or throws on every iteration.
         throw new ChekiError("cheki: unreachable state in request loop");
     }
 }

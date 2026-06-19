@@ -1,5 +1,5 @@
 /**
- * cheki — ESM wrapper that re-exports the CommonJS build.
+ * cheki - ESM wrapper that re-exports the CommonJS build.
  *
  * This file enables `import { Cheki } from "cheki"` in ES module
  * environments (Node.js ESM, bundlers with ESM output) while the

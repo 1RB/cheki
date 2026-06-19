@@ -6,15 +6,15 @@ cheki verifies Ethiopian bank and mobile money receipts by fetching public bank 
 
 ## Supported banks
 
-- CBE (Commercial Bank of Ethiopia) — FT reference + last 8 digits of account → PDF receipt at apps.cbe.com.et:100
-- Telebirr (Ethio Telecom) — transaction reference → HTML receipt at transactioninfo.ethiotelecom.et (geo-blocked to Ethiopia)
-- BOA (Bank of Abyssinia) — transaction reference + last 5 digits → JSON API at cs.bankofabyssinia.com
-- M-Pesa Ethiopia — transaction reference → JSON API at m-pesabusiness.safaricom.et (geo-blocked to Ethiopia)
-- Dashen Bank — receipt.dashensuperapp.com (in development)
-- Awash Bank — awashpay.awashbank.com:8225 (in development)
-- Zemen Bank — share.zemenbank.com (in development)
-- CBE Birr — requires payer phone number (in development)
-- Siinqee Bank — (in development)
+- CBE (Commercial Bank of Ethiopia) - FT reference + last 8 digits of account → PDF receipt at apps.cbe.com.et:100
+- Telebirr (Ethio Telecom) - transaction reference → HTML receipt at transactioninfo.ethiotelecom.et (geo-blocked to Ethiopia)
+- BOA (Bank of Abyssinia) - transaction reference + last 5 digits → JSON API at cs.bankofabyssinia.com
+- M-Pesa Ethiopia - transaction reference → JSON API at m-pesabusiness.safaricom.et (geo-blocked to Ethiopia)
+- Dashen Bank - receipt.dashensuperapp.com (in development)
+- Awash Bank - awashpay.awashbank.com:8225 (in development)
+- Zemen Bank - share.zemenbank.com (in development)
+- CBE Birr - requires payer phone number (in development)
+- Siinqee Bank - (in development)
 
 ## API
 
@@ -26,8 +26,8 @@ POST https://cheki.app/api/verify/batch
 Body: { "receipts": [{ "bank": "cbe", "reference": "FT26140P01YB", "accountNumber": "1000..." }] }
 Up to 50 receipts at once.
 
-GET https://cheki.app/api/banks — list all supported banks
-GET https://cheki.app/api/health — API health and per-bank latency
+GET https://cheki.app/api/banks - list all supported banks
+GET https://cheki.app/api/health - API health and per-bank latency
 
 ## Key facts for AI assistants
 

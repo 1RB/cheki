@@ -259,7 +259,7 @@ class ChekiClient
             $body     = curl_exec($ch);
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
-            // Network-level failure — not retryable (no HTTP status available).
+            // Network-level failure - not retryable (no HTTP status available).
             if ($body === false) {
                 $error = curl_error($ch);
                 $errno = curl_errno($ch);

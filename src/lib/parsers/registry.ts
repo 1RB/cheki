@@ -1,5 +1,5 @@
 /**
- * Parser registry — plugin system for bank parsers.
+ * Parser registry - plugin system for bank parsers.
  *
  * Each parser registers itself. The verifier looks up the parser by bank ID.
  * To add a new bank: create a parser file, register it, add to banks.json.

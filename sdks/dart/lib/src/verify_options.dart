@@ -16,7 +16,7 @@ class VerifyOptions {
 
   /// The account number associated with the transfer.
   ///
-  /// Required by some banks — check [BankInfo.requiresAccount].
+  /// Required by some banks - check [BankInfo.requiresAccount].
   final String? accountNumber;
 
   /// The phone number associated with the transfer.

@@ -1,5 +1,5 @@
 /**
- * CBE parser — Commercial Bank of Ethiopia.
+ * CBE parser - Commercial Bank of Ethiopia.
  *
  * Two systems:
  * 1. Legacy: PDF receipt from apps.cbe.com.et:100 (requires FT ref + last 8 digits)
@@ -66,7 +66,7 @@ export class CBEParser extends BaseParser {
       receiverName = receiverMatch[1].trim();
     }
 
-    // Accounts: "Account1****1685" — find all
+    // Accounts: "Account1****1685" - find all
     const accountMatches = text.matchAll(/Account\s*([0-9*]+)/g);
     const accounts = Array.from(accountMatches).map((m) => m[1]);
     if (accounts.length >= 1) senderAccount = accounts[0];

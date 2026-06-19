@@ -202,7 +202,7 @@ export default function GuidesPage() {
             </div>
           )}
 
-          {/* Article grid — masonry-style with varying card sizes */}
+          {/* Article grid - masonry-style with varying card sizes */}
           {sorted.length > 0 && (
             <>
               <p style={{ fontSize: "13px", color: "var(--ink-3)", marginBottom: "16px" }}>

@@ -1,5 +1,5 @@
 /**
- * cheki — free ethiopian receipt verification client
+ * cheki - free ethiopian receipt verification client
  *
  * Usage:
  *   import { Cheki } from "cheki";

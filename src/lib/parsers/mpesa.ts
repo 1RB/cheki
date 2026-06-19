@@ -1,5 +1,5 @@
 /**
- * M-Pesa parser — Safaricom Ethiopia mobile wallet.
+ * M-Pesa parser - Safaricom Ethiopia mobile wallet.
  *
  * Endpoint: https://m-pesabusiness.safaricom.et/api/receipt/getReceipt?trxNo={ref}
  * Response: JSON

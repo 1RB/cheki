@@ -151,7 +151,7 @@ func (c *Client) GetHealth(ctx context.Context) (*HealthStatus, error) {
 
 // GetReceiptURL constructs the URL for viewing a receipt on the cheki web
 // service. This is the public-facing page where a receipt can be viewed
-// in a browser — distinct from the API endpoint used for verification.
+// in a browser - distinct from the API endpoint used for verification.
 func (c *Client) GetReceiptURL(bank, reference string) string {
 	return fmt.Sprintf("%s/receipt/%s/%s", c.baseURL, bank, reference)
 }
@@ -252,7 +252,7 @@ func (c *Client) do(req *http.Request, target any) error {
 		return nil
 	}
 
-	// All retries exhausted — return the last API error.
+	// All retries exhausted - return the last API error.
 	return lastErr
 }
 

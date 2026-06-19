@@ -1,5 +1,5 @@
 /**
- * Siinqee Bank parser — routes through eBirr platform.
+ * Siinqee Bank parser - routes through eBirr platform.
  *
  * Siinqee (Cooperative Bank of Oromia) doesn't have a standalone
  * public receipt endpoint. Receipts are served through the eBirr

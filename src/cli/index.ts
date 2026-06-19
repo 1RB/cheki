@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * cheki CLI — verify ethiopian receipts from the terminal.
+ * cheki CLI - verify ethiopian receipts from the terminal.
  *
  * Usage:
  *   cheki info                                    List supported banks
@@ -16,7 +16,7 @@ async function main() {
   const command = args[0];
 
   if (!command || command === "--help" || command === "-h") {
-    console.log(`cheki — verify ethiopian receipts for free
+    console.log(`cheki - verify ethiopian receipts for free
 
 Usage:
   cheki info                                      List supported banks

@@ -38,7 +38,7 @@ src/app/api/verify/route.ts   ← thin handler: parse body → verifier.verify()
 src/cli/index.ts              ← CLI: cheki verify <bank> <ref>
 ```
 
-**Key insight:** `banks.json` is the single source of truth. When a bank rotates its URL, patch the JSON — no code change needed.
+**Key insight:** `banks.json` is the single source of truth. When a bank rotates its URL, patch the JSON - no code change needed.
 
 ## Design principles
 

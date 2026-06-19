@@ -16,8 +16,21 @@ export function generateMetadata({ params }: { params: Promise<{ slug: string }>
       title: article.seo.title,
       description: article.seo.description,
       keywords: article.seo.keywords,
-      openGraph: { title: article.seo.title, description: article.seo.description, type: "article", publishedTime: article.date },
-      twitter: { card: "summary_large_image", title: article.seo.title, description: article.seo.description },
+      alternates: {
+        canonical: `/guides/${article.slug}`,
+      },
+      openGraph: {
+        title: article.seo.title,
+        description: article.seo.description,
+        type: "article",
+        publishedTime: article.date,
+        url: `https://cheki.app/guides/${article.slug}`,
+      },
+      twitter: {
+        card: "summary_large_image",
+        title: article.seo.title,
+        description: article.seo.description,
+      },
     };
   });
 }
@@ -41,7 +54,7 @@ function renderRichText(text: string): React.ReactNode[] {
 
   parts.forEach((part, i) => {
     if (/^https?:\/\//.test(part)) {
-      // URL — truncate display if long
+      // URL - truncate display if long
       const display = part.length > 50 ? part.slice(0, 47) + "..." : part;
       nodes.push(
         <a
@@ -55,7 +68,7 @@ function renderRichText(text: string): React.ReactNode[] {
         </a>
       );
     } else if (/^[a-z]+\.et$/i.test(part) || /^[a-z]+\.com\.et$/i.test(part)) {
-      // Domain reference like check.et, verify.et — link to it
+      // Domain reference like check.et, verify.et - link to it
       nodes.push(
         <a
           key={i}
@@ -172,7 +185,7 @@ function renderBlock(block: ContentBlock, key: number) {
           margin: "16px 0", fontSize: "16px", fontStyle: "italic", color: "var(--ink-2)",
         }}>
           {block.text}
-          {block.cite && <cite style={{ display: "block", fontSize: "13px", marginTop: "4px", color: "var(--ink-3)" }}>— {block.cite}</cite>}
+          {block.cite && <cite style={{ display: "block", fontSize: "13px", marginTop: "4px", color: "var(--ink-3)" }}>- {block.cite}</cite>}
         </blockquote>
       );
 
@@ -258,7 +271,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
         </nav>
 
         <div className="two-col" style={{ gap: "40px" }}>
-          {/* TOC sidebar — appears above article on mobile, right side on desktop */}
+          {/* TOC sidebar - appears above article on mobile, right side on desktop */}
           <aside className="toc-sidebar" style={{ order: 1 }}>
             <div className="toc-card" style={{
               padding: "20px",

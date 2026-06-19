@@ -1,15 +1,15 @@
 /**
- * Programmatic SEO pages — search-intent matching.
+ * Programmatic SEO pages - search-intent matching.
  *
  * Each page targets a specific search query that Ethiopian merchants,
  * business owners, and developers actually search for.
  *
  * Categories:
- *   1. "verify [bank] receipt" — per-bank verification guides
- *   2. "check [bank] payment" — payment checking pages
- *   3. "is [bank] receipt real" — fraud prevention pages
- *   4. "free receipt verification ethiopia" — comparison pages
- *   5. "[bank] receipt format" — technical reference pages
+ *   1. "verify [bank] receipt" - per-bank verification guides
+ *   2. "check [bank] payment" - payment checking pages
+ *   3. "is [bank] receipt real" - fraud prevention pages
+ *   4. "free receipt verification ethiopia" - comparison pages
+ *   5. "[bank] receipt format" - technical reference pages
  */
 
 export interface SeoPage {
@@ -33,7 +33,7 @@ export const seoPages: SeoPage[] = [
   // ── CBE ──────────────────────────────────────────────────────────
   {
     slug: "verify-cbe-receipt-online",
-    title: "Verify CBE Receipt Online — Free & Instant | cheki",
+    title: "Verify CBE Receipt Online - Free & Instant | cheki",
     h1: "Verify a Commercial Bank of Ethiopia Receipt Online",
     metaDescription: "Check if a CBE receipt is real or fake. Free, instant, no signup. Paste your FT reference number and account to verify any CBE payment in seconds.",
     keywords: ["verify cbe receipt", "check cbe payment", "cbe receipt verification", "cbe ft reference check", "commercial bank ethiopia receipt online"],
@@ -54,8 +54,8 @@ export const seoPages: SeoPage[] = [
         heading: "What you need to verify a CBE receipt",
         body: "To verify a CBE receipt, you need two pieces of information:",
         bullets: [
-          "FT reference number (e.g. FT26140P01YB) — found on the receipt or in the CBE mobile app transaction details",
-          "Last 8 digits of the receiving account number (e.g. 60536171) — the account that received the payment",
+          "FT reference number (e.g. FT26140P01YB) - found on the receipt or in the CBE mobile app transaction details",
+          "Last 8 digits of the receiving account number (e.g. 60536171) - the account that received the payment",
         ],
       },
       {
@@ -79,7 +79,7 @@ export const seoPages: SeoPage[] = [
   // ── Telebirr ─────────────────────────────────────────────────────
   {
     slug: "verify-telebirr-receipt-online",
-    title: "Verify Telebirr Receipt Online — Free & Instant | cheki",
+    title: "Verify Telebirr Receipt Online - Free & Instant | cheki",
     h1: "Verify a Telebirr Receipt Online",
     metaDescription: "Check if a Telebirr receipt is real or fake. Free, instant, no signup. Paste your transaction ID to verify any Telebirr payment in seconds.",
     keywords: ["verify telebirr receipt", "check telebirr payment", "telebirr receipt verification", "telebirr transaction check", "ethio telecom receipt online"],
@@ -107,7 +107,7 @@ export const seoPages: SeoPage[] = [
           "Verify the transaction ID exists in Telebirr's system",
           "Check that the payer name matches the expected sender",
           "Confirm the amount is correct",
-          "Be suspicious of screenshots — they can be edited",
+          "Be suspicious of screenshots - they can be edited",
         ],
       },
     ],
@@ -117,7 +117,7 @@ export const seoPages: SeoPage[] = [
   // ── BOA ──────────────────────────────────────────────────────────
   {
     slug: "verify-boa-receipt-online",
-    title: "Verify Bank of Abyssinia Receipt Online — Free | cheki",
+    title: "Verify Bank of Abyssinia Receipt Online - Free | cheki",
     h1: "Verify a Bank of Abyssinia Receipt Online",
     metaDescription: "Check if a BOA receipt is real or fake. Free, instant, no signup. Paste your transaction reference and account, or scan and paste the QR payload for inter-bank transfers.",
     keywords: ["verify boa receipt", "bank of abyssinia receipt check", "boa payment verification", "abyssinia bank receipt online", "boa transaction reference", "boa qr code receipt", "verify boa transfer to cbe"],
@@ -153,7 +153,7 @@ export const seoPages: SeoPage[] = [
   // ── M-Pesa ───────────────────────────────────────────────────────
   {
     slug: "verify-mpesa-receipt-online",
-    title: "Verify M-Pesa Ethiopia Receipt Online — Free | cheki",
+    title: "Verify M-Pesa Ethiopia Receipt Online - Free | cheki",
     h1: "Verify an M-Pesa Ethiopia Receipt Online",
     metaDescription: "Check if an M-Pesa Ethiopia receipt is real or fake. Free, instant, no signup. Paste your transaction number to verify any M-Pesa payment.",
     keywords: ["verify mpesa receipt ethiopia", "mpesa receipt check", "safaricom ethiopia receipt verification", "mpesa transaction verify", "mpesa receipt online"],
@@ -180,7 +180,7 @@ export const seoPages: SeoPage[] = [
   // ── General search intent pages ──────────────────────────────────
   {
     slug: "free-receipt-verification-ethiopia",
-    title: "Free Receipt Verification Ethiopia — No API Key, No Signup | cheki",
+    title: "Free Receipt Verification Ethiopia - No API Key, No Signup | cheki",
     h1: "Free Ethiopian Receipt Verification",
     metaDescription: "Verify any Ethiopian bank or mobile wallet receipt for free. CBE, Telebirr, BOA, M-Pesa, Dashen, Awash, and more. No API key, no signup, no limits.",
     keywords: ["free receipt verification ethiopia", "ethiopian receipt check free", "verify payment ethiopia", "receipt verification addis ababa", "bank receipt check ethiopia"],
@@ -217,7 +217,7 @@ export const seoPages: SeoPage[] = [
 
   {
     slug: "how-to-check-fake-receipt-ethiopia",
-    title: "How to Check if a Receipt is Fake in Ethiopia — Guide | cheki",
+    title: "How to Check if a Receipt is Fake in Ethiopia - Guide | cheki",
     h1: "How to Check if a Receipt is Fake",
     metaDescription: "Complete guide to detecting fake Ethiopian bank receipts. Learn how fraudsters forge CBE, Telebirr, and M-Pesa receipts and how to verify any payment instantly.",
     keywords: ["fake receipt ethiopia", "how to check fake receipt", "payment fraud ethiopia", "fake cbe receipt", "fake telebirr receipt", "receipt fraud detection"],
@@ -339,7 +339,7 @@ export const seoPages: SeoPage[] = [
 
   {
     slug: "ethiopian-receipt-api-free",
-    title: "Free Ethiopian Receipt API — No Auth, No Limits | cheki",
+    title: "Free Ethiopian Receipt API - No Auth, No Limits | cheki",
     h1: "Free Ethiopian Receipt Verification API",
     metaDescription: "Free REST API for verifying Ethiopian bank receipts. No API key, no signup, no rate limit. CBE, Telebirr, BOA, M-Pesa. TypeScript SDK and Python library included.",
     keywords: ["ethiopian receipt api", "free receipt api ethiopia", "cbe api", "telebirr api", "bank verification api ethiopia", "receipt verification rest api"],
@@ -362,11 +362,11 @@ export const seoPages: SeoPage[] = [
         heading: "Available endpoints",
         body: "",
         bullets: [
-          "POST /api/verify — verify a single receipt",
-          "POST /api/verify/batch — verify up to 50 receipts in parallel",
-          "GET /api/banks — list all supported banks",
-          "GET /api/health — check endpoint health and latency",
-          "GET /api/receipt — download the original receipt file",
+          "POST /api/verify - verify a single receipt",
+          "POST /api/verify/batch - verify up to 50 receipts in parallel",
+          "GET /api/banks - list all supported banks",
+          "GET /api/health - check endpoint health and latency",
+          "GET /api/receipt - download the original receipt file",
         ],
       },
     ],

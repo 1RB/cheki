@@ -1,5 +1,5 @@
 /**
- * cheki — verify ethiopian receipts for free.
+ * cheki - verify ethiopian receipts for free.
  *
  * Public API. Import from here:
  *   import { Verifier, Receipt, ChekiError } from "@/lib";

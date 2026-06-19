@@ -2,8 +2,8 @@
 
 Supports two verification modes:
 
-* ``--api``    — use the hosted cheki REST API (default for new users).
-* default     — direct verification, fetching bank endpoints locally
+* ``--api``    - use the hosted cheki REST API (default for new users).
+* default     - direct verification, fetching bank endpoints locally
                 (advanced; subject to geo-blocking).
 
 Examples::

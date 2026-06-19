@@ -1,8 +1,8 @@
 /**
- * Manifest loader — reads banks.json and provides typed access.
+ * Manifest loader - reads banks.json and provides typed access.
  *
  * The manifest is the single source of truth for bank configuration.
- * When a bank rotates its URL, patch banks.json — no code change needed.
+ * When a bank rotates its URL, patch banks.json - no code change needed.
  */
 import banksData from "./banks.json";
 import type { BankManifestEntry } from "../core/types";

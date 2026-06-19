@@ -37,6 +37,18 @@ export default function robots(): MetadataRoute.Robots {
         userAgent: "Applebot-Extended",
         allow: "/",
       },
+      {
+        userAgent: "cohere-ai",
+        allow: "/",
+      },
+      {
+        userAgent: "Amazonbot",
+        allow: "/",
+      },
+      {
+        userAgent: "Bytespider",
+        allow: "/",
+      },
     ],
     sitemap: "https://cheki.app/sitemap.xml",
     host: "https://cheki.app",

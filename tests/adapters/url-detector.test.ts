@@ -1,5 +1,5 @@
 /**
- * Tests for URL detector — all known bank URL formats.
+ * Tests for URL detector - all known bank URL formats.
  */
 import { describe, it, expect } from "vitest";
 import { detectBankFromUrl, isUrl } from "@/lib/adapters/url-detector";

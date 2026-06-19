@@ -12,10 +12,10 @@ import 'verify_options.dart';
 /// cheki is a free Ethiopian receipt verification service. This client
 /// provides typed access to the four REST endpoints:
 ///
-/// * [verify] — `POST /api/verify`
-/// * [verifyBatch] — `POST /api/verify/batch`
-/// * [getBanks] — `GET /api/banks`
-/// * [getHealth] — `GET /api/health`
+/// * [verify] - `POST /api/verify`
+/// * [verifyBatch] - `POST /api/verify/batch`
+/// * [getBanks] - `GET /api/banks`
+/// * [getHealth] - `GET /api/health`
 ///
 /// ## Usage
 ///
@@ -282,7 +282,7 @@ class ChekiClient {
         continue;
       }
 
-      // Non-retryable or retries exhausted — validate status and return.
+      // Non-retryable or retries exhausted - validate status and return.
       _checkStatus(response);
       return response;
     }

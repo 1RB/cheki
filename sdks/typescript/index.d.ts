@@ -1,8 +1,8 @@
 /**
- * cheki — TypeScript SDK for the cheki receipt verification API.
+ * cheki - TypeScript SDK for the cheki receipt verification API.
  *
  * Verify Ethiopian bank transfer receipts from CBE, Telebirr, BOA, Dashen,
- * M-Pesa, and more. Zero runtime dependencies — uses the global Fetch API
+ * M-Pesa, and more. Zero runtime dependencies - uses the global Fetch API
  * (Node.js >= 18 or any modern browser).
  *
  * @example
@@ -32,7 +32,7 @@ export interface VerifyOptions {
     qrData?: string;
 }
 /**
- * A receipt to verify — used as input to batch verification.
+ * A receipt to verify - used as input to batch verification.
  *
  * Passed as elements of the array to {@link Cheki.verifyBatch}.
  */
@@ -239,7 +239,7 @@ export declare class ChekiError extends Error {
 export declare class ChekiAPIError extends ChekiError {
     /** HTTP status code returned by the API. */
     readonly statusCode: number;
-    /** Response body — parsed JSON if possible, otherwise the raw text. */
+    /** Response body - parsed JSON if possible, otherwise the raw text. */
     readonly body: unknown;
     /** API endpoint path that was called (e.g. `"/api/verify"`). */
     readonly endpoint: string;
@@ -436,7 +436,7 @@ export declare class Cheki {
     /**
      * Build the URL for viewing a receipt in the cheki web interface.
      *
-     * This is a pure helper — it does **not** make a network request.
+     * This is a pure helper - it does **not** make a network request.
      *
      * @param bank - Bank code.
      * @param reference - Transaction reference number.

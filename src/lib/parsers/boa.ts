@@ -1,5 +1,5 @@
 /**
- * BOA parser — Bank of Abyssinia.
+ * BOA parser - Bank of Abyssinia.
  *
  * Endpoint: https://cs.bankofabyssinia.com/api/onlineSlip/getDetails/?id={ref}{account}
  * Response: JSON with receipt fields

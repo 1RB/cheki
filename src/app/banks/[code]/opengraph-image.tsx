@@ -1,0 +1,164 @@
+import { ImageResponse } from "next/og";
+import { banks, getBank } from "@/lib/banks";
+
+export const alt = "cheki - Bank Receipt Verification";
+export const size = { width: 1200, height: 630 };
+export const contentType = "image/png";
+
+export function generateStaticParams() {
+  return banks.map((b) => ({ code: b.code }));
+}
+
+export default async function OgImage({
+  params,
+}: {
+  params: { code: string };
+}) {
+  const bank = getBank(params.code);
+  const bankName = bank?.shortName || "Bank";
+  const bankFullName = bank?.name || "Ethiopian Bank";
+
+  return new ImageResponse(
+    (
+      <div
+        style={{
+          width: "100%",
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
+          backgroundColor: "#080808",
+          color: "#faf9f6",
+          fontFamily: "system-ui, -apple-system, sans-serif",
+          padding: "60px",
+          position: "relative",
+        }}
+      >
+        {/* Top border accent */}
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            height: "6px",
+            backgroundColor: "#16a34a",
+          }}
+        />
+
+        {/* Logo row */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "14px",
+            marginBottom: "36px",
+          }}
+        >
+          <div
+            style={{
+              width: "52px",
+              height: "52px",
+              backgroundColor: "#16a34a",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              border: "2px solid #16a34a",
+              fontSize: "28px",
+              fontWeight: 800,
+              color: "#fff",
+            }}
+          >
+            c
+          </div>
+          <div
+            style={{
+              fontSize: "36px",
+              fontWeight: 800,
+              letterSpacing: "-0.03em",
+              color: "#faf9f6",
+            }}
+          >
+            cheki
+          </div>
+          <div
+            style={{
+              fontSize: "18px",
+              fontWeight: 600,
+              color: "#888",
+              marginLeft: "8px",
+            }}
+          >
+            {bankName} verification
+          </div>
+        </div>
+
+        {/* Main headline */}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "10px",
+            flex: 1,
+            justifyContent: "center",
+          }}
+        >
+          <div
+            style={{
+              fontSize: "52px",
+              fontWeight: 800,
+              lineHeight: 1.12,
+              letterSpacing: "-0.02em",
+              color: "#faf9f6",
+            }}
+          >
+            Verify {bankFullName}
+          </div>
+          <div
+            style={{
+              fontSize: "52px",
+              fontWeight: 800,
+              lineHeight: 1.12,
+              letterSpacing: "-0.02em",
+              color: "#16a34a",
+            }}
+          >
+            Receipts for free.
+          </div>
+        </div>
+
+        {/* Bottom bar */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "16px",
+            borderTop: "2px solid #222",
+            paddingTop: "24px",
+          }}
+        >
+          <div
+            style={{
+              fontSize: "20px",
+              fontWeight: 600,
+              color: "#16a34a",
+              border: "2px solid #16a34a",
+              padding: "6px 18px",
+            }}
+          >
+            Free - No signup - Instant
+          </div>
+          <div
+            style={{
+              marginLeft: "auto",
+              fontSize: "16px",
+              color: "#666",
+            }}
+          >
+            cheki.app/banks/{params.code}
+          </div>
+        </div>
+      </div>
+    ),
+    { ...size }
+  );
+}

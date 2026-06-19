@@ -34,7 +34,7 @@ export class ZemenParser extends BaseParser {
       return { verified: false };
     }
 
-    // Zemen PDF labels — we extract values by finding each label and slicing to the next
+    // Zemen PDF labels - we extract values by finding each label and slicing to the next
     const labels = [
       "Transaction Reference:",
       "Transaction Date:",
@@ -70,7 +70,7 @@ export class ZemenParser extends BaseParser {
       values[label] = text.slice(valueStart, valueEnd).trim();
     }
 
-    // Parse amount — Zemen amounts may be prefixed with ETB or just numeric
+    // Parse amount - Zemen amounts may be prefixed with ETB or just numeric
     let amount: number | undefined;
     const amountRaw = values["Transaction Amount:"] || values["Total Amount"];
     if (amountRaw) {

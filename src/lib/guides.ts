@@ -458,21 +458,21 @@ export const articles: Article[] = [
           ["Abay Bank", "2010", "279", "Researching"],
           ["Addis International Bank", "2011", "146", "Researching"],
           ["Amhara Bank", "2022", "320", "Researching"],
-          ["Berhan International Bank", "2009", "—", "Researching"],
-          ["Bunna International Bank", "2009", "—", "Researching"],
-          ["Enat Bank", "2013", "—", "Researching (women-focused)"],
-          ["Global Bank Ethiopia", "2012", "—", "Researching"],
-          ["Lion International Bank", "2006", "—", "Researching (aka Anbessa)"],
-          ["Oromia International Bank", "2008", "—", "Researching"],
-          ["Hibret Bank", "1998", "—", "Researching (formerly United Bank)"],
-          ["ZamZam Bank", "2021", "—", "Researching (Islamic)"],
-          ["Hijra Bank", "2021", "—", "Researching (Islamic)"],
-          ["Shabelle Bank", "2021", "—", "Researching"],
-          ["Goh Betoch Bank", "2021", "—", "Researching (housing/mortgage)"],
-          ["Tsedey Bank", "2022", "—", "Researching"],
-          ["Gadaa Bank", "2022", "—", "Researching"],
-          ["Rammis Bank", "2022", "—", "Researching"],
-          ["Development Bank of Ethiopia", "1901", "—", "State development bank (no retail)"],
+          ["Berhan International Bank", "2009", "-", "Researching"],
+          ["Bunna International Bank", "2009", "-", "Researching"],
+          ["Enat Bank", "2013", "-", "Researching (women-focused)"],
+          ["Global Bank Ethiopia", "2012", "-", "Researching"],
+          ["Lion International Bank", "2006", "-", "Researching (aka Anbessa)"],
+          ["Oromia International Bank", "2008", "-", "Researching"],
+          ["Hibret Bank", "1998", "-", "Researching (formerly United Bank)"],
+          ["ZamZam Bank", "2021", "-", "Researching (Islamic)"],
+          ["Hijra Bank", "2021", "-", "Researching (Islamic)"],
+          ["Shabelle Bank", "2021", "-", "Researching"],
+          ["Goh Betoch Bank", "2021", "-", "Researching (housing/mortgage)"],
+          ["Tsedey Bank", "2022", "-", "Researching"],
+          ["Gadaa Bank", "2022", "-", "Researching"],
+          ["Rammis Bank", "2022", "-", "Researching"],
+          ["Development Bank of Ethiopia", "1901", "-", "State development bank (no retail)"],
         ],
       },
       { type: "callout", variant: "tip", title: "Help us add more banks", text: "If you have a receipt from any of these banks with a QR code or receipt URL, contact us on GitHub. We'll investigate the endpoint and add it to cheki for free." },
@@ -825,7 +825,7 @@ export const articles: Article[] = [
     date: "2026-06-18",
     readTime: "5 min",
     content: [
-      { type: "text", text: "Ethiopia's fintech landscape has a peculiar characteristic: many of the most useful services are built on top of public data that anyone can access, yet wrapped in paywalls and closed source code. cheki challenges this model by being completely open source and free." },
+      { type: "text", text: "Ethiopia's fintech scene has a peculiar characteristic: many of the most useful services are built on top of public data that anyone can access, yet wrapped in paywalls and closed source code. cheki challenges this model by being completely open source and free." },
 
       { type: "heading", text: "The problem with closed-source fintech in Ethiopia" },
       { type: "text", text: "When a service like check.et or verify.et is closed source, several things happen:" },
@@ -851,8 +851,8 @@ export const articles: Article[] = [
 
       { type: "callout", variant: "quote", title: "Linus's Law", text: "\"Given enough eyeballs, all bugs are shallow.\" Open source means the code is reviewed by more people, which leads to better quality and faster fixes." },
 
-      { type: "heading", text: "The existing open source landscape" },
-      { type: "text", text: "cheki is not the only open source Ethiopian receipt verification project. Here's the full landscape:" },
+      { type: "heading", text: "Existing open source projects" },
+      { type: "text", text: "cheki is not the only open source Ethiopian receipt verification project. Here's the full picture:" },
       {
         type: "table",
         headers: ["Project", "Language", "Banks", "Stars", "Unique feature"],
@@ -1017,7 +1017,7 @@ export const articles: Article[] = [
 
       { type: "heading", text: "Geo-blocking and how to handle it" },
       { type: "callout", variant: "warning", title: "Telebirr blocks non-Ethiopian IPs", text: "Telebirr's receipt endpoint blocks all requests from IP addresses outside Ethiopia. If cheki's hosted server can't reach Telebirr, you'll get a fallback URL to open the receipt directly in your browser." },
-      { type: "text", text: "If you're in Ethiopia, verification works seamlessly. If you're outside Ethiopia:" },
+      { type: "text", text: "If you're in Ethiopia, verification works smoothly. If you're outside Ethiopia:" },
       { type: "list", items: [
         "Use the 'Receipt URL' tab and paste the full Telebirr receipt URL. Your browser will fetch it directly using your Ethiopian IP if you're on an Ethiopian network.",
         "Self-host cheki with Docker on an Ethiopian server for reliable server-side verification.",
@@ -1253,7 +1253,7 @@ export const articles: Article[] = [
     slug: "contribute-new-bank",
     title: "How to Add a New Bank to cheki (Community Guide)",
     description:
-      "cheki supports 31 Ethiopian banks but only 9 are live. Here's how you can help add the rest — no coding required, just share a receipt. For developers: how to write a parser and submit a PR.",
+      "cheki supports 31 Ethiopian banks but only 9 are live. Here's how you can help add the rest - no coding required, just share a receipt. For developers: how to write a parser and submit a PR.",
     category: "open-source",
     excerpt:
       "18 Ethiopian banks still need receipt endpoints. You can help by sharing a receipt, writing a parser, or reporting broken endpoints. Here's the complete community contribution guide.",
@@ -1270,22 +1270,22 @@ export const articles: Article[] = [
         type: "list",
         items: [
           "A screenshot of the full receipt (or the receipt URL if the bank has a share feature)",
-          "The QR code on the receipt (if there is one) — scan it with any QR reader and send us the decoded text",
+          "The QR code on the receipt (if there is one) - scan it with any QR reader and send us the decoded text",
           "The transaction reference number",
           "The bank name",
         ],
       },
       { type: "text", text: "Send it via GitHub (open an issue with the 'new-bank' label) or via Telegram. We'll reverse-engineer the endpoint and add the bank to cheki, usually within a day." },
-      { type: "callout", variant: "warning", title: "Privacy", text: "Redact or blur sensitive information like full account numbers before sharing. We only need the receipt structure, the reference number, and the QR code payload — not your full account details." },
+      { type: "callout", variant: "warning", title: "Privacy", text: "Redact or blur sensitive information like full account numbers before sharing. We only need the receipt structure, the reference number, and the QR code payload - not your full account details." },
 
       { type: "heading", text: "Option 2: Write a parser (for developers)" },
-      { type: "text", text: "If you can code, you can add a bank yourself. cheki's architecture is hexagonal — each bank is a self-contained parser module. Here's the process:" },
+      { type: "text", text: "If you can code, you can add a bank yourself. cheki's architecture is hexagonal - each bank is a self-contained parser module. Here's the process:" },
       {
         type: "steps",
         items: [
           { title: "Fork the repo", text: "Go to github.com/1RB/cheki, click Fork, clone your fork locally." },
           { title: "Create a parser file", text: "Create src/lib/parsers/{bankcode}.ts. Extend BaseParser and implement buildUrl() and parse(). Look at telebirr.ts or dashen.ts for examples." },
-          { title: "Register the parser", text: "Add your parser to src/lib/parsers/index.ts — one import and one registerParser() call." },
+          { title: "Register the parser", text: "Add your parser to src/lib/parsers/index.ts - one import and one registerParser() call." },
           { title: "Add the bank to banks.ts", text: "Add a bank entry with code, name, endpoint, description, FAQ, and SEO metadata. Set status to 'live' if the endpoint works." },
           { title: "Write tests", text: "Create tests/parsers/{bankcode}.test.ts. Test buildUrl(), parse() with sample data, and edge cases (not found, empty response)." },
           { title: "Submit a PR", text: "Push to your fork and open a pull request. Include the receipt URL format in the PR description so we can verify." },
@@ -1305,7 +1305,7 @@ export const articles: Article[] = [
           "What the receipt looks like in the bank's own app (screenshot if possible)",
         ],
       },
-      { type: "text", text: "Because cheki is open source, anyone can submit a fix — not just the original developers. This is the advantage of community-built tools over closed services like check.et and verify.et." },
+      { type: "text", text: "Because cheki is open source, anyone can submit a fix - not just the original developers. This is the advantage of community-built tools over closed services like check.et and verify.et." },
 
       { type: "heading", text: "Current coverage status" },
       {
@@ -1320,7 +1320,7 @@ export const articles: Article[] = [
 
       { type: "heading", text: "Why community matters for Ethiopian fintech" },
       { type: "text", text: "Ethiopia has 30+ licensed banks, but most receipt verification services (check.et, verify.et, qbirr, tinaverify) only support 6-10. The long tail of smaller and newer banks gets ignored because it's not profitable enough for paid services." },
-      { type: "text", text: "Open source changes this. Every contribution — whether it's a receipt screenshot or a full parser — helps cover a bank that paid services won't bother with. The community can move faster than any single company." },
+      { type: "text", text: "Open source changes this. Every contribution - whether it's a receipt screenshot or a full parser - helps cover a bank that paid services won't bother with. The community can move faster than any single company." },
       { type: "callout", variant: "success", title: "Every receipt counts", text: "Even one receipt from a bank we don't support can unlock verification for every cheki user. You don't need to write code to make a difference." },
     ],
     faq: [
