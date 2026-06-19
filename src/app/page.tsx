@@ -23,6 +23,16 @@ export default function Home() {
   const [showQrPaste, setShowQrPaste] = useState(false);
   const [qrData, setQrData] = useState("");
   const [batchResults, setBatchResults] = useState<{ fileName: string; status: "scanning" | "verifying" | "done" | "error"; data?: VerifyResult; error?: string }[]>([]);
+  // Smart fallback state for geo-blocked banks (Telebirr, M-Pesa)
+  const [showFallback, setShowFallback] = useState(false);
+  const [fallbackBankUrl, setFallbackBankUrl] = useState("");
+  const [pasteContent, setPasteContent] = useState("");
+  const [fallbackLoading, setFallbackLoading] = useState(false);
+  const [fallbackResult, setFallbackResult] = useState<VerifyResult | null>(null);
+  const [fallbackError, setFallbackError] = useState<string | null>(null);
+  const [fallbackTab, setFallbackTab] = useState<"paste" | "bookmarklet">("paste");
+  const [isMobile, setIsMobile] = useState(false);
+  const [bookmarkletCopied, setBookmarkletCopied] = useState(false);
   const resultRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -35,6 +45,7 @@ export default function Home() {
   const isGeoBlocked = selectedBank.geoBlocked;
 
   useEffect(() => {
+    setIsMobile(/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent));
     try {
       const h = localStorage.getItem("cheki_history");
       if (h) setHistory(JSON.parse(h).slice(0, 5));
@@ -109,6 +120,13 @@ export default function Home() {
     }
   }, [verifyQr]);
 
+  // Build fallback URL from the selected bank + reference
+  const buildFallbackUrl = useCallback((bankCode: string, ref: string): string => {
+    if (bankCode === "telebirr") return `https://transactioninfo.ethiotelecom.et/receipt/${ref}`;
+    if (bankCode === "mpesa") return `https://m-pesabusiness.safaricom.et/api/receipt/getReceipt?trxNo=${ref}`;
+    return "";
+  }, []);
+
   const handleVerify = useCallback(async () => {
     if (showQrPaste && qrData.trim()) {
       await verifyQr(qrData);
@@ -128,8 +146,21 @@ export default function Home() {
       if (!data.success) {
         setError(data.error || "Verification failed.");
         setResult(data);
+        // Trigger smart fallback for geo-blocked banks
+        if (data.fallbackUrl || isGeoBlocked) {
+          const fbUrl = data.fallbackUrl || buildFallbackUrl(bank, reference.trim());
+          if (fbUrl) {
+            setShowFallback(true);
+            setFallbackBankUrl(fbUrl);
+            setFallbackTab(isMobile ? "paste" : "bookmarklet");
+            setFallbackResult(null);
+            setFallbackError(null);
+            setPasteContent("");
+          }
+        }
       } else {
         setResult(data);
+        setShowFallback(false);
         const entry = { bank, ref: reference.trim(), date: new Date().toISOString() };
         const newHistory = [entry, ...history.filter((h) => h.ref !== reference.trim())].slice(0, 5);
         setHistory(newHistory);
@@ -140,7 +171,7 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
-  }, [bank, reference, accountNumber, isDisabled, history, showQrPaste, qrData, verifyQr]);
+  }, [bank, reference, accountNumber, isDisabled, history, showQrPaste, qrData, verifyQr, isGeoBlocked, isMobile, buildFallbackUrl]);
 
   useEffect(() => {
     if (result && result.success && resultRef.current) {
@@ -404,6 +435,93 @@ export default function Home() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  // ── Smart fallback for geo-blocked banks ──────────────────────────────
+  // When Telebirr/M-Pesa verification fails (server can't reach the bank),
+  // the user can verify from their own browser. Two paths:
+  //   1. Copy-paste (mobile): open receipt, select all, copy, paste here
+  //   2. Bookmarklet (desktop): one-time install, then one click per receipt
+
+  const handleFallbackVerify = useCallback(async () => {
+    if (!pasteContent.trim() || !bank) return;
+    setFallbackLoading(true);
+    setFallbackError(null);
+    setFallbackResult(null);
+    try {
+      const resp = await fetch("/api/parse", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bank, content: pasteContent.trim(), url: fallbackBankUrl }),
+      });
+      const data: VerifyResult = await resp.json();
+      if (!data.success) {
+        setFallbackError(data.error || "Could not parse receipt.");
+      } else {
+        setFallbackResult(data);
+      }
+    } catch {
+      setFallbackError("Network error. Try again.");
+    } finally {
+      setFallbackLoading(false);
+    }
+  }, [bank, pasteContent, fallbackBankUrl]);
+
+  // Generate the bookmarklet JS as a javascript: URL
+  const bookmarkletCode = `(function(){
+    var url=location.href;
+    var bank='telebirr';
+    var isMpesa=url.indexOf('safaricom.et')!==-1||url.indexOf('m-pesa')!==-1;
+    if(isMpesa)bank='mpesa';
+    else if(url.indexOf('ethiotelecom.et')!==-1)bank='telebirr';
+    var html;
+    if(isMpesa){
+      html=document.body.textContent||document.body.innerText||'';
+    }else{
+      html=document.documentElement.outerHTML;
+    }
+    var o=document.createElement('div');
+    o.id='cheki-overlay';
+    o.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.75);z-index:999999;display:flex;align-items:center;justify-content:center;font-family:system-ui,-apple-system,sans-serif';
+    var b=document.createElement('div');
+    b.style.cssText='background:#fff;border-radius:12px;padding:24px;max-width:380px;width:90%;max-height:80vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,0.2)';
+    b.innerHTML='<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px"><div style="width:18px;height:18px;border:2.5px solid #16a34a;border-top-color:transparent;border-radius:50%;animation:cheki-spin 0.8s linear infinite"></div><span style="font-size:15px;font-weight:600;color:#1a1a1a">cheki is verifying...</span></div><style>@keyframes cheki-spin{to{transform:rotate(360deg)}}</style>';
+    o.appendChild(b);
+    document.body.appendChild(o);
+    o.addEventListener('click',function(e){if(e.target===o)o.remove();});
+    fetch('https://chekiapp.vercel.app/api/parse',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({bank:bank,html:html,url:url})})
+    .then(function(r){return r.json();})
+    .then(function(d){
+      if(d.success){
+        var rows=[];
+        if(d.senderName)rows.push(['From',d.senderName]);
+        if(d.receiverName)rows.push(['To',d.receiverName]);
+        if(d.bankAccountName)rows.push(['Account Name',d.bankAccountName]);
+        if(d.bankAccountNumber)rows.push(['Account',d.bankAccountNumber]);
+        if(d.amount!=null)rows.push(['Amount',(d.amount.toLocaleString?d.amount.toLocaleString():d.amount)+' '+(d.currency||'ETB')]);
+        if(d.totalPaid!=null)rows.push(['Total Paid',(d.totalPaid.toLocaleString?d.totalPaid.toLocaleString():d.totalPaid)+' ETB']);
+        if(d.date)rows.push(['Date',d.date]);
+        if(d.reference)rows.push(['Reference',d.reference]);
+        if(d.invoiceNumber&&d.invoiceNumber!==d.reference)rows.push(['Invoice',d.invoiceNumber]);
+        if(d.transactionStatus)rows.push(['Status',d.transactionStatus]);
+        if(d.paymentMode)rows.push(['Mode',d.paymentMode]);
+        var rh=rows.map(function(r){return '<div style="display:flex;justify-content:space-between;padding:7px 0;font-size:14px;border-bottom:1px solid #f0f0f0"><span style="color:#888;flex-shrink:0">'+r[0]+'</span><span style="color:#1a1a1a;font-weight:500;text-align:right;word-break:break-word">'+r[1]+'</span></div>';}).join('');
+        b.innerHTML='<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="11" fill="#16a34a"/><path d="M7 12.5l3 3 7-7" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg><span style="font-size:16px;font-weight:700;color:#1a1a1a">Receipt verified</span></div><div style="border-top:1px solid #eee;padding-top:8px">'+rh+'</div><div style="display:flex;gap:8px;margin-top:16px"><a href="https://chekiapp.vercel.app" target="_blank" style="flex:1;text-align:center;padding:10px;border:1px solid #16a34a;border-radius:8px;background:#fff;color:#16a34a;font-size:13px;font-weight:600;text-decoration:none">Open cheki</a><button onclick="document.getElementById(\\'cheki-overlay\\').remove()" style="flex:1;padding:10px;border:none;border-radius:8px;background:#16a34a;color:#fff;font-size:13px;font-weight:600;cursor:pointer">Done</button></div>';
+      }else{
+        b.innerHTML='<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px"><svg width="20" height="20" viewBox="0 0 24 24" fill="#dc2626"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15h2v-2h-2v2zm0-4h2V7h-2v6z"/></svg><span style="font-size:15px;font-weight:600;color:#dc2626">Could not verify</span></div><p style="font-size:13px;color:#666;margin-bottom:16px;line-height:1.5">'+(d.error||'Make sure you are on the bank receipt page.')+'</p><button onclick="document.getElementById(\\'cheki-overlay\\').remove()" style="width:100%;padding:10px;border:none;border-radius:8px;background:#f3f4f6;color:#1a1a1a;font-size:14px;font-weight:600;cursor:pointer">Close</button>';
+      }
+    })
+    .catch(function(){
+      b.innerHTML='<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px"><span style="font-size:15px;font-weight:600;color:#dc2626">Network error</span></div><p style="font-size:13px;color:#666;margin-bottom:16px">Could not reach cheki. Check your internet.</p><button onclick="document.getElementById(\\'cheki-overlay\\').remove()" style="width:100%;padding:10px;border:none;border-radius:8px;background:#f3f4f6;color:#1a1a1a;font-size:14px;font-weight:600;cursor:pointer">Close</button>';
+    });
+  })();`;
+
+  const bookmarkletUrl = `javascript:${encodeURIComponent(bookmarkletCode)}`;
+
+  const copyBookmarklet = () => {
+    navigator.clipboard.writeText(bookmarkletUrl);
+    setBookmarkletCopied(true);
+    setTimeout(() => setBookmarkletCopied(false), 3000);
+  };
+
   const features = [
     { icon: BoltIcon, title: "1-3 second verification", body: "Fetch receipts from bank endpoints in real time. Fast enough for checkout counters." },
     { icon: Key01Icon, title: "No API key, no signup", body: "Start verifying immediately. No account, no business plan, no credit limit." },
@@ -501,7 +619,7 @@ export default function Home() {
                     <Icon icon={Alert01Icon} size={16} color="#92400e" />
                     <p style={{ fontSize: "12px", color: "#92400e", lineHeight: 1.5 }}>
                       This bank blocks requests from outside Ethiopia.{" "}
-                      <a href="https://github.com/1RB/cheki#self-hosting" target="_blank" rel="noopener" style={{ color: "#92400e", fontWeight: 600, textDecoration: "underline" }}>Self-host</a> or use receipt URL mode.
+                      <a href="https://github.com/1RB/cheki#self-hosting" target="_blank" rel="noopener" style={{ color: "#92400e", fontWeight: 600, textDecoration: "underline" }}>Self-host</a>, or just click Verify and we'll guide you through a 10-second browser fallback.
                     </p>
                   </div>
                 )}
@@ -623,11 +741,10 @@ export default function Home() {
         )}
 
         {/* Error / Fallback */}
-        {error && (
+        {error && !showFallback && (
           <section className="container-narrow" style={{ marginBottom: "32px", padding: "0 24px" }}>
-            <div className="t-shake" style={{ padding: "16px 20px", borderRadius: "8px", background: result?.fallbackUrl ? "var(--amber-light)" : "var(--red-light)", border: `1px solid ${result?.fallbackUrl ? "#fde68a" : "#fecaca"}` }}>
-              <p style={{ color: result?.fallbackUrl ? "#92400e" : "var(--red)", fontSize: "14px", fontWeight: 500, marginBottom: result?.fallbackUrl ? "12px" : 0 }}>{error}</p>
-              {result?.fallbackUrl && <a href={result.fallbackUrl} target="_blank" rel="noopener noreferrer" style={{ display: "inline-block", padding: "8px 16px", borderRadius: "6px", background: "var(--green)", color: "#fff", fontSize: "14px", fontWeight: 600 }}>Open Receipt</a>}
+            <div className="t-shake" style={{ padding: "16px 20px", borderRadius: "8px", background: "var(--red-light)", border: "1px solid #fecaca" }}>
+              <p style={{ color: "var(--red)", fontSize: "14px", fontWeight: 500 }}>{error}</p>
               {error && bank === "boa" && (error.includes("Invalid reference") || error.includes("Receipt not found") || error.includes("not found or invalid")) && (
                 <div style={{ marginTop: "12px", padding: "12px 14px", borderRadius: "8px", background: "var(--surface)", border: "1px solid var(--border)" }}>
                   <p style={{ fontSize: "13px", color: "var(--ink-2)", marginBottom: "8px" }}>This is likely an inter-bank transfer (BOA to CBE or another bank). BOA's API doesn't index these. Try scanning the QR code on the receipt instead.</p>
@@ -644,6 +761,138 @@ export default function Home() {
                   </div>
                 </div>
               )}
+            </div>
+          </section>
+        )}
+
+        {/* Smart Fallback for geo-blocked banks */}
+        {showFallback && (
+          <section className="container-narrow" style={{ marginBottom: "32px", padding: "0 24px" }}>
+            <div className="fade-up" style={{ borderRadius: "12px", background: "var(--amber-light)", border: "1px solid #fde68a", overflow: "hidden" }}>
+              {/* Header */}
+              <div style={{ padding: "16px 20px", borderBottom: "1px solid #fde68a" }}>
+                <div style={{ display: "flex", alignItems: "flex-start", gap: "10px" }}>
+                  <Icon icon={Alert01Icon} size={20} color="#92400e" />
+                  <div style={{ flex: 1 }}>
+                    <p style={{ fontSize: "15px", fontWeight: 700, color: "#92400e", marginBottom: "4px" }}>
+                      {selectedBank.name} blocks cheki's server
+                    </p>
+                    <p style={{ fontSize: "13px", color: "#92400e", lineHeight: 1.5 }}>
+                      The receipt endpoint only allows Ethiopian IP addresses. But your browser can reach it. Verify in 10 seconds:
+                    </p>
+                  </div>
+                  <button onClick={() => setShowFallback(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "#92400e", fontSize: "18px", padding: "0 4px", lineHeight: 1 }}>x</button>
+                </div>
+              </div>
+
+              {/* Step 1: Open receipt */}
+              <div style={{ padding: "14px 20px", borderBottom: "1px solid #fde68a" }}>
+                <p style={{ fontSize: "12px", fontWeight: 600, color: "#92400e", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "8px" }}>Step 1: Open your receipt</p>
+                <a href={fallbackBankUrl} target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", padding: "10px 16px", borderRadius: "8px", background: "var(--green)", color: "#fff", fontSize: "14px", fontWeight: 600, textDecoration: "none", width: "fit-content" }}>
+                  <Icon icon={ArrowRight01Icon} size={16} color="#fff" />
+                  Open receipt page
+                </a>
+                <p style={{ fontSize: "11px", color: "#92400e", marginTop: "6px", fontFamily: "var(--mono)", wordBreak: "break-all", opacity: 0.7 }}>{fallbackBankUrl}</p>
+              </div>
+
+              {/* Step 2: Bring data back, tabs */}
+              <div style={{ padding: "14px 20px" }}>
+                <p style={{ fontSize: "12px", fontWeight: 600, color: "#92400e", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "10px" }}>Step 2: Bring the data back to cheki</p>
+
+                {/* Tab switcher */}
+                <div style={{ display: "flex", gap: "0", marginBottom: "14px", borderBottom: "1px solid #fde68a" }}>
+                  <button onClick={() => setFallbackTab("paste")} style={{ padding: "8px 14px", fontSize: "13px", fontWeight: 600, border: "none", borderBottom: fallbackTab === "paste" ? "2px solid #92400e" : "2px solid transparent", background: "transparent", color: fallbackTab === "paste" ? "#92400e" : "#b45309", cursor: "pointer", marginBottom: "-1px" }}>
+                    Copy and Paste {isMobile ? "(recommended)" : ""}
+                  </button>
+                  <button onClick={() => setFallbackTab("bookmarklet")} style={{ padding: "8px 14px", fontSize: "13px", fontWeight: 600, border: "none", borderBottom: fallbackTab === "bookmarklet" ? "2px solid #92400e" : "2px solid transparent", background: "transparent", color: fallbackTab === "bookmarklet" ? "#92400e" : "#b45309", cursor: "pointer", marginBottom: "-1px" }}>
+                    Bookmarklet {!isMobile ? "(recommended)" : ""}
+                  </button>
+                </div>
+
+                {/* Paste tab */}
+                {fallbackTab === "paste" && (
+                  <div className="fade-in">
+                    <div style={{ fontSize: "13px", color: "#92400e", lineHeight: 1.6, marginBottom: "10px" }}>
+                      <p style={{ marginBottom: "4px" }}>1. Open the receipt page (Step 1 above)</p>
+                      <p style={{ marginBottom: "4px" }}>2. Long press on the page, then Select All, then Copy</p>
+                      <p style={{ marginBottom: "10px" }}>3. Come back here and paste into the box below</p>
+                    </div>
+                    <textarea
+                      value={pasteContent}
+                      onChange={(e) => setPasteContent(e.target.value)}
+                      placeholder="Paste the receipt page content here..."
+                      style={{ width: "100%", padding: "12px 14px", fontSize: "13px", border: "1px solid #fde68a", borderRadius: "8px", background: "#fff", color: "var(--ink)", fontFamily: "var(--mono)", minHeight: "120px", resize: "vertical" }}
+                      spellCheck={false}
+                    />
+                    <button
+                      onClick={handleFallbackVerify}
+                      disabled={fallbackLoading || !pasteContent.trim()}
+                      style={{ width: "100%", marginTop: "10px", padding: "12px 20px", fontSize: "14px", fontWeight: 600, border: "none", borderRadius: "8px", background: fallbackLoading || !pasteContent.trim() ? "#d4d4d4" : "var(--green)", color: fallbackLoading || !pasteContent.trim() ? "#999" : "#fff", cursor: fallbackLoading || !pasteContent.trim() ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", minHeight: "44px" }}
+                    >
+                      {fallbackLoading ? (<><span className="spin" style={{ width: "16px", height: "16px", border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "#fff", borderRadius: "50%", display: "inline-block" }} /> Parsing...</>) : "Verify pasted content"}
+                    </button>
+                    {fallbackError && (
+                      <div className="t-shake" style={{ marginTop: "10px", padding: "10px 14px", borderRadius: "8px", background: "var(--red-light)", border: "1px solid #fecaca" }}>
+                        <p style={{ fontSize: "13px", color: "var(--red)" }}>{fallbackError}</p>
+                      </div>
+                    )}
+                    {fallbackResult && fallbackResult.success && (
+                      <div className="fade-up" style={{ marginTop: "10px" }}>
+                        <ReceiptCard result={fallbackResult} copied={copied} onCopy={copyResult} />
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Bookmarklet tab */}
+                {fallbackTab === "bookmarklet" && (
+                  <div className="fade-in">
+                    <div style={{ fontSize: "13px", color: "#92400e", lineHeight: 1.6, marginBottom: "12px" }}>
+                      <p style={{ marginBottom: "6px", fontWeight: 600 }}>One-time setup (30 seconds):</p>
+                      <p style={{ marginBottom: "4px" }}>1. Drag the button below to your bookmarks bar</p>
+                      <p style={{ marginBottom: "4px" }}>2. Open any Telebirr or M-Pesa receipt page</p>
+                      <p style={{ marginBottom: "10px" }}>3. Click the "Verify with cheki" bookmark</p>
+                    </div>
+
+                    {/* Draggable bookmarklet */}
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "12px" }}>
+                      <a
+                        href={bookmarkletUrl}
+                        onClick={(e) => { e.preventDefault(); copyBookmarklet(); }}
+                        style={{
+                          display: "inline-flex", alignItems: "center", gap: "6px",
+                          padding: "10px 18px", borderRadius: "8px",
+                          background: "var(--green)", color: "#fff",
+                          fontSize: "14px", fontWeight: 600, textDecoration: "none",
+                          cursor: "grab", userSelect: "none",
+                          border: "2px dashed rgba(255,255,255,0.4)",
+                        }}
+                        title="Drag me to your bookmarks bar"
+                      >
+                        <Icon icon={CheckmarkCircle01Icon} size={16} color="#fff" />
+                        Verify with cheki
+                      </a>
+                      <span style={{ fontSize: "11px", color: "#92400e", opacity: 0.7 }}>
+                        {isMobile ? "Long press, copy, then add as bookmark" : "Drag to bookmarks bar"}
+                      </span>
+                    </div>
+
+                    {bookmarkletCopied && (
+                      <div className="fade-in" style={{ padding: "8px 12px", borderRadius: "6px", background: "var(--green-light)", border: "1px solid var(--green-light)", marginBottom: "10px" }}>
+                        <p style={{ fontSize: "12px", color: "var(--green-dark)", fontWeight: 500 }}>
+                          Copied. On mobile: create a new bookmark, paste this as the URL. On desktop: drag to your bookmarks bar.
+                        </p>
+                      </div>
+                    )}
+
+                    <div style={{ padding: "12px 14px", borderRadius: "8px", background: "rgba(255,255,255,0.5)", border: "1px solid #fde68a" }}>
+                      <p style={{ fontSize: "12px", color: "#92400e", lineHeight: 1.5 }}>
+                        After installing, the bookmarklet reads the receipt page and sends it to cheki for parsing. An overlay appears on the page showing the verified result. No data is stored.
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </section>
         )}
