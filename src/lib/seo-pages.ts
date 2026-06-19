@@ -119,14 +119,15 @@ export const seoPages: SeoPage[] = [
     slug: "verify-boa-receipt-online",
     title: "Verify Bank of Abyssinia Receipt Online — Free | cheki",
     h1: "Verify a Bank of Abyssinia Receipt Online",
-    metaDescription: "Check if a BOA receipt is real or fake. Free, instant, no signup. Paste your transaction reference and account to verify any Bank of Abyssinia payment.",
-    keywords: ["verify boa receipt", "bank of abyssinia receipt check", "boa payment verification", "abyssinia bank receipt online", "boa transaction reference"],
+    metaDescription: "Check if a BOA receipt is real or fake. Free, instant, no signup. Paste your transaction reference and account, or scan and paste the QR payload for inter-bank transfers.",
+    keywords: ["verify boa receipt", "bank of abyssinia receipt check", "boa payment verification", "abyssinia bank receipt online", "boa transaction reference", "boa qr code receipt", "verify boa transfer to cbe"],
     intent: "transactional",
     bankCode: "boa",
     faq: [
       { q: "How do I verify a Bank of Abyssinia receipt?", a: "Select Bank of Abyssinia, paste your transaction reference number, enter the last 5 digits of the receiving account, and click Verify. cheki fetches the receipt from BOA's public API and returns structured JSON." },
-      { q: "Do I need an account number for BOA?", a: "Yes. BOA requires the transaction reference plus the last 5 digits of the receiving account number. The endpoint URL combines both into a single ID parameter." },
+      { q: "Do I need an account number for BOA?", a: "For normal API lookup, yes. BOA requires the transaction reference plus the last 5 digits of the receiving account number. For inter-bank transfers, you can use the QR code payload instead." },
       { q: "Does BOA use an API or PDF?", a: "Bank of Abyssinia uses a JSON API at cs.bankofabyssinia.com. This is faster than CBE's PDF system and returns structured data directly, making it more reliable for automated verification." },
+      { q: "What if BOA's API returns 'Invalid reference number'?", a: "Inter-bank transfers (e.g., FT... references sent to CBE) are not exposed in BOA's API. In that case, scan the QR code on the receipt and paste the payload into cheki. cheki decrypts it with the key embedded in BOA's public receipt web app." },
     ],
     sections: [
       {
@@ -134,11 +135,15 @@ export const seoPages: SeoPage[] = [
         body: "Bank of Abyssinia publishes transaction receipts via a JSON API at https://cs.bankofabyssinia.com/api/onlineSlip/getDetails/?id={REFERENCE}{ACCOUNT_SUFFIX}. The response is a JSON object with structured fields: source account name, receiver name, transferred amount, transaction date, and reference number. No PDF parsing needed.",
       },
       {
+        heading: "QR code verification for inter-bank transfers",
+        body: "BOA's JSON API does not recognize inter-bank transfer references. However, the QR code on the receipt is an AES-256-CBC encrypted CSV payload that contains the full transaction details. cheki decrypts it locally using the key exposed in BOA's receipt web app, so you can verify transfers to CBE and other banks even when the API fails.",
+      },
+      {
         heading: "What you need to verify a BOA receipt",
-        body: "To verify a Bank of Abyssinia receipt, you need:",
+        body: "To verify a Bank of Abyssinia receipt, you need one of:",
         bullets: [
-          "Transaction reference number (e.g. AB12345)",
-          "Last 5 digits of the receiving account number",
+          "Transaction reference number + last 5 digits of the receiving account (for same-bank transfers)",
+          "QR code payload from the receipt (for inter-bank transfers)",
         ],
       },
     ],

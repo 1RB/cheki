@@ -24,11 +24,12 @@ export async function POST(request: NextRequest) {
     }
 
     const results = await verifier.verifyBatch(
-      receipts.map((r: { bank: string; reference: string; accountNumber?: string; phoneNumber?: string }) => ({
+      receipts.map((r: { bank: string; reference?: string; accountNumber?: string; phoneNumber?: string; qrData?: string }) => ({
         bank: r.bank,
         reference: r.reference,
         accountNumber: r.accountNumber,
         phoneNumber: r.phoneNumber,
+        qrData: r.qrData,
       }))
     );
 

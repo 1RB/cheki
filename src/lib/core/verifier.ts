@@ -132,9 +132,17 @@ export class Verifier {
       });
     }
 
-    // Fetch receipt data
-    const fallbackUrl = parser.buildUrl(reference, accountNumber, phoneNumber);
-    const fetchResult = await parser.fetchReceipt(reference, accountNumber, phoneNumber, { fallbackUrl });
+    // Fetch receipt data (reference is guaranteed here because qrData path is handled above)
+    if (!reference) {
+      return err({
+        kind: "MISSING_INPUT",
+        field: "reference",
+        message: "Reference number or receipt URL is required.",
+      });
+    }
+    const ref = reference;
+    const fallbackUrl = parser.buildUrl(ref, accountNumber, phoneNumber);
+    const fetchResult = await parser.fetchReceipt(ref, accountNumber, phoneNumber, { fallbackUrl });
 
     if (!fetchResult.ok) {
       return fetchResult;
@@ -166,7 +174,7 @@ export class Verifier {
         ...parsed,
         bank: manifestEntry.name,
         bankCode: manifestEntry.id,
-        reference,
+        reference: ref,
         sourceUrl: fallbackUrl,
         durationMs,
       });
@@ -195,7 +203,7 @@ export class Verifier {
         ...parsed,
         bank: manifestEntry.name,
         bankCode: manifestEntry.id,
-        reference: parsed.reference || reference,
+        reference: parsed.reference || ref,
         sourceUrl: fallbackUrl,
         durationMs,
       });
@@ -215,7 +223,7 @@ export class Verifier {
       ...parsed,
       bank: manifestEntry.name,
       bankCode: manifestEntry.id,
-      reference: parsed.reference || reference,
+      reference: parsed.reference || ref,
       sourceUrl: fallbackUrl,
       durationMs,
     });

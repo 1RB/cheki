@@ -149,13 +149,18 @@ export default function DocsPage() {
               <Code code="https://cheki-pi.vercel.app" id="base" />
 
               <SectionTitle id="verify">POST /api/verify</SectionTitle>
-              <EndpointHeader method="POST" path="/api/verify" desc="Verify a single receipt. Send bank code, reference, and (for CBE/BOA) account number." />
-              <p style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink-3)", marginBottom: "8px" }}>Request body</p>
+              <EndpointHeader method="POST" path="/api/verify" desc="Verify a single receipt. Send bank code, reference, and (for CBE/BOA) account number. For BOA inter-bank transfers, send the QR payload in qrData instead." />
+              <p style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink-3)", marginBottom: "8px" }}>Request body (CBE)</p>
               <Code code={`{
   "bank": "cbe",
   "reference": "FT26140P01YB",
   "accountNumber": "1000560536171"
 }`} id="verify_req" />
+              <p style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink-3)", marginBottom: "8px" }}>Request body (BOA QR code)</p>
+              <Code code={`{
+  "bank": "boa",
+  "qrData": "3cHRaxVjn/pySp..."
+}`} id="verify_qr_req" />
               <p style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink-3)", marginBottom: "8px" }}>Response (200)</p>
               <Code code={`{
   "success": true,
@@ -221,6 +226,7 @@ print(result.to_dict())`} id="py" />
               <Code code={`npx cheki info
 npx cheki verify cbe FT26140P01YB -a 1000560536171
 npx cheki verify telebirr CHQ0FJ403O
+npx cheki verify-qr boa 3cHRaxVjn/pySp...
 npx cheki health`} id="cli" />
 
               <SectionTitle id="curl">cURL</SectionTitle>

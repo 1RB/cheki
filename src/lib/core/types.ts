@@ -95,7 +95,7 @@ export interface Receipt {
 
 export interface VerifyRequest {
   bank: string;
-  reference: string;
+  reference?: string;
   accountNumber?: string;
   phoneNumber?: string;
   qrData?: string;

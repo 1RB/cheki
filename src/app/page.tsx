@@ -17,7 +17,8 @@ export default function Home() {
   const [copied, setCopied] = useState(false);
   const [history, setHistory] = useState<{ bank: string; ref: string; date: string }[]>([]);
   const [showScanner, setShowScanner] = useState(false);
-  const [inputMode, setInputMode] = useState<"reference" | "url">("reference");
+  const [inputMode, setInputMode] = useState<"reference" | "url" | "qr">("reference");
+  const [qrData, setQrData] = useState("");
   const resultRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -43,12 +44,48 @@ export default function Home() {
       setInputMode("url");
       return;
     }
+    if (isBoaQrPayload(trimmed)) {
+      setInputMode("qr");
+      setQrData(trimmed);
+      setReference("");
+      return;
+    }
     setInputMode("reference");
     const detected = detectBank(trimmed);
     if (detected && detected !== bank) setBank(detected as BankCode);
   }, [reference]);
 
+  const isBoaQrPayload = (s: string) => {
+    if (s.length < 50) return false;
+    if (!/^[A-Za-z0-9+/]+={0,2}$/.test(s)) return false;
+    return true;
+  };
+
   const handleVerify = useCallback(async () => {
+    if (inputMode === "qr" && qrData.trim()) {
+      setLoading(true);
+      setError(null);
+      setResult(null);
+      try {
+        const resp = await fetch("/api/verify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ bank: "boa", qrData: qrData.trim() }),
+        });
+        const data: VerifyResult = await resp.json();
+        if (!data.success) {
+          setError(data.error || "Verification failed.");
+          setResult(data);
+        } else {
+          setResult(data);
+        }
+      } catch {
+        setError("Network error. Try again.");
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
     if (!reference.trim() || isDisabled) return;
     setLoading(true);
     setError(null);
@@ -75,7 +112,7 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
-  }, [bank, reference, accountNumber, isDisabled, history]);
+  }, [bank, reference, accountNumber, isDisabled, history, inputMode, qrData]);
 
   useEffect(() => {
     if (result && result.success && resultRef.current) {
@@ -263,11 +300,12 @@ export default function Home() {
               <div style={{ display: "flex", gap: "0", marginBottom: "16px", borderBottom: "1px solid var(--border)" }}>
                 {[
                   { mode: "reference" as const, label: "Reference" },
+                  { mode: "qr" as const, label: "QR payload" },
                   { mode: "url" as const, label: "Receipt URL" },
                 ].map((tab) => (
                   <button
                     key={tab.mode}
-                    onClick={() => { setInputMode(tab.mode); setReference(""); setResult(null); setError(null); }}
+                    onClick={() => { setInputMode(tab.mode); if (tab.mode === "qr") { setBank("boa"); setQrData(""); setReference(""); setResult(null); setError(null); } else { setReference(""); setQrData(""); setResult(null); setError(null); } }}
                     style={{
                       padding: "8px 16px", fontSize: "13px", fontWeight: 600,
                       border: "none", borderBottom: inputMode === tab.mode ? "2px solid var(--green)" : "2px solid transparent",
@@ -306,6 +344,15 @@ export default function Home() {
                   </div>
                 )}
 
+                {inputMode === "qr" && (
+                  <div className="fade-in">
+                    <label style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink-2)", marginBottom: "6px", display: "block" }}>Bank</label>
+                    <select value={bank} onChange={(e) => { setBank(e.target.value as BankCode); setResult(null); setError(null); }} style={{ width: "100%", padding: "12px 16px", fontSize: "15px", border: "1px solid var(--border)", borderRadius: "8px", background: "var(--surface)", color: "var(--ink)", cursor: "pointer" }}>
+                      {banks.filter((b) => b.code === "boa").map((b) => <option key={b.code} value={b.code}>{b.name}</option>)}
+                    </select>
+                  </div>
+                )}
+
                 {isGeoBlocked && inputMode === "reference" && (
                   <div className="fade-in" style={{ padding: "10px 14px", borderRadius: "8px", background: "var(--amber-light)", border: "1px solid #fde68a", display: "flex", gap: "8px", alignItems: "flex-start" }}>
                     <Icon icon={Alert01Icon} size={16} color="#92400e" />
@@ -318,9 +365,13 @@ export default function Home() {
 
                 <div>
                   <label style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink-2)", marginBottom: "6px", display: "block" }}>
-                    {inputMode === "url" ? "Receipt URL or link" : "Receipt reference number"}
+                    {inputMode === "url" ? "Receipt URL or link" : inputMode === "qr" ? "QR code payload" : "Receipt reference number"}
                   </label>
-                  <input type="text" value={reference} onChange={(e) => setReference(e.target.value)} onKeyDown={(e) => e.key === "Enter" && !loading && handleVerify()} placeholder={inputMode === "url" ? "Paste receipt link..." : "e.g. FT26140P01YB"} style={{ width: "100%", padding: "12px 16px", fontSize: "15px", border: "1px solid var(--border)", borderRadius: "8px", background: "var(--surface)", color: "var(--ink)", fontFamily: "var(--mono)" }} spellCheck={false} autoCapitalize="characters" />
+                  {inputMode === "qr" ? (
+                    <textarea value={qrData} onChange={(e) => setQrData(e.target.value)} onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && !loading && handleVerify()} placeholder="Paste the encrypted QR payload from a BOA receipt..." style={{ width: "100%", padding: "12px 16px", fontSize: "15px", border: "1px solid var(--border)", borderRadius: "8px", background: "var(--surface)", color: "var(--ink)", fontFamily: "var(--mono)", minHeight: "120px", resize: "vertical" }} spellCheck={false} />
+                  ) : (
+                    <input type="text" value={reference} onChange={(e) => setReference(e.target.value)} onKeyDown={(e) => e.key === "Enter" && !loading && handleVerify()} placeholder={inputMode === "url" ? "Paste receipt link..." : "e.g. FT26140P01YB"} style={{ width: "100%", padding: "12px 16px", fontSize: "15px", border: "1px solid var(--border)", borderRadius: "8px", background: "var(--surface)", color: "var(--ink)", fontFamily: "var(--mono)" }} spellCheck={false} autoCapitalize="characters" />
+                  )}
                   {reference && inputMode === "reference" && detectBank(reference) && (
                     <p style={{ fontSize: "12px", color: "var(--green)", marginTop: "6px", fontWeight: 500, display: "flex", alignItems: "center", gap: "4px" }}>
                       <Icon icon={Search01Icon} size={12} color="var(--green)" /> Detected: {banks.find((b) => b.code === detectBank(reference))?.name}
@@ -329,6 +380,11 @@ export default function Home() {
                   {reference && inputMode === "url" && reference.startsWith("http") && (
                     <p style={{ fontSize: "12px", color: "var(--green)", marginTop: "6px", fontWeight: 500, display: "flex", alignItems: "center", gap: "4px" }}>
                       <Icon icon={Search01Icon} size={12} color="var(--green)" /> Bank will be auto-detected from URL
+                    </p>
+                  )}
+                  {qrData && inputMode === "qr" && (
+                    <p style={{ fontSize: "12px", color: "var(--green)", marginTop: "6px", fontWeight: 500, display: "flex", alignItems: "center", gap: "4px" }}>
+                      <Icon icon={Search01Icon} size={12} color="var(--green)" /> BOA QR payload detected
                     </p>
                   )}
                 </div>
@@ -347,11 +403,11 @@ export default function Home() {
                   </div>
                 )}
 
-                <button onClick={handleVerify} disabled={loading || (inputMode === "reference" && isDisabled) || !reference.trim()} style={{
+                <button onClick={handleVerify} disabled={loading || (inputMode === "reference" && isDisabled) || (inputMode !== "qr" && !reference.trim()) || (inputMode === "qr" && !qrData.trim())} style={{
                   width: "100%", padding: "14px 24px", fontSize: "15px", fontWeight: 600, border: "none", borderRadius: "8px",
-                  background: loading || (inputMode === "reference" && isDisabled) || !reference.trim() ? "var(--border)" : "var(--green)",
-                  color: loading || (inputMode === "reference" && isDisabled) || !reference.trim() ? "var(--ink-3)" : "#fff",
-                  cursor: loading || (inputMode === "reference" && isDisabled) || !reference.trim() ? "not-allowed" : "pointer",
+                  background: loading || (inputMode === "reference" && isDisabled) || (inputMode !== "qr" && !reference.trim()) || (inputMode === "qr" && !qrData.trim()) ? "var(--border)" : "var(--green)",
+                  color: loading || (inputMode === "reference" && isDisabled) || (inputMode !== "qr" && !reference.trim()) || (inputMode === "qr" && !qrData.trim()) ? "var(--ink-3)" : "#fff",
+                  cursor: loading || (inputMode === "reference" && isDisabled) || (inputMode !== "qr" && !reference.trim()) || (inputMode === "qr" && !qrData.trim()) ? "not-allowed" : "pointer",
                   transition: "all 0.15s", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", minHeight: "48px",
                 }}>
                   {loading ? (<><span className="spin" style={{ width: "16px", height: "16px", border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "#fff", borderRadius: "50%", display: "inline-block" }} />Verifying...</>) : (inputMode === "reference" && isDisabled) ? "In Development" : "Verify Receipt"}
