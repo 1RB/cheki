@@ -11,6 +11,7 @@ import { TelebirrParser } from "./telebirr";
 import { BOAParser } from "./boa";
 import { MpesaParser } from "./mpesa";
 import { DashenParser } from "./dashen";
+import { EBirrParser } from "./ebirr";
 
 // Register all parsers
 registerParser(new CBEParser());
@@ -19,6 +20,7 @@ registerParser(new TelebirrParser());
 registerParser(new BOAParser());
 registerParser(new MpesaParser());
 registerParser(new DashenParser());
+registerParser(new EBirrParser());
 
 // Re-export for convenience
 export { CBEParser, CBENewParser } from "./cbe";
@@ -26,6 +28,7 @@ export { TelebirrParser } from "./telebirr";
 export { BOAParser } from "./boa";
 export { MpesaParser } from "./mpesa";
 export { DashenParser } from "./dashen";
+export { EBirrParser } from "./ebirr";
 export { BaseParser } from "./base";
 export {
   registerParser,

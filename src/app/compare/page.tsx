@@ -39,8 +39,8 @@ export default function ComparePage() {
   ];
 
   const platformData = [
-    { feature: "Banks supported", cheki: "9", checket: "9", verifyet: "10", qbirr: "7", tinaverify: "6", tally: "4" },
-    { feature: "Banks live", cheki: "4", checket: "9", verifyet: "9", qbirr: "7", tinaverify: "6", tally: "4" },
+    { feature: "Banks supported", cheki: "31", checket: "9", verifyet: "10", qbirr: "7", tinaverify: "6", tally: "4" },
+    { feature: "Banks live", cheki: "9", checket: "9", verifyet: "9", qbirr: "7", tinaverify: "6", tally: "4" },
     { feature: "REST API", cheki: check, checket: check, verifyet: check, qbirr: check, tinaverify: dash, tally: dash },
     { feature: "QR code scanning", cheki: check, checket: check, verifyet: check, qbirr: dash, tinaverify: check, tally: dash },
     { feature: "BOA QR decryption", cheki: check, checket: dash, verifyet: dash, qbirr: dash, tinaverify: dash, tally: dash },
