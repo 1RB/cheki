@@ -30,20 +30,10 @@ export default async function OgImage({
           color: "#faf9f6",
           fontFamily: "system-ui, -apple-system, sans-serif",
           padding: "60px",
-          position: "relative",
+          borderTop: "6px solid #16a34a",
         }}
       >
-        {/* Top border accent */}
-        <div
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            height: "6px",
-            backgroundColor: "#16a34a",
-          }}
-        />
+        
 
         {/* Logo row */}
         <div
