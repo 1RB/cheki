@@ -47,6 +47,9 @@ const calloutStyles: Record<string, { bg: string; border: string; text: string; 
 /** Auto-link URLs and code references in text content */
 function renderRichText(text: string): React.ReactNode[] {
   const nodes: React.ReactNode[] = [];
+  // Competitor domains where we don't want to pass link equity
+  const competitorDomains = ["check.et", "verify.et", "qbirr.com", "tinaverify.com", "tally.com.et"];
+  const isCompetitor = (url: string) => competitorDomains.some(d => url.includes(d));
   // Split on URLs, inline code (backticks), and bold (**text**)
   const parts = text.split(
     /(\bhttps?:\/\/[^\s<]+|\b[a-z]+\.et\b|\b[a-z]+\.com\.et\b|`[^`]+`|\*\*[^*]+\*\*)/gi
@@ -61,7 +64,7 @@ function renderRichText(text: string): React.ReactNode[] {
           key={i}
           href={part}
           target="_blank"
-          rel="noopener noreferrer"
+          rel={isCompetitor(part) ? "noopener noreferrer nofollow" : "noopener noreferrer"}
           style={{ color: "var(--green)", textDecoration: "none", borderBottom: "1px solid var(--green-light)" }}
         >
           {display}
@@ -69,12 +72,13 @@ function renderRichText(text: string): React.ReactNode[] {
       );
     } else if (/^[a-z]+\.et$/i.test(part) || /^[a-z]+\.com\.et$/i.test(part)) {
       // Domain reference like check.et, verify.et - link to it
+      const href = `https://${part}`;
       nodes.push(
         <a
           key={i}
-          href={`https://${part}`}
+          href={href}
           target="_blank"
-          rel="noopener noreferrer"
+          rel={isCompetitor(part) ? "noopener noreferrer nofollow" : "noopener noreferrer"}
           style={{ color: "var(--green)", textDecoration: "none", fontWeight: 500 }}
         >
           {part}

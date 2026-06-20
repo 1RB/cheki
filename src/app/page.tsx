@@ -1067,7 +1067,7 @@ export default function Home() {
                 <BankLogoByName code={b.code} size={32} />
                 <div style={{ minWidth: 0 }}>
                   <p style={{ fontSize: "13px", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{b.shortName}</p>
-                  <p style={{ fontSize: "10px", color: b.status === "live" ? "var(--green)" : "var(--ink-3)" }}>{b.status === "live" ? "Live" : "Soon"}</p>
+                  <p style={{ fontSize: "10px", color: b.status === "live" ? "var(--green)" : "var(--ink-3)" }}>{b.status === "live" ? "Live" : "In development"}</p>
                 </div>
               </a>
             ))}

@@ -90,7 +90,7 @@ export default function ComparePage() {
               <th style={{ textAlign: "left", padding: "12px 14px", fontWeight: 700, whiteSpace: "nowrap" }}>Feature</th>
               {services.map((s) => (
                 <th key={s.key} style={{ textAlign: "left", padding: "12px 14px", fontWeight: 700, whiteSpace: "nowrap", color: s.color || "var(--ink)" }}>
-                  {s.name}
+                  <a href={s.href} target="_blank" rel="noopener noreferrer nofollow" style={{ color: "inherit", textDecoration: "none" }}>{s.name}</a>
                 </th>
               ))}
             </tr>
@@ -229,7 +229,7 @@ export default function ComparePage() {
               padding: "24px", borderRadius: "12px", background: "var(--surface)", border: "1px solid var(--border)",
             }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "4px" }}>
-                <a href={c.url} target="_blank" rel="noopener" style={{ fontSize: "17px", fontWeight: 700, color: "var(--ink)" }}>{c.name}</a>
+                <a href={c.url} target="_blank" rel="noopener noreferrer nofollow" style={{ fontSize: "17px", fontWeight: 700, color: "var(--ink)" }}>{c.name}</a>
                 <span style={{ fontSize: "12px", color: "var(--ink-3)" }}>{c.banks}</span>
               </div>
               <p style={{ fontSize: "13px", color: "var(--ink-3)", marginBottom: "16px" }}>{c.tagline}</p>

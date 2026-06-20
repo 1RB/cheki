@@ -58,7 +58,7 @@ export default function BanksPage() {
                   marginLeft: "auto", fontSize: "11px", fontWeight: 600, padding: "3px 10px", borderRadius: "4px",
                   background: b.status === "live" ? "var(--green-light)" : "var(--surface-alt)",
                   color: b.status === "live" ? "var(--green-dark)" : "var(--ink-3)",
-                }}>{b.status === "live" ? "Live" : "Soon"}</span>
+                }}>{b.status === "live" ? "Live" : "In development"}</span>
               </div>
               <p style={{ fontSize: "13px", color: "var(--ink-2)", lineHeight: 1.5 }}>
                 {b.description.slice(0, 120)}...

@@ -1303,7 +1303,7 @@ export const articles: Article[] = [
       { type: "callout", variant: "tip", title: "No coding required", text: "The most valuable contribution is a receipt. If you use a bank we don't support yet, share a receipt screenshot or URL and we'll do the technical work." },
 
       { type: "heading", text: "Option 1: Share a receipt (easiest)" },
-      { type: "text", text: "If you have a receipt from a bank marked 'Soon' on cheki, here's what we need:" },
+      { type: "text", text: "If you have a receipt from a bank marked 'In development' on cheki, here's what we need:" },
       {
         type: "list",
         items: [
