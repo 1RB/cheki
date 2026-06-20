@@ -18,6 +18,7 @@
     "cheki": "src/cli/index.ts"
   },
   "dependencies": {
+    "@fontsource/inter": "^5.0.8",
     "@hugeicons/core-free-icons": "^4.2.1",
     "@hugeicons/react": "^1.1.7",
     "cheerio": "^1.0.0",
