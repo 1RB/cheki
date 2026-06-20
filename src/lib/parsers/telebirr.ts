@@ -13,6 +13,119 @@
 import { BaseParser } from "./base";
 import type { ParsedReceipt } from "../core/types";
 
+/**
+ * Mobile "Select All" copy of a Telebirr receipt often concatenates every
+ * label and value onto one line because the receipt is rendered with inline
+ * elements and no visible line breaks. Insert a newline before each known
+ * label so the existing line-based parser can extract values correctly.
+ */
+function normalizeReceiptText(text: string): string {
+  const labels = [
+    "Service fee VAT",
+    "Service fee",
+    "Total Paid Amount",
+    "Total Amount in words",
+    "Settled Amount",
+    "Discount Amount",
+    "Stamp Duty",
+    "Payer telebirr no",
+    "Payer account type",
+    "Payer TIN No",
+    "Payer Name",
+    "VAT Reg. Date",
+    "VAT Reg. No",
+    "Credited party account no",
+    "Credited Party name",
+    "transaction status",
+    "Bank account number",
+    "Invoice details",
+    "Invoice No.",
+    "Payment date",
+    "Payment Mode",
+    "Payment Reason",
+    "Payment channel",
+    "Customer Note",
+  ];
+  // Sort longest first so "Service fee VAT" is not split into "Service fee" + " VAT"
+  const sorted = labels
+    .map((l) => l.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+    .sort((a, b) => b.length - a.length);
+  const regex = new RegExp(`(${sorted.join("|")})`, "g");
+  const labeled = text.replace(regex, (match, _p1: string, offset: number, str: string) => {
+    if (offset === 0 || str[offset - 1] === "\n") return match;
+    return "\n" + match;
+  });
+  return restructureInvoiceSection(labeled);
+}
+
+/**
+ * Mobile "Select All" often groups all invoice-detail labels together in one
+ * column and then dumps every value after the last label. Detect that pattern
+ * and restructure the lines so each label is followed by its own value.
+ */
+function restructureInvoiceSection(text: string): string {
+  const lines = text.split("\n");
+  const invoiceNoIdx = lines.findIndex((l) => /Invoice\s*No\.?/i.test(l));
+  const settledIdx = lines.findIndex((l) => l.includes("Settled Amount"));
+  const stampIdx = lines.findIndex((l) => l.includes("Stamp Duty"));
+
+  if (invoiceNoIdx === -1 || settledIdx === -1 || stampIdx === -1) return text;
+  if (settledIdx >= stampIdx) return text;
+
+  // The value blob is concatenated on the same line as "Settled Amount":
+  // Settled Amount{REF}{DD-MM-YYYY HH:MM:SS}{AMOUNT} Birr ...
+  const settledLine = lines[settledIdx];
+  const valueText = settledLine.replace(/Settled\s*Amount/i, "").trim();
+
+  const match = valueText.match(
+    /^([A-Z]{2,3}[A-Z0-9]{6,8})(\d{2}-\d{2}-\d{4}\s+\d{2}:\d{2}:\d{2})(\d+\.?\d*)\s*Birr/
+  );
+
+  if (match) {
+    const [, ref, date, amount] = match;
+    const section = ["Invoice No.", ref, "Payment date", date, "Settled Amount", amount + " Birr"];
+    const newLines = [...lines];
+    newLines.splice(invoiceNoIdx, settledIdx - invoiceNoIdx + 1, ...section);
+    return newLines.join("\n");
+  }
+
+  // Case 2: HTML rendered as two columns so labels appear first, then their values.
+  // Collect the first three non-label values after the grouped labels and pair them.
+  const invoiceLabels = ["Invoice No.", "Payment date", "Settled Amount"];
+  const knownLabels = new Set([
+    ...invoiceLabels,
+    "Stamp Duty",
+    "Discount Amount",
+    "Service fee",
+    "Service fee VAT",
+    "Total Paid Amount",
+    "Total Amount in words",
+  ]);
+
+  const values: string[] = [];
+  let valueEndIdx = settledIdx + 1;
+  for (let i = settledIdx + 1; i < stampIdx; i++) {
+    const line = lines[i];
+    const isKnownLabel = [...knownLabels].some((label) => line.includes(label));
+    if (isKnownLabel) continue;
+    values.push(line);
+    if (values.length === 3) {
+      valueEndIdx = i + 1;
+      break;
+    }
+  }
+
+  if (values.length < 3) return text;
+  const [ref, date, amount] = values;
+  if (!/^\d{2}-\d{2}-\d{4}\s+\d{2}:\d{2}:\d{2}$/.test(date)) return text;
+  if (!/^\d[\d,]*\.?\d*\s*Birr$/i.test(amount)) return text;
+
+  const section = ["Invoice No.", ref, "Payment date", date, "Settled Amount", amount];
+  const newLines = [...lines];
+  newLines.splice(invoiceNoIdx, valueEndIdx - invoiceNoIdx, ...section);
+  return newLines.join("\n");
+}
+
 export class TelebirrParser extends BaseParser {
   readonly bankId = "telebirr";
   readonly bankName = "Telebirr";
@@ -27,16 +140,16 @@ export class TelebirrParser extends BaseParser {
   }
 
   parse(data: string | Buffer, _contentType: string): ParsedReceipt {
-    const html = data.toString();
+    const raw = data.toString();
     if (
-      html.includes("This request is not correct") ||
-      !html.toLowerCase().includes("telebirr receipt")
+      raw.includes("This request is not correct") ||
+      !raw.toLowerCase().includes("telebirr receipt")
     ) {
-      return { verified: false, raw: html.slice(0, 500) };
+      return { verified: false, raw: raw.slice(0, 500) };
     }
 
     // Convert HTML to text lines, preserving table cell boundaries
-    const text = html
+    let text = raw
       .replace(/<\/td>/gi, "\n")
       .replace(/<\/tr>/gi, "\n")
       .replace(/<[^>]+>/g, "\n")
@@ -45,6 +158,13 @@ export class TelebirrParser extends BaseParser {
       .replace(/&lt;/g, "<")
       .replace(/&gt;/g, ">")
       .replace(/\n{2,}/g, "\n")
+      .split("\n")
+      .map((l) => l.trim())
+      .filter((l) => l);
+
+    // Normalize mobile "Select All" and HTML column layouts, then restructure
+    // the invoice section so every label is followed by its own value.
+    text = restructureInvoiceSection(normalizeReceiptText(text.join("\n")))
       .split("\n")
       .map((l) => l.trim())
       .filter((l) => l);
@@ -58,13 +178,21 @@ export class TelebirrParser extends BaseParser {
           // or on the next line
           const afterLabel = line.split(en)[1] || (am ? line.split(am)[1] : "");
           if (afterLabel && afterLabel.trim()) {
-            const cleaned = afterLabel.trim().replace(/^[.\-:]+/, "").trim();
+            const cleaned = afterLabel
+              .trim()
+              .replace(/^[.\-:]+/, "")
+              .replace(/[\u1200-\u137F].*\/\s*$/, "")
+              .trim();
             if (cleaned) return cleaned;
           }
           if (am) {
             const afterAm = line.split(am)[1];
             if (afterAm && afterAm.trim()) {
-              const cleaned = afterAm.trim().replace(/^[.\-:]+/, "").trim();
+              const cleaned = afterAm
+                .trim()
+                .replace(/^[.\-:]+/, "")
+                .replace(/[\u1200-\u137F].*\/\s*$/, "")
+                .trim();
               if (cleaned) return cleaned;
             }
           }
@@ -114,7 +242,12 @@ export class TelebirrParser extends BaseParser {
     let bankAccountNumber: string | undefined;
     let bankAccountName: string | undefined;
     if (bankAccountRaw) {
-      const parts = bankAccountRaw.split(/\s{2,}/).map((s) => s.trim()).filter(Boolean);
+      let parts = bankAccountRaw.split(/\s{2,}/).map((s) => s.trim()).filter(Boolean);
+      // Mobile "Select All" collapses multiple spaces to one; split on the first space after the account number
+      if (parts.length === 1) {
+        const m = bankAccountRaw.match(/^(\d{10,})\s+(.+)$/);
+        if (m) parts = [m[1], m[2]];
+      }
       bankAccountNumber = parts[0];
       bankAccountName = parts.slice(1).join(" ") || undefined;
     }

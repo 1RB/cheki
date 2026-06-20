@@ -98,8 +98,8 @@ export const banks: Bank[] = [
     type: "mobile",
     requiresAccount: false,
     status: "live",
-    refPattern: /^(DET|CHQ|DAB|DEL|ADQ|DEP|CHG|CHA|CHB|CHC|CHD|CHE|CHF|DEB|DEC|DED|DEE|DEF|DEG|DEH|DEI|DEJ|DEK|DEL|DEM|DEN|DEO|DEP|DEQ|DER|DES|DET|DEU|DEV|DEW|DEX|DEY|DEZ)/i,
-    refPrefixes: ["DET", "CHQ", "DAB", "DEL", "ADQ", "DEP"],
+    refPattern: /^(DET|CHQ|DAB|DEL|ADQ|DEP|CHG|CHA|CHB|CHC|CHD|CHE|CHF|DEB|DEC|DED|DEE|DEF|DEG|DEH|DEI|DEJ|DEK|DEL|DEM|DEN|DEO|DEP|DEQ|DER|DES|DET|DEU|DEV|DEW|DEX|DEY|DEZ|DF)/i,
+    refPrefixes: ["DET", "CHQ", "DAB", "DEL", "ADQ", "DEP", "DF"],
     color: "#e8a000",
     geoBlocked: true,
     endpoint: "transactioninfo.ethiotelecom.et",
@@ -1145,7 +1145,7 @@ export function detectBank(reference: string): string | null {
   }
   // Fallback: check prefixes manually
   if (upper.startsWith("FT")) return "cbe";
-  if (/^(DET|CHQ|DAB|DEL|ADQ|DEP|CHG)/i.test(upper)) return "telebirr";
+  if (/^(DET|CHQ|DAB|DEL|ADQ|DEP|CHG|DF|DEV)/i.test(upper)) return "telebirr";
   // eBirr receipt URL or tenant/token
   if (/receipt\.ebirr\.com/i.test(upper)) return "ebirr";
   if (/^(nib|wegagen|ahadu|kaafimf)\//i.test(upper)) return "ebirr";
