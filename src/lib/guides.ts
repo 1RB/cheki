@@ -1015,6 +1015,20 @@ export const articles: Article[] = [
         ],
       },
 
+      { type: "heading", text: "Verify directly in the Telebirr app" },
+      { type: "text", text: "Telebirr also has its own built-in verification feature. If you have the Telebirr app installed, you can verify a payment without using any third-party service." },
+      {
+        type: "steps",
+        items: [
+          { title: "Open the Telebirr app", text: "Log in to your account." },
+          { title: "Tap Accounts", text: "Accounts is on the bottom right of the app." },
+          { title: "Find Verify Payment", text: "Scroll to the bottom of the list. You will see a 'Verify Payment' option." },
+          { title: "Enter or scan the transaction", text: "Tap it and either enter the transaction reference number or scan the QR code from the receipt." },
+          { title: "See the result", text: "Telebirr will show the payment details directly from their own system." },
+        ],
+      },
+      { type: "callout", variant: "info", title: "Official verification", text: "This is the official Telebirr verification path. It checks against Ethio Telecom's own records, so it works even if third-party services are geo-blocked." },
+
       { type: "heading", text: "Geo-blocking and how to handle it" },
       { type: "callout", variant: "warning", title: "Telebirr blocks non-Ethiopian IPs", text: "Telebirr's receipt endpoint blocks all requests from IP addresses outside Ethiopia. If cheki's hosted server can't reach Telebirr, you'll get a fallback URL to open the receipt directly in your browser." },
       { type: "text", text: "If you're in Ethiopia, verification works smoothly. If you're outside Ethiopia:" },
