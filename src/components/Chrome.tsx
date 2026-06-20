@@ -6,14 +6,27 @@ import { Icon, GithubIcon, Menu01Icon, Cancel01Icon, ArrowRight01Icon } from "@/
 export function Nav() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  // Lock body scroll when mobile menu is open
+  // Lock body scroll when mobile menu is open (iOS-safe)
   useEffect(() => {
     if (mobileOpen) {
+      const scrollY = window.scrollY;
+      document.body.style.position = "fixed";
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = "100%";
       document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.position = "";
+        document.body.style.top = "";
+        document.body.style.width = "";
+        document.body.style.overflow = "";
+        window.scrollTo(0, scrollY);
+      };
     } else {
+      document.body.style.position = "";
+      document.body.style.top = "";
+      document.body.style.width = "";
       document.body.style.overflow = "";
     }
-    return () => { document.body.style.overflow = ""; };
   }, [mobileOpen]);
   const links = [
     { href: "/", label: "Verify" },
@@ -67,30 +80,41 @@ export function Nav() {
       </nav>
       {mobileOpen && (
         <div className="nav-mobile-menu" style={{
-          position: "fixed", top: "var(--nav-h)", left: 0, right: 0, bottom: 0,
-          background: "var(--bg)", zIndex: 99, padding: "24px",
-          display: "flex", flexDirection: "column", gap: "8px",
-          overflowY: "auto", overscrollBehavior: "contain",
-          WebkitOverflowScrolling: "touch",
+          position: "fixed", top: "var(--nav-h)", left: 0, right: 0,
+          height: "calc(100dvh - var(--nav-h))",
+          background: "var(--bg)", zIndex: 99,
+          display: "flex", flexDirection: "column",
+          overflow: "hidden", isolation: "isolate",
         }}>
-          {links.map((l) => (
-            <a key={l.href} href={l.href} onClick={() => setMobileOpen(false)} style={{
-              padding: "16px 20px", fontSize: "18px", fontWeight: 600, color: "var(--ink)",
-              borderRadius: "10px", background: "var(--surface)", border: "1px solid var(--border)",
-              display: "flex", alignItems: "center", justifyContent: "space-between",
-            }}>
-              {l.label}
-              <Icon icon={ArrowRight01Icon} size={18} color="var(--ink-3)" />
-            </a>
-          ))}
-          <a href="https://github.com/1RB/cheki" target="_blank" rel="noopener" style={{
-            padding: "16px 20px", fontSize: "18px", fontWeight: 600, color: "#fff",
-            background: "var(--ink)", borderRadius: "10px",
-            display: "flex", alignItems: "center", gap: "10px",
+          <div style={{
+            flex: 1,
+            padding: "24px",
+            display: "flex", flexDirection: "column", gap: "8px",
+            overflowY: "auto", overscrollBehavior: "contain",
+            WebkitOverflowScrolling: "touch",
+            touchAction: "pan-y",
           }}>
-            <Icon icon={GithubIcon} size={18} color="#fff" />
-            GitHub
-          </a>
+            {links.map((l) => (
+              <a key={l.href} href={l.href} onClick={() => setMobileOpen(false)} style={{
+                flexShrink: 0,
+                padding: "16px 20px", fontSize: "18px", fontWeight: 600, color: "var(--ink)",
+                borderRadius: "10px", background: "var(--surface)", border: "1px solid var(--border)",
+                display: "flex", alignItems: "center", justifyContent: "space-between",
+              }}>
+                {l.label}
+                <Icon icon={ArrowRight01Icon} size={18} color="var(--ink-3)" />
+              </a>
+            ))}
+            <a href="https://github.com/1RB/cheki" target="_blank" rel="noopener" onClick={() => setMobileOpen(false)} style={{
+              flexShrink: 0,
+              padding: "16px 20px", fontSize: "18px", fontWeight: 600, color: "#fff",
+              background: "var(--ink)", borderRadius: "10px",
+              display: "flex", alignItems: "center", gap: "10px",
+            }}>
+              <Icon icon={GithubIcon} size={18} color="#fff" />
+              GitHub
+            </a>
+          </div>
         </div>
       )}
     </>
