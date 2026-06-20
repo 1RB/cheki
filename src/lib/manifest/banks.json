@@ -2,19 +2,1408 @@
   {
     "id": "cbe",
     "name": "Commercial Bank of Ethiopia",
+    "shortName": "CBE",
     "swift": "CBETETAA",
     "type": "bank",
     "status": "live",
     "parser": "cbe",
     "responseType": "pdf",
     "requiresAccount": true,
+    "accountLabel": "Receiving account number",
     "accountDigits": 8,
-    "requiresPhone": false,
     "endpoint": "https://apps.cbe.com.et:100/?id={ref}{account}",
+    "endpointFormat": "https://apps.cbe.com.et:100/?id={REFERENCE}{LAST_8_DIGITS_OF_ACCOUNT}",
     "sslVerify": false,
     "color": "#502878",
     "initials": "CBE",
-    "notes": "Legacy PDF system. New API at mb.cbe.com.et uses receipt IDs."
+    "notes": "Legacy PDF system. New API at mb.cbe.com.et uses receipt IDs.",
+    "refPattern": {
+      "source": "^FT",
+      "flags": "i"
+    },
+    "refPrefixes": [
+      "FT"
+    ],
+    "description": "Commercial Bank of Ethiopia (CBE) is the largest bank in Ethiopia and the most common settlement rail for Ethiopian businesses. CBE receipts are published as public PDF documents accessible via a URL combining the FT transaction reference and the last 8 digits of the receiving account number.",
+    "referenceFormat": "FT followed by 10 alphanumeric characters (e.g. FT26140P01YB)",
+    "referenceExample": "FT26140P01YB",
+    "howToVerify": [
+      "Get the FT reference number from the customer's receipt (starts with FT)",
+      "Get the last 8 digits of your receiving CBE account number",
+      "cheki fetches the official PDF from CBE's public endpoint and extracts payment data"
+    ],
+    "useCases": [
+      "Retail counters confirming in-person CBE transfers",
+      "Delivery teams validating payment before handover",
+      "Finance teams reconciling daily CBE inflows",
+      "Developers automating CBE checks through the REST API"
+    ],
+    "faq": [
+      {
+        "q": "What is a CBE FT reference number?",
+        "a": "The FT reference is a unique transaction identifier assigned by CBE to every transfer. It appears on the customer's receipt and starts with the letters FT followed by 10 alphanumeric characters, such as FT26140P01YB."
+      },
+      {
+        "q": "Can I verify CBE with only the reference number?",
+        "a": "No. CBE's public receipt endpoint requires both the FT reference and the last 8 digits of the receiving account number. This is a security measure to prevent receipt enumeration. cheki asks for both fields when CBE is selected."
+      },
+      {
+        "q": "Does CBE charge for receipt verification?",
+        "a": "No. The CBE receipt endpoint is a public URL that returns a PDF. Anyone can access it for free. check.et and verify.et charge you for hitting this same URL."
+      },
+      {
+        "q": "Why does cheki need my account number?",
+        "a": "CBE's receipt URL is constructed as the FT reference concatenated with the last 8 digits of the receiving account. Without the account digits, the URL returns a 404. cheki only uses the last 8 digits and never stores the full account number."
+      }
+    ],
+    "seo": {
+      "title": "Verify CBE Transactions Online",
+      "description": "Verify Commercial Bank of Ethiopia (CBE) transactions for free. Check FT reference numbers against official CBE receipt endpoints. No signup, no API key.",
+      "keywords": [
+        "CBE receipt verification",
+        "verify CBE transaction",
+        "FT reference number",
+        "Commercial Bank of Ethiopia receipt",
+        "CBE payment check",
+        "ethiopian bank receipt verify"
+      ]
+    }
+  },
+  {
+    "id": "telebirr",
+    "name": "Telebirr",
+    "shortName": "Telebirr",
+    "type": "mobile",
+    "status": "live",
+    "parser": "telebirr",
+    "responseType": "html",
+    "requiresAccount": false,
+    "endpoint": "https://transactioninfo.ethiotelecom.et/receipt/{ref}",
+    "endpointFormat": "https://transactioninfo.ethiotelecom.et/receipt/{REFERENCE}",
+    "sslVerify": true,
+    "geoBlocked": true,
+    "color": "#00A0DC",
+    "initials": "TB",
+    "notes": "Geo-blocked from non-Ethiopian IPs.",
+    "refPattern": {
+      "source": "^(DET|CHQ|DAB|DEL|ADQ|DEP|CHG|CHA|CHB|CHC|CHD|CHE|CHF|DEB|DEC|DED|DEE|DEF|DEG|DEH|DEI|DEJ|DEK|DEL|DEM|DEN|DEO|DEP|DEQ|DER|DES|DET|DEU|DEV|DEW|DEX|DEY|DEZ|DF)",
+      "flags": "i"
+    },
+    "refPrefixes": [
+      "DET",
+      "CHQ",
+      "DAB",
+      "DEL",
+      "ADQ",
+      "DEP",
+      "DF"
+    ],
+    "description": "Telebirr is Ethio Telecom's mobile money service and the most widely used digital wallet in Ethiopia. Telebirr receipts are published as public HTML pages accessible via a URL containing only the transaction reference number. The endpoint is geo-blocked to Ethiopian IP addresses.",
+    "referenceFormat": "2-3 letter prefix followed by 6-8 alphanumeric characters (e.g. DET8FJGUJ4, CHQ0FJ403O)",
+    "referenceExample": "DET8FJGUJ4",
+    "howToVerify": [
+      "Get the transaction reference from the customer's Telebirr SMS or receipt",
+      "The reference starts with a 2-3 letter prefix (DET, CHQ, DAB, DEL, ADQ, etc.)",
+      "cheki fetches the receipt from Telebirr's public endpoint and extracts payment data"
+    ],
+    "useCases": [
+      "Shops confirming Telebirr payments at the counter",
+      "Online stores verifying Telebirr payments before fulfillment",
+      "Delivery services validating payment before handover",
+      "Marketplaces integrating Telebirr verification via API"
+    ],
+    "faq": [
+      {
+        "q": "What does a Telebirr reference number look like?",
+        "a": "Telebirr transaction references start with a 2-3 letter prefix followed by 6-8 alphanumeric characters. Common prefixes include DET, CHQ, DAB, DEL, and ADQ. The full reference is sent via SMS to both payer and receiver after each transaction."
+      },
+      {
+        "q": "Why does Telebirr verification fail from outside Ethiopia?",
+        "a": "Telebirr's receipt endpoint (transactioninfo.ethiotelecom.et) blocks requests from IP addresses outside Ethiopia. This is a network-level restriction. cheki provides a fallback URL so users on Ethiopian networks can open the receipt directly in their browser."
+      },
+      {
+        "q": "Can I self-host cheki for Telebirr verification?",
+        "a": "Yes. Running cheki on a server with an Ethiopian IP address (or using X-Forwarded-For with an Ethiopian IP from a residential connection) bypasses the geo-block. See the Docker self-hosting guide in the GitHub repository."
+      },
+      {
+        "q": "Is Telebirr receipt verification free?",
+        "a": "Yes. The Telebirr receipt URL is public and returns an HTML page with transaction details. check.et and verify.et charge you for fetching this same URL. cheki does it for free."
+      }
+    ],
+    "seo": {
+      "title": "Verify Telebirr Transactions Online",
+      "description": "Verify Telebirr (Ethio Telecom) transactions for free. Check transaction references against official Telebirr receipt endpoints. No signup, no API key.",
+      "keywords": [
+        "telebirr receipt verification",
+        "verify telebirr transaction",
+        "telebirr transaction ID",
+        "ethio telecom receipt check",
+        "telebirr payment verify",
+        "ethiopian mobile money verification"
+      ]
+    }
+  },
+  {
+    "id": "boa",
+    "name": "Bank of Abyssinia",
+    "shortName": "BOA",
+    "swift": "ABYSETAA",
+    "type": "bank",
+    "status": "live",
+    "parser": "boa",
+    "responseType": "json",
+    "requiresAccount": true,
+    "accountLabel": "Receiving account number",
+    "accountDigits": 5,
+    "endpoint": "https://cs.bankofabyssinia.com/api/onlineSlip/getDetails/?id={ref}{account}",
+    "endpointFormat": "https://cs.bankofabyssinia.com/api/onlineSlip/getDetails/?id={REFERENCE}{LAST_5_DIGITS}",
+    "sslVerify": true,
+    "color": "#0E4D92",
+    "initials": "BOA",
+    "refPattern": {
+      "source": "^[A-Z]{2}\\d",
+      "flags": "i"
+    },
+    "refPrefixes": [
+      "Various"
+    ],
+    "description": "Bank of Abyssinia (BOA) is one of Ethiopia's largest private banks. BOA publishes receipt data as JSON via a public API endpoint that requires the transaction reference and the last 5 digits of the receiving account number. For inter-bank transfers (BOA to CBE, Dashen, etc.), BOA receipt QR codes use AES-256-CBC encryption and can be decrypted by cheki for instant verification. No Selenium or headless browser required.",
+    "referenceFormat": "Alphanumeric reference starting with 2 letters (varies by transaction type). Inter-bank transfers use FT references (e.g., FT252003JZPP).",
+    "referenceExample": "AB12345678",
+    "howToVerify": [
+      "For BOA-to-BOA transfers: get the transaction reference and last 5 digits of your receiving account",
+      "cheki calls BOA's public JSON API and returns structured payment data in 1-2 seconds",
+      "For inter-bank transfers (BOA to CBE/Dashen/etc.): scan the QR code on the receipt with cheki's camera scanner or upload a screenshot",
+      "cheki auto-detects BOA QR payloads, decrypts them server-side with AES-256-CBC, and returns the full transaction details. No account number needed."
+    ],
+    "useCases": [
+      "Merchants verifying BOA transfers at checkout",
+      "Businesses reconciling BOA deposits",
+      "Verifying inter-bank transfers (BOA to CBE, Dashen, etc.) via QR code decryption",
+      "Apps integrating BOA payment verification with QR code support",
+      "Finance teams auditing BOA transactions"
+    ],
+    "faq": [
+      {
+        "q": "Does BOA verification require Selenium or a headless browser?",
+        "a": "No. Unlike the ethiobank_receipts library which requires Chrome WebDriver for BOA, cheki uses BOA's JSON API directly. This is faster, lighter, and works in serverless environments without browser dependencies."
+      },
+      {
+        "q": "What information do I need to verify a BOA transaction?",
+        "a": "For BOA-to-BOA transfers, you need the transaction reference number and the last 5 digits of the receiving account. For inter-bank transfers (BOA to CBE, Dashen, etc.), scan the QR code on the receipt. No account number is needed for QR-based verification."
+      },
+      {
+        "q": "Can I verify inter-bank BOA transfers (sent to CBE or other banks)?",
+        "a": "Yes, but only via QR code. BOA's JSON API returns 'Invalid reference number' for inter-bank transfers (FT references). Scan the QR code on the receipt and cheki decrypts it with AES-256-CBC to extract the full transaction details. See our BOA QR code guide for the technical breakdown."
+      },
+      {
+        "q": "How does BOA QR code verification work?",
+        "a": "BOA receipt QR codes contain the transaction data encrypted with AES-256-CBC using CryptoJS format. The encryption key is embedded in BOA's public receipt web app. cheki decrypts the QR payload server-side and returns structured JSON with sender, receiver, amount, date, and reference. See our BOA QR code breakdown for full details."
+      },
+      {
+        "q": "Is the BOA receipt endpoint public?",
+        "a": "Yes. The BOA online slip API at cs.bankofabyssinia.com is publicly accessible without authentication. check.et and verify.et charge you for calling this same endpoint."
+      },
+      {
+        "q": "Is BOA QR code verification secure?",
+        "a": "The AES key is public in BOA's web app JavaScript, so anyone can decrypt (and theoretically forge) QR codes. For high-value inter-bank transfers, request additional confirmation like a bank statement or SMS alert. See our BOA QR code guide for the full security analysis."
+      }
+    ],
+    "seo": {
+      "title": "Verify Bank of Abyssinia Transactions Online | BOA QR Code Verification",
+      "description": "Verify Bank of Abyssinia (BOA) transactions for free. JSON API for BOA-to-BOA transfers, AES-256-CBC QR decryption for inter-bank transfers. No Selenium, no signup, no API key.",
+      "keywords": [
+        "BOA receipt verification",
+        "verify Bank of Abyssinia transaction",
+        "BOA payment check",
+        "Abyssinia bank receipt",
+        "ethiopian bank receipt verify",
+        "BOA online slip",
+        "BOA QR code verification",
+        "BOA inter-bank transfer verify",
+        "BOA AES QR decryption"
+      ]
+    }
+  },
+  {
+    "id": "mpesa",
+    "name": "M-Pesa Ethiopia",
+    "shortName": "M-Pesa",
+    "type": "mobile",
+    "status": "live",
+    "parser": "mpesa",
+    "responseType": "json",
+    "requiresAccount": false,
+    "endpoint": "https://m-pesabusiness.safaricom.et/api/receipt/getReceipt?trxNo={ref}",
+    "endpointFormat": "https://m-pesabusiness.safaricom.et/api/receipt/getReceipt?trxNo={REFERENCE}",
+    "sslVerify": true,
+    "geoBlocked": true,
+    "color": "#00A651",
+    "initials": "MP",
+    "notes": "Geo-blocked from non-Kenyan/Ethiopian IPs.",
+    "refPattern": {
+      "source": "^[A-Z]{2}\\d{6}",
+      "flags": "i"
+    },
+    "refPrefixes": [
+      "Various"
+    ],
+    "description": "M-Pesa Ethiopia is Safaricom's mobile money service operating in Ethiopia. M-Pesa receipts are available via a public JSON API that returns structured transaction data. The endpoint is geo-blocked to Ethiopian IP addresses, similar to Telebirr.",
+    "referenceFormat": "Alphanumeric reference (typically 2 letters followed by 6+ digits)",
+    "referenceExample": "SE12345678",
+    "howToVerify": [
+      "Get the transaction reference from the customer's M-Pesa SMS or receipt",
+      "cheki calls M-Pesa's public JSON API and extracts payment data",
+      "If the server can't reach M-Pesa (geo-block), cheki provides a direct receipt URL"
+    ],
+    "useCases": [
+      "Shops confirming M-Pesa payments",
+      "Online stores verifying M-Pesa transactions",
+      "Businesses reconciling M-Pesa deposits",
+      "Developers integrating M-Pesa verification via API"
+    ],
+    "faq": [
+      {
+        "q": "Why does M-Pesa verification fail from outside Ethiopia?",
+        "a": "M-Pesa's receipt API (m-pesabusiness.safaricom.et) blocks requests from non-Ethiopian IP addresses. cheki provides a fallback URL so users on Ethiopian networks can verify directly."
+      },
+      {
+        "q": "Is M-Pesa receipt verification free?",
+        "a": "Yes. The M-Pesa receipt API is public and returns JSON data. check.et and verify.et charge for accessing this same endpoint. cheki does it for free."
+      },
+      {
+        "q": "What information do I need to verify an M-Pesa transaction?",
+        "a": "Only the transaction reference number (trxNo). Unlike CBE and BOA, M-Pesa does not require an account number for receipt verification."
+      }
+    ],
+    "seo": {
+      "title": "Verify M-Pesa Ethiopia Transactions Online",
+      "description": "Verify M-Pesa Ethiopia (Safaricom) transactions for free. Check transaction references against official M-Pesa receipt API. No signup, no API key.",
+      "keywords": [
+        "M-Pesa receipt verification",
+        "verify M-Pesa Ethiopia transaction",
+        "Safaricom Ethiopia receipt",
+        "M-Pesa payment check",
+        "ethiopian mobile money verification"
+      ]
+    }
+  },
+  {
+    "id": "dashen",
+    "name": "Dashen Bank",
+    "shortName": "Dashen",
+    "swift": "DASHETAA",
+    "type": "bank",
+    "status": "live",
+    "parser": "dashen",
+    "responseType": "pdf",
+    "requiresAccount": false,
+    "endpoint": "https://receipt.dashensuperapp.com/receipt/{ref}",
+    "endpointFormat": "https://receipt.dashensuperapp.com/receipt/{REFERENCE}",
+    "sslVerify": true,
+    "color": "#0066B3",
+    "initials": "DB",
+    "notes": "Verified working. Use the Dashen Transaction Reference (e.g. D31OBTI251720001). Works for both within-Dashen and Other Bank Transfer receipts.",
+    "description": "Dashen Bank publishes transaction receipts as public PDF documents. The URL works for both within-Dashen and Other Bank Transfer (inter-bank) receipts. Only the FT Ref / Transaction Reference is needed.",
+    "referenceFormat": "Alphanumeric Dashen transaction reference (FT Ref / Transaction Reference on the receipt). Do not use the Transfer Reference.",
+    "referenceExample": "B22WDTI261620001 or D31OBTI251720001",
+    "howToVerify": [
+      "Get the FT Ref / Transaction Reference from the customer's Dashen receipt",
+      "cheki fetches the official PDF from receipt.dashensuperapp.com",
+      "Payment data is extracted from the PDF and returned as structured JSON"
+    ],
+    "useCases": [
+      "Merchants verifying Dashen transfers",
+      "Businesses reconciling Dashen deposits",
+      "Apps integrating Dashen payment verification"
+    ],
+    "faq": [
+      {
+        "q": "Does Dashen verification require an account number?",
+        "a": "No. Dashen's receipt URL only requires the transaction reference number. Use the FT Ref (also labeled Transaction Reference), which looks like B22WDTI... or D31OBTI..."
+      },
+      {
+        "q": "What is the difference between FT Ref and Transaction Ref?",
+        "a": "Use the FT Ref (also labeled Transaction Reference). It looks like B22WDTI... or D31OBTI... The Transfer Reference is an external network tracking number and does not fetch a PDF from Dashen's API."
+      },
+      {
+        "q": "Does Dashen verification work for inter-bank transfers?",
+        "a": "Yes. The updated endpoint works for both within-Dashen and Other Bank Transfer (inter-bank) receipts."
+      }
+    ],
+    "seo": {
+      "title": "Verify Dashen Bank Transactions Online",
+      "description": "Verify Dashen Bank transactions for free. Check transaction references against official Dashen receipt endpoints. Works for within-Dashen and inter-bank transfers. No signup, no API key.",
+      "keywords": [
+        "Dashen Bank receipt verification",
+        "verify Dashen transaction",
+        "Dashen payment check",
+        "ethiopian bank receipt verify"
+      ]
+    }
+  },
+  {
+    "id": "awash",
+    "name": "Awash Bank",
+    "shortName": "Awash",
+    "swift": "AWINETAA",
+    "type": "bank",
+    "status": "in-development",
+    "parser": "awash",
+    "responseType": "html",
+    "requiresAccount": false,
+    "endpoint": "https://awashpay.awashbank.com:8225/-{ref}",
+    "endpointFormat": "https://awashpay.awashbank.com:8225/-{REFERENCE}",
+    "sslVerify": false,
+    "color": "#E2231A",
+    "initials": "AB",
+    "notes": "Endpoint awashpay.awashbank.com:8225/-{ref} returns 'Invalid receipt id' for the visible Transaction ID. The exact receipt URL format may require a different field than the one shown on the mobile receipt.",
+    "description": "Awash Bank receipts are published by a Servicecops app. The endpoint is known but the correct receipt reference format is not yet confirmed for the visible transaction ID.",
+    "referenceFormat": "Unknown - the visible transaction ID does not work with the known endpoint. A share link from the Awash app is needed.",
+    "referenceExample": "260328171079006 (does not work with current endpoint)",
+    "howToVerify": [
+      "Get the correct receipt reference from the Awash app share link",
+      "cheki will fetch the receipt from Awash's public endpoint",
+      "Payment data will be extracted from the HTML and returned as structured JSON"
+    ],
+    "useCases": [
+      "Merchants verifying Awash transfers",
+      "Businesses reconciling Awash deposits"
+    ],
+    "faq": [
+      {
+        "q": "When will Awash verification be available?",
+        "a": "Awash verification is in development. The known endpoint (awashpay.awashbank.com:8225/-{ref}) returns 'Invalid receipt id' for the visible transaction ID. We need a valid share link from the Awash app to determine the correct reference format."
+      }
+    ],
+    "seo": {
+      "title": "Verify Awash Bank Transactions Online",
+      "description": "Verify Awash Bank transactions for free. Check transaction references against official Awash receipt endpoints. No signup, no API key.",
+      "keywords": [
+        "Awash Bank receipt verification",
+        "verify Awash transaction",
+        "Awash payment check",
+        "ethiopian bank receipt verify"
+      ]
+    }
+  },
+  {
+    "id": "zemen",
+    "name": "Zemen Bank",
+    "shortName": "Zemen",
+    "swift": "ZEMEETAA",
+    "type": "bank",
+    "status": "live",
+    "parser": "zemen",
+    "responseType": "pdf",
+    "requiresAccount": false,
+    "endpoint": "https://share.zemenbank.com/rt/{ref}/pdf",
+    "endpointFormat": "https://share.zemenbank.com/rt/{REFERENCE}/pdf",
+    "sslVerify": true,
+    "color": "#1B75BB",
+    "initials": "ZB",
+    "notes": "Same endpoint pattern as other banks. Not yet tested with real receipt.",
+    "description": "Zemen Bank is an Ethiopian commercial bank. Zemen receipts are published as PDF documents accessible via a public URL containing the transaction reference.",
+    "referenceFormat": "Alphanumeric transaction reference",
+    "referenceExample": "ZM12345678",
+    "howToVerify": [
+      "Get the transaction reference from the customer's Zemen receipt",
+      "cheki fetches the receipt PDF from Zemen's public endpoint",
+      "Payment data is extracted from the PDF and returned as structured JSON"
+    ],
+    "useCases": [
+      "Merchants verifying Zemen transfers",
+      "Businesses reconciling Zemen deposits",
+      "Apps integrating Zemen payment verification"
+    ],
+    "faq": [
+      {
+        "q": "When will Zemen verification be available?",
+        "a": "Zemen verification is in development. The public endpoint is known and the parser is being built. Follow the GitHub repository for updates."
+      }
+    ],
+    "seo": {
+      "title": "Verify Zemen Bank Transactions Online",
+      "description": "Verify Zemen Bank transactions for free. Check transaction references against official Zemen receipt endpoints. No signup, no API key.",
+      "keywords": [
+        "Zemen Bank receipt verification",
+        "verify Zemen transaction",
+        "Zemen payment check",
+        "ethiopian bank receipt verify"
+      ]
+    }
+  },
+  {
+    "id": "cbebirr",
+    "name": "CBE Birr",
+    "shortName": "CBE Birr",
+    "type": "wallet",
+    "status": "live",
+    "parser": "cbebirr",
+    "responseType": "html",
+    "requiresAccount": false,
+    "requiresPhone": true,
+    "endpoint": "https://cbepay1.cbe.com.et/aureceipt?TID={ref}&PH={phone}",
+    "endpointFormat": "https://cbepay1.cbe.com.et/aureceipt?TID={REFERENCE}&PH={PAYER_PHONE}",
+    "sslVerify": false,
+    "color": "#502878",
+    "initials": "CB",
+    "notes": "Requires phone number. Not yet tested with real receipt.",
+    "description": "CBE Birr is the Commercial Bank of Ethiopia's mobile wallet service. CBE Birr receipts require the transaction reference and the payer's phone number for verification.",
+    "referenceFormat": "Alphanumeric transaction reference",
+    "referenceExample": "CB12345678",
+    "howToVerify": [
+      "Get the transaction reference from the customer's CBE Birr receipt",
+      "Get the payer's phone number (format: 2519XXXXXXXXX)",
+      "cheki fetches the receipt from CBE Birr's public endpoint"
+    ],
+    "useCases": [
+      "Merchants verifying CBE Birr payments",
+      "Businesses reconciling CBE Birr deposits",
+      "Apps integrating CBE Birr payment verification"
+    ],
+    "faq": [
+      {
+        "q": "When will CBE Birr verification be available?",
+        "a": "CBE Birr verification is in development. The public endpoint requires the payer's phone number in addition to the transaction reference. Follow the GitHub repository for updates."
+      },
+      {
+        "q": "Why does CBE Birr need a phone number?",
+        "a": "CBE Birr's receipt endpoint requires the payer's phone number as an additional verification factor. This prevents unauthorized receipt enumeration."
+      }
+    ],
+    "seo": {
+      "title": "Verify CBE Birr Transactions Online",
+      "description": "Verify CBE Birr transactions for free. Check transaction references against official CBE Birr receipt endpoints. No signup, no API key.",
+      "keywords": [
+        "CBE Birr receipt verification",
+        "verify CBE Birr transaction",
+        "CBE Birr payment check",
+        "ethiopian mobile wallet verify"
+      ]
+    }
+  },
+  {
+    "id": "siinqee",
+    "name": "Siinqee Bank",
+    "shortName": "Siinqee",
+    "swift": "SINQETAA",
+    "type": "bank",
+    "status": "live",
+    "parser": "siinqee",
+    "responseType": "html",
+    "requiresAccount": false,
+    "endpoint": "https://receipt.ebirr.com/siinqee/{ref}",
+    "endpointFormat": "https://receipt.ebirr.com/siinqee/{token}",
+    "sslVerify": true,
+    "color": "#006A4E",
+    "initials": "SQ",
+    "notes": "Routed through eBirr platform. Siinqee does not have a standalone receipt endpoint.",
+    "description": "Siinqee Bank is an Ethiopian microfinance institution turned bank. Siinqee receipts are available via a public endpoint.",
+    "referenceFormat": "Alphanumeric transaction reference",
+    "referenceExample": "SQ12345678",
+    "howToVerify": [
+      "Get the transaction reference from the customer's Siinqee receipt",
+      "cheki fetches the receipt from Siinqee's public endpoint"
+    ],
+    "useCases": [
+      "Merchants verifying Siinqee transfers",
+      "Businesses reconciling Siinqee deposits"
+    ],
+    "faq": [
+      {
+        "q": "When will Siinqee verification be available?",
+        "a": "Siinqee verification is in development. Follow the GitHub repository for updates."
+      }
+    ],
+    "seo": {
+      "title": "Verify Siinqee Bank Transactions Online",
+      "description": "Verify Siinqee Bank transactions for free. No signup, no API key.",
+      "keywords": [
+        "Siinqee Bank receipt verification",
+        "verify Siinqee transaction",
+        "ethiopian bank receipt verify"
+      ]
+    }
+  },
+  {
+    "id": "ebirr",
+    "name": "eBirr",
+    "shortName": "eBirr",
+    "type": "mobile",
+    "status": "live",
+    "parser": "ebirr",
+    "responseType": "html",
+    "requiresAccount": false,
+    "endpoint": "https://receipt.ebirr.com/{tenant}/{token}",
+    "endpointFormat": "https://receipt.ebirr.com/{tenant}/{token}",
+    "sslVerify": true,
+    "color": "#059669",
+    "initials": "eB",
+    "notes": "Shared receipt platform for Nib, Wegagen, Ahadu, KAAFI, and Siinqee/Coopbank. User provides tenant/token or full URL.",
+    "description": "eBirr is a mobile money platform connecting 5 Ethiopian financial institutions: Nib International Bank, Wegagen Bank, Ahadu Bank, KAAFI Microfinance, and Cooperative Bank of Oromia (Siinqee). Receipts are available via a shared HTML endpoint at receipt.ebirr.com. Users provide either a full receipt URL or a 'tenant/token' string (e.g., nib/abc123). cheki auto-detects the tenant and maps it to the correct partner bank.",
+    "referenceFormat": "Receipt URL (receipt.ebirr.com/{tenant}/{token}) or tenant/token string (e.g., nib/abc123, wegagen/xyz, ahadu/def, kaafimf/ghi)",
+    "referenceExample": "nib/abc123def",
+    "howToVerify": [
+      "Get the receipt URL or tenant/token from the eBirr app receipt sharing feature",
+      "Paste the full URL (https://receipt.ebirr.com/nib/abc123) or just the tenant/token (nib/abc123) into cheki",
+      "cheki fetches the receipt from receipt.ebirr.com and parses the HTML for transaction details",
+      "The partner bank is auto-detected from the tenant code in the URL"
+    ],
+    "useCases": [
+      "Merchants verifying eBirr payments from Nib, Wegagen, Ahadu, or KAAFI customers",
+      "Businesses reconciling eBirr wallet transfers",
+      "Apps integrating eBirr payment verification",
+      "Finance teams auditing eBirr transactions across multiple partner banks"
+    ],
+    "faq": [
+      {
+        "q": "Which banks does eBirr cover?",
+        "a": "eBirr connects 5 financial institutions: Nib International Bank (tenant: nib), Wegagen Bank (tenant: wegagen), Ahadu Bank (tenant: ahadu), KAAKI Microfinance (tenant: kaafimf), and Cooperative Bank of Oromia / Siinqee Bank. All use the same receipt endpoint at receipt.ebirr.com/{tenant}/{token}."
+      },
+      {
+        "q": "How do I find my eBirr receipt URL?",
+        "a": "Open the eBirr app, go to your transaction history, tap the transaction, and use the share button. The shared link will be in the format receipt.ebirr.com/{tenant}/{token}. You can paste this full URL or just the tenant/token part into cheki."
+      },
+      {
+        "q": "Is eBirr different from Telebirr?",
+        "a": "Yes. Telebirr is Ethio Telecom's mobile wallet. eBirr is a separate mobile money platform operated by eBirr Inc. that partners with multiple banks. They are completely different services with different receipt endpoints."
+      },
+      {
+        "q": "Is the eBirr receipt endpoint public?",
+        "a": "Yes. The receipt URL at receipt.ebirr.com/{tenant}/{token} is publicly accessible without authentication. The token is a random string that maps to a specific transaction. cheki, qbirr, and any other verification service use this same endpoint."
+      }
+    ],
+    "seo": {
+      "title": "Verify eBirr Receipts Online | Nib, Wegagen, Ahadu, KAAFI",
+      "description": "Verify eBirr mobile money receipts for free. Covers Nib International Bank, Wegagen Bank, Ahadu Bank, and KAAFI Microfinance. No signup, no API key.",
+      "keywords": [
+        "eBirr receipt verification",
+        "verify eBirr transaction",
+        "Nib International Bank receipt",
+        "Wegagen Bank receipt verify",
+        "Ahadu Bank receipt",
+        "KAAFI microfinance receipt",
+        "ebirr.com receipt check"
+      ]
+    }
+  },
+  {
+    "id": "nib",
+    "name": "Nib International Bank",
+    "shortName": "Nib Bank",
+    "type": "bank",
+    "status": "in-development",
+    "parser": "nib",
+    "responseType": "html",
+    "requiresAccount": false,
+    "endpoint": "receipt.ebirr.com/nib",
+    "endpointFormat": "https://receipt.ebirr.com/nib/{token}",
+    "sslVerify": true,
+    "color": "#1d4ed8",
+    "initials": "Nib Bank",
+    "description": "Nib International Bank is one of Ethiopia's largest private banks with 410 branches. Nib partners with eBirr for mobile money services. Receipts are available via receipt.ebirr.com/nib/{token}. Verification is handled through cheki's eBirr parser.",
+    "referenceFormat": "eBirr receipt URL or tenant/token (nib/{token})",
+    "referenceExample": "nib/abc123def",
+    "howToVerify": [
+      "Use the eBirr receipt sharing feature in the Nib mobile app",
+      "Paste the receipt URL or tenant/token into cheki",
+      "cheki detects the 'nib' tenant and fetches from receipt.ebirr.com"
+    ],
+    "useCases": [
+      "Merchants verifying Nib Bank transfers",
+      "Businesses reconciling Nib deposits"
+    ],
+    "faq": [
+      {
+        "q": "How do I verify a Nib International Bank receipt?",
+        "a": "Nib Bank uses the eBirr platform for mobile receipts. Share the receipt from the Nib app to get a receipt.ebirr.com/nib/{token} URL, then paste it into cheki. Select 'eBirr' from the bank dropdown."
+      }
+    ],
+    "seo": {
+      "title": "Verify Nib International Bank Receipts Online",
+      "description": "Verify Nib International Bank receipts for free via eBirr. No signup, no API key.",
+      "keywords": [
+        "Nib International Bank receipt",
+        "verify Nib Bank",
+        "Nib Bank eBirr"
+      ]
+    }
+  },
+  {
+    "id": "wegagen",
+    "name": "Wegagen Bank",
+    "shortName": "Wegagen",
+    "type": "bank",
+    "status": "in-development",
+    "parser": "wegagen",
+    "responseType": "html",
+    "requiresAccount": false,
+    "endpoint": "receipt.ebirr.com/wegagen",
+    "endpointFormat": "https://receipt.ebirr.com/wegagen/{token}",
+    "sslVerify": true,
+    "color": "#b45309",
+    "initials": "Wegagen",
+    "description": "Wegagen Bank is a private commercial bank established in 1996 with 279 branches. Wegagen partners with eBirr for mobile money. Receipts are available via receipt.ebirr.com/wegagen/{token}.",
+    "referenceFormat": "eBirr receipt URL or tenant/token (wegagen/{token})",
+    "referenceExample": "wegagen/abc123def",
+    "howToVerify": [
+      "Use the eBirr receipt sharing feature in the Wegagen mobile app",
+      "Paste the receipt URL or tenant/token into cheki"
+    ],
+    "useCases": [
+      "Merchants verifying Wegagen Bank transfers",
+      "Businesses reconciling Wegagen deposits"
+    ],
+    "faq": [
+      {
+        "q": "How do I verify a Wegagen Bank receipt?",
+        "a": "Wegagen Bank uses the eBirr platform. Share the receipt to get a receipt.ebirr.com/wegagen/{token} URL, then paste it into cheki."
+      }
+    ],
+    "seo": {
+      "title": "Verify Wegagen Bank Receipts Online",
+      "description": "Verify Wegagen Bank receipts for free via eBirr. No signup, no API key.",
+      "keywords": [
+        "Wegagen Bank receipt",
+        "verify Wegagen",
+        "Wegagen eBirr"
+      ]
+    }
+  },
+  {
+    "id": "ahadu",
+    "name": "Ahadu Bank",
+    "shortName": "Ahadu",
+    "type": "bank",
+    "status": "in-development",
+    "parser": "ahadu",
+    "responseType": "html",
+    "requiresAccount": false,
+    "endpoint": "receipt.ebirr.com/ahadu",
+    "endpointFormat": "https://receipt.ebirr.com/ahadu/{token}",
+    "sslVerify": true,
+    "color": "#7c3aed",
+    "initials": "Ahadu",
+    "description": "Ahadu Bank is a newer private commercial bank established in 2022. Ahadu partners with eBirr for mobile money. Receipts are available via receipt.ebirr.com/ahadu/{token}.",
+    "referenceFormat": "eBirr receipt URL or tenant/token (ahadu/{token})",
+    "referenceExample": "ahadu/abc123def",
+    "howToVerify": [
+      "Use the eBirr receipt sharing feature in the Ahadu mobile app",
+      "Paste the receipt URL or tenant/token into cheki"
+    ],
+    "useCases": [
+      "Merchants verifying Ahadu Bank transfers",
+      "Businesses reconciling Ahadu deposits"
+    ],
+    "faq": [
+      {
+        "q": "How do I verify an Ahadu Bank receipt?",
+        "a": "Ahadu Bank uses the eBirr platform. Share the receipt to get a receipt.ebirr.com/ahadu/{token} URL, then paste it into cheki."
+      }
+    ],
+    "seo": {
+      "title": "Verify Ahadu Bank Receipts Online",
+      "description": "Verify Ahadu Bank receipts for free via eBirr. No signup, no API key.",
+      "keywords": [
+        "Ahadu Bank receipt",
+        "verify Ahadu",
+        "Ahadu eBirr"
+      ]
+    }
+  },
+  {
+    "id": "kaafi",
+    "name": "KAAFI Microfinance",
+    "shortName": "KAAFI",
+    "type": "mobile",
+    "status": "in-development",
+    "parser": "kaafi",
+    "responseType": "html",
+    "requiresAccount": false,
+    "endpoint": "receipt.ebirr.com/kaafimf",
+    "endpointFormat": "https://receipt.ebirr.com/kaafimf/{token}",
+    "sslVerify": true,
+    "color": "#0891b2",
+    "initials": "KAAFI",
+    "description": "KAAFI Microfinance is an eBirr partner providing mobile money services. Receipts are available via receipt.ebirr.com/kaafimf/{token}. verify.et also supports KAAFI as 'Kaafi Ebirr'.",
+    "referenceFormat": "eBirr receipt URL or tenant/token (kaafimf/{token})",
+    "referenceExample": "kaafimf/abc123def",
+    "howToVerify": [
+      "Use the eBirr receipt sharing feature in the KAAFI app",
+      "Paste the receipt URL or tenant/token into cheki"
+    ],
+    "useCases": [
+      "Merchants verifying KAAFI payments",
+      "Businesses reconciling KAAFI transfers"
+    ],
+    "faq": [
+      {
+        "q": "How do I verify a KAAFI Microfinance receipt?",
+        "a": "KAAFI uses the eBirr platform with tenant code 'kaafimf'. Share the receipt to get a receipt.ebirr.com/kaafimf/{token} URL, then paste it into cheki."
+      }
+    ],
+    "seo": {
+      "title": "Verify KAAFI Microfinance Receipts Online",
+      "description": "Verify KAAFI Microfinance receipts for free via eBirr. No signup, no API key.",
+      "keywords": [
+        "KAAFI receipt",
+        "verify KAAFI",
+        "Kaafi Ebirr",
+        "KAAFI microfinance receipt"
+      ]
+    }
+  },
+  {
+    "id": "abay",
+    "name": "Abay Bank",
+    "shortName": "Abay",
+    "type": "bank",
+    "status": "in-development",
+    "parser": "abay",
+    "responseType": "json",
+    "requiresAccount": false,
+    "endpoint": "Unknown",
+    "endpointFormat": "Researching public receipt endpoint",
+    "sslVerify": true,
+    "color": "#4338ca",
+    "initials": "Abay",
+    "description": "Abay Bank is a private commercial bank established in 2010 with 279 branches. No public receipt verification endpoint has been identified yet. Digital banking is available via abaybank.com.et.",
+    "referenceFormat": "Unknown, researching",
+    "referenceExample": "",
+    "howToVerify": [
+      "Researching receipt verification options for Abay Bank"
+    ],
+    "useCases": [
+      "Future support for Abay Bank receipt verification"
+    ],
+    "faq": [
+      {
+        "q": "Can I verify Abay Bank receipts with cheki?",
+        "a": "Not yet. We are researching Abay Bank's receipt system. If you have an Abay Bank receipt with a QR code or receipt URL, contact us so we can investigate the endpoint."
+      }
+    ],
+    "seo": {
+      "title": "Verify Abay Bank Receipts Online",
+      "description": "Abay Bank receipt verification is coming to cheki. Free, no signup.",
+      "keywords": [
+        "Abay Bank receipt",
+        "verify Abay Bank",
+        "Abay Bank transaction"
+      ]
+    }
+  },
+  {
+    "id": "addis",
+    "name": "Addis International Bank",
+    "shortName": "Addis Bank",
+    "type": "bank",
+    "status": "in-development",
+    "parser": "addis",
+    "responseType": "json",
+    "requiresAccount": false,
+    "endpoint": "Unknown",
+    "endpointFormat": "Researching public receipt endpoint",
+    "sslVerify": true,
+    "color": "#0e7490",
+    "initials": "Addis Bank",
+    "description": "Addis International Bank was established in 2011 with 146 branches. No public receipt verification endpoint has been identified yet.",
+    "referenceFormat": "Unknown, researching",
+    "referenceExample": "",
+    "howToVerify": [
+      "Researching receipt verification options for Addis International Bank"
+    ],
+    "useCases": [
+      "Future support for Addis International Bank receipt verification"
+    ],
+    "faq": [
+      {
+        "q": "Can I verify Addis International Bank receipts with cheki?",
+        "a": "Not yet. We are researching Addis Bank's receipt system."
+      }
+    ],
+    "seo": {
+      "title": "Verify Addis International Bank Receipts Online",
+      "description": "Addis International Bank receipt verification is coming to cheki.",
+      "keywords": [
+        "Addis International Bank receipt",
+        "verify Addis Bank"
+      ]
+    }
+  },
+  {
+    "id": "amhara",
+    "name": "Amhara Bank",
+    "shortName": "Amhara",
+    "type": "bank",
+    "status": "in-development",
+    "parser": "amhara",
+    "responseType": "json",
+    "requiresAccount": false,
+    "endpoint": "Unknown",
+    "endpointFormat": "Researching public receipt endpoint",
+    "sslVerify": true,
+    "color": "#15803d",
+    "initials": "Amhara",
+    "description": "Amhara Bank is a newer private bank established in 2022 with 320 branches. Website at amharabank.com.et. No public receipt verification endpoint has been identified yet.",
+    "referenceFormat": "Unknown, researching",
+    "referenceExample": "",
+    "howToVerify": [
+      "Researching receipt verification options for Amhara Bank"
+    ],
+    "useCases": [
+      "Future support for Amhara Bank receipt verification"
+    ],
+    "faq": [
+      {
+        "q": "Can I verify Amhara Bank receipts with cheki?",
+        "a": "Not yet. We are researching Amhara Bank's receipt system."
+      }
+    ],
+    "seo": {
+      "title": "Verify Amhara Bank Receipts Online",
+      "description": "Amhara Bank receipt verification is coming to cheki.",
+      "keywords": [
+        "Amhara Bank receipt",
+        "verify Amhara Bank"
+      ]
+    }
+  },
+  {
+    "id": "berhan",
+    "name": "Berhan International Bank",
+    "shortName": "Berhan",
+    "type": "bank",
+    "status": "in-development",
+    "parser": "berhan",
+    "responseType": "json",
+    "requiresAccount": false,
+    "endpoint": "Unknown",
+    "endpointFormat": "Researching public receipt endpoint",
+    "sslVerify": true,
+    "color": "#a16207",
+    "initials": "Berhan",
+    "description": "Berhan International Bank was established in 2009. No public receipt verification endpoint has been identified yet.",
+    "referenceFormat": "Unknown, researching",
+    "referenceExample": "",
+    "howToVerify": [
+      "Researching receipt verification options for Berhan International Bank"
+    ],
+    "useCases": [
+      "Future support for Berhan International Bank receipt verification"
+    ],
+    "faq": [
+      {
+        "q": "Can I verify Berhan International Bank receipts with cheki?",
+        "a": "Not yet. We are researching Berhan Bank's receipt system."
+      }
+    ],
+    "seo": {
+      "title": "Verify Berhan International Bank Receipts Online",
+      "description": "Berhan International Bank receipt verification is coming to cheki.",
+      "keywords": [
+        "Berhan International Bank receipt",
+        "verify Berhan Bank"
+      ]
+    }
+  },
+  {
+    "id": "bunna",
+    "name": "Bunna International Bank",
+    "shortName": "Bunna",
+    "type": "bank",
+    "status": "in-development",
+    "parser": "bunna",
+    "responseType": "json",
+    "requiresAccount": false,
+    "endpoint": "Unknown",
+    "endpointFormat": "Researching public receipt endpoint",
+    "sslVerify": true,
+    "color": "#9333ea",
+    "initials": "Bunna",
+    "description": "Bunna International Bank was established in 2009. No public receipt verification endpoint has been identified yet.",
+    "referenceFormat": "Unknown, researching",
+    "referenceExample": "",
+    "howToVerify": [
+      "Researching receipt verification options for Bunna International Bank"
+    ],
+    "useCases": [
+      "Future support for Bunna International Bank receipt verification"
+    ],
+    "faq": [
+      {
+        "q": "Can I verify Bunna International Bank receipts with cheki?",
+        "a": "Not yet. We are researching Bunna Bank's receipt system."
+      }
+    ],
+    "seo": {
+      "title": "Verify Bunna International Bank Receipts Online",
+      "description": "Bunna International Bank receipt verification is coming to cheki.",
+      "keywords": [
+        "Bunna International Bank receipt",
+        "verify Bunna Bank"
+      ]
+    }
+  },
+  {
+    "id": "enat",
+    "name": "Enat Bank",
+    "shortName": "Enat",
+    "type": "bank",
+    "status": "in-development",
+    "parser": "enat",
+    "responseType": "json",
+    "requiresAccount": false,
+    "endpoint": "Unknown",
+    "endpointFormat": "Researching public receipt endpoint",
+    "sslVerify": true,
+    "color": "#db2777",
+    "initials": "Enat",
+    "description": "Enat Bank is a women-focused bank established in 2013. No public receipt verification endpoint has been identified yet.",
+    "referenceFormat": "Unknown, researching",
+    "referenceExample": "",
+    "howToVerify": [
+      "Researching receipt verification options for Enat Bank"
+    ],
+    "useCases": [
+      "Future support for Enat Bank receipt verification"
+    ],
+    "faq": [
+      {
+        "q": "Can I verify Enat Bank receipts with cheki?",
+        "a": "Not yet. We are researching Enat Bank's receipt system."
+      }
+    ],
+    "seo": {
+      "title": "Verify Enat Bank Receipts Online",
+      "description": "Enat Bank receipt verification is coming to cheki.",
+      "keywords": [
+        "Enat Bank receipt",
+        "verify Enat Bank"
+      ]
+    }
+  },
+  {
+    "id": "global",
+    "name": "Global Bank Ethiopia",
+    "shortName": "Global Bank",
+    "type": "bank",
+    "status": "in-development",
+    "parser": "global",
+    "responseType": "json",
+    "requiresAccount": false,
+    "endpoint": "Unknown",
+    "endpointFormat": "Researching public receipt endpoint",
+    "sslVerify": true,
+    "color": "#475569",
+    "initials": "Global Bank",
+    "description": "Global Bank Ethiopia was established in 2012. No public receipt verification endpoint has been identified yet.",
+    "referenceFormat": "Unknown, researching",
+    "referenceExample": "",
+    "howToVerify": [
+      "Researching receipt verification options for Global Bank Ethiopia"
+    ],
+    "useCases": [
+      "Future support for Global Bank Ethiopia receipt verification"
+    ],
+    "faq": [
+      {
+        "q": "Can I verify Global Bank Ethiopia receipts with cheki?",
+        "a": "Not yet. We are researching Global Bank's receipt system."
+      }
+    ],
+    "seo": {
+      "title": "Verify Global Bank Ethiopia Receipts Online",
+      "description": "Global Bank Ethiopia receipt verification is coming to cheki.",
+      "keywords": [
+        "Global Bank Ethiopia receipt",
+        "verify Global Bank"
+      ]
+    }
+  },
+  {
+    "id": "lion",
+    "name": "Lion International Bank",
+    "shortName": "Lion Bank",
+    "type": "bank",
+    "status": "in-development",
+    "parser": "lion",
+    "responseType": "json",
+    "requiresAccount": false,
+    "endpoint": "Unknown",
+    "endpointFormat": "Researching public receipt endpoint",
+    "sslVerify": true,
+    "color": "#ea580c",
+    "initials": "Lion Bank",
+    "description": "Lion International Bank (also known as Anbessa Bank) was established in 2006. No public receipt verification endpoint has been identified yet.",
+    "referenceFormat": "Unknown, researching",
+    "referenceExample": "",
+    "howToVerify": [
+      "Researching receipt verification options for Lion International Bank"
+    ],
+    "useCases": [
+      "Future support for Lion International Bank receipt verification"
+    ],
+    "faq": [
+      {
+        "q": "Can I verify Lion International Bank receipts with cheki?",
+        "a": "Not yet. We are researching Lion Bank's receipt system."
+      }
+    ],
+    "seo": {
+      "title": "Verify Lion International Bank Receipts Online",
+      "description": "Lion International Bank receipt verification is coming to cheki.",
+      "keywords": [
+        "Lion International Bank receipt",
+        "verify Lion Bank",
+        "Anbessa Bank receipt"
+      ]
+    }
+  },
+  {
+    "id": "oromia",
+    "name": "Oromia International Bank",
+    "shortName": "Oromia Bank",
+    "type": "bank",
+    "status": "in-development",
+    "parser": "oromia",
+    "responseType": "json",
+    "requiresAccount": false,
+    "endpoint": "Unknown",
+    "endpointFormat": "Researching public receipt endpoint",
+    "sslVerify": true,
+    "color": "#16a34a",
+    "initials": "Oromia Bank",
+    "description": "Oromia International Bank was established in 2008. No public receipt verification endpoint has been identified yet.",
+    "referenceFormat": "Unknown, researching",
+    "referenceExample": "",
+    "howToVerify": [
+      "Researching receipt verification options for Oromia International Bank"
+    ],
+    "useCases": [
+      "Future support for Oromia International Bank receipt verification"
+    ],
+    "faq": [
+      {
+        "q": "Can I verify Oromia International Bank receipts with cheki?",
+        "a": "Not yet. We are researching Oromia Bank's receipt system."
+      }
+    ],
+    "seo": {
+      "title": "Verify Oromia International Bank Receipts Online",
+      "description": "Oromia International Bank receipt verification is coming to cheki.",
+      "keywords": [
+        "Oromia International Bank receipt",
+        "verify Oromia Bank"
+      ]
+    }
+  },
+  {
+    "id": "hibret",
+    "name": "Hibret Bank",
+    "shortName": "Hibret",
+    "type": "bank",
+    "status": "in-development",
+    "parser": "hibret",
+    "responseType": "json",
+    "requiresAccount": false,
+    "endpoint": "Unknown",
+    "endpointFormat": "Researching public receipt endpoint",
+    "sslVerify": true,
+    "color": "#0369a1",
+    "initials": "Hibret",
+    "description": "Hibret Bank (formerly United Bank) was established in 1998. No public receipt verification endpoint has been identified yet.",
+    "referenceFormat": "Unknown, researching",
+    "referenceExample": "",
+    "howToVerify": [
+      "Researching receipt verification options for Hibret Bank"
+    ],
+    "useCases": [
+      "Future support for Hibret Bank receipt verification"
+    ],
+    "faq": [
+      {
+        "q": "Can I verify Hibret Bank receipts with cheki?",
+        "a": "Not yet. We are researching Hibret Bank's receipt system."
+      }
+    ],
+    "seo": {
+      "title": "Verify Hibret Bank Receipts Online",
+      "description": "Hibret Bank receipt verification is coming to cheki.",
+      "keywords": [
+        "Hibret Bank receipt",
+        "verify Hibret Bank",
+        "United Bank Ethiopia receipt"
+      ]
+    }
+  },
+  {
+    "id": "zamzam",
+    "name": "ZamZam Bank",
+    "shortName": "ZamZam",
+    "type": "bank",
+    "status": "in-development",
+    "parser": "zamzam",
+    "responseType": "json",
+    "requiresAccount": false,
+    "endpoint": "Unknown",
+    "endpointFormat": "Researching public receipt endpoint",
+    "sslVerify": true,
+    "color": "#0d9488",
+    "initials": "ZamZam",
+    "description": "ZamZam Bank is an Islamic bank established in 2021. No public receipt verification endpoint has been identified yet.",
+    "referenceFormat": "Unknown, researching",
+    "referenceExample": "",
+    "howToVerify": [
+      "Researching receipt verification options for ZamZam Bank"
+    ],
+    "useCases": [
+      "Future support for ZamZam Bank receipt verification"
+    ],
+    "faq": [
+      {
+        "q": "Can I verify ZamZam Bank receipts with cheki?",
+        "a": "Not yet. We are researching ZamZam Bank's receipt system."
+      }
+    ],
+    "seo": {
+      "title": "Verify ZamZam Bank Receipts Online",
+      "description": "ZamZam Bank receipt verification is coming to cheki.",
+      "keywords": [
+        "ZamZam Bank receipt",
+        "verify ZamZam Bank",
+        "Islamic bank Ethiopia receipt"
+      ]
+    }
+  },
+  {
+    "id": "hijra",
+    "name": "Hijra Bank",
+    "shortName": "Hijra",
+    "type": "bank",
+    "status": "in-development",
+    "parser": "hijra",
+    "responseType": "json",
+    "requiresAccount": false,
+    "endpoint": "Unknown",
+    "endpointFormat": "Researching public receipt endpoint",
+    "sslVerify": true,
+    "color": "#65a30d",
+    "initials": "Hijra",
+    "description": "Hijra Bank is an Islamic bank established in 2021. No public receipt verification endpoint has been identified yet.",
+    "referenceFormat": "Unknown, researching",
+    "referenceExample": "",
+    "howToVerify": [
+      "Researching receipt verification options for Hijra Bank"
+    ],
+    "useCases": [
+      "Future support for Hijra Bank receipt verification"
+    ],
+    "faq": [
+      {
+        "q": "Can I verify Hijra Bank receipts with cheki?",
+        "a": "Not yet. We are researching Hijra Bank's receipt system."
+      }
+    ],
+    "seo": {
+      "title": "Verify Hijra Bank Receipts Online",
+      "description": "Hijra Bank receipt verification is coming to cheki.",
+      "keywords": [
+        "Hijra Bank receipt",
+        "verify Hijra Bank",
+        "Islamic bank Ethiopia receipt"
+      ]
+    }
+  },
+  {
+    "id": "shabelle",
+    "name": "Shabelle Bank",
+    "shortName": "Shabelle",
+    "type": "bank",
+    "status": "in-development",
+    "parser": "shabelle",
+    "responseType": "json",
+    "requiresAccount": false,
+    "endpoint": "Unknown",
+    "endpointFormat": "Researching public receipt endpoint",
+    "sslVerify": true,
+    "color": "#ca8a04",
+    "initials": "Shabelle",
+    "description": "Shabelle Bank was established in 2021. No public receipt verification endpoint has been identified yet.",
+    "referenceFormat": "Unknown, researching",
+    "referenceExample": "",
+    "howToVerify": [
+      "Researching receipt verification options for Shabelle Bank"
+    ],
+    "useCases": [
+      "Future support for Shabelle Bank receipt verification"
+    ],
+    "faq": [
+      {
+        "q": "Can I verify Shabelle Bank receipts with cheki?",
+        "a": "Not yet. We are researching Shabelle Bank's receipt system."
+      }
+    ],
+    "seo": {
+      "title": "Verify Shabelle Bank Receipts Online",
+      "description": "Shabelle Bank receipt verification is coming to cheki.",
+      "keywords": [
+        "Shabelle Bank receipt",
+        "verify Shabelle Bank"
+      ]
+    }
+  },
+  {
+    "id": "goh",
+    "name": "Goh Betoch Bank",
+    "shortName": "Goh Betoch",
+    "type": "bank",
+    "status": "in-development",
+    "parser": "goh",
+    "responseType": "json",
+    "requiresAccount": false,
+    "endpoint": "Unknown",
+    "endpointFormat": "Researching public receipt endpoint",
+    "sslVerify": true,
+    "color": "#9f1239",
+    "initials": "Goh Betoch",
+    "description": "Goh Betoch Bank SC is a mortgage and housing bank established in 2021. As a specialized housing bank, it may not have standard retail transfer receipts. No public receipt verification endpoint has been identified.",
+    "referenceFormat": "Unknown, researching",
+    "referenceExample": "",
+    "howToVerify": [
+      "Researching receipt verification options for Goh Betoch Bank"
+    ],
+    "useCases": [
+      "Future support for Goh Betoch Bank receipt verification"
+    ],
+    "faq": [
+      {
+        "q": "Can I verify Goh Betoch Bank receipts with cheki?",
+        "a": "Not yet. Goh Betoch is a specialized housing bank and may not have standard retail transfer receipts."
+      }
+    ],
+    "seo": {
+      "title": "Verify Goh Betoch Bank Receipts Online",
+      "description": "Goh Betoch Bank receipt verification is coming to cheki.",
+      "keywords": [
+        "Goh Betoch Bank receipt",
+        "verify Goh Betoch"
+      ]
+    }
+  },
+  {
+    "id": "tsedey",
+    "name": "Tsedey Bank",
+    "shortName": "Tsedey",
+    "type": "bank",
+    "status": "in-development",
+    "parser": "tsedey",
+    "responseType": "json",
+    "requiresAccount": false,
+    "endpoint": "Unknown",
+    "endpointFormat": "Researching public receipt endpoint",
+    "sslVerify": true,
+    "color": "#7e22ce",
+    "initials": "Tsedey",
+    "description": "Tsedey Bank was established in 2022. No public receipt verification endpoint has been identified yet.",
+    "referenceFormat": "Unknown, researching",
+    "referenceExample": "",
+    "howToVerify": [
+      "Researching receipt verification options for Tsedey Bank"
+    ],
+    "useCases": [
+      "Future support for Tsedey Bank receipt verification"
+    ],
+    "faq": [
+      {
+        "q": "Can I verify Tsedey Bank receipts with cheki?",
+        "a": "Not yet. We are researching Tsedey Bank's receipt system."
+      }
+    ],
+    "seo": {
+      "title": "Verify Tsedey Bank Receipts Online",
+      "description": "Tsedey Bank receipt verification is coming to cheki.",
+      "keywords": [
+        "Tsedey Bank receipt",
+        "verify Tsedey Bank"
+      ]
+    }
+  },
+  {
+    "id": "gadaa",
+    "name": "Gadaa Bank",
+    "shortName": "Gadaa",
+    "type": "bank",
+    "status": "in-development",
+    "parser": "gadaa",
+    "responseType": "json",
+    "requiresAccount": false,
+    "endpoint": "Unknown",
+    "endpointFormat": "Researching public receipt endpoint",
+    "sslVerify": true,
+    "color": "#15803d",
+    "initials": "Gadaa",
+    "description": "Gadaa Bank SC was established in 2022. No public receipt verification endpoint has been identified yet.",
+    "referenceFormat": "Unknown, researching",
+    "referenceExample": "",
+    "howToVerify": [
+      "Researching receipt verification options for Gadaa Bank"
+    ],
+    "useCases": [
+      "Future support for Gadaa Bank receipt verification"
+    ],
+    "faq": [
+      {
+        "q": "Can I verify Gadaa Bank receipts with cheki?",
+        "a": "Not yet. We are researching Gadaa Bank's receipt system."
+      }
+    ],
+    "seo": {
+      "title": "Verify Gadaa Bank Receipts Online",
+      "description": "Gadaa Bank receipt verification is coming to cheki.",
+      "keywords": [
+        "Gadaa Bank receipt",
+        "verify Gadaa Bank"
+      ]
+    }
+  },
+  {
+    "id": "rammis",
+    "name": "Rammis Bank",
+    "shortName": "Rammis",
+    "type": "bank",
+    "status": "in-development",
+    "parser": "rammis",
+    "responseType": "json",
+    "requiresAccount": false,
+    "endpoint": "Unknown",
+    "endpointFormat": "Researching public receipt endpoint",
+    "sslVerify": true,
+    "color": "#be185d",
+    "initials": "Rammis",
+    "description": "Rammis Bank is one of Ethiopia's newest banks, established in 2022. Website at rammisbank.et. No public receipt verification endpoint has been identified yet.",
+    "referenceFormat": "Unknown, researching",
+    "referenceExample": "",
+    "howToVerify": [
+      "Researching receipt verification options for Rammis Bank"
+    ],
+    "useCases": [
+      "Future support for Rammis Bank receipt verification"
+    ],
+    "faq": [
+      {
+        "q": "Can I verify Rammis Bank receipts with cheki?",
+        "a": "Not yet. We are researching Rammis Bank's receipt system."
+      }
+    ],
+    "seo": {
+      "title": "Verify Rammis Bank Receipts Online",
+      "description": "Rammis Bank receipt verification is coming to cheki.",
+      "keywords": [
+        "Rammis Bank receipt",
+        "verify Rammis Bank"
+      ]
+    }
   },
   {
     "id": "cbe-new",
@@ -35,145 +1424,5 @@
     "color": "#502878",
     "initials": "CBE",
     "notes": "New QR-based receipt sharing system."
-  },
-  {
-    "id": "telebirr",
-    "name": "Telebirr",
-    "type": "wallet",
-    "status": "live",
-    "parser": "telebirr",
-    "responseType": "html",
-    "requiresAccount": false,
-    "requiresPhone": false,
-    "endpoint": "https://transactioninfo.ethiotelecom.et/receipt/{ref}",
-    "sslVerify": true,
-    "color": "#00A0DC",
-    "initials": "TB",
-    "notes": "Geo-blocked from non-Ethiopian IPs."
-  },
-  {
-    "id": "boa",
-    "name": "Bank of Abyssinia",
-    "swift": "ABYSETAA",
-    "type": "bank",
-    "status": "live",
-    "parser": "boa",
-    "responseType": "json",
-    "requiresAccount": true,
-    "accountDigits": 5,
-    "requiresPhone": false,
-    "endpoint": "https://cs.bankofabyssinia.com/api/onlineSlip/getDetails/?id={ref}{account}",
-    "sslVerify": true,
-    "color": "#0E4D92",
-    "initials": "BOA"
-  },
-  {
-    "id": "mpesa",
-    "name": "M-Pesa Ethiopia",
-    "type": "wallet",
-    "status": "live",
-    "parser": "mpesa",
-    "responseType": "json",
-    "requiresAccount": false,
-    "requiresPhone": false,
-    "endpoint": "https://m-pesabusiness.safaricom.et/api/receipt/getReceipt?trxNo={ref}",
-    "sslVerify": true,
-    "color": "#00A651",
-    "initials": "MP",
-    "notes": "Geo-blocked from non-Kenyan/Ethiopian IPs."
-  },
-  {
-    "id": "dashen",
-    "name": "Dashen Bank",
-    "swift": "DASHETAA",
-    "type": "bank",
-    "status": "live",
-    "parser": "dashen",
-    "responseType": "pdf",
-    "requiresAccount": false,
-    "requiresPhone": false,
-    "endpoint": "https://receipt.dashensuperapp.com/receipt/{ref}",
-    "sslVerify": true,
-    "color": "#0066B3",
-    "initials": "DB",
-    "notes": "Verified working. Use the Dashen Transaction Reference (e.g. D31OBTI251720001). Works for both within-Dashen and Other Bank Transfer receipts."
-  },
-  {
-    "id": "awash",
-    "name": "Awash Bank",
-    "swift": "AWINETAA",
-    "type": "bank",
-    "status": "in-development",
-    "parser": "awash",
-    "responseType": "html",
-    "requiresAccount": false,
-    "requiresPhone": false,
-    "endpoint": "https://awashpay.awashbank.com:8225/-{ref}",
-    "sslVerify": false,
-    "color": "#E2231A",
-    "initials": "AB",
-    "notes": "Endpoint awashpay.awashbank.com:8225/-{ref} returns 'Invalid receipt id' for the visible Transaction ID. The exact receipt URL format may require a different field than the one shown on the mobile receipt."
-  },
-  {
-    "id": "zemen",
-    "name": "Zemen Bank",
-    "swift": "ZEMEETAA",
-    "type": "bank",
-    "status": "live",
-    "parser": "zemen",
-    "responseType": "pdf",
-    "requiresAccount": false,
-    "requiresPhone": false,
-    "endpoint": "https://share.zemenbank.com/rt/{ref}/pdf",
-    "sslVerify": true,
-    "color": "#1B75BB",
-    "initials": "ZB",
-    "notes": "Same endpoint pattern as other banks. Not yet tested with real receipt."
-  },
-  {
-    "id": "cbebirr",
-    "name": "CBE Birr",
-    "type": "wallet",
-    "status": "live",
-    "parser": "cbebirr",
-    "responseType": "html",
-    "requiresAccount": false,
-    "requiresPhone": true,
-    "endpoint": "https://cbepay1.cbe.com.et/aureceipt?TID={ref}&PH={phone}",
-    "sslVerify": false,
-    "color": "#502878",
-    "initials": "CB",
-    "notes": "Requires phone number. Not yet tested with real receipt."
-  },
-  {
-    "id": "siinqee",
-    "name": "Siinqee Bank",
-    "swift": "SINQETAA",
-    "type": "bank",
-    "status": "live",
-    "parser": "siinqee",
-    "responseType": "html",
-    "requiresAccount": false,
-    "requiresPhone": false,
-    "endpoint": "https://receipt.ebirr.com/siinqee/{ref}",
-    "sslVerify": true,
-    "color": "#006A4E",
-    "initials": "SQ",
-    "notes": "Routed through eBirr platform. Siinqee does not have a standalone receipt endpoint."
-  },
-  {
-    "id": "ebirr",
-    "name": "eBirr",
-    "type": "wallet",
-    "status": "live",
-    "parser": "ebirr",
-    "responseType": "html",
-    "requiresAccount": false,
-    "requiresPhone": false,
-    "endpoint": "https://receipt.ebirr.com/{tenant}/{token}",
-    "sslVerify": true,
-    "color": "#059669",
-    "initials": "eB",
-    "notes": "Shared receipt platform for Nib, Wegagen, Ahadu, KAAFI, and Siinqee/Coopbank. User provides tenant/token or full URL."
   }
 ]

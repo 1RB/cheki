@@ -5,8 +5,8 @@ import { describe, it, expect } from "vitest";
 import { getBank, getAllBanks, getLiveBanks, suggestBank } from "@/lib/manifest/loader";
 
 describe("manifest loader", () => {
-  it("loads all 11 banks", () => {
-    expect(getAllBanks().length).toBe(11);
+  it("loads all 32 banks", () => {
+    expect(getAllBanks().length).toBe(32);
   });
 
   it("returns live banks only", () => {
@@ -24,7 +24,7 @@ describe("manifest loader", () => {
   it("finds bank by lowercase id", () => {
     const telebirr = getBank("telebirr");
     expect(telebirr).toBeDefined();
-    expect(telebirr!.type).toBe("wallet");
+    expect(telebirr!.type).toBe("mobile");
   });
 
   it("returns undefined for unknown bank", () => {
@@ -65,7 +65,7 @@ describe("manifest loader", () => {
       expect(bank.color).toBeTruthy();
       expect(bank.initials).toBeTruthy();
       expect(bank.responseType).toMatch(/^(pdf|html|json)$/);
-      expect(bank.type).toMatch(/^(bank|wallet)$/);
+      expect(bank.type).toMatch(/^(bank|wallet|mobile)$/);
       expect(bank.status).toMatch(/^(live|in-development)$/);
     }
   });

@@ -184,21 +184,50 @@ export interface HttpResult {
 
 // ─── Bank Manifest Entry ────────────────────────────────────────────
 
+export interface BankFaqEntry {
+  q: string;
+  a: string;
+}
+
+export interface BankSeoEntry {
+  title: string;
+  description: string;
+  keywords: string[];
+}
+
+export interface BankRefPattern {
+  source: string;
+  flags: string;
+}
+
 export interface BankManifestEntry {
   id: string;
   name: string;
+  shortName?: string;
   swift?: string;
-  type: "bank" | "wallet";
+  type: "bank" | "wallet" | "mobile";
   status: "live" | "in-development";
   parser: string;
   responseType: "pdf" | "html" | "json";
   requiresAccount: boolean;
+  accountLabel?: string;
   accountDigits?: number;
   requiresPhone: boolean;
   endpoint: string;
+  endpointFormat?: string;
   sslVerify: boolean;
   headers?: Record<string, string>;
+  geoBlocked?: boolean;
   notes?: string;
   color: string;
   initials: string;
+  refPattern?: BankRefPattern | string;
+  refPrefixes?: string[];
+  description?: string;
+  referenceFormat?: string;
+  referenceExample?: string;
+  howToVerify?: string[];
+  useCases?: string[];
+  faq?: BankFaqEntry[];
+  seo?: BankSeoEntry;
 }
