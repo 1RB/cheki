@@ -140,7 +140,7 @@ export default function ComparePage() {
       banks: "4 banks (CBE, Telebirr, BOA, Awash)",
       pricing: "Not public. Pricing link is a dead anchor.",
       strengths: ["Telegram bot delivery (low friction)", "Ethiopian-hosted (Ethio Telecom IP)", "Workspace codes for staff"],
-      limitations: ["Only 4 banks", "No web app, no API, no docs", "Mobile app claimed but store links are dead", "SSL certificate expired April 2026, unrenewed", "No pricing transparency", "Made by a dev shop, not a dedicated fintech"],
+      limitations: ["Only 4 banks", "No web app, no API, no docs", "Mobile app claimed but store links are dead", "SSL certificate expired April 2026, unrenewed", "No pricing transparency"],
       stack: "Static HTML + Tailwind CDN, nginx/Plesk, Ethiopian IP",
     },
   ];
@@ -204,7 +204,7 @@ export default function ComparePage() {
         </div>
 
         {/* Competitor profiles */}
-        <h2 style={{ fontSize: "22px", fontWeight: 800, marginBottom: "20px" }}>Competitor profiles</h2>
+        <h2 style={{ fontSize: "22px", fontWeight: 800, marginBottom: "20px" }}>Service profiles</h2>
         <div className="grid-2" style={{ gap: "16px", marginBottom: "40px" }}>
           {competitors.map((c) => (
             <div key={c.name} style={{
@@ -266,7 +266,7 @@ export default function ComparePage() {
           ))}
         </div>
         <p style={{ marginTop: "16px", fontSize: "14px", color: "var(--ink-2)" }}>
-          cheki improves on all of these: web UI, REST API, batch verification, TypeScript SDK, Python library, Docker, 9 banks, bank-specific guide pages, BOA QR decryption, and zero cost.
+          cheki combines these approaches: a web UI, REST API, batch verification, TypeScript SDK, Python library, Docker, 9 live banks, guide pages, and BOA QR decryption. All free and open source.
         </p>
       </main>
       <Footer />
