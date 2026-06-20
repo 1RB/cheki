@@ -1375,6 +1375,66 @@ export const articles: Article[] = [
       keywords: ["cheki contribute", "add bank to cheki", "ethiopian bank receipt endpoint", "open source ethiopian fintech", "cheki community", "help add banks"],
     },
   },
+  {
+    slug: "contribute-translations",
+    title: "Help translate cheki into your language",
+    category: "open-source",
+    description: "cheki is built for Ethiopia. Add Amharic, Oromiffa, Tigrinya, or any other language. No coding required: just edit a JSON file.",
+    excerpt: "Translate cheki's interface into your language. No coding required. English and Amharic are live; we need Oromiffa, Tigrinya, Somali, and more.",
+    readTime: "5 min",
+    date: "2026-06-20",
+    content: [
+      { type: "text", text: "cheki is open source and free, but it's only useful if people can read it. Right now the interface is in English and Amharic. We want to add Oromiffa, Tigrinya, Somali, and any other language the community needs." },
+      { type: "text", text: "The good news: you don't need to be a developer. Translations live in a single JSON file per language. If you can edit text, you can translate cheki." },
+
+      { type: "heading", text: "How translation works" },
+      { type: "text", text: "Every piece of user-facing text in cheki has a key. For example, the hero title is stored as 'hero.title'. The English file says 'Verify Ethiopian receipts for free'. The Amharic file says 'የኢትዮጵያ ደረሰኞችን በነፃ ያረጋግጡ'." },
+      { type: "text", text: "To add a new language, you copy the English file, translate each value, and submit it. The site will automatically load the new language once the file is merged." },
+
+      { type: "heading", text: "Two ways to contribute" },
+      {
+        type: "list",
+        items: [
+          "GitHub: Fork github.com/1RB/cheki, copy src/lib/i18n/translations.ts, add your locale, and open a pull request.",
+          "Telegram: Send translated text to @raysterminalbot and we will format it into the codebase for you.",
+        ],
+      },
+
+      { type: "heading", text: "What to translate first" },
+      {
+        type: "list",
+        items: [
+          "Navigation labels (Verify, Banks, Guides, Developers, Compare)",
+          "Hero text and the verify form",
+          "Bank status labels (Live, In development)",
+          "Footer links and legal text",
+          "Compare page section headers",
+        ],
+      },
+
+      { type: "heading", text: "File structure" },
+      { type: "text", text: "Translations are in src/lib/i18n/translations.ts. Each locale is a top-level object with the same keys as English. If a key is missing in a new language, the site falls back to English so nothing breaks." },
+      { type: "text", text: "We keep all languages in one file so reviewers can see gaps easily. For now, focus on the strings used by the homepage, banks page, and footer. Guide articles and SEO pages stay in English until there is demand for translation." },
+
+      { type: "heading", text: "Quality standards" },
+      { type: "text", text: "Use the formal or informal tone that fits your language best. Keep bank names in English unless there is a widely accepted local spelling. Test your translation by running the site locally if you can, or just send us the text and we'll verify it renders correctly." },
+
+      { type: "callout", variant: "success", title: "Start with one screen", text: "You don't have to translate everything. Even translating the hero and navigation helps a lot of users. We can merge partial translations and fill in the rest later." },
+    ],
+    faq: [
+      { q: "Do I need to know how to code?", a: "No. You can translate the text in a message or document and we will add it to the code. If you know GitHub, opening a pull request is even faster." },
+      { q: "Can I translate only part of the site?", a: "Yes. The site falls back to English for any missing keys. Partial translations are useful and welcome." },
+      { q: "Which languages does cheki need most?", a: "Oromiffa, Tigrinya, Somali, and Sidama are the most requested. Any Ethiopian language is welcome." },
+      { q: "Will machine translation be accepted?", a: "We prefer human translation. Machine translation is okay as a starting point if a native speaker reviews it before merge." },
+      { q: "Can I translate guide articles too?", a: "Yes, but guide articles are much longer. Start with the interface strings. Once a language has good coverage, we can discuss translating specific guides." },
+    ],
+    related: ["contribute-new-bank", "open-source-ethiopian-fintech", "free-receipt-verification-no-api-key"],
+    seo: {
+      title: "Translate cheki into your language",
+      description: "Help translate cheki into Amharic, Oromiffa, Tigrinya, Somali, or any Ethiopian language. No coding required. Open source community translation.",
+      keywords: ["cheki translation", "translate cheki", "cheki amharic", "cheki oromiffa", "cheki tigrinya", "open source translation"],
+    },
+  },
 ];
 
 export function getArticle(slug: string): Article | undefined {

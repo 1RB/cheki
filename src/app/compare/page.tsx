@@ -1,29 +1,8 @@
-import type { Metadata } from "next";
-import { Nav, Footer } from "@/components/Chrome";
+"use client";
 
-export const metadata: Metadata = {
-  title: "cheki vs check.et vs verify.et vs qbirr vs tinaverify vs tally - Full Comparison",
-  description:
-    "Detailed comparison of Ethiopia's six receipt verification services. Pricing, features, banks, API, and transparency. cheki is free and open source; the rest charge for the same public data.",
-  alternates: {
-    canonical: "/compare",
-  },
-  openGraph: {
-    title:
-      "cheki vs check.et vs verify.et vs qbirr vs tinaverify vs tally - Full Comparison",
-    description:
-      "Six receipt verification services in Ethiopia. All use the same public bank endpoints. One is free and open source.",
-    type: "website",
-    url: "https://chekiapp.vercel.app/compare",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title:
-      "cheki vs check.et vs verify.et vs qbirr vs tinaverify vs tally - Full Comparison",
-    description:
-      "Six receipt verification services in Ethiopia. All use the same public bank endpoints. One is free and open source.",
-  },
-};
+import { Nav, Footer } from "@/components/Chrome";
+import { useTranslation } from "@/lib/i18n/use-translation";
+import { Icon, ArrowRight01Icon } from "@/components/Icon";
 
 const check = "\u2713";
 const dash = "-";
@@ -39,6 +18,7 @@ function Cell({ value, highlight }: { value: string; highlight?: boolean }) {
 }
 
 export default function ComparePage() {
+  const { t } = useTranslation();
   const services = [
     { key: "cheki", name: "cheki", href: "/", color: "var(--green)" },
     { key: "checket", name: "check.et", href: "https://check.et" },
@@ -83,8 +63,8 @@ export default function ComparePage() {
 
   function Table({ rows }: { rows: typeof pricingData }) {
     return (
-      <div className="table-wrap" style={{ marginBottom: "32px", overflowX: "auto" }}>
-        <table style={{ borderCollapse: "collapse", fontSize: "13px", background: "var(--surface)", borderRadius: "12px", overflow: "hidden", minWidth: "100%" }}>
+      <div className="table-wrap" style={{ marginBottom: "32px" }}>
+        <table style={{ borderCollapse: "collapse", fontSize: "13px", background: "var(--surface)", borderRadius: "12px", overflow: "hidden", width: "100%" }}>
           <thead>
             <tr style={{ borderBottom: "2px solid var(--border)" }}>
               <th style={{ textAlign: "left", padding: "12px 14px", fontWeight: 700, whiteSpace: "nowrap" }}>Feature</th>
@@ -120,7 +100,7 @@ export default function ComparePage() {
       banks: "9 banks, all live",
       pricing: "499 ETB/mo or 4,990/yr. 200 free (one-time, not monthly).",
       strengths: ["Bilingual (EN + Amharic)", "Polished UI, good SEO content", "Employee management, roles", "Webhooks on Pro plan", "Affiliate program (250 ETB/referral)"],
-      weaknesses: ["Charges for public data", "200 free verifications are one-time", "API requires business account", "No self-hosting, no open source", "Receipt source URLs hidden"],
+      limitations: ["Charges for public data", "200 free verifications are one-time", "API requires business account", "No self-hosting, no open source", "Receipt source URLs hidden"],
       stack: "Next.js, Vercel, Cloudflare",
     },
     {
@@ -130,7 +110,7 @@ export default function ComparePage() {
       banks: "10 banks, 9 live",
       pricing: "$20-40/mo USD. 200 free (one-time).",
       strengths: ["Android app on Play Store", "Blog content, status pages per bank", "TypeScript SDK published"],
-      weaknesses: ["Charges in USD", "Requires Telegram OAuth signup", "Blocks AI crawlers (GPTBot, ClaudeBot, CCBot)", "No open source, no self-hosting", "No batch verification, no Python library"],
+      limitations: ["Charges in USD", "Requires Telegram OAuth signup", "Blocks AI crawlers (GPTBot, ClaudeBot, CCBot)", "No open source, no self-hosting", "No batch verification, no Python library"],
       stack: "React, Cloudflare",
     },
     {
@@ -140,7 +120,7 @@ export default function ComparePage() {
       banks: "7 banks, all live",
       pricing: "50/mo free. 500-8K ETB/mo for 1K-100K verifications.",
       strengths: ["Clean REST API with rate limits", "Ethiopian relay for Telebirr/M-Pesa geo-block", "Configurable amount tolerance per merchant", "Per-merchant duplicate ref locking", "Scale plan with 99.9% SLA"],
-      weaknesses: ["Brand new (day-one launch)", "4 SDKs advertised but none published on npm/PyPI/Packagist/GitHub", "No mobile app, no QR scanning", "No web UI for verification", "English only, fewer banks than check.et/verify.et", "No Dart/PHP/Go SDK"],
+      limitations: ["Brand new (day-one launch)", "4 SDKs advertised but none published on npm/PyPI/Packagist/GitHub", "No mobile app, no QR scanning", "No web UI for verification", "English only, fewer banks than check.et/verify.et", "No Dart/PHP/Go SDK"],
       stack: "NestJS, Contabo VPS (France)",
     },
     {
@@ -150,7 +130,7 @@ export default function ComparePage() {
       banks: "6 banks, all live",
       pricing: "Credit-based. 3K ETB / 3,300 credits or 8K ETB / 9,500 credits. 90-day validity.",
       strengths: ["Published iOS + Android apps", "Cashier workflow: scan, verify, audit trail", "Multi-branch support", "Search by cashier, branch, amount, reference", "Daily sales tracking"],
-      weaknesses: ["No REST API", "Credit-based pricing (expires in 90 days)", "No open source, no self-hosting", "No batch verification", "Fewer banks than check.et/verify.et"],
+      limitations: ["No REST API", "Credit-based pricing (expires in 90 days)", "No open source, no self-hosting", "No batch verification", "Fewer banks than check.et/verify.et"],
       stack: "Next.js (App Router, Turbopack)",
     },
     {
@@ -160,7 +140,7 @@ export default function ComparePage() {
       banks: "4 banks (CBE, Telebirr, BOA, Awash)",
       pricing: "Not public. Pricing link is a dead anchor.",
       strengths: ["Telegram bot delivery (low friction)", "Ethiopian-hosted (Ethio Telecom IP)", "Workspace codes for staff"],
-      weaknesses: ["Only 4 banks", "No web app, no API, no docs", "Mobile app claimed but store links are dead", "SSL certificate expired April 2026, unrenewed", "No pricing transparency", "Made by a dev shop, not a dedicated fintech"],
+      limitations: ["Only 4 banks", "No web app, no API, no docs", "Mobile app claimed but store links are dead", "SSL certificate expired April 2026, unrenewed", "No pricing transparency", "Made by a dev shop, not a dedicated fintech"],
       stack: "Static HTML + Tailwind CDN, nginx/Plesk, Ethiopian IP",
     },
   ];
@@ -172,53 +152,55 @@ export default function ComparePage() {
         <nav style={{ fontSize: "13px", color: "var(--ink-3)", marginBottom: "16px" }}>
           <a href="/" style={{ color: "var(--ink-3)" }}>Home</a>
           <span style={{ margin: "0 6px"}}>/</span>
-          <span style={{ color: "var(--ink)" }}>Compare</span>
+          <span style={{ color: "var(--ink)" }}>{t("nav.compare")}</span>
         </nav>
         <h1 style={{ fontSize: "clamp(28px, 5vw, 40px)", fontWeight: 800, letterSpacing: "-0.03em", marginBottom: "16px" }}>
-          cheki vs the field
+          {t("compare.title")}
         </h1>
-        <p style={{ color: "var(--ink-2)", fontSize: "17px", maxWidth: "640px", marginBottom: "40px" }}>
-          Six receipt verification services in Ethiopia. All use the same public bank endpoints. One is free and open source. The rest charge for the same data.
+        <p style={{ color: "var(--ink-2)", fontSize: "17px", maxWidth: "640px", marginBottom: "24px" }}>
+          {t("compare.subtitle")}
         </p>
 
+        <div style={{
+          padding: "20px", borderRadius: "12px", background: "var(--surface)", border: "1px solid var(--border)", marginBottom: "32px",
+        }}>
+          <p style={{ fontSize: "15px", color: "var(--ink-2)", lineHeight: 1.6, marginBottom: "14px" }}>
+            {t("compare.verdict")}
+          </p>
+          <a href="/" style={{
+            display: "inline-flex", alignItems: "center", gap: "6px", padding: "10px 20px", borderRadius: "8px", background: "var(--green)", color: "#fff", fontSize: "14px", fontWeight: 600,
+          }}>
+            {t("compare.cta")}
+            <Icon icon={ArrowRight01Icon} size={14} color="#fff" />
+          </a>
+        </div>
+
         {/* Pricing */}
-        <h2 style={{ fontSize: "20px", fontWeight: 800, marginBottom: "16px" }}>Pricing and access</h2>
+        <h2 style={{ fontSize: "20px", fontWeight: 800, marginBottom: "16px" }}>{t("compare.pricing")}</h2>
         <Table rows={pricingData} />
 
         {/* Platform */}
-        <h2 style={{ fontSize: "20px", fontWeight: 800, marginBottom: "16px" }}>Platform and features</h2>
+        <h2 style={{ fontSize: "20px", fontWeight: 800, marginBottom: "16px" }}>{t("compare.platform")}</h2>
         <Table rows={platformData} />
 
         {/* Openness */}
-        <h2 style={{ fontSize: "20px", fontWeight: 800, marginBottom: "16px" }}>Transparency and openness</h2>
+        <h2 style={{ fontSize: "20px", fontWeight: 800, marginBottom: "16px" }}>{t("compare.transparency")}</h2>
         <Table rows={openData} />
 
         {/* The story */}
         <div style={{
-          padding: "32px", borderRadius: "12px", background: "var(--red-light)", border: "1px solid #fecaca", marginBottom: "40px",
+          padding: "32px", borderRadius: "12px", background: "var(--surface)", border: "1px solid var(--border)", marginBottom: "40px",
         }}>
-          <h2 style={{ fontSize: "22px", fontWeight: 800, color: "var(--red)", marginBottom: "16px" }}>The core fact</h2>
-          <p style={{ color: "#7f1d1d", fontSize: "15px", lineHeight: 1.7, marginBottom: "12px" }}>
-            Every Ethiopian bank and mobile wallet publishes transaction receipts at public URLs. These URLs require no authentication. Anyone can access them. This is by design: banks want merchants to verify payments.
+          <h2 style={{ fontSize: "22px", fontWeight: 800, color: "var(--ink)", marginBottom: "16px" }}>{t("compare.coreFact")}</h2>
+          <p style={{ color: "var(--ink-2)", fontSize: "15px", lineHeight: 1.7, marginBottom: "12px" }}>
+            {t("compare.coreFactText")}
           </p>
-          <p style={{ color: "#7f1d1d", fontSize: "15px", lineHeight: 1.7, marginBottom: "12px" }}>
-            <strong>check.et</strong> wraps these endpoints with authentication, a dashboard, and a pricing model. 200 free verifications (one-time, not monthly), then 499 ETB/month. The data is identical to what cheki returns for free.
-          </p>
-          <p style={{ color: "#7f1d1d", fontSize: "15px", lineHeight: 1.7, marginBottom: "12px" }}>
-            <strong>verify.et</strong> does the same, but charges in USD ($20-40/month) and blocks AI crawlers in its robots.txt (GPTBot, ClaudeBot, CCBot, Google-Extended). Made by Suba Software.
-          </p>
-          <p style={{ color: "#7f1d1d", fontSize: "15px", lineHeight: 1.7, marginBottom: "12px" }}>
-            <strong>qbirr</strong> is the newest (launched June 2026). Developer-first API with an Ethiopian relay for geo-blocked banks. Advertises 4 SDKs but none are published yet. 50 free verifications/month, then 500+ ETB/month.
-          </p>
-          <p style={{ color: "#7f1d1d", fontSize: "15px", lineHeight: 1.7, marginBottom: "12px" }}>
-            <strong>tinaverify</strong> focuses on the cashier workflow with published iOS and Android apps. Credit-based pricing (3K-8K ETB per 90 days). No API, no open source.
-          </p>
-          <p style={{ color: "#7f1d1d", fontSize: "15px", lineHeight: 1.7, marginBottom: "12px" }}>
-            <strong>tally</strong> is a Telegram bot by Sabi LLC. 4 banks, no web app, no API, expired SSL certificate, unreleased mobile app, no public pricing. The smallest player.
-          </p>
-          <p style={{ color: "#7f1d1d", fontSize: "15px", lineHeight: 1.7 }}>
-            <strong>cheki</strong> does the same thing as all of them, but is free, open source, and transparent. We show you the exact bank endpoint URL. We allow AI crawlers. We let you self-host. No one owns the public bank endpoints. No one should charge you for accessing them.
-          </p>
+          <a href="/guides/check-et-vs-verify-et-vs-cheki" style={{
+            display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "14px", color: "var(--green)", fontWeight: 600,
+          }}>
+            Read the full guide
+            <Icon icon={ArrowRight01Icon} size={14} color="var(--green)" />
+          </a>
         </div>
 
         {/* Competitor profiles */}
@@ -248,7 +230,7 @@ export default function ComparePage() {
                 <div>
                   <p style={{ fontSize: "12px", fontWeight: 700, color: "var(--red)", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.04em" }}>Limitations</p>
                   <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
-                    {c.weaknesses.map((w) => (
+                    {c.limitations.map((w) => (
                       <li key={w} style={{ fontSize: "13px", color: "var(--ink-2)", lineHeight: 1.5, marginBottom: "4px", paddingLeft: "14px", position: "relative" }}>
                         <span style={{ position: "absolute", left: 0, color: "var(--red)" }}>-</span>{w}
                       </li>

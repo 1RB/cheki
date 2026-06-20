@@ -7,9 +7,11 @@ import { articles } from "@/lib/guides";
 import { Nav, Footer } from "@/components/Chrome";
 import { BankLogoByName } from "@/components/BankLogo";
 import { BankSelector } from "@/components/BankSelector";
+import { useTranslation } from "@/lib/i18n/use-translation";
 import { Icon, BoltIcon, Key01Icon, Layers01Icon, CodeIcon, ReceiptTextIcon, Search01Icon, Camera01Icon, QrCode01Icon, QrCodeScanIcon, BookOpen01Icon, ContainerIcon, CheckmarkCircle01Icon, ArrowRight01Icon, GithubIcon, StarIcon, Copy01Icon, CopyCheckIcon, ChevronDownIcon, Alert01Icon } from "@/components/Icon";
 
 export default function Home() {
+  const { t } = useTranslation();
   const [bank, setBank] = useState<BankCode>("cbe");
   const [reference, setReference] = useState("");
   const [accountNumber, setAccountNumber] = useState("");
@@ -550,17 +552,15 @@ export default function Home() {
                 fontSize: "clamp(28px, 6vw, 42px)", fontWeight: 800, letterSpacing: "-0.03em",
                 lineHeight: 1.08, color: "var(--ink)", marginBottom: "14px",
               }}>
-                Verify any Ethiopian receipt.
-                <br />
-                <span style={{ color: "var(--green)" }}>Free. Forever.</span>
+                {t("hero.title")}
               </h1>
               <p style={{ color: "var(--ink-2)", fontSize: "16px", lineHeight: 1.5, maxWidth: "440px", marginBottom: "20px" }}>
-                No signup. No API key. No scam. The banks publish receipts on public URLs. We just parse them.
+                {t("hero.subtitle")}
               </p>
               <div className="hide-mobile" style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
                 <a href="/docs" style={{ padding: "10px 20px", borderRadius: "8px", border: "1px solid var(--border)", color: "var(--ink)", fontSize: "14px", fontWeight: 500, background: "var(--surface)" }}>API Docs</a>
                 <a href="/guides" style={{ padding: "10px 20px", borderRadius: "8px", border: "1px solid var(--border)", color: "var(--ink)", fontSize: "14px", fontWeight: 500, background: "var(--surface)" }}>Guides</a>
-                <a href="/compare" style={{ padding: "10px 20px", borderRadius: "8px", border: "1px solid var(--border)", color: "var(--ink)", fontSize: "14px", fontWeight: 500, background: "var(--surface)" }}>vs check.et</a>
+                <a href="/compare" style={{ padding: "10px 20px", borderRadius: "8px", border: "1px solid var(--border)", color: "var(--ink)", fontSize: "14px", fontWeight: 500, background: "var(--surface)" }}>Compare services</a>
               </div>
             </div>
 
@@ -609,7 +609,7 @@ export default function Home() {
               <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
                 {inputMode === "reference" && (
                   <div>
-                    <label style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink-2)", marginBottom: "6px", display: "block" }}>Bank</label>
+                    <label style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink-2)", marginBottom: "6px", display: "block" }}>{t("hero.bankLabel")}</label>
                     <BankSelector value={bank} onChange={(code) => { setBank(code as BankCode); setResult(null); setError(null); }} />
                   </div>
                 )}
@@ -619,16 +619,16 @@ export default function Home() {
                     <Icon icon={Alert01Icon} size={16} color="#92400e" />
                     <p style={{ fontSize: "12px", color: "#92400e", lineHeight: 1.5 }}>
                       This bank blocks requests from outside Ethiopia.{" "}
-                      <a href="https://github.com/1RB/cheki#self-hosting" target="_blank" rel="noopener" style={{ color: "#92400e", fontWeight: 600, textDecoration: "underline" }}>Self-host</a>, or just click Verify and we'll guide you through a 10-second browser fallback.
+                      <a href="https://github.com/1RB/cheki#self-hosting" target="_blank" rel="noopener" style={{ color: "#92400e", fontWeight: 600, textDecoration: "underline" }}>Self-host</a>, or just click Verify and we&apos;ll guide you through a 10-second browser fallback.
                     </p>
                   </div>
                 )}
 
                 <div>
                   <label style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink-2)", marginBottom: "6px", display: "block" }}>
-                    {inputMode === "url" ? "Receipt URL or link" : "Receipt reference number"}
+                    {inputMode === "url" ? "Receipt URL or link" : t("hero.referenceLabel")}
                   </label>
-                  <input type="text" value={reference} onChange={(e) => setReference(e.target.value)} onKeyDown={(e) => e.key === "Enter" && !loading && handleVerify()} placeholder={inputMode === "url" ? "Paste receipt link..." : "e.g. FT26140P01YB"} style={{ width: "100%", padding: "12px 16px", fontSize: "15px", border: "1px solid var(--border)", borderRadius: "8px", background: "var(--surface)", color: "var(--ink)", fontFamily: "var(--mono)" }} spellCheck={false} autoCapitalize="characters" />
+                  <input type="text" value={reference} onChange={(e) => setReference(e.target.value)} onKeyDown={(e) => e.key === "Enter" && !loading && handleVerify()} placeholder={inputMode === "url" ? "Paste receipt link..." : t("hero.referencePlaceholder")} style={{ width: "100%", padding: "12px 16px", fontSize: "15px", border: "1px solid var(--border)", borderRadius: "8px", background: "var(--surface)", color: "var(--ink)", fontFamily: "var(--mono)" }} spellCheck={false} autoCapitalize="characters" />
                   {reference && inputMode === "reference" && detectBank(reference) && (
                     <p style={{ fontSize: "12px", color: "var(--green)", marginTop: "6px", fontWeight: 500, display: "flex", alignItems: "center", gap: "4px" }}>
                       <Icon icon={Search01Icon} size={12} color="var(--green)" /> Detected: {banks.find((b) => b.code === detectBank(reference))?.name}
@@ -658,7 +658,7 @@ export default function Home() {
 
                 {needsAccount && inputMode === "reference" && (
                   <div className="fade-in">
-                    <label style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink-2)", marginBottom: "6px", display: "block" }}>{selectedBank.accountLabel || "Account number"}</label>
+                    <label style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink-2)", marginBottom: "6px", display: "block" }}>{selectedBank.accountLabel || t("hero.accountLabel")}</label>
                     <input type="text" value={accountNumber} onChange={(e) => setAccountNumber(e.target.value)} onKeyDown={(e) => e.key === "Enter" && !loading && handleVerify()} placeholder={`Last ${selectedBank.accountDigits} digits minimum`} style={{ width: "100%", padding: "12px 16px", fontSize: "15px", border: "1px solid var(--border)", borderRadius: "8px", background: "var(--surface)", color: "var(--ink)", fontFamily: "var(--mono)" }} spellCheck={false} />
                   </div>
                 )}
@@ -677,7 +677,7 @@ export default function Home() {
                   cursor: loading || (inputMode === "reference" && isDisabled) || (!showQrPaste && !reference.trim()) || (showQrPaste && !qrData.trim()) ? "not-allowed" : "pointer",
                   transition: "all 0.15s", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", minHeight: "48px",
                 }}>
-                  {loading ? (<><span className="spin" style={{ width: "16px", height: "16px", border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "#fff", borderRadius: "50%", display: "inline-block" }} /><span key="loading" className="t-text-swap-enter">Verifying...</span></>) : (inputMode === "reference" && isDisabled) ? <span key="disabled" className="t-text-swap-enter">In Development</span> : <span key="idle" className="t-text-swap-enter">Verify Receipt</span>}
+                  {loading ? (<><span className="spin" style={{ width: "16px", height: "16px", border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "#fff", borderRadius: "50%", display: "inline-block" }} /><span key="loading" className="t-text-swap-enter">{t("hero.verifying")}</span></>) : (inputMode === "reference" && isDisabled) ? <span key="disabled" className="t-text-swap-enter">{t("banks.inDevelopment")}</span> : <span key="idle" className="t-text-swap-enter">{t("hero.verifyButton")}</span>}
                 </button>
               </div>
 
@@ -903,7 +903,7 @@ export default function Home() {
             The banks publish receipts on public URLs
           </h2>
           <p style={{ color: "var(--ink-2)", fontSize: "16px", maxWidth: "600px", marginBottom: "20px", lineHeight: 1.5 }}>
-            Every Ethiopian bank and mobile wallet publishes transaction receipts at a publicly accessible URL. No authentication required. cheki fetches these URLs, parses the response, and returns clean JSON. That is all check.et and verify.et do too, except they charge you for it.
+            Every Ethiopian bank and mobile wallet publishes transaction receipts at a publicly accessible URL. No authentication required. cheki fetches these URLs, parses the response, and returns clean JSON. That is all receipt verification services do. The difference is that cheki does it for free and shows you the source URL.
           </p>
           <div style={{ borderRadius: "10px", overflow: "hidden", border: "1px solid var(--border)", background: "var(--bg)" }}>
             <div style={{ padding: "8px 14px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: "8px", background: "var(--surface)" }}>
@@ -947,37 +947,7 @@ export default function Home() {
         </section>
 
         {/* The Scam / Comparison - single panel, inline columns */}
-        <section className="container" style={{ marginTop: "40px" }}>
-          <div style={{ padding: "28px", borderRadius: "16px", background: "var(--red-light)", border: "1px solid #fecaca" }}>
-            <p style={{ fontSize: "12px", fontWeight: 600, color: "var(--red)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "8px" }}>The paid services</p>
-            <h2 style={{ fontSize: "clamp(20px, 4vw, 26px)", fontWeight: 800, color: "var(--red)", marginBottom: "14px", letterSpacing: "-0.02em" }}>
-              check.et and verify.et charge you for free data
-            </h2>
-            <p style={{ color: "#7f1d1d", fontSize: "15px", lineHeight: 1.6, marginBottom: "20px", maxWidth: "640px" }}>
-              These services verify receipts by hitting the exact same public bank URLs cheki uses. They resell the response with a markup. You pay for data that is already free. verify.et even blocks AI crawlers in its robots.txt to prevent you from discovering this.
-            </p>
-            <div className="price-compare" style={{ display: "flex", borderRadius: "10px", overflow: "hidden", border: "1px solid #fecaca", background: "#fff" }}>
-              <div style={{ flex: 1, padding: "18px 20px", borderRight: "1px solid #fecaca" }}>
-                <p style={{ fontSize: "12px", fontWeight: 600, color: "var(--red)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "4px" }}>check.et</p>
-                <p style={{ fontSize: "13px", color: "var(--ink-3)", marginBottom: "2px" }}>200 free, then paid</p>
-                <p style={{ fontSize: "24px", fontWeight: 800, color: "var(--red)" }}>499<span style={{ fontSize: "13px", fontWeight: 500 }}> ETB/mo</span></p>
-              </div>
-              <div style={{ flex: 1, padding: "18px 20px", borderRight: "1px solid #fecaca" }}>
-                <p style={{ fontSize: "12px", fontWeight: 600, color: "var(--red)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "4px" }}>verify.et</p>
-                <p style={{ fontSize: "13px", color: "var(--ink-3)", marginBottom: "2px" }}>200 free, then paid</p>
-                <p style={{ fontSize: "24px", fontWeight: 800, color: "var(--red)" }}>$20<span style={{ fontSize: "13px", fontWeight: 500 }}>+/mo</span></p>
-              </div>
-              <div style={{ flex: 1, padding: "18px 20px", background: "var(--green-light)" }}>
-                <p style={{ fontSize: "12px", fontWeight: 600, color: "var(--green)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "4px" }}>cheki</p>
-                <p style={{ fontSize: "13px", color: "var(--ink-3)", marginBottom: "2px" }}>unlimited, forever</p>
-                <p style={{ fontSize: "24px", fontWeight: 800, color: "var(--green)" }}>0<span style={{ fontSize: "13px", fontWeight: 500 }}> ETB</span></p>
-              </div>
-            </div>
-            <a href="/compare" style={{ display: "inline-flex", alignItems: "center", gap: "6px", marginTop: "16px", padding: "10px 20px", borderRadius: "8px", background: "var(--ink)", color: "#fff", fontSize: "14px", fontWeight: 600 }}>Full comparison <Icon icon={ArrowRight01Icon} size={14} color="#fff" /></a>
-          </div>
-        </section>
 
-        {/* Features - bento grid, varied sizes */}
         <section className="container" style={{ marginTop: "40px" }}>
           <h2 style={{ fontSize: "clamp(22px, 4vw, 30px)", fontWeight: 800, letterSpacing: "-0.02em", marginBottom: "20px" }}>
             Everything you need, nothing you don&apos;t

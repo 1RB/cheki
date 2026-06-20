@@ -25,6 +25,7 @@ import {
   ExternalLinkIcon,
   ArrowRight01Icon,
   ChevronDownIcon,
+  ChevronUpIcon,
   Copy01Icon,
   CopyCheckIcon,
   Download01Icon,
@@ -57,7 +58,7 @@ export {
   BookOpen01Icon, Shield01Icon, CheckmarkCircle01Icon, Alert01Icon,
   AlertCircleIcon, InformationCircleIcon, BulbIcon, Globe02Icon,
   GithubIcon, StarIcon, ExternalLinkIcon, ArrowRight01Icon,
-  ChevronDownIcon, Copy01Icon, CopyCheckIcon, Download01Icon,
+  ChevronDownIcon, ChevronUpIcon, Copy01Icon, CopyCheckIcon, Download01Icon,
   Upload01Icon, Image01Icon, LockKeyIcon, Menu01Icon,
   ContainerIcon, FileCheckIcon, Money01Icon, Cancel01Icon,
 };

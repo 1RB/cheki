@@ -3,13 +3,13 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { Icon, GithubIcon, Menu01Icon, Cancel01Icon, ArrowRight01Icon } from "@/components/Icon";
+import { useTranslation } from "@/lib/i18n/use-translation";
+import { LanguageSwitcher } from "@/components/language-switcher";
 
 export function Nav() {
+  const { t } = useTranslation();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  // Lock body scroll when mobile menu is open. Render the menu in a portal
-  // attached to document.documentElement so it is never clipped or shifted
-  // by a fixed/positioned body.
   useEffect(() => {
     if (mobileOpen) {
       const scrollY = window.scrollY;
@@ -30,11 +30,11 @@ export function Nav() {
     }
   }, [mobileOpen]);
   const links = [
-    { href: "/", label: "Verify" },
-    { href: "/banks", label: "Banks" },
-    { href: "/guides", label: "Guides" },
-    { href: "/developers", label: "Developers" },
-    { href: "/compare", label: "Compare" },
+    { href: "/", label: t("nav.verify") },
+    { href: "/banks", label: t("nav.banks") },
+    { href: "/guides", label: t("nav.guides") },
+    { href: "/developers", label: t("nav.developers") },
+    { href: "/compare", label: t("nav.compare") },
   ];
   return (
     <>
@@ -62,6 +62,7 @@ export function Nav() {
                 borderRadius: "6px", transition: "all 0.15s",
               }}>{l.label}</a>
             ))}
+            <LanguageSwitcher />
             <a href="https://github.com/1RB/cheki" target="_blank" rel="noopener" style={{
               padding: "6px 14px", fontSize: "14px", fontWeight: 600, color: "#fff",
               background: "var(--ink)", borderRadius: "6px", marginLeft: "4px",
@@ -124,54 +125,32 @@ export function Nav() {
 }
 
 export function Footer() {
+  const { t } = useTranslation();
   const bankLinks = [
     { href: "/banks/cbe", label: "CBE" },
     { href: "/banks/telebirr", label: "Telebirr" },
     { href: "/banks/boa", label: "BOA" },
-    { href: "/banks/dashen", label: "Dashen" },
-    { href: "/banks/awash", label: "Awash" },
-    { href: "/banks/zemen", label: "Zemen" },
     { href: "/banks/mpesa", label: "M-Pesa" },
-    { href: "/banks/cbebirr", label: "CBE Birr" },
-    { href: "/banks/siinqee", label: "Siinqee" },
+    { href: "/banks/dashen", label: "Dashen" },
   ];
   const guideLinks = [
-    { href: "/guides/how-to-verify-cbe-receipt", label: "Verify CBE" },
-    { href: "/guides/how-to-verify-telebirr-receipt", label: "Verify Telebirr" },
-    { href: "/guides/how-to-verify-boa-receipt", label: "Verify BOA" },
-    { href: "/guides/cbe-receipt-qr-code", label: "CBE QR codes" },
-    { href: "/guides/free-receipt-verification-no-api-key", label: "Free verification" },
+    { href: "/guides/how-to-verify-cbe-receipt", label: t("footer.verify") + " CBE" },
+    { href: "/guides/how-to-verify-telebirr-receipt", label: t("footer.verify") + " Telebirr" },
+    { href: "/guides/free-receipt-verification-no-api-key", label: t("footer.guides") },
     { href: "/guides/payment-fraud-ethiopia", label: "Payment fraud" },
-    { href: "/guides/check-et-vs-verify-et-vs-cheki", label: "Compare all" },
-    { href: "/guides/payment-verification-api-guide", label: "API guide" },
-    { href: "/guides/self-hosting-docker-guide", label: "Self-hosting" },
     { href: "/guides/contribute-new-bank", label: "Add a bank" },
   ];
-  const seoLinks = [
-    { href: "/verify/verify-cbe-receipt-online", label: "Verify CBE receipt" },
-    { href: "/verify/verify-telebirr-receipt-online", label: "Verify Telebirr receipt" },
-    { href: "/verify/verify-boa-receipt-online", label: "Verify BOA receipt" },
-    { href: "/verify/verify-mpesa-receipt-online", label: "Verify M-Pesa receipt" },
-    { href: "/verify/verify-dashen-receipt-online", label: "Verify Dashen receipt" },
-    { href: "/verify/free-receipt-verification-ethiopia", label: "Free verification" },
-    { href: "/verify/how-to-check-fake-receipt-ethiopia", label: "Check fake receipt" },
-    { href: "/verify/cheki-vs-check-et-vs-verify-et", label: "cheki vs check.et" },
-  ];
   const resourceLinks = [
-    { href: "/verify/ethiopian-receipt-api-free", label: "Free receipt API" },
-    { href: "/verify/receipt-verification-sdk-typescript", label: "TypeScript SDK" },
-    { href: "/verify/receipt-verification-python-library", label: "Python library" },
-    { href: "/verify/receipt-verification-for-business", label: "For businesses" },
-    { href: "/verify/edited-screenshot-receipt-fraud", label: "Screenshot fraud" },
-    { href: "/verify/old-receipt-reuse-fraud", label: "Old receipt fraud" },
-    { href: "/verify/reference-number-fraud-ethiopia", label: "Reference fraud" },
-    { href: "/verify/ethiopian-bank-receipt-formats", label: "Receipt formats" },
+    { href: "/developers", label: "API" },
+    { href: "/docs", label: t("footer.apiDocs") },
+    { href: "https://github.com/1RB/cheki", label: t("footer.github") },
+    { href: "https://github.com/1RB/cheki/tree/main/python", label: t("footer.python") },
   ];
   return (
     <footer style={{ marginTop: "64px", borderTop: "1px solid var(--border)", background: "var(--surface-alt)" }}>
       <div className="container" style={{ padding: "40px 24px" }}>
         <div className="footer-grid" style={{
-          display: "grid", gridTemplateColumns: "1fr", gap: "28px",
+          display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "28px",
         }}>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
@@ -182,36 +161,34 @@ export function Footer() {
               }}>OSS</span>
             </div>
             <p style={{ fontSize: "13px", color: "var(--ink-3)", lineHeight: 1.6, maxWidth: "280px" }}>
-              Free, open-source Ethiopian receipt verification. MIT licensed. Not affiliated with any bank.
+              {t("footer.tagline")}
             </p>
+            <a href="/guides/contribute-translations" style={{
+              display: "inline-flex", marginTop: "12px", fontSize: "13px", color: "var(--green-dark)", fontWeight: 600,
+            }}>
+              {t("language.contribute")}
+            </a>
           </div>
           <div>
-            <p style={{ fontSize: "12px", fontWeight: 600, color: "var(--ink-3)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "12px" }}>Banks</p>
+            <p style={{ fontSize: "12px", fontWeight: 600, color: "var(--ink-3)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "12px" }}>{t("footer.banks")}</p>
             <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
               {bankLinks.map((l) => (
                 <a key={l.href} href={l.href} style={{ fontSize: "13px", color: "var(--ink-2)" }}>{l.label}</a>
               ))}
+              <a href="/banks" style={{ fontSize: "13px", color: "var(--green-dark)", fontWeight: 600 }}>{t("footer.banks")}</a>
             </div>
           </div>
           <div>
-            <p style={{ fontSize: "12px", fontWeight: 600, color: "var(--ink-3)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "12px" }}>Guides</p>
+            <p style={{ fontSize: "12px", fontWeight: 600, color: "var(--ink-3)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "12px" }}>{t("footer.guides")}</p>
             <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
               {guideLinks.map((l) => (
                 <a key={l.href} href={l.href} style={{ fontSize: "13px", color: "var(--ink-2)" }}>{l.label}</a>
               ))}
-              <a href="/guides" style={{ fontSize: "13px", color: "var(--green-dark)", fontWeight: 600 }}>All guides</a>
+              <a href="/guides" style={{ fontSize: "13px", color: "var(--green-dark)", fontWeight: 600 }}>{t("footer.allGuides")}</a>
             </div>
           </div>
           <div>
-            <p style={{ fontSize: "12px", fontWeight: 600, color: "var(--ink-3)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "12px" }}>Verify</p>
-            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-              {seoLinks.map((l) => (
-                <a key={l.href} href={l.href} style={{ fontSize: "13px", color: "var(--ink-2)" }}>{l.label}</a>
-              ))}
-            </div>
-          </div>
-          <div>
-            <p style={{ fontSize: "12px", fontWeight: 600, color: "var(--ink-3)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "12px" }}>Resources</p>
+            <p style={{ fontSize: "12px", fontWeight: 600, color: "var(--ink-3)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "12px" }}>{t("footer.resources")}</p>
             <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
               {resourceLinks.map((l) => (
                 <a key={l.href} href={l.href} style={{ fontSize: "13px", color: "var(--ink-2)" }}>{l.label}</a>
@@ -220,11 +197,11 @@ export function Footer() {
           </div>
         </div>
         <div style={{ marginTop: "28px", paddingTop: "20px", borderTop: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
-          <p style={{ fontSize: "12px", color: "var(--ink-3)" }}>cheki is not affiliated with any ethiopian bank or wallet. MIT licensed.</p>
+          <p style={{ fontSize: "12px", color: "var(--ink-3)" }}>{t("footer.legal")}</p>
           <div style={{ display: "flex", gap: "16px" }}>
-            <a href="/docs" style={{ fontSize: "12px", color: "var(--ink-3)" }}>API Docs</a>
-            <a href="https://github.com/1RB/cheki" target="_blank" rel="noopener" style={{ fontSize: "12px", color: "var(--ink-3)" }}>GitHub</a>
-            <a href="https://github.com/1RB/cheki/tree/main/python" target="_blank" rel="noopener" style={{ fontSize: "12px", color: "var(--ink-3)" }}>Python</a>
+            <a href="/docs" style={{ fontSize: "12px", color: "var(--ink-3)" }}>{t("footer.apiDocs")}</a>
+            <a href="https://github.com/1RB/cheki" target="_blank" rel="noopener" style={{ fontSize: "12px", color: "var(--ink-3)" }}>{t("footer.github")}</a>
+            <a href="https://github.com/1RB/cheki/tree/main/python" target="_blank" rel="noopener" style={{ fontSize: "12px", color: "var(--ink-3)" }}>{t("footer.python")}</a>
           </div>
         </div>
       </div>
