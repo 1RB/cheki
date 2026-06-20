@@ -107,6 +107,10 @@ export function Nav() {
                 <Icon icon={ArrowRight01Icon} size={18} color="var(--ink-3)" />
               </a>
             ))}
+            <div onClick={() => {}} style={{ flexShrink: 0, padding: "16px 20px", borderRadius: "10px", background: "var(--surface)", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <span style={{ fontSize: "18px", fontWeight: 600, color: "var(--ink)" }}>{t("language.switch")}</span>
+              <LanguageSwitcher />
+            </div>
             <a href="https://github.com/1RB/cheki" target="_blank" rel="noopener" onClick={() => setMobileOpen(false)} style={{
               flexShrink: 0,
               padding: "16px 20px", fontSize: "18px", fontWeight: 600, color: "#fff",
