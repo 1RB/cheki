@@ -593,12 +593,28 @@ export const articles: Article[] = [
     category: "comparison",
     excerpt:
       "Six services, all using the same public bank endpoints. One is free and open source, the rest charge 500-8,000 ETB/month. Here's the evidence.",
-    date: "2026-06-19",
-    readTime: "8 min",
+    date: "2026-06-20",
+    readTime: "9 min",
     content: [
       { type: "text", text: "There are six receipt verification services operating in Ethiopia: cheki, check.et, verify.et, qbirr, tinaverify, and tally. This article compares all six based on publicly available evidence, not marketing claims." },
 
       { type: "callout", variant: "info", title: "Full disclosure", text: "cheki is the open source project we built. This comparison is based on public information from each service's website, API docs, sitemap, robots.txt, and GitHub repositories. Verify everything yourself." },
+
+      { type: "heading", text: "If you just want the answer" },
+      { type: "text", text: "Choose based on your actual need, not the longest feature list. Most people only need one thing: confirm the payment happened." },
+      {
+        type: "table",
+        headers: ["You need...", "Use this"],
+        rows: [
+          ["Free verification with no signup", "cheki"],
+          ["A paid API with Ethiopian relay for geo-blocked banks", "qbirr"],
+          ["A cashier mobile app for physical counters", "tinaverify"],
+          ["Polished business dashboard and employee accounts", "check.et"],
+          ["Verification inside Telegram", "tally"],
+          ["An Android app with bank status pages", "verify.et"],
+        ],
+      },
+      { type: "callout", variant: "tip", title: "No best overall, only best for you", text: "qbirr is not better than cheki if you do not need an API key. tinaverify is not better than cheki if you do not have a cashier counter. Match the tool to the job." },
 
       { type: "heading", text: "The core fact" },
       { type: "quote", text: "All six services verify receipts by fetching the same public bank endpoints. The data is identical. The difference is the business model wrapped around it." },
@@ -694,8 +710,15 @@ export const articles: Article[] = [
       { type: "heading", text: "cheki: the details" },
       { type: "text", text: "cheki is MIT licensed open source built with Next.js. It requires no signup, no API key, and has no limits. The hosted version is at chekiapp.vercel.app, and the full source code is on GitHub." },
       { type: "text", text: "cheki supports 31 banks with 9 live (CBE, Telebirr, BOA, M-Pesa, Dashen, Zemen, CBE Birr, Siinqee, eBirr) and 22 in development. eBirr alone covers 4 additional banks through a single integration (Nib International, Wegagen, Ahadu, KAAFI Microfinance). It supports both the old and new CBE receipt systems, BOA QR code decryption, and unified QR scanning with multi-scale auto-detection." },
-      { type: "text", text: "Strengths: free, open source, no signup, self-hosting, batch verification, Python library, TypeScript SDK, Docker, QR code scanning with BOA AES decryption, URL auto-detection, allows AI crawlers, shows receipt source URLs." },
+      { type: "text", text: "Recent updates: cheki now parses mobile 'Select All' receipt text. This matters because Telebirr and M-Pesa block cloud servers from reaching their endpoints. If you copy the receipt text from the Telebirr app and paste it into cheki, the parser extracts the full transaction details locally without ever calling the geo-blocked endpoint." },
+      { type: "text", text: "Strengths: free, open source, no signup, self-hosting, batch verification, Python library, TypeScript SDK, Docker, QR code scanning with BOA AES decryption, URL auto-detection, allows AI crawlers, shows receipt source URLs, and now parses pasted receipt text." },
       { type: "text", text: "Weaknesses: no mobile app (web only, but PWA-installable), no employee management, no dashboard for businesses, no duplicate detection built-in, no geo-block bypass relay, fewer live banks than check.et/verify.et/qbirr/tinaverify." },
+
+      { type: "heading", text: "Geo-blocking: the shared problem" },
+      { type: "text", text: "Telebirr and M-Pesa block non-Ethiopian IP addresses at the network level. This affects every service that does not have an Ethiopian relay or server, including cheki's hosted version and check.et's servers." },
+      { type: "text", text: "If you hit a geo-blocked bank, cheki returns a fallbackUrl that points to the bank's public receipt page. You can open that URL in your browser (which uses your Ethiopian IP) to see the receipt. For the hosted version, you can also paste the receipt text directly into cheki's parser to bypass the block." },
+      { type: "text", text: "The only permanent fixes are: self-host cheki on an Ethiopian server, or use a service with an Ethiopian relay (qbirr's Scale plan, tally's Ethio Telecom IP)." },
+      { type: "callout", variant: "warning", title: "No service has a secret inside line", text: "check.et, verify.et, and the others do not have a special deal with Ethio Telecom or Safaricom. They face the same geo-block. If they work for Telebirr/M-Pesa, they are either running traffic through an Ethiopian relay or falling back to the public receipt page." },
 
       { type: "heading", text: "The data source question" },
       { type: "text", text: "Some users ask whether check.et, verify.et, qbirr, tinaverify, or tally have access to private bank APIs that cheki doesn't. The answer is no. All six services use the same public endpoints. Here's the evidence:" },
@@ -712,8 +735,9 @@ export const articles: Article[] = [
     ],
     faq: [
       { q: "Does check.et have access to private bank APIs?", a: "No. check.et uses the same public bank endpoints as cheki. The endpoints require no authentication. The data fields in check.et's API response match the public endpoint responses exactly." },
+      { q: "Why does cheki sometimes return a fallbackUrl for Telebirr or M-Pesa?", a: "Telebirr and M-Pesa block non-Ethiopian IPs. cheki's hosted server is on Vercel, which is outside Ethiopia, so it cannot reach those endpoints. The fallbackUrl points to the bank's public receipt page, which you can open on your phone with an Ethiopian IP. Or you can paste the receipt text directly into cheki and bypass the geo-block entirely." },
       { q: "Why does verify.et block AI crawlers?", a: "verify.et's robots.txt blocks GPTBot, ClaudeBot, CCBot, Google-Extended, and other AI crawlers, citing EU copyright directive compliance. The practical effect is that AI assistants cannot read verify.et's content, which may prevent users from discovering that the underlying data is public." },
-      { q: "Is qbirr's API better than cheki's?", a: "qbirr has a cleaner developer API with rate limits, usage tracking, and configurable amount tolerance. However, it requires an API key, charges money, and has fewer banks. cheki's API is free, requires no key, and supports batch verification. qbirr's main advantage is the Ethiopian relay for geo-blocked banks (Telebirr, M-Pesa)." },
+      { q: "Is qbirr's API better than cheki's?", a: "qbirr has a cleaner developer API with rate limits, usage tracking, and configurable amount tolerance. Its main practical advantage is an Ethiopian relay that bypasses geo-blocking for Telebirr and M-Pesa. However, it requires an API key, charges money, and has fewer banks. cheki's API is free, requires no key, and supports batch verification." },
       { q: "Should I use tinaverify instead of cheki?", a: "If you need a mobile app for cashiers at a physical counter, tinaverify is a good choice with published iOS and Android apps. If you need a free API, web UI, or self-hosting, cheki is better. tinaverify charges 3,000-8,000 ETB per 90 days with credit expiry." },
       { q: "Is cheki's data as accurate as check.et's?", a: "Yes. All six services fetch from the same bank endpoints. The data is identical. cheki shows you the source URL so you can verify where the data came from." },
       { q: "What about tally?", a: "tally is a Telegram bot with 4 banks, no API, no web app, expired SSL, and no public pricing. It's the smallest player in the market. If you use Telegram for business, it might work for basic needs, but it lacks the features and transparency of the other services." },
@@ -721,8 +745,8 @@ export const articles: Article[] = [
     related: ["free-receipt-verification-no-api-key", "payment-fraud-ethiopia", "ethiopian-bank-receipt-formats"],
     seo: {
       title: "Ethiopian Receipt Verification Services: The Full Comparison",
-      description: "Evidence-based comparison of Ethiopia's six receipt verification services: cheki, check.et, verify.et, qbirr, tinaverify, and tally. Pricing, features, data sources.",
-      keywords: ["check.et vs verify.et", "check.et alternative", "verify.et alternative", "qbirr alternative", "tinaverify comparison", "free check.et", "cheki comparison", "ethiopian receipt verification comparison", "tally.com.et"],
+      description: "Evidence-based comparison of Ethiopia's six receipt verification services including geo-blocking reality, pricing, and how to bypass blocks with self-hosting or text parsing.",
+      keywords: ["check.et vs verify.et", "check.et alternative", "verify.et alternative", "qbirr alternative", "tinaverify comparison", "free check.et", "cheki comparison", "ethiopian receipt verification comparison", "tally.com.et", "telebirr geo-block", "mpesa ethiopia geo-block"],
     },
   },
   {
