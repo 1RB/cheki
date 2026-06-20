@@ -913,7 +913,7 @@ export default function Home() {
               <span style={{ fontSize: "12px", color: "var(--ink-3)", marginLeft: "8px", fontFamily: "var(--mono)" }}>cheki --list-endpoints</span>
             </div>
             <div className="endpoint-list" style={{ padding: "6px 0" }}>
-              {banks.filter((b) => b.status === "live").map((b) => (
+              {banks.filter((b) => b.status === "live").map((b, i, arr) => (
                 <a
                   key={b.code}
                   href={`/banks/${b.code}`}
@@ -924,7 +924,7 @@ export default function Home() {
                     padding: "10px 16px",
                     alignItems: "center",
                     textDecoration: "none",
-                    borderBottom: `1px solid var(--border)`,
+                    borderBottom: i === arr.length - 1 ? "none" : "1px solid var(--border)",
                     transition: "background 0.1s",
                   }}
                   onMouseEnter={(e) => (e.currentTarget.style.background = "var(--surface)")}

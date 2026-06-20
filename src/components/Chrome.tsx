@@ -1,31 +1,32 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { Icon, GithubIcon, Menu01Icon, Cancel01Icon, ArrowRight01Icon } from "@/components/Icon";
 
 export function Nav() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  // Lock body scroll when mobile menu is open (iOS-safe)
+  // Lock body scroll when mobile menu is open. Render the menu in a portal
+  // attached to document.documentElement so it is never clipped or shifted
+  // by a fixed/positioned body.
   useEffect(() => {
     if (mobileOpen) {
       const scrollY = window.scrollY;
-      document.body.style.position = "fixed";
-      document.body.style.top = `-${scrollY}px`;
-      document.body.style.width = "100%";
       document.body.style.overflow = "hidden";
+      document.body.style.touchAction = "none";
+      document.body.style.overscrollBehavior = "none";
+      document.body.dataset.scrollY = String(scrollY);
       return () => {
-        document.body.style.position = "";
-        document.body.style.top = "";
-        document.body.style.width = "";
         document.body.style.overflow = "";
-        window.scrollTo(0, scrollY);
+        document.body.style.touchAction = "";
+        document.body.style.overscrollBehavior = "";
+        window.scrollTo(0, Number(document.body.dataset.scrollY || 0));
       };
     } else {
-      document.body.style.position = "";
-      document.body.style.top = "";
-      document.body.style.width = "";
       document.body.style.overflow = "";
+      document.body.style.touchAction = "";
+      document.body.style.overscrollBehavior = "";
     }
   }, [mobileOpen]);
   const links = [
@@ -78,7 +79,7 @@ export function Nav() {
           </button>
         </div>
       </nav>
-      {mobileOpen && (
+      {mobileOpen && createPortal(
         <div className="nav-mobile-menu" style={{
           position: "fixed", top: "var(--nav-h)", left: 0, right: 0,
           height: "calc(100dvh - var(--nav-h))",
@@ -115,7 +116,8 @@ export function Nav() {
               GitHub
             </a>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
