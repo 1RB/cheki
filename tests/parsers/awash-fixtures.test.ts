@@ -61,4 +61,17 @@ describe("Awash parser fixtures", () => {
     expect(result.amount).toBe(100);
     expect(result.transactionType).toBe("Send Money");
   });
+
+  it("parses Telebirr Transfer receipt", () => {
+    const parser = new AwashParser();
+    const result = parser.parse(loadFixture("telebirr-transfer"), "text/html");
+    expect(result.verified).toBe(true);
+    expect(result.reference).toBe("260622165068799");
+    expect(result.senderName).toBe("Abubaker Abdulhamid Sherif");
+    expect(result.senderAccount).toBe("01425******8600/BANK");
+    expect(result.receiverAccount).toBe("251973342568");
+    expect(result.amount).toBe(800);
+    expect(result.transactionType).toBe("Telebirr Transfer");
+    expect(result.date).toBe("2026-06-22");
+  });
 });

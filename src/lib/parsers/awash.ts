@@ -173,12 +173,16 @@ export class AwashParser extends BaseParser {
     // Sender info can appear under "Customer Name" in the company section
     // or explicitly under "Sender Name" in the transaction section.
     const senderName = findValue(lines, "Sender Name") || findValue(lines, "Customer Name");
-    const senderAccount = findValue(lines, "Sender Account") || findValue(lines, "Account No");
+    const senderAccount =
+      findValue(lines, "Sender Account") ||
+      findValue(lines, "Source Account") ||
+      findValue(lines, "Account No");
 
     // Receiver info varies by transaction type:
     // - Send To Bank / Send Money: Receiver Name / Receiver Account
     // - IPS Bank Transfer: Beneficiary name / Beneficiary Account
     // - Merchant Payment: Merchant / Till Number (recipient is the merchant)
+    // - Telebirr Transfer: Phone Number only (no receiver name or account)
     const receiverName =
       findValue(lines, "Receiver Name") ||
       findValue(lines, "Beneficiary name") ||
@@ -188,7 +192,8 @@ export class AwashParser extends BaseParser {
       findValue(lines, "Receiver Account") ||
       findValue(lines, "Beneficiary Account") ||
       findValue(lines, "Till Number") ||
-      findValue(lines, "Recipient");
+      findValue(lines, "Recipient") ||
+      findValue(lines, "Phone Number");
 
     const reason = findValue(lines, "Reason");
     const transactionType =
@@ -208,8 +213,7 @@ export class AwashParser extends BaseParser {
     const verified =
       !!senderName &&
       !!senderAccount &&
-      !!receiverName &&
-      !!receiverAccount &&
+      (!!receiverName || !!receiverAccount) &&
       amount !== undefined &&
       !!date;
 
