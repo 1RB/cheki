@@ -8,9 +8,8 @@ const nextConfig: NextConfig = {
       bodySizeLimit: "5mb",
     },
   },
-  // Keep native/self-contained packages external so Tesseract's worker script
-  // and sharp binaries are found at runtime.
-  serverExternalPackages: ["tesseract.js", "sharp", "jsqr"],
+  // Keep native/self-contained packages external so QR decoding and sharp work.
+  serverExternalPackages: ["sharp", "jsqr"],
 };
 
 export default nextConfig;

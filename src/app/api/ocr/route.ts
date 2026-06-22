@@ -1,14 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import {
-  preprocessImage,
-  runBestOcr,
-  decodeQrFromImage,
-} from "@/lib/server-ocr";
+import { decodeQrFromImage } from "@/lib/server-ocr";
 import { detectBankFromUrl, isUrl } from "@/lib/adapters/url-detector";
-import {
-  parseReceiptText,
-  ambiguousReferenceCandidates,
-} from "@/lib/ocr-parser";
+import { ambiguousReferenceCandidates } from "@/lib/ocr-parser";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -46,8 +39,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 1. Try QR code first (fastest and most accurate for share URLs).
     const qr = await decodeQrFromImage(inputBuffer);
+
     if (qr?.data) {
       const parsedUrl = isUrl(qr.data) ? detectBankFromUrl(qr.data) : null;
       if (parsedUrl) {
@@ -67,23 +60,13 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 2. Fall back to Tesseract OCR.
-    const processed = await preprocessImage(inputBuffer);
-    const { text, psm } = await runBestOcr(processed);
-    const parsed = parseReceiptText(text);
-
-    const candidates = parsed?.reference
-      ? ambiguousReferenceCandidates(parsed.reference).slice(0, 20)
-      : undefined;
-
+    // No QR detected. The client will fall back to client-side Tesseract.js.
     return NextResponse.json(
       {
         success: true,
-        source: "tesseract",
-        psm,
-        text,
-        candidates,
-        ...parsed,
+        source: "none",
+        text: "",
+        qrDetected: false,
         durationMs: Date.now() - start,
       },
       { headers: CORS_HEADERS }

@@ -1,6 +1,7 @@
 "use client";
 
 import type { OcrParseResult } from "./ocr-parser";
+import { parseReceiptText } from "./ocr-parser";
 
 export type OcrProgress = {
   status: string;
@@ -21,13 +22,97 @@ async function sourceToFile(source: string | File | Blob): Promise<File | Blob> 
   return source;
 }
 
+async function runClientOcr(
+  file: File | Blob,
+  onProgress?: (p: OcrProgress) => void
+): Promise<OcrServerResult> {
+  onProgress?.({ status: "loading model", progress: 0.1 });
+
+  const { createWorker, PSM } = await import("tesseract.js");
+  const worker = await createWorker("eng", 1, {
+    logger: (m) => {
+      if (m.status === "recognizing text") {
+        onProgress?.({ status: "reading text", progress: 0.1 + m.progress * 0.8 });
+      }
+    },
+    errorHandler: () => {},
+    // Load the traineddata from our own domain so it is cached with the PWA
+    // and doesn't hit a third-party CDN.
+    langPath: typeof window !== "undefined" ? window.location.origin : undefined,
+    gzip: true,
+  });
+
+  try {
+    onProgress?.({ status: "reading text", progress: 0.2 });
+    await worker.setParameters({
+      tessedit_pageseg_mode: PSM.SINGLE_BLOCK,
+      preserve_interword_spaces: "1",
+    });
+    const ret = await worker.recognize(file);
+    const text = ret.data.text;
+    const parsed = parseReceiptText(text);
+
+    onProgress?.({ status: "done", progress: 1 });
+
+    return {
+      text,
+      parsed: parsed
+        ? {
+            ...parsed,
+            candidates: parsed.reference
+              ? ambiguousReferenceCandidatesClient(parsed.reference).slice(0, 20)
+              : undefined,
+          }
+        : null,
+    };
+  } finally {
+    await worker.terminate();
+  }
+}
+
+function ambiguousReferenceCandidatesClient(reference: string): string[] {
+  const candidates = new Set<string>();
+  candidates.add(reference);
+
+  const chars = reference.split("");
+  const ambiguous: Record<string, string[]> = {
+    O: ["O", "0"],
+    0: ["0", "O"],
+    I: ["I", "1"],
+    1: ["1", "I"],
+    L: ["L", "I", "1"],
+    B: ["B", "8"],
+    S: ["S", "5"],
+    Z: ["Z", "2"],
+  };
+
+  function backtrack(idx: number, current: string[]) {
+    if (idx === chars.length) {
+      candidates.add(current.join(""));
+      return;
+    }
+    const char = chars[idx].toUpperCase();
+    const options = ambiguous[char] || [char];
+    for (const option of options) {
+      current.push(option);
+      backtrack(idx + 1, current);
+      current.pop();
+    }
+  }
+
+  backtrack(0, []);
+  return Array.from(candidates);
+}
+
 /**
- * Server-side OCR.
+ * Extract text from a receipt image.
  *
- * The image is uploaded to /api/ocr, where it is preprocessed with sharp
- * and run through Tesseract. This avoids fetching the large traineddata files
- * in the browser and gives us more CPU/ram for preprocessing, so it is both
- * faster and more accurate than client-side tesseract.js.
+ * Strategy:
+ *   1. Upload the image to the server to check for a QR code. If the QR code
+ *      contains a known receipt URL, return the parsed reference immediately.
+ *   2. If no QR is found, run Tesseract.js in the browser. This keeps the
+ *      image on the device (better privacy) and avoids loading the heavy
+ *      Tesseract model on the server, which is unreliable in Vercel serverless.
  */
 export async function extractTextFromImage(
   source: string | File | Blob,
@@ -35,7 +120,7 @@ export async function extractTextFromImage(
 ): Promise<OcrServerResult> {
   const file = await sourceToFile(source);
 
-  onProgress?.({ status: "uploading", progress: 0.15 });
+  onProgress?.({ status: "uploading", progress: 0.05 });
 
   const formData = new FormData();
   formData.append("image", file);
@@ -44,8 +129,6 @@ export async function extractTextFromImage(
     method: "POST",
     body: formData,
   });
-
-  onProgress?.({ status: "parsing", progress: 0.85 });
 
   if (!resp.ok) {
     const data = await resp.json().catch(() => ({}));
@@ -57,21 +140,24 @@ export async function extractTextFromImage(
     throw new Error(data.error || "OCR failed.");
   }
 
-  onProgress?.({ status: "done", progress: 1 });
+  // QR detected by the server -> return immediately.
+  if (data.source === "qr" && data.reference) {
+    onProgress?.({ status: "done", progress: 1 });
+    return {
+      text: data.text,
+      parsed: {
+        reference: data.reference,
+        bank: data.bank,
+        confidence: data.confidence,
+        rawText: data.text,
+        matches: data.matches,
+        candidates: data.candidates,
+      },
+    };
+  }
 
-  return {
-    text: data.text,
-    parsed: data.reference
-      ? {
-          reference: data.reference,
-          bank: data.bank,
-          confidence: data.confidence,
-          rawText: data.text,
-          matches: data.matches,
-          candidates: data.candidates,
-        }
-      : null,
-  };
+  // No QR -> run client-side Tesseract.
+  return runClientOcr(file, onProgress);
 }
 
 export function imageToBlob(image: HTMLImageElement): Promise<Blob> {
