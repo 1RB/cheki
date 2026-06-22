@@ -45,7 +45,7 @@ export function detectBankFromText(text: string): string | null {
 
 function extractUrl(text: string): string | null {
   const match = text.match(/https?:\/\/[^\s<>"'{}|\^`\[\]]+/i);
-  return match ? match[0] : null;
+  return match ? match[0].replace(/[.,;:!?]+$/g, "") : null;
 }
 
 // Label-aware reference extraction. We look for the label on the same line

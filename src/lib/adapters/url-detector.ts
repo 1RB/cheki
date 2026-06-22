@@ -82,7 +82,7 @@ export function detectBankFromUrl(input: string): DetectedReceipt | null {
     if (host.includes("awashbank.com")) {
       const parts = url.pathname.split("/").filter(Boolean);
       if (parts.length > 0) {
-        const ref = parts[parts.length - 1].replace(/^-/, "");
+        const ref = parts[parts.length - 1].replace(/^-/, "").replace(/[.,;:!?]+$/, "");
         return { bank: "awash", reference: ref };
       }
     }

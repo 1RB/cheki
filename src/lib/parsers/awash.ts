@@ -33,21 +33,45 @@ function htmlToText(html: string): string[] {
 }
 
 function findValue(lines: string[], label: string, startIndex = 0): string | undefined {
-  for (let i = startIndex; i < lines.length; i++) {
-    if (lines[i].toLowerCase().includes(label.toLowerCase())) {
-      // Check same line after the label
-      const sameLine = lines[i].replace(new RegExp(`^.*?${label}\\s*:?\\s*`, "i"), "").trim();
-      if (sameLine) return sameLine;
+  const lowerLabel = label.toLowerCase();
 
-      // Value is on the next line(s)
+  // First pass: prefer exact label lines (label only or label + colon/equals).
+  for (let i = startIndex; i < lines.length; i++) {
+    const line = lines[i].trim().toLowerCase();
+    if (line === lowerLabel || line === `${lowerLabel}:` || line === `${lowerLabel}=`) {
+      // Same line: value is on the next line(s)
       if (i + 1 < lines.length) {
-        // Skip a standalone colon if present
         let j = i + 1;
         if (lines[j] === ":" && j + 1 < lines.length) j++;
         return lines[j];
       }
     }
   }
+
+  // Second pass: accept a line containing the label followed by a delimiter and value.
+  for (let i = startIndex; i < lines.length; i++) {
+    if (lines[i].toLowerCase().includes(lowerLabel)) {
+      const sameLineMatch = lines[i].match(new RegExp(`${label}\\s*[:=]\\s*(.+)$`, "i"));
+      if (sameLineMatch) return sameLineMatch[1].trim();
+    }
+  }
+
+  // Third pass: accept a line containing the label and a value on the next line.
+  // Skip common compound labels like "Merchant Payment" when looking for "Merchant".
+  for (let i = startIndex; i < lines.length; i++) {
+    if (lines[i].toLowerCase().includes(lowerLabel)) {
+      // Reject compound lines where the label is followed by other words without a delimiter
+      const remainder = lines[i].replace(new RegExp(`^.*?${label}`, "i"), "").trim().toLowerCase();
+      if (remainder && !remainder.startsWith(":")) continue;
+
+      if (i + 1 < lines.length) {
+        let j = i + 1;
+        if (lines[j] === ":" && j + 1 < lines.length) j++;
+        return lines[j];
+      }
+    }
+  }
+
   return undefined;
 }
 
@@ -150,14 +174,29 @@ export class AwashParser extends BaseParser {
     // or explicitly under "Sender Name" in the transaction section.
     const senderName = findValue(lines, "Sender Name") || findValue(lines, "Customer Name");
     const senderAccount = findValue(lines, "Sender Account") || findValue(lines, "Account No");
-    const receiverName = findValue(lines, "Receiver Name");
-    const receiverAccount = findValue(lines, "Receiver Account");
+
+    // Receiver info varies by transaction type:
+    // - Send To Bank / Send Money: Receiver Name / Receiver Account
+    // - IPS Bank Transfer: Beneficiary name / Beneficiary Account
+    // - Merchant Payment: Merchant / Till Number (recipient is the merchant)
+    const receiverName =
+      findValue(lines, "Receiver Name") ||
+      findValue(lines, "Beneficiary name") ||
+      findValue(lines, "Merchant") ||
+      findValue(lines, "Recipient");
+    const receiverAccount =
+      findValue(lines, "Receiver Account") ||
+      findValue(lines, "Beneficiary Account") ||
+      findValue(lines, "Till Number") ||
+      findValue(lines, "Recipient");
+
     const reason = findValue(lines, "Reason");
-    const transactionType = findValue(lines, "Transaction Type");
+    const transactionType =
+      findValue(lines, "Transaction Type") || findValue(lines, "Transaction type");
     const branch = findValue(lines, "Branch");
     const transactionId = findValue(lines, "Transaction ID");
 
-    const date = findValue(lines, "Transaction Date");
+    const date = findValue(lines, "Transaction Date") || findValue(lines, "Transaction Time");
 
     let amount: number | undefined;
     const amountStr = findValue(lines, "Amount");

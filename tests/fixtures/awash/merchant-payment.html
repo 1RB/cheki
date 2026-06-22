@@ -1,0 +1,375 @@
+
+
+
+
+
+
+
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Transaction successful</title>
+    <link rel="stylesheet" href="https://awashpay.awashbank.com:8225/awashbirrpro/receipts/paper2.css" type="text/css" media="screen, projection, print" />
+    <link rel="stylesheet" href="https://awashpay.awashbank.com:8225/awashbirrpro/receipts/web_a6receipt.css" type="text/css" media="screen, projection, print" />
+    <script src="https://awashpay.awashbank.com:8225/awashbirrpro/receipts/qrcode.min.js" type="text/javascript"></script>
+    <script src="https://awashpay.awashbank.com:8225/awashbirrpro/receipts/html-to-image.js" type="text/javascript"></script>
+    <script src="https://awashpay.awashbank.com:8225/awashbirrpro/receipts/FileSaver.js" type="text/javascript"></script>
+    <style>
+        /* Set global font to Arial */
+        * {
+            font-family: Arial, sans-serif;
+        }
+        /* Change page orientation to portrait */
+        @page {
+            size: A5 portrait;
+            margin: 0;
+        }
+
+        /* Center the receipt content */
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #e0e0e0;
+        }
+
+        /* Adjust the receipt container for portrait */
+        .sheet {
+            width: 100%;
+            max-width: 595px; /* A5 width in pixels for portrait */
+            height: 842px; /* A5 height in pixels for portrait */
+            padding: 20px;
+            box-sizing: border-box;
+            background-color: white;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Ensure the content fits within the portrait layout */
+        .print-container {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .stamp {
+            position: absolute;
+            top: 98%; /* Adjust to be a bit above the table contents */
+            left: 65%;
+            /*bottom: 1px;
+            right: 60px;*/
+            transform: translate(-50%, -50%);
+            opacity: 0.8;
+        }
+
+        .qr-code {
+            position: absolute;
+            bottom: 50px;
+            right: 10px;
+        }
+        /* Style for the header table */
+        .header-table {
+            width: 100%;
+            border: 2px dotted #f9913e;
+            margin-bottom: 10px;
+            padding: 5px;
+        }
+
+        .header-table td {
+            font-weight: bold;
+            font-size: 14px;
+            text-align: center;
+            width: 50%;
+        }
+        /* Style for info tables */
+        .info-table {
+            width: 100%;
+            font-size: 14px;
+            border-collapse: collapse;
+        }
+
+        .info-table tr {
+            height: 18px; /* Adds vertical spacing between rows */
+        }
+
+        .info-table td {
+            padding: 2px;
+        }
+
+        .info-table td:nth-child(3) {
+            padding-left: 10px; /* Adds space to the left of values after colon */
+        }
+
+        /* Ensure footer fits within the A5 height */
+        .receipt-footer {
+            width: 100%;
+            /*margin-top: auto;*/
+            padding-top: 10px;
+        }
+
+        .receipt-footer img {
+            width: 100%;
+            height: auto;
+        }
+        /* Print-specific styles */
+        @media print {
+            body {
+                background-color: white;
+                height: auto;
+                display: block;
+            }
+            .sheet {
+                box-shadow: none;
+                max-width: 100%;
+                width: 595px;
+                height: 842px;
+                /*margin: 0;*/
+                padding: 20px;
+                overflow: hidden;
+                transform-origin: top left;
+            }
+            #print-button, #download-button {
+                display: none !important; /* Hide buttons during print */
+            }
+            .print-container {
+                width: 100%;
+                height: 100%;
+            }
+            .stamp {
+                top: 95%; /* Ensure stamp fits */
+            }
+        }
+    </style>
+</head>
+<body  class="A5 portrait">
+
+<!-- Each sheet element should have the class "sheet" -->
+<!-- "padding-**mm" is optional: you can set 10, 15, 20 or 25 -->
+<div class="sheet" id="contentToConvert" >
+    <div style="display: block;">
+        <span style="display: flex">
+            <button onclick="window.print();return false;" id="print-button" name="print-button"> Print </button>
+        <button onclick="downloadReceipt();return false;" id="download-button" name="download-btn" style="margin-left: 5px"> Download </button>
+        </span>
+    </div>
+
+    <div class="print-container"  >
+        <div class="converted-image-container">
+            <div class="watermarked">
+                <div>
+                    <img src="https://awashpay.awashbank.com:8225/awashbirrpro/receipts/awash_receipt_header.png" alt="" style="width: 100%">
+                </div>
+                <!-- Write HTML just like a web page -->
+
+
+                <div>
+                  
+                      <table class="header-table">
+                          <tr>
+                              <td>Company Information</td>
+                              <td>Customer Information</td>
+                          </tr>
+                      </table>
+
+                    <div style="display: flex; justify-content: center;">
+                        <div style="flex: 1;">
+                               <table class="info-table">
+                                   <tr>
+                                       <td>Company Name</td>
+                                       <td>:</td>
+                                       <td>Awash Bank Share company</td>
+                                   </tr>
+                                   <tr>
+                                       <td>TIN No </td>
+                                       <td>:</td>
+                                       <td>0000030100</td>
+                                   </tr>
+                                   <tr>
+                                       <td>VAT Reg No </td>
+                                       <td>:</td>
+                                       <td>17264</td>
+                                   </tr>
+                                   <tr>
+                                       <td>VAT Reg Date </td>
+                                       <td>:</td>
+                                       <td>12/29/2003</td>
+                                   </tr>
+                                   <tr>
+                                       <td>PO Box </td>
+                                       <td>:</td>
+                                       <td>12638</td>
+                                   </tr>
+                                   <tr>
+                                       <td>Tel </td>
+                                       <td>:</td>
+                                       <td>0115570000  or 8980</td>
+                                   </tr>
+                               </table>
+                        </div>
+                        <div style="flex: 1;">
+                            <table class="info-table">
+                                <tr>
+                                    <td>Customer Name</td>
+                                    <td>:</td>
+                                    <td>MEDINA  KASSAHUN  MOHAMMED</td>
+                                </tr>
+                                <tr>
+                                    <td>Account No</td>
+                                    <td>:</td>
+                                    <td>25193******0/WALLET</td>
+                                </tr>
+                                <tr>
+                                    <td>City</td>
+                                    <td>:</td>
+                                    <td>Addis Ababa</td>
+                                </tr>
+                                <tr>
+                                    <td>VAT Reg No</td>
+                                    <td>:</td>
+                                    <td>-</td>
+                                </tr>
+                                <tr>
+                                    <td>VAT Reg Date</td>
+                                    <td>:</td>
+                                    <td>-</td>
+                                </tr>
+                                <tr>
+                                    <td>TIN (TAX ID)</td>
+                                    <td>:</td>
+                                    <td>-</td>
+                                </tr>
+                                <tr>
+                                    <td>Branch</td>
+                                    <td>:</td>
+                                    <td>IFB-KHIDMA BRANCH</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display: flex; justify-content: center; align-items: center;
+            border: 2px dotted #f9913e; padding: 5px; margin-bottom: 10px; margin-top: 10px">
+                    <span style="font-weight: bold; font-size: 14px;">Transaction/Payment Information</span>
+                </div>
+
+                <div class="receipt-container " style="position: relative;">
+                    
+                    
+                    <table class="info-table" >
+                        <tr>
+                        <td><tt><span>Transaction Date </span></tt></td>
+                        <td><tt><span>: </span></tt></td>
+                        <td><tt><span>2026-05-14 12:08:00</span></tt></td>
+                    </tr>
+<tr>
+                        <td><tt><span>Transaction type </span></tt></td>
+                        <td><tt><span>: </span></tt></td>
+                        <td><tt><span>Merchant Payment</span></tt></td>
+                    </tr>
+<tr>
+                        <td><tt><span>Amount </span></tt></td>
+                        <td><tt><span>: </span></tt></td>
+                        <td><tt><span>100.00 ETB</span></tt></td>
+                    </tr>
+<tr>
+                        <td><tt><span>Merchant </span></tt></td>
+                        <td><tt><span>: </span></tt></td>
+                        <td><tt><span>MEDINA KASSAHUN</span></tt></td>
+                    </tr>
+<tr>
+                        <td><tt><span>Till Number </span></tt></td>
+                        <td><tt><span>: </span></tt></td>
+                        <td><tt><span>82795800</span></tt></td>
+                    </tr>
+<tr>
+                        <td><tt><span>Reason </span></tt></td>
+                        <td><tt><span>: </span></tt></td>
+                        <td><tt><span>V</span></tt></td>
+                    </tr>
+<tr>
+                        <td><tt><span>Sender Name </span></tt></td>
+                        <td><tt><span>: </span></tt></td>
+                        <td><tt><span>MEDINA  KASSAHUN  MOHAMMED</span></tt></td>
+                    </tr>
+<tr>
+                        <td><tt><span>Transaction ID </span></tt></td>
+                        <td><tt><span>: </span></tt></td>
+                        <td><tt><span>260514120752793</span></tt></td>
+                    </tr>
+
+                       
+                    </table>
+                        <img class="stamp" src="https://awashpay.awashbank.com:8225/awashbirrpro/receipts/awash_stamp.png" alt="Stamp">
+                        <div class="qr-code" id="qrDiv"></div>
+                </div>
+
+                <div>
+
+                </div>
+            </div>
+
+
+        </div>
+
+    </div>
+    
+    <div class="receipt-footer">
+        <img src="https://awashpay.awashbank.com:8225/awashbirrpro/receipts/awash_receipt_footer.png" alt="" style="width: 100%">
+    </div>
+</div>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        generateQr()
+    });
+
+    function generateQr() {
+        var qrContainer = document.createElement('div');
+        qrContainer.style.display = 'flex';
+        qrContainer.style.justifyContent = 'center'; // Center horizontally
+        qrContainer.style.alignItems = 'center'; // Center vertically
+        qrContainer.style.height = '30px';
+        qrContainer.style.marginTop = '10px'; // Add margin top
+        // qrContainer.style.marginBottom = '20px'; // Add margin bottom
+
+        var qrCodeDiv = document.createElement('div');
+        qrContainer.appendChild(qrCodeDiv);
+        document.getElementById('qrDiv').appendChild(qrContainer);
+
+        var qrcode = new QRCode(qrCodeDiv, {
+            text: "https://awashpay.awashbank.com:8225/-2KCEJ97YC9-4LDPET",
+            width: 100,
+            height: 100,
+            colorDark : "#000",
+            colorLight : "#ffffff",
+            correctLevel: QRCode.CorrectLevel.H
+        });
+    }
+    function downloadReceipt() {
+        var downloadButton = document.getElementById('download-button');
+        var printButton = document.getElementById('print-button');
+        downloadButton.style.display = 'none'
+        printButton.style.display = 'none'
+        var data = document.getElementById('contentToConvert');
+
+        htmlToImage.toBlob(data)
+            .then(function (blob) {
+                if (window.saveAs) {
+                    window.saveAs(blob, 'Awash-Receipt.png');
+                } else {
+                    FileSaver.saveAs(blob, 'Awash-Receipt.png');
+                }
+                        downloadButton.style.display = 'block';
+                        printButton.style.display = 'block';
+            }).catch(function (error) {
+            console.error('Oops, something went wrong!', error);
+                    downloadButton.style.display = 'block';
+                    printButton.style.display = 'block';
+        });
+    }
+
+</script>
+</body>
+</html>
