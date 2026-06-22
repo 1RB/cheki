@@ -1,8 +1,41 @@
 import { NextResponse } from "next/server";
 import { getAllBanks, getParser } from "@/lib";
+import * as https from "node:https";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+function checkEndpoint(url: string, sslVerify: boolean): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (!sslVerify) {
+      // Use node:https with SSL verification disabled for banks with broken certs
+      const req = https.get(
+        url,
+        { headers: { "User-Agent": "cheki-health-check" }, rejectUnauthorized: false },
+        () => resolve()
+      );
+      req.on("error", reject);
+      req.setTimeout(5000, () => req.destroy(new Error("timeout")));
+      return;
+    }
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    fetch(url, {
+      method: "GET",
+      signal: controller.signal,
+      headers: { "User-Agent": "cheki-health-check" },
+    })
+      .then(() => {
+        clearTimeout(timeout);
+        resolve();
+      })
+      .catch((e) => {
+        clearTimeout(timeout);
+        reject(e);
+      });
+  });
+}
 
 export async function GET() {
   const banks = getAllBanks();
@@ -19,19 +52,11 @@ export async function GET() {
         };
       }
       try {
-        // Just check if the endpoint is reachable (HEAD or quick GET)
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 5000);
         const url = b.endpoint
           .replace("{ref}", "test")
           .replace("{account}", "00000000")
           .replace("{phone}", "0000000000");
-        await fetch(url, {
-          method: "GET",
-          signal: controller.signal,
-          headers: { "User-Agent": "cheki-health-check" },
-        });
-        clearTimeout(timeout);
+        await checkEndpoint(url, b.sslVerify);
         return {
           id: b.id,
           name: b.name,

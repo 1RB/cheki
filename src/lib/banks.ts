@@ -129,6 +129,7 @@ export interface VerifyResult {
   date?: string;
   branch?: string;
   reason?: string;
+  transactionType?: string;
   raw?: string;
   // Telebirr / wallet-specific
   invoiceNumber?: string;

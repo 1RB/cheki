@@ -88,6 +88,7 @@ export interface Receipt {
   date?: string;
   branch?: string;
   reason?: string;
+  transactionType?: string;
   durationMs?: number;
   // Telebirr / wallet-specific
   invoiceNumber?: string;
@@ -141,6 +142,7 @@ export interface ParsedReceipt {
   reference?: string;
   branch?: string;
   reason?: string;
+  transactionType?: string;
   raw?: string;
   // Telebirr / wallet-specific fields
   invoiceNumber?: string;
