@@ -45,6 +45,7 @@ export default function Home() {
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [photoProcessing, setPhotoProcessing] = useState(false);
   const [ocrProgress, setOcrProgress] = useState<{ status: string; progress: number } | null>(null);
+  const [photoExtracted, setPhotoExtracted] = useState<{ reference: string; bank: BankCode } | null>(null);
 
   const selectedBank = banks.find((b) => b.code === bank)!;
   const needsAccount = selectedBank.requiresAccount;
@@ -71,6 +72,12 @@ export default function Home() {
     const detected = detectBank(trimmed);
     if (detected && detected !== bank) setBank(detected as BankCode);
   }, [reference]);
+
+  useEffect(() => {
+    if (photoExtracted && reference.trim() !== photoExtracted.reference) {
+      setPhotoExtracted(null);
+    }
+  }, [reference, photoExtracted]);
 
   const isBoaQrPayload = (s: string) => {
     const t = s.trim();
@@ -466,6 +473,7 @@ export default function Home() {
         if (parsed) {
           setBank(parsed.bank as BankCode);
           setReference(parsed.reference);
+          setPhotoExtracted({ reference: parsed.reference, bank: parsed.bank as BankCode });
           setInputMode("reference");
           setShowScanner(false);
           stopScanner();
@@ -656,7 +664,7 @@ export default function Home() {
                 ].map((tab) => (
                   <button
                     key={tab.mode}
-                    onClick={() => { setInputMode(tab.mode); setReference(""); setQrData(""); setShowQrPaste(false); setResult(null); setError(null); setPhotoPreview(null); setPhotoProcessing(false); setShowScanner(false); stopScanner(); }}
+                    onClick={() => { setInputMode(tab.mode); setReference(""); setQrData(""); setShowQrPaste(false); setResult(null); setError(null); setPhotoPreview(null); setPhotoProcessing(false); setPhotoExtracted(null); setShowScanner(false); stopScanner(); }}
                     style={{
                       padding: "8px 16px", fontSize: "13px", fontWeight: 600,
                       border: "none", borderBottom: inputMode === tab.mode ? "2px solid var(--green)" : "2px solid transparent",
@@ -665,76 +673,89 @@ export default function Home() {
                     }}
                   >{tab.label}</button>
                 ))}
-                <div style={{ marginLeft: "auto", display: "flex", gap: "4px" }}>
-                  <button onClick={() => fileInputRef.current?.click()} title="Upload QR image (or multiple for batch)" style={{ padding: "6px 10px", border: "1px solid var(--border)", borderRadius: "6px", background: "var(--surface)", color: "var(--ink-2)", cursor: "pointer", display: "flex", alignItems: "center" }}>
-                    <Icon icon={QrCode01Icon} size={16} color="var(--ink-2)" />
-                  </button>
-                  <button onClick={() => showScanner ? (setShowScanner(false), stopScanner()) : startScanner()} title="Scan QR with camera" style={{ padding: "6px 10px", border: "1px solid var(--border)", borderRadius: "6px", background: showScanner ? "var(--green-light)" : "var(--surface)", color: showScanner ? "var(--green-dark)" : "var(--ink-2)", cursor: "pointer", display: "flex", alignItems: "center" }}>
-                    <Icon icon={Camera01Icon} size={16} color={showScanner ? "var(--green-dark)" : "var(--ink-2)"} />
-                  </button>
-                  <input ref={fileInputRef} type="file" accept="image/*" multiple style={{ display: "none" }} onChange={handleFileUpload} />
-                </div>
               </div>
+              <input ref={fileInputRef} type="file" accept="image/*" multiple style={{ display: "none" }} onChange={handleFileUpload} />
 
-              {/* QR Scanner / photo capture overlay */}
+              {/* Photo extraction banner (shown in Reference mode after a photo was read) */}
+              {photoExtracted && inputMode === "reference" && (
+                <div className="fade-in" style={{ marginBottom: "14px", padding: "12px 14px", borderRadius: "8px", background: "var(--green-light)", border: "1px solid var(--green)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <Icon icon={CheckmarkCircle01Icon} size={18} color="var(--green)" />
+                    <span style={{ fontSize: "13px", color: "var(--green-dark)", fontWeight: 500 }}>
+                      Read from photo: <strong style={{ fontFamily: "var(--mono)" }}>{photoExtracted.reference}</strong> · {banks.find((b) => b.code === photoExtracted.bank)?.name}
+                    </span>
+                  </div>
+                  <button onClick={() => { setInputMode("photo"); setPhotoExtracted(null); setReference(""); setResult(null); setError(null); }} style={{ fontSize: "12px", color: "var(--green-dark)", background: "none", border: "none", cursor: "pointer", fontWeight: 600, whiteSpace: "nowrap" }}>Use another photo</button>
+                </div>
+              )}
+
+              {/* Photo capture / scanner overlay */}
               {showScanner && (
-                <div style={{ marginBottom: "16px", borderRadius: "10px", overflow: "hidden", border: "2px solid var(--green)", position: "relative" }}>
-                  <video ref={videoRef} style={{ width: "100%", display: "block" }} playsInline muted />
-                  <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: "200px", height: "200px", border: "2px solid rgba(255,255,255,0.7)", borderRadius: "12px", boxShadow: "0 0 0 9999px rgba(0,0,0,0.3)" }} />
-                  <p style={{ position: "absolute", bottom: "44px", left: 0, right: 0, textAlign: "center", color: "#fff", fontSize: "13px", fontWeight: 500 }}>Point camera at QR code, or tap capture to read the receipt</p>
-                  <button onClick={capturePhotoFromVideo} style={{ position: "absolute", bottom: "10px", left: "50%", transform: "translateX(-50%)", width: "48px", height: "48px", borderRadius: "50%", border: "3px solid #fff", background: "rgba(255,255,255,0.3)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <div style={{ width: "36px", height: "36px", borderRadius: "50%", background: "#fff" }} />
+                <div style={{ marginBottom: "16px", borderRadius: "12px", overflow: "hidden", border: "2px solid var(--green)", position: "relative" }}>
+                  <video ref={videoRef} style={{ width: "100%", display: "block", minHeight: "240px", background: "#000" }} playsInline muted />
+                  <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: "220px", height: "220px" }}>
+                    <svg width="220" height="220" viewBox="0 0 220 220" fill="none" style={{ opacity: 0.9 }}>
+                      <path d="M20 40V20H40" stroke="white" strokeWidth="3" strokeLinecap="round" />
+                      <path d="M200 40V20H180" stroke="white" strokeWidth="3" strokeLinecap="round" />
+                      <path d="M20 180V200H40" stroke="white" strokeWidth="3" strokeLinecap="round" />
+                      <path d="M200 180V200H180" stroke="white" strokeWidth="3" strokeLinecap="round" />
+                    </svg>
+                  </div>
+                  <p style={{ position: "absolute", top: "14px", left: 0, right: 0, textAlign: "center", color: "#fff", fontSize: "13px", fontWeight: 500, textShadow: "0 1px 3px rgba(0,0,0,0.5)" }}>Center the receipt, then tap the shutter</p>
+                  <button onClick={() => { setShowScanner(false); stopScanner(); }} style={{ position: "absolute", top: "10px", right: "10px", width: "32px", height: "32px", borderRadius: "50%", border: "none", background: "rgba(0,0,0,0.5)", color: "#fff", cursor: "pointer", fontSize: "18px", display: "flex", alignItems: "center", justifyContent: "center" }}>×</button>
+                  <button onClick={capturePhotoFromVideo} style={{ position: "absolute", bottom: "14px", left: "50%", transform: "translateX(-50%)", width: "56px", height: "56px", borderRadius: "50%", border: "4px solid #fff", background: "rgba(255,255,255,0.25)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <div style={{ width: "44px", height: "44px", borderRadius: "50%", background: "#fff" }} />
                   </button>
                 </div>
               )}
 
               {/* Photo mode UI */}
-              {inputMode === "photo" && !photoPreview && !showScanner && (
+              {inputMode === "photo" && (
                 <div className="fade-in" style={{ marginBottom: "16px" }}>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                    <button onClick={() => photoInputRef.current?.click()} style={{ padding: "24px 16px", borderRadius: "10px", border: "1px dashed var(--border)", background: "var(--surface)", color: "var(--ink-2)", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: "8px" }}>
-                      <Icon icon={Upload01Icon} size={24} color="var(--green)" />
-                      <span style={{ fontSize: "13px", fontWeight: 600 }}>Upload screenshot</span>
-                      <span style={{ fontSize: "11px", color: "var(--ink-3)" }}>PNG, JPG, WebP</span>
+                  {!photoPreview && !showScanner && (
+                    <div>
+                      <button onClick={() => startScanner()} style={{ width: "100%", padding: "28px 16px", borderRadius: "12px", border: "1px dashed var(--border)", background: "var(--surface)", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: "10px", marginBottom: "12px" }}>
+                        <Icon icon={Camera01Icon} size={28} color="var(--green)" />
+                        <span style={{ fontSize: "15px", fontWeight: 600, color: "var(--ink)" }}>Take a photo</span>
+                        <span style={{ fontSize: "12px", color: "var(--ink-3)" }}>Use camera or phone</span>
+                      </button>
+                      <button onClick={() => photoInputRef.current?.click()} style={{ width: "100%", padding: "14px 16px", borderRadius: "10px", border: "1px solid var(--border)", background: "var(--surface)", color: "var(--ink-2)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", fontSize: "14px", fontWeight: 500 }}>
+                        <Icon icon={Upload01Icon} size={18} color="var(--ink-3)" /> Upload a screenshot
+                      </button>
+                      <p style={{ fontSize: "12px", color: "var(--ink-3)", marginTop: "12px", textAlign: "center", lineHeight: 1.5 }}>QR code is scanned first. If none is visible, OCR reads the transaction number.</p>
+                    </div>
+                  )}
+
+                  {photoPreview && (
+                    <div className="fade-in" style={{ borderRadius: "12px", overflow: "hidden", border: "1px solid var(--border)", position: "relative" }}>
+                      <img src={photoPreview} alt="Receipt preview" style={{ width: "100%", maxHeight: "260px", objectFit: "contain", background: "#000", display: "block" }} />
+                      {photoProcessing && (
+                        <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.55)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "#fff", gap: "10px" }}>
+                          <span className="spin" style={{ width: "26px", height: "26px", border: "3px solid rgba(255,255,255,0.3)", borderTopColor: "#fff", borderRadius: "50%", display: "inline-block" }} />
+                          <span style={{ fontSize: "13px", fontWeight: 600 }}>{ocrProgress ? `${ocrProgress.status} ${Math.round(ocrProgress.progress * 100)}%` : "Scanning QR..."}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {photoPreview && !photoProcessing && (
+                    <button onClick={() => { setPhotoPreview(null); setPhotoExtracted(null); if (photoInputRef.current) photoInputRef.current.value = ""; }} style={{ fontSize: "12px", color: "var(--ink-3)", background: "none", border: "none", cursor: "pointer", padding: "0", marginTop: "10px", display: "flex", alignItems: "center", gap: "4px" }}>
+                      <Icon icon={Camera01Icon} size={12} color="var(--ink-3)" /> Take another photo
                     </button>
-                    <button onClick={() => startScanner()} style={{ padding: "24px 16px", borderRadius: "10px", border: "1px dashed var(--border)", background: "var(--surface)", color: "var(--ink-2)", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: "8px" }}>
-                      <Icon icon={Camera01Icon} size={24} color="var(--green)" />
-                      <span style={{ fontSize: "13px", fontWeight: 600 }}>Take photo</span>
-                      <span style={{ fontSize: "11px", color: "var(--ink-3)" }}>Camera or phone</span>
-                    </button>
-                  </div>
-                  <p style={{ fontSize: "12px", color: "var(--ink-3)", marginTop: "10px", textAlign: "center" }}>We scan the QR code first. If none is visible, we read the transaction number with OCR.</p>
+                  )}
                   <input ref={photoInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handlePhotoUpload} />
                 </div>
               )}
 
-              {/* Photo preview and OCR status */}
-              {photoPreview && (
-                <div className="fade-in" style={{ marginBottom: "16px", borderRadius: "10px", overflow: "hidden", border: "1px solid var(--border)", position: "relative" }}>
-                  <img src={photoPreview} alt="Receipt preview" style={{ width: "100%", maxHeight: "300px", objectFit: "contain", background: "#000" }} />
-                  {photoProcessing && (
-                    <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.55)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "#fff", gap: "8px" }}>
-                      <span className="spin" style={{ width: "24px", height: "24px", border: "3px solid rgba(255,255,255,0.3)", borderTopColor: "#fff", borderRadius: "50%", display: "inline-block" }} />
-                      <span style={{ fontSize: "13px", fontWeight: 600 }}>{ocrProgress ? `${ocrProgress.status} ${Math.round(ocrProgress.progress * 100)}%` : "Scanning QR..."}</span>
+              {inputMode !== "photo" ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+                  {inputMode === "reference" && (
+                    <div>
+                      <label style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink-2)", marginBottom: "6px", display: "block" }}>{t("hero.bankLabel")}</label>
+                      <BankSelector value={bank} onChange={(code) => { setBank(code as BankCode); setResult(null); setError(null); }} />
                     </div>
                   )}
-                </div>
-              )}
-              {photoPreview && !photoProcessing && (
-                <button onClick={() => { setPhotoPreview(null); if (photoInputRef.current) photoInputRef.current.value = ""; }} style={{ fontSize: "12px", color: "var(--ink-3)", background: "none", border: "none", cursor: "pointer", padding: "0", marginBottom: "16px", display: "flex", alignItems: "center", gap: "4px" }}>
-                  <Icon icon={Camera01Icon} size={12} color="var(--ink-3)" /> Take another photo
-                </button>
-              )}
 
-              <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-                {inputMode === "reference" && (
-                  <div>
-                    <label style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink-2)", marginBottom: "6px", display: "block" }}>{t("hero.bankLabel")}</label>
-                    <BankSelector value={bank} onChange={(code) => { setBank(code as BankCode); setResult(null); setError(null); }} />
-                  </div>
-                )}
-
-                {isGeoBlocked && inputMode === "reference" && (
+                  {isGeoBlocked && inputMode === "reference" && (
                   <div className="fade-in" style={{ padding: "10px 14px", borderRadius: "8px", background: "var(--amber-light)", border: "1px solid #fde68a", display: "flex", gap: "8px", alignItems: "flex-start" }}>
                     <Icon icon={Alert01Icon} size={16} color="#92400e" />
                     <p style={{ fontSize: "12px", color: "#92400e", lineHeight: 1.5 }}>
@@ -800,8 +821,9 @@ export default function Home() {
                   {loading ? (<><span className="spin" style={{ width: "16px", height: "16px", border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "#fff", borderRadius: "50%", display: "inline-block" }} /><span key="loading" className="t-text-swap-enter">{t("hero.verifying")}</span></>) : (inputMode === "reference" && isDisabled) ? <span key="disabled" className="t-text-swap-enter">{t("banks.inDevelopment")}</span> : <span key="idle" className="t-text-swap-enter">{t("hero.verifyButton")}</span>}
                 </button>
               </div>
+            ) : null}
 
-              {history.length > 0 && !result && !loading && (
+            {history.length > 0 && !result && !loading && (
                 <div style={{ marginTop: "14px" }}>
                   <p style={{ fontSize: "11px", fontWeight: 600, color: "var(--ink-3)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "8px" }}>Recent checks</p>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
