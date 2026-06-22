@@ -1,3 +1,4 @@
+import { detectBankFromUrl } from "./adapters/url-detector";
 import { banks, detectBank } from "./banks";
 
 export type OcrParseConfidence = "high" | "medium" | "low";
@@ -8,20 +9,23 @@ export interface OcrParseResult {
   confidence: OcrParseConfidence;
   rawText: string;
   matches?: string[];
+  /** For banks that require a share URL (e.g. Awash), the detected URL if present. */
+  shareUrl?: string;
+  /** Human-readable note when the OCR text is not enough to verify. */
+  message?: string;
 }
 
 // Ethiopian bank names and their common variants / Amharic hints.
 // Order matters: more specific names should come before generic ones.
 const BANK_TEXT_CLUES: { code: string; keywords: string[] }[] = [
-  { code: "awash", keywords: ["AWASH", "AWASHBANK", "አዋሽ"] },
-  { code: "cbe", keywords: ["COMMERCIAL BANK OF ETHIOPIA", "CBE", "ኮሜርሻል ባንክ ኦፍ ኢትዮጵያ"] },
+  { code: "awash", keywords: ["AWASH BANK", "AWASHBANK", "AWASHBIRR", "አዋሽ", "IFB-KHIDMA", "SEND TO BANK", "AWASH BANK SHARE"] },
+  { code: "cbe", keywords: ["COMMERCIAL BANK OF ETHIOPIA", "CBE", "ኮሜርሻል ባንክ ኦፍ ኢትዮጵያ", "CBE BIRR", "CBEBIRR"] },
   { code: "boa", keywords: ["BANK OF ABYSSINIA", "ABYSSINIA"] },
-  { code: "dashen", keywords: ["DASHEN"] },
-  { code: "zemen", keywords: ["ZEMEN"] },
+  { code: "dashen", keywords: ["DASHEN", "DASHEN SUPERAPP", "DASHEN BANK"] },
+  { code: "zemen", keywords: ["ZEMEN BANK", "ZEMEN"] },
   { code: "telebirr", keywords: ["TELEBIRR", "ETHIO TELECOM", "ETHIOTELECOM"] },
   { code: "mpesa", keywords: ["M-PESA", "MPESA", "SAFARICOM"] },
-  { code: "cbebirr", keywords: ["CBE BIRR", "CBEBIRR"] },
-  { code: "siinqee", keywords: ["SIINQEE", "SINQEE"] },
+  { code: "siinqee", keywords: ["SIINQEE", "SINQEE", "SIINQEE BANK"] },
   { code: "ebirr", keywords: ["EBIRR", "NIB", "WEGAGEN", "AHADU", "KAAFI"] },
   { code: "hijra", keywords: ["HIJRA"] },
   { code: "goh", keywords: ["GOH"] },
@@ -35,6 +39,11 @@ export function detectBankFromText(text: string): string | null {
     }
   }
   return null;
+}
+
+function extractUrl(text: string): string | null {
+  const match = text.match(/https?:\/\/[^\s<>"'{}|\^`\[\]]+/i);
+  return match ? match[0] : null;
 }
 
 // Label-aware reference extraction. We look for the label on the same line
@@ -144,8 +153,37 @@ function bankLabelPresent(text: string, bank: string): boolean {
 }
 
 export function parseReceiptText(text: string): OcrParseResult | null {
+  const result = parseReceiptTextInternal(text);
+  if (result && result.bank === "awash" && /^\d{14,18}$/.test(result.reference)) {
+    return {
+      ...result,
+      message:
+        "Awash verification requires the share link or QR code. The numeric transaction ID alone is not sufficient.",
+    };
+  }
+  return result;
+}
+
+function parseReceiptTextInternal(text: string): OcrParseResult | null {
   const upper = text.toUpperCase();
   const bankFromText = detectBankFromText(text);
+
+  // 0. If a receipt URL is visible in the OCR text (e.g. Awash share link),
+  //    use it directly. This is the highest-confidence path.
+  const urlInText = extractUrl(text);
+  if (urlInText) {
+    const fromUrl = detectBankFromUrl(urlInText);
+    if (fromUrl) {
+      const canonicalBank = fromUrl.bank === "cbe-new" ? "cbe" : fromUrl.bank;
+      return {
+        reference: fromUrl.reference,
+        bank: canonicalBank,
+        confidence: "high",
+        rawText: text,
+        shareUrl: urlInText,
+      };
+    }
+  }
 
   // 1. Try bank-specific text clue first, then extract a reference by label
   //    or by bank-specific pattern.

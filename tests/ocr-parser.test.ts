@@ -45,6 +45,17 @@ describe("ocr parser", () => {
     expect(result).not.toBeNull();
     expect(result!.reference).toBe("260328171079006");
     expect(result!.bank).toBe("awash");
+    expect(result!.message).toContain("share link or QR code");
+  });
+
+  it("extracts an Awash share URL from receipt text when present", () => {
+    const text = "Awash Bank\nTransaction ID 260328171079006\nhttps://awashpay.awashbank.com:8225/-2KDL95Z0NR-4U61O6\nAmount 1000 ETB";
+    const result = parseReceiptText(text);
+    expect(result).not.toBeNull();
+    expect(result!.bank).toBe("awash");
+    expect(result!.reference).toBe("2KDL95Z0NR-4U61O6");
+    expect(result!.shareUrl).toBe("https://awashpay.awashbank.com:8225/-2KDL95Z0NR-4U61O6");
+    expect(result!.confidence).toBe("high");
   });
 
   it("does not mistake a person's name for a BOA reference", () => {

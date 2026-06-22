@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { preprocessImage, runOcr, runVisionOcr } from "@/lib/server-ocr";
-import { parseReceiptText, ambiguousReferenceCandidates } from "@/lib/ocr-parser";
+import {
+  preprocessImage,
+  runBestOcr,
+  decodeQrFromImage,
+} from "@/lib/server-ocr";
+import { detectBankFromUrl, isUrl } from "@/lib/adapters/url-detector";
+import {
+  parseReceiptText,
+  ambiguousReferenceCandidates,
+} from "@/lib/ocr-parser";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -16,6 +24,7 @@ export async function OPTIONS() {
 }
 
 export async function POST(request: NextRequest) {
+  const start = Date.now();
   try {
     const formData = await request.formData();
     const image = formData.get("image");
@@ -37,14 +46,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const processed = await preprocessImage(inputBuffer);
-    let text: string;
-    if (process.env.FIREWORKS_API_KEY) {
-      // Vision model is faster and more accurate on ambiguous characters (0 vs O).
-      text = await runVisionOcr(processed);
-    } else {
-      text = await runOcr(processed);
+    // 1. Try QR code first (fastest and most accurate for share URLs).
+    const qr = await decodeQrFromImage(inputBuffer);
+    if (qr?.data) {
+      const parsedUrl = isUrl(qr.data) ? detectBankFromUrl(qr.data) : null;
+      if (parsedUrl) {
+        return NextResponse.json(
+          {
+            success: true,
+            source: "qr",
+            text: qr.data,
+            bank: parsedUrl.bank,
+            reference: parsedUrl.reference,
+            confidence: "high",
+            candidates: ambiguousReferenceCandidates(parsedUrl.reference).slice(0, 20),
+            durationMs: Date.now() - start,
+          },
+          { headers: CORS_HEADERS }
+        );
+      }
     }
+
+    // 2. Fall back to Tesseract OCR.
+    const processed = await preprocessImage(inputBuffer);
+    const { text, psm } = await runBestOcr(processed);
     const parsed = parseReceiptText(text);
 
     const candidates = parsed?.reference
@@ -54,9 +79,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         success: true,
+        source: "tesseract",
+        psm,
         text,
         candidates,
         ...parsed,
+        durationMs: Date.now() - start,
       },
       { headers: CORS_HEADERS }
     );
