@@ -381,18 +381,60 @@ export const articles: Article[] = [
       { type: "text", text: "Reference format: Alphanumeric Dashen transaction reference. Use the Transaction Reference, not the Transfer Reference. Works for both within-Dashen and Other Bank Transfer (inter-bank) receipts." },
 
       { type: "heading", text: "Awash Bank" },
+      { type: "text", text: "Awash Bank receipts are public HTML pages on awashpay.awashbank.com. We have reverse-engineered the share-link structure. The visible numeric Transaction ID is encoded in the URL, but the URL also includes a second token that appears to be a server-side counter." },
       {
         type: "table",
         headers: ["Field", "Value"],
         rows: [
-          ["URL format", "https://awashpay.awashbank.com:8225/-{REFERENCE}"],
+          ["URL format", "https://awashpay.awashbank.com:8225/-{TX_ID_BASE36}-{COUNTER_BASE36}"],
+          ["Part 1 (TX_ID_BASE36)", "Numeric Transaction ID encoded in base-36"],
+          ["Part 2 (COUNTER_BASE36)", "Server-side counter that increases with transaction time"],
           ["Response format", "HTML"],
-          ["Input needed", "Transaction reference only"],
+          ["Input needed", "Full Awash share link"],
           ["Account number required", "No"],
           ["Geo-blocked", "No"],
         ],
       },
+      { type: "heading", text: "URL structure breakdown" },
+      { type: "text", text: "Example share link: https://awashpay.awashbank.com:8225/-2KDL95Z0NR-4U61O6" },
+      {
+        type: "table",
+        headers: ["Segment", "Base-36 value", "Decimal value", "Meaning"],
+        rows: [
+          ["2KDL95Z0NR", "2KDL95Z0NR", "260607112275735", "Transaction ID"],
+          ["4U61O6", "4U61O6", "292535286", "Server counter (estimated)"],
+        ],
+      },
+      { type: "text", text: "We verified this with five real Awash receipts from different transaction types (Send To Bank, IPS to CBE, IPS to BOA, Merchant Payment, Send Money). In every case, converting the first segment from base-36 to decimal produced the exact Transaction ID printed on the receipt." },
 
+      { type: "heading", text: "Counter analysis" },
+      { type: "text", text: "The second segment is not a hash of the Transaction ID. It increases monotonically with transaction time. From our samples, the rate is roughly 6 to 13 per second, averaging about 7 per second. That suggests it is a global or per-system counter for Awash share links, not a random token." },
+      {
+        type: "table",
+        headers: ["Transaction date", "Counter (decimal)", "Counter diff", "Time gap", "Approx. rate"],
+        rows: [
+          ["2026-05-14 12:05:55", "277,774,515", "—", "—", "—"],
+          ["2026-05-14 12:08:00", "277,776,101", "+1,586", "125 sec", "~12.7/sec"],
+          ["2026-05-18 14:41:20", "280,120,946", "+2,344,845", "~4 days", "~6.6/sec"],
+          ["2026-05-19 15:05:53", "280,772,586", "+651,640", "~1 day", "~7.5/sec"],
+          ["2026-06-07 11:22:03", "292,535,286", "+11,762,700", "~19 days", "~7.2/sec"],
+        ],
+      },
+      { type: "text", text: "The server validates both segments. Replacing the counter with a nearby value returns 'Mistmatch / invalid receipt id'. Omitting it returns 'Invalid receipt id'. This means the counter is checked, not ignored." },
+
+      { type: "heading", text: "What we still need to figure out" },
+      { type: "ordered", items: [
+        "Is the counter global across all Awash transactions, or per branch / per sender / per channel?",
+        "What is the exact epoch and increment model? (linear fit has ±110k residuals with 5 samples)",
+        "Can the second segment be derived from the Transaction ID alone, or only from a server-side database?",
+        "How many transactions per second does Awash actually process?",
+      ]},
+
+      { type: "callout", variant: "tip", title: "Help us reverse engineer Awash", text: "If you have Awash share links you can share for research (especially clustered close together or from different senders/branches), please open an issue or discussion on GitHub. We need more samples to confirm the counter model and determine whether the second segment can be predicted from the Transaction ID." },
+      { type: "callout", variant: "info", title: "Privacy note", text: "If you share Awash links, the receipts already contain the transaction details. If you want to help without exposing real data, you can paste just the two-part token (e.g. 2KDL95Z0NR-4U61O6) and the transaction date/time. Do not include the transaction if you are not comfortable sharing it." },
+
+      { type: "heading", text: "How to verify Awash with cheki" },
+      { type: "text", text: "Until the full URL can be generated from the Transaction ID, you must use the share link from the Awash app. Paste the full link into cheki and the parser will extract the Transaction ID, receiver, amount, date, and other fields from the official HTML receipt." },
       { type: "heading", text: "Zemen Bank" },
       {
         type: "table",
@@ -487,11 +529,12 @@ export const articles: Article[] = [
           ["Starts with DET, CHQ, DAB, DEL, ADQ, DEP, CHG", "Telebirr"],
           ["2 letters + digits (general)", "BOA"],
           ["2 letters + 6+ digits", "M-Pesa"],
+          ["awashpay.awashbank.com:8225/-{A}-{B}", "Awash Bank"],
           ["receipt.ebirr.com/{tenant}/{token}", "eBirr"],
           ["tenant/token (nib/, wegagen/, ahadu/, kaafimf/)", "eBirr"],
         ],
       },
-      { type: "callout", variant: "info", title: "URL auto-detection", text: "cheki also detects the bank from pasted URLs. If you paste a mbreciept.cbe.com.et link, it knows it's CBE. If you paste a transactioninfo.ethiotelecom.et link, it knows it's Telebirr. No manual bank selection needed." },
+      { type: "callout", variant: "info", title: "URL auto-detection", text: "cheki also detects the bank from pasted URLs. If you paste a mbreciept.cbe.com.et link, it knows it's CBE. If you paste a transactioninfo.ethiotelecom.et link, it knows it's Telebirr. If you paste an awashpay.awashbank.com:8225/-... link, it knows it's Awash. No manual bank selection needed." },
     ],
     faq: [
       { q: "Are these bank endpoints official APIs?", a: "These are public endpoints that the banks use for their own receipt sharing systems. They are not documented official APIs, but they are publicly accessible without authentication. cheki, check.et, and verify.et all use these same endpoints." },
