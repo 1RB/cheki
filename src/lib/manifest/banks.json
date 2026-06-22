@@ -382,7 +382,7 @@
       },
       {
         "q": "Can cheki generate the share link from the Transaction ID?",
-        "a": "Not yet. We can convert the Transaction ID to the first part (base-36), but the second part is a server-side counter whose exact algorithm is still being researched. We need more Awash share links to model it. If you have any, please share them on GitHub."
+        "a": "We have proven it is possible. By converting the Transaction ID to base-36 (part 1) and brute-forcing the counter (part 2) around a time-based prediction, we successfully constructed a valid share URL from just the Transaction ID. The scan took 18 minutes with our current 5-sample model. With 20-50 community-shared sample URLs, we could narrow the prediction and reduce scan time to seconds. If you have Awash share links to contribute, please share them on GitHub."
       },
       {
         "q": "Is the second part of the Awash URL random?",

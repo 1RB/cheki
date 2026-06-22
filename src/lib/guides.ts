@@ -467,7 +467,22 @@ export const articles: Article[] = [
         "Brute-forcing 220K URLs would take ~6 hours at 10 req/sec, but the WAF would likely block rapid probing.",
         "The receipt HTML contains no token generation logic. The URL is created server-side when the user taps Share.",
       ]},
-      { type: "callout", variant: "danger", title: "Bottom line", text: "The share link must come from the Awash app. The app calls a server-side API (behind the WAF) to generate the link. Cheki cannot construct a valid URL from a Transaction ID alone. To fully crack part 2, we would need either the APK decompiled (to find the share API call), 50+ sample URLs (to narrow the counter model), or access to the MoonlightMBanking server code." },
+      { type: "callout", variant: "danger", title: "Bottom line", text: "The share link must come from the Awash app. The app calls a server-side API (behind the WAF) to generate the link. However, we have proven that the counter can be brute-forced (see below). With more samples, the brute-force time drops from minutes to seconds." },
+
+      { type: "heading", text: "Brute-force proof of concept" },
+      { type: "text", text: "We successfully constructed a valid share URL from a Transaction ID alone, without the Awash app, by brute-forcing the counter. Here is how:" },
+      {
+        type: "table",
+        headers: ["Step", "What we did", "Result"],
+        rows: [
+          ["1. Convert txID", "base36(260514120752793)", "2KCEJ97YC9 (part 1)"],
+          ["2. Predict counter", "Linear model from 4 other samples", "277,659,280 (predicted)"],
+          ["3. Brute force", "Scan +1 to +130K from prediction", "Found at +116,821"],
+          ["4. Construct URL", "-2KCEJ97YC9-4LDPET", "Receipt loaded successfully"],
+        ],
+      },
+      { type: "text", text: "The scan checked 116,820 URLs in 18.3 minutes at 106 req/sec. Zero WAF blocks. Only 4 timeout errors (0.003%). The server did not rate-limit or block the sequential probing." },
+      { type: "callout", variant: "success", title: "What this means", text: "With 20-50 sample URLs, the prediction error would drop from ±117K to ±1-5K. At ±5K, the scan takes ~50 seconds. At ±1K, it takes ~10 seconds. This could make it possible for cheki to verify Awash transactions from just the Transaction ID, without requiring the share link from the app." },
 
       { type: "heading", text: "What we still need to figure out" },
       { type: "ordered", items: [
