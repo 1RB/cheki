@@ -4,6 +4,8 @@ import type { QRCode } from "jsqr";
 import { PSM } from "tesseract.js";
 
 const TESSDATA_DIR = path.join(process.cwd(), "public");
+const TESSERACT_ROOT = path.dirname(require.resolve("tesseract.js/package.json"));
+const WORKER_PATH = path.join(TESSERACT_ROOT, "src", "worker-script", "node", "index.js");
 
 export interface OcrConfig {
   /** Tesseract page segmentation mode (PSM). 6 = single uniform block, 11 = sparse text. */
@@ -60,6 +62,7 @@ export async function decodeQrFromImage(buffer: Buffer): Promise<QRCode | null> 
 export async function runOcr(buffer: Buffer, config?: OcrConfig): Promise<string> {
   const { createWorker } = await import("tesseract.js");
   const worker = await createWorker("eng", 1, {
+    workerPath: WORKER_PATH,
     logger: () => {},
     errorHandler: () => {},
     cachePath: "/tmp",
