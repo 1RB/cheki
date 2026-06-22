@@ -357,7 +357,7 @@
     "sslVerify": false,
     "color": "#E2231A",
     "initials": "AB",
-    "notes": "URL structure reverse engineered: -{base36(txID)}-{base36(counter)}. The numeric Transaction ID is the first part; the second part is a server-side counter that increases with transaction time. We need more Awash URLs to confirm the exact counter model.",
+    "notes": "URL structure reverse engineered: -{base36(txID)}-{base36(counter)}. The txID has structure YYMMDDHHMM + 5-digit per-minute seq. The counter is server-side, increases ~7/sec since ~Feb 2025, R²=0.9998. Backend is MoonlightMBanking (Java) behind F5 BIG-IP WAF. Cannot derive counter from txID alone. Need 20-50 more sample URLs to narrow the model.",
     "description": "Awash Bank publishes transaction receipts as public HTML pages on awashpay.awashbank.com. The share link has a two-part token: the first part is the numeric Transaction ID encoded in base-36, and the second part is a server-side counter that increases with transaction time. You must use the full share link; the visible Transaction ID alone is not accepted.",
     "referenceFormat": "Awash share link (e.g. https://awashpay.awashbank.com:8225/-2KDL95Z0NR-4U61O6). The first segment is base-36 of the Transaction ID; the second segment is a server counter.",
     "referenceExample": "2KDL95Z0NR-4U61O6",
@@ -386,7 +386,11 @@
       },
       {
         "q": "Is the second part of the Awash URL random?",
-        "a": "It appears to be a counter, not random. From the sample URLs we have analyzed, the second part increases with transaction time at an average rate of roughly 7 per second. More data is needed to confirm whether it is a global counter or per-entity counter."
+        "a": "It appears to be a counter, not random. From the sample URLs we have analyzed, the second part increases with transaction time at an average rate of roughly 7 per second (R-squared = 0.9998). The counter epoch is around February 2025. More data is needed to confirm whether it is a global counter or per-entity counter."
+      },
+      {
+        "q": "What is the Transaction ID structure?",
+        "a": "The numeric Transaction ID is not random. It has a fixed format: YYMMDDHHMM followed by a 5-digit per-minute sequence number. For example, 260607112275735 means 2026-06-07 at 11:22, sequence 75735 within that minute. This means the transaction date and time are encoded directly in the Transaction ID."
       }
     ],
     "seo": {
