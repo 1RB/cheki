@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseReceiptText } from "@/lib/ocr-parser";
+import { parseReceiptText, detectBankFromText, ambiguousReferenceCandidates } from "@/lib/ocr-parser";
 
 describe("ocr parser", () => {
   it("extracts a CBE FT reference from receipt text", () => {
@@ -37,5 +37,32 @@ describe("ocr parser", () => {
     const result = parseReceiptText(text);
     expect(result).not.toBeNull();
     expect(result!.reference).toBe("FT26140P01YB");
+  });
+
+  it("detects Awash Bank from the logo text and numeric transaction ID", () => {
+    const text = "AwashBank\nTransaction Successful\nTransaction ID 260328171079006\nAmount 1000 ETB";
+    const result = parseReceiptText(text);
+    expect(result).not.toBeNull();
+    expect(result!.reference).toBe("260328171079006");
+    expect(result!.bank).toBe("awash");
+  });
+
+  it("does not mistake a person's name for a BOA reference", () => {
+    const text = "Beneficiary name SELEHADIN AMIR ABDULWEHAB\nTransaction ID 260328171079006";
+    const result = parseReceiptText(text);
+    expect(result).not.toBeNull();
+    expect(result!.bank).toBe("awash");
+  });
+
+  it("detects bank from Amharic/English text clues", () => {
+    expect(detectBankFromText("Commercial Bank of Ethiopia receipt")).toBe("cbe");
+    expect(detectBankFromText("Awash Bank transaction")).toBe("awash");
+    expect(detectBankFromText("Telebirr payment")).toBe("telebirr");
+  });
+
+  it("generates 0/O candidates for ambiguous references", () => {
+    const candidates = ambiguousReferenceCandidates("FT26170NPPON");
+    expect(candidates).toContain("FT26170NPPON");
+    expect(candidates).toContain("FT26170NPP0N");
   });
 });

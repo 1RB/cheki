@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# tesseract.js downloaded trained data (large binary, fetched at build time)
+*.traineddata
+*.traineddata.gz

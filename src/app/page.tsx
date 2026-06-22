@@ -10,7 +10,6 @@ import { BankSelector } from "@/components/BankSelector";
 import { useTranslation } from "@/lib/i18n/use-translation";
 import { Icon, BoltIcon, Key01Icon, Layers01Icon, CodeIcon, ReceiptTextIcon, Search01Icon, Camera01Icon, QrCode01Icon, QrCodeScanIcon, BookOpen01Icon, ContainerIcon, CheckmarkCircle01Icon, ArrowRight01Icon, GithubIcon, StarIcon, Copy01Icon, CopyCheckIcon, ChevronDownIcon, Alert01Icon, Upload01Icon } from "@/components/Icon";
 import { extractTextFromImage } from "@/lib/ocr";
-import { parseReceiptText } from "@/lib/ocr-parser";
 
 export default function Home() {
   const { t } = useTranslation();
@@ -466,10 +465,9 @@ export default function Home() {
         return;
       }
 
-      // 2. OCR fallback
+      // 2. OCR fallback (server-side, fast preprocessing)
       try {
-        const text = await extractTextFromImage(file, (p) => setOcrProgress(p));
-        const parsed = parseReceiptText(text);
+        const { parsed } = await extractTextFromImage(file, (p) => setOcrProgress(p));
         if (parsed) {
           setBank(parsed.bank as BankCode);
           setReference(parsed.reference);
