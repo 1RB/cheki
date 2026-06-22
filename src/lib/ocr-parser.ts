@@ -21,7 +21,7 @@ const BANK_TEXT_CLUES: { code: string; keywords: string[] }[] = [
   { code: "awash", keywords: ["AWASH BANK", "AWASHBANK", "AWASHBIRR", "አዋሽ", "IFB-KHIDMA", "SEND TO BANK", "AWASH BANK SHARE"] },
   { code: "cbe", keywords: ["COMMERCIAL BANK OF ETHIOPIA", "CBE", "ኮሜርሻል ባንክ ኦፍ ኢትዮጵያ", "CBE BIRR", "CBEBIRR"] },
   { code: "boa", keywords: ["BANK OF ABYSSINIA", "ABYSSINIA"] },
-  { code: "dashen", keywords: ["DASHEN", "DASHEN SUPERAPP", "DASHEN BANK"] },
+  { code: "dashen", keywords: ["DASHEN", "DASHEN SUPERAPP", "DASHEN BANK", "MONEY SUCCESSFULLY SENT", "BACK TO HOME"] },
   { code: "zemen", keywords: ["ZEMEN BANK", "ZEMEN"] },
   { code: "telebirr", keywords: ["TELEBIRR", "ETHIO TELECOM", "ETHIOTELECOM"] },
   { code: "mpesa", keywords: ["M-PESA", "MPESA", "SAFARICOM"] },
@@ -55,6 +55,12 @@ const REFERENCE_LABELS = [
   "REFERENCE NO",
   "REFERENCE NUMBER",
   "REF NO",
+  "FT REF",
+  "TRANSFER REF",
+  "TRANSACTION REF",
+  "FT REFERENCE",
+  "TRANSFER REFERENCE",
+  "TRANSACTION REFERENCE",
   "VAT RECEIPT NO",
   "VAT INVOICE NO",
   "INVOICE NO",
@@ -72,39 +78,52 @@ function looksLikeReference(token: string): boolean {
   return /^[A-Z0-9/\-]+$/i.test(token);
 }
 
-function extractReferenceByLabel(text: string): string | null {
+function extractReferenceByLabel(text: string, labels = REFERENCE_LABELS): string | null {
   const lines = text
     .split(/\r?\n/)
     .map((l) => l.trim())
     .filter(Boolean);
 
-  const labelRegex = new RegExp(
-    `(${REFERENCE_LABELS.map((l) => l.replace(/\s+/g, "\\s+")).join("|")})(\\s*[:=.-])\\s*`,
-    "i"
-  );
+  // Search labels in the given order, each label across all lines. This lets
+  // callers prefer "Transaction Ref" over "FT Ref" even if "FT Ref" appears
+  // earlier in the text.
+  for (const label of labels) {
+    const labelRegex = new RegExp(
+      `(${label.replace(/\s+/g, "\\s+")})(\\s*[:=.-])\\s*`,
+      "i"
+    );
 
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    const match = line.match(labelRegex);
-    if (match) {
-      const afterLabel = line.slice(match.index! + match[0].length).trim();
-      // Take the first alphanumeric token after the delimiter
-      const token = afterLabel.split(/\s+/)[0].replace(/[^A-Z0-9/\-]/gi, "");
-      if (looksLikeReference(token)) return token.toUpperCase();
-    }
-
-    // Label on previous line, value on current line
-    if (i > 0) {
-      const prevMatch = lines[i - 1].match(labelRegex);
-      if (prevMatch) {
-        const token = line.split(/\s+/)[0].replace(/[^A-Z0-9/\-]/gi, "");
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const match = line.match(labelRegex);
+      if (match) {
+        const afterLabel = line.slice(match.index! + match[0].length).trim();
+        // Take the first alphanumeric token after the delimiter
+        const token = afterLabel.split(/\s+/)[0].replace(/[^A-Z0-9/\-]/gi, "");
         if (looksLikeReference(token)) return token.toUpperCase();
+      }
+
+      // Label on previous line, value on current line
+      if (i > 0) {
+        const prevMatch = lines[i - 1].match(labelRegex);
+        if (prevMatch) {
+          const token = line.split(/\s+/)[0].replace(/[^A-Z0-9/\-]/gi, "");
+          if (looksLikeReference(token)) return token.toUpperCase();
+        }
       }
     }
   }
 
   return null;
 }
+
+// Preferred labels when a bank is already detected from text. Order matters:
+// for Dashen we prefer the app's "Transaction Ref" over "FT Ref".
+const BANK_PREFERRED_LABELS: Record<string, string[]> = {
+  dashen: ["TRANSACTION REFERENCE", "TRANSACTION REF", "TRANSFER REFERENCE", "TRANSFER REF", "FT REFERENCE", "FT REF"],
+  cbe: ["VAT RECEIPT NO", "VAT INVOICE NO", "REFERENCE NO", "REFERENCE NUMBER", "FT REFERENCE", "FT REF"],
+  awash: ["TRANSACTION ID", "TRANSACTION NUMBER"],
+};
 
 // Reference patterns. Order matters: bank-specific, high-confidence first.
 // A standalone name like "ABDULWEHAB" should NOT be matched as a BOA reference.
@@ -119,8 +138,8 @@ const OCR_PATTERNS: { bank: string; pattern: RegExp; confidence: OcrParseConfide
   },
   // Awash: numeric transaction ID found near the Transaction ID label.
   { bank: "awash", pattern: /\b\d{14,18}\b/, confidence: "high" },
-  // Dashen: pattern observed in the wild.
-  { bank: "dashen", pattern: /\b[A-Z]\d{2}[A-Z]{2,4}\d{9,12}\b/i, confidence: "high" },
+  // Dashen: observed PDF format (B22WDTI261620001) and app format (OBTI28455679126320660525).
+  { bank: "dashen", pattern: /\b[A-Z][A-Z0-9]{2,6}\d{9,}\b/i, confidence: "high" },
   // Zemen.
   { bank: "zemen", pattern: /\bZM[A-Z0-9]{6,}\b/i, confidence: "medium" },
   // CBE Birr.
@@ -188,7 +207,8 @@ function parseReceiptTextInternal(text: string): OcrParseResult | null {
   // 1. Try bank-specific text clue first, then extract a reference by label
   //    or by bank-specific pattern.
   if (bankFromText) {
-    const labelRef = extractReferenceByLabel(text);
+    const labels = BANK_PREFERRED_LABELS[bankFromText] || REFERENCE_LABELS;
+    const labelRef = extractReferenceByLabel(text, labels);
     if (labelRef) {
       const detectedFromRef = detectBank(labelRef);
       const bank = detectedFromRef && detectedFromRef !== bankFromText ? detectedFromRef : bankFromText;
@@ -266,7 +286,7 @@ function parseReceiptTextInternal(text: string): OcrParseResult | null {
         : b.refPattern.source;
       const pattern = new RegExp(`\\b${source}\\b`, b.refPattern.flags);
       const match = upper.match(pattern);
-      if (match) {
+      if (match && looksLikeReference(match[0])) {
         const bank = bankFromText || detectBank(match[0]) || b.code;
         return {
           reference: match[0],
