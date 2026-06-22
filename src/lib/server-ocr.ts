@@ -4,8 +4,15 @@ import type { QRCode } from "jsqr";
 import { PSM } from "tesseract.js";
 
 const TESSDATA_DIR = path.join(process.cwd(), "public");
-const TESSERACT_ROOT = path.dirname(require.resolve("tesseract.js/package.json"));
-const WORKER_PATH = path.join(TESSERACT_ROOT, "src", "worker-script", "node", "index.js");
+const WORKER_PATH = path.join(
+  process.cwd(),
+  "node_modules",
+  "tesseract.js",
+  "src",
+  "worker-script",
+  "node",
+  "index.js"
+);
 
 export interface OcrConfig {
   /** Tesseract page segmentation mode (PSM). 6 = single uniform block, 11 = sparse text. */
