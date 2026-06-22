@@ -16,14 +16,16 @@ export interface OcrParseResult {
 }
 
 // Ethiopian bank names and their common variants / Amharic hints.
-// Order matters: more specific names should come before generic ones.
+// Order matters: more specific/less ambiguous clues should come before generic
+// bank names that may appear as a recipient on another bank's receipt (e.g.
+// "Commercial Bank of Ethiopia" can show up on a Telebirr/Awash/Dashen receipt).
 const BANK_TEXT_CLUES: { code: string; keywords: string[] }[] = [
   { code: "awash", keywords: ["AWASH BANK", "AWASHBANK", "AWASHBIRR", "አዋሽ", "IFB-KHIDMA", "SEND TO BANK", "AWASH BANK SHARE"] },
-  { code: "cbe", keywords: ["COMMERCIAL BANK OF ETHIOPIA", "CBE", "ኮሜርሻል ባንክ ኦፍ ኢትዮጵያ", "CBE BIRR", "CBEBIRR"] },
-  { code: "boa", keywords: ["BANK OF ABYSSINIA", "ABYSSINIA"] },
+  { code: "telebirr", keywords: ["TELEBIRR", "ETHIO TELECOM", "ETHIOTELECOM", "transactioninfo.ethiotelecom", "የቴሌብር", "telebirr Transaction information"] },
   { code: "dashen", keywords: ["DASHEN", "DASHEN SUPERAPP", "DASHEN BANK", "MONEY SUCCESSFULLY SENT", "BACK TO HOME"] },
+  { code: "boa", keywords: ["BANK OF ABYSSINIA", "ABYSSINIA"] },
   { code: "zemen", keywords: ["ZEMEN BANK", "ZEMEN"] },
-  { code: "telebirr", keywords: ["TELEBIRR", "ETHIO TELECOM", "ETHIOTELECOM"] },
+  { code: "cbe", keywords: ["COMMERCIAL BANK OF ETHIOPIA", "CBE", "ኮሜርሻል ባንክ ኦፍ ኢትዮጵያ", "CBE BIRR", "CBEBIRR"] },
   { code: "mpesa", keywords: ["M-PESA", "MPESA", "SAFARICOM"] },
   { code: "siinqee", keywords: ["SIINQEE", "SINQEE", "SIINQEE BANK"] },
   { code: "ebirr", keywords: ["EBIRR", "NIB", "WEGAGEN", "AHADU", "KAAFI"] },
@@ -130,12 +132,14 @@ const BANK_PREFERRED_LABELS: Record<string, string[]> = {
 const OCR_PATTERNS: { bank: string; pattern: RegExp; confidence: OcrParseConfidence }[] = [
   // CBE: FT followed by 10 alphanumeric characters.
   { bank: "cbe", pattern: /\bFT[A-Z0-9]{10}\b/i, confidence: "high" },
-  // Telebirr: 2-3 letter prefix + 6-8 alphanumeric.
+  // Telebirr: older invoice prefixes.
   {
     bank: "telebirr",
     pattern: /\b(DET|CHQ|DAB|DEL|ADQ|DEP|CHG|CHA|CHB|CHC|CHD|CHE|CHF|DEB|DEC|DED|DEE|DEF|DEG|DEH|DEI|DEJ|DEK|DEM|DEN|DEO|DEQ|DER|DES|DEU|DEV|DEW|DEX|DEY|DEZ|DF)[A-Z0-9]{6,8}\b/i,
     confidence: "high",
   },
+  // Telebirr: newer invoice numbers seen on web receipts (e.g. CGItLDQDUD).
+  { bank: "telebirr", pattern: /\b[A-Z0-9]{8,12}\b/i, confidence: "low" },
   // Awash: numeric transaction ID found near the Transaction ID label.
   { bank: "awash", pattern: /\b\d{14,18}\b/, confidence: "high" },
   // Dashen: observed PDF format (B22WDTI261620001) and app format (OBTI28455679126320660525).
@@ -158,10 +162,11 @@ const OCR_PATTERNS: { bank: string; pattern: RegExp; confidence: OcrParseConfide
 ];
 
 // Bank-specific label overrides. For banks whose references are plain numbers
-// (Awash) or have prefixes that clash with other banks, we require the label
+// (Awash) or have formats that clash with other banks, we require the label
 // to be present in the text before matching the numeric pattern.
 const BANK_LABEL_PRESENCE: Record<string, string[]> = {
   awash: ["TRANSACTION ID", "TRANSACTION NUMBER", "REFERENCE NO", "RECEIPT", "AWASH"],
+  telebirr: ["INVOICE NO", "INVOICE NUMBER", "TELEBIRR", "ETHIO TELECOM", "ETHIOTELECOM"],
 };
 
 function bankLabelPresent(text: string, bank: string): boolean {
@@ -169,6 +174,32 @@ function bankLabelPresent(text: string, bank: string): boolean {
   if (!labels) return true;
   const upper = text.toUpperCase();
   return labels.some((l) => upper.includes(l.toUpperCase()));
+}
+
+function extractTelebirrInvoiceNumber(text: string): string | null {
+  const lines = text
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter(Boolean);
+
+  const isInvoiceRef = (t: string) => /^[A-Z0-9]{8,12}$/i.test(t);
+
+  for (let i = 0; i < lines.length; i++) {
+    if (!/Invoice\s*No\.?/i.test(lines[i])) continue;
+
+    // Value on the same line after the label (skip any garbage token between labels).
+    const afterLabel = lines[i].replace(/.*Invoice\s*No\.?\s*/i, "").trim();
+    const token = afterLabel.split(/\s+/)[0].replace(/[^A-Z0-9]/gi, "");
+    if (isInvoiceRef(token)) return token.toUpperCase();
+
+    // Mobile "Select All" often puts all labels on one line and the values on the next.
+    if (i + 1 < lines.length) {
+      const nextToken = lines[i + 1].split(/\s+/)[0].replace(/[^A-Z0-9]/gi, "");
+      if (isInvoiceRef(nextToken)) return nextToken.toUpperCase();
+    }
+  }
+
+  return null;
 }
 
 export function parseReceiptText(text: string): OcrParseResult | null {
@@ -207,6 +238,20 @@ function parseReceiptTextInternal(text: string): OcrParseResult | null {
   // 1. Try bank-specific text clue first, then extract a reference by label
   //    or by bank-specific pattern.
   if (bankFromText) {
+    // Telebirr mobile web receipts often concatenate labels onto one line and
+    // put the values on the next line. Use a dedicated extractor for that layout.
+    if (bankFromText === "telebirr") {
+      const invoiceNumber = extractTelebirrInvoiceNumber(text);
+      if (invoiceNumber) {
+        return {
+          reference: invoiceNumber.toUpperCase(),
+          bank: "telebirr",
+          confidence: "high",
+          rawText: text,
+        };
+      }
+    }
+
     const labels = BANK_PREFERRED_LABELS[bankFromText] || REFERENCE_LABELS;
     const labelRef = extractReferenceByLabel(text, labels);
     if (labelRef) {

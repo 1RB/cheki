@@ -24,6 +24,45 @@ export async function decodeQrFromImage(buffer: Buffer): Promise<QRCode | null> 
 }
 
 /**
+ * Try to interpret a QR code payload as a receipt reference.
+ *
+ * Some receipts encode the reference directly in the QR (CBE), others encode
+ * a structured binary blob (Telebirr). We extract the highest-confidence value
+ * we can without AI.
+ */
+export function parseQrReference(qrData: string): { bank: string; reference: string } | null {
+  if (!qrData) return null;
+
+  // CBE receipts sometimes encode the transaction ID directly.
+  const cbeMatch = qrData.match(/\bFT[A-Z0-9]{10}\b/i);
+  if (cbeMatch) {
+    return { bank: "cbe", reference: cbeMatch[0].toUpperCase() };
+  }
+
+  // Telebirr QR codes are base64-encoded hex strings that contain the invoice
+  // number as a printable ASCII run inside the decoded payload.
+  const telebirr = extractTelebirrInvoiceFromQr(qrData);
+  if (telebirr) {
+    return { bank: "telebirr", reference: telebirr };
+  }
+
+  return null;
+}
+
+function extractTelebirrInvoiceFromQr(qrData: string): string | null {
+  try {
+    const hex = Buffer.from(qrData, "base64").toString("utf-8");
+    if (!/^[0-9a-fA-F]+$/.test(hex)) return null;
+    const bytes = Buffer.from(hex, "hex");
+    const text = bytes.toString("latin1");
+    const match = text.match(/[A-Z0-9]{8,12}/);
+    return match ? match[0].toUpperCase() : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Preprocess a receipt image for OCR.
  *
  * Receipts are often screenshots taken in uneven lighting, with curved stamps

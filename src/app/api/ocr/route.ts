@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { decodeQrFromImage } from "@/lib/server-ocr";
+import { decodeQrFromImage, parseQrReference } from "@/lib/server-ocr";
 import { detectBankFromUrl, isUrl } from "@/lib/adapters/url-detector";
 import { ambiguousReferenceCandidates } from "@/lib/ocr-parser";
 
@@ -53,6 +53,24 @@ export async function POST(request: NextRequest) {
             reference: parsedUrl.reference,
             confidence: "high",
             candidates: ambiguousReferenceCandidates(parsedUrl.reference).slice(0, 20),
+            durationMs: Date.now() - start,
+          },
+          { headers: CORS_HEADERS }
+        );
+      }
+
+      // QR is not a URL, but it may be a raw reference or encoded payload.
+      const parsedRef = parseQrReference(qr.data);
+      if (parsedRef) {
+        return NextResponse.json(
+          {
+            success: true,
+            source: "qr",
+            text: qr.data,
+            bank: parsedRef.bank,
+            reference: parsedRef.reference,
+            confidence: "high",
+            candidates: ambiguousReferenceCandidates(parsedRef.reference).slice(0, 20),
             durationMs: Date.now() - start,
           },
           { headers: CORS_HEADERS }
