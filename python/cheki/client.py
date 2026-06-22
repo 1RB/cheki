@@ -2,7 +2,7 @@
 
 This module provides :class:`ChekiClient`, a thin, typed wrapper around
 the cheki receipt-verification REST API at
-https://cheki-pi.vercel.app.
+https://chekiapp.vercel.app.
 
 The cheki Python SDK offers two complementary ways to verify Ethiopian
 bank/wallet receipts:
@@ -54,7 +54,7 @@ __all__ = ["ChekiClient", "DEFAULT_BASE_URL"]
 logger = logging.getLogger("cheki.client")
 
 #: Default cheki API endpoint.
-DEFAULT_BASE_URL = "https://cheki-pi.vercel.app"
+DEFAULT_BASE_URL = "https://chekiapp.vercel.app"
 
 #: HTTP statuses that trigger an automatic retry.
 _RETRYABLE_STATUS = {408, 429, 500, 502, 503, 504}

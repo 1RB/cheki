@@ -29,7 +29,7 @@ class VerifyOptions
 
     public function __construct()
     {
-        $this->baseUrl         = 'https://cheki-pi.vercel.app';
+        $this->baseUrl         = 'https://chekiapp.vercel.app';
         $this->timeout         = 30;
         $this->connectTimeout  = 10;
         $this->apiKey          = null;

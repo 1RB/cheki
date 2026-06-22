@@ -273,7 +273,7 @@ export declare class ChekiTimeoutError extends ChekiError {
 export interface ChekiConfig {
     /**
      * Base URL of the cheki API.
-     * @default "https://cheki-pi.vercel.app"
+     * @default "https://chekiapp.vercel.app"
      */
     baseUrl?: string;
     /**
@@ -335,7 +335,7 @@ export interface RequestOptions {
  * @example With configuration
  * ```ts
  * const cheki = new Cheki({
- *   baseUrl: "https://cheki-pi.vercel.app",
+ *   baseUrl: "https://chekiapp.vercel.app",
  *   timeoutMs: 10_000,
  *   maxRetries: 5,
  *   apiKey: "sk_live_...",
@@ -446,7 +446,7 @@ export declare class Cheki {
      * @example
      * ```ts
      * const url = cheki.getReceiptUrl("cbe", "FT26140P01YB", "1000560536171");
-     * // "https://cheki-pi.vercel.app/api/receipt?bank=cbe&reference=FT26140P01YB&account=1000560536171"
+     * // "https://chekiapp.vercel.app/api/receipt?bank=cbe&reference=FT26140P01YB&account=1000560536171"
      * ```
      */
     getReceiptUrl(bank: string, reference: string, accountNumber?: string): string;

@@ -3,7 +3,7 @@
 cheki offers two complementary verification modes:
 
 1. **API client** - :class:`ChekiClient` wraps the hosted cheki REST API
-   (https://cheki-pi.vercel.app). This is the simplest path and matches
+   (https://chekiapp.vercel.app). This is the simplest path and matches
    the other cheki SDKs.
 
 2. **Direct verification** - :func:`verify` fetches bank endpoints

@@ -1,7 +1,7 @@
 """Typed response models and errors for the cheki REST API client.
 
 These dataclasses mirror the JSON payloads returned by the cheki API
-(https://cheki-pi.vercel.app). Every model exposes a ``from_dict``
+(https://chekiapp.vercel.app). Every model exposes a ``from_dict``
 classmethod that maps the API's ``camelCase`` keys to Pythonic
 ``snake_case`` attributes, and a ``to_dict`` method for the inverse
 transform.

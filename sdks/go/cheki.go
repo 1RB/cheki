@@ -1,7 +1,7 @@
 // Package cheki provides a Go client for the cheki receipt verification API.
 //
 // cheki is a free Ethiopian receipt verification service available at
-// https://cheki-pi.vercel.app. This client wraps the REST API, offering
+// https://chekiapp.vercel.app. This client wraps the REST API, offering
 // typed responses, context-aware requests, and idiomatic Go error handling.
 //
 // Example:
@@ -29,7 +29,7 @@ import (
 )
 
 // DefaultBaseURL is the default cheki API endpoint.
-const DefaultBaseURL = "https://cheki-pi.vercel.app"
+const DefaultBaseURL = "https://chekiapp.vercel.app"
 
 // DefaultTimeout is the default HTTP request timeout.
 const DefaultTimeout = 30 * time.Second
