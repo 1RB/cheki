@@ -8,7 +8,9 @@ import { Nav, Footer } from "@/components/Chrome";
 import { BankLogoByName } from "@/components/BankLogo";
 import { BankSelector } from "@/components/BankSelector";
 import { useTranslation } from "@/lib/i18n/use-translation";
-import { Icon, BoltIcon, Key01Icon, Layers01Icon, CodeIcon, ReceiptTextIcon, Search01Icon, Camera01Icon, QrCode01Icon, QrCodeScanIcon, BookOpen01Icon, ContainerIcon, CheckmarkCircle01Icon, ArrowRight01Icon, GithubIcon, StarIcon, Copy01Icon, CopyCheckIcon, ChevronDownIcon, Alert01Icon } from "@/components/Icon";
+import { Icon, BoltIcon, Key01Icon, Layers01Icon, CodeIcon, ReceiptTextIcon, Search01Icon, Camera01Icon, QrCode01Icon, QrCodeScanIcon, BookOpen01Icon, ContainerIcon, CheckmarkCircle01Icon, ArrowRight01Icon, GithubIcon, StarIcon, Copy01Icon, CopyCheckIcon, ChevronDownIcon, Alert01Icon, Upload01Icon } from "@/components/Icon";
+import { extractTextFromImage } from "@/lib/ocr";
+import { parseReceiptText } from "@/lib/ocr-parser";
 
 export default function Home() {
   const { t } = useTranslation();
@@ -21,7 +23,7 @@ export default function Home() {
   const [copied, setCopied] = useState(false);
   const [history, setHistory] = useState<{ bank: string; ref: string; date: string }[]>([]);
   const [showScanner, setShowScanner] = useState(false);
-  const [inputMode, setInputMode] = useState<"reference" | "url">("reference");
+  const [inputMode, setInputMode] = useState<"reference" | "url" | "photo">("reference");
   const [showQrPaste, setShowQrPaste] = useState(false);
   const [qrData, setQrData] = useState("");
   const [batchResults, setBatchResults] = useState<{ fileName: string; status: "scanning" | "verifying" | "done" | "error"; data?: VerifyResult; error?: string }[]>([]);
@@ -37,8 +39,12 @@ export default function Home() {
   const [bookmarkletCopied, setBookmarkletCopied] = useState(false);
   const resultRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [photoProcessing, setPhotoProcessing] = useState(false);
+  const [ocrProgress, setOcrProgress] = useState<{ status: string; progress: number } | null>(null);
 
   const selectedBank = banks.find((b) => b.code === bank)!;
   const needsAccount = selectedBank.requiresAccount;
@@ -430,6 +436,78 @@ export default function Home() {
     setLoading(false);
   }, [handleQrDetected, scanImageMultiScale]);
 
+  // ── Photo upload / camera capture with OCR fallback ────────────────────
+  // 1. Try multi-scale QR detection first.
+  // 2. If no QR, run tesseract.js OCR on the image.
+  // 3. Parse the extracted text for a reference number and auto-detect the bank.
+
+  const handlePhoto = useCallback(async (file: File) => {
+    setPhotoProcessing(true);
+    setError(null);
+    setResult(null);
+    setOcrProgress(null);
+    const previewUrl = URL.createObjectURL(file);
+    setPhotoPreview(previewUrl);
+
+    const img = new Image();
+    img.onload = async () => {
+      // 1. QR first
+      const qrValue = await scanImageMultiScale(img);
+      if (qrValue) {
+        handleQrDetected(qrValue);
+        setPhotoProcessing(false);
+        return;
+      }
+
+      // 2. OCR fallback
+      try {
+        const text = await extractTextFromImage(file, (p) => setOcrProgress(p));
+        const parsed = parseReceiptText(text);
+        if (parsed) {
+          setBank(parsed.bank as BankCode);
+          setReference(parsed.reference);
+          setInputMode("reference");
+          setShowScanner(false);
+          stopScanner();
+        } else {
+          setError("Could not read a reference number from this photo. Try a clearer image, or paste the reference manually.");
+        }
+      } catch (e) {
+        setError("Could not read the photo. Make sure it is not blurry and the transaction number is visible.");
+      } finally {
+        setPhotoProcessing(false);
+        setOcrProgress(null);
+      }
+    };
+    img.onerror = () => {
+      setPhotoProcessing(false);
+      setError("Could not load image file.");
+    };
+    img.src = previewUrl;
+  }, [scanImageMultiScale, handleQrDetected, stopScanner]);
+
+  const handlePhotoUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    handlePhoto(files[0]);
+  }, [handlePhoto]);
+
+  const capturePhotoFromVideo = useCallback(() => {
+    if (!videoRef.current || !streamRef.current) return;
+    const video = videoRef.current;
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+      const file = new File([blob], "camera-capture.jpg", { type: "image/jpeg" });
+      handlePhoto(file);
+    }, "image/jpeg", 0.92);
+  }, [handlePhoto]);
+
   const copyResult = () => {
     if (!result) return;
     navigator.clipboard.writeText(JSON.stringify(result, null, 2));
@@ -532,7 +610,7 @@ export default function Home() {
     { icon: ContainerIcon, title: "Self-host with Docker", body: "Run cheki on your own infrastructure. Bypass geo-blocks with an Ethiopian IP." },
     { icon: CodeIcon, title: "Structured JSON", body: "Every bank returns the same response shape. Write the integration once." },
     { icon: Search01Icon, title: "Auto-detect bank", body: "Paste a reference or URL and cheki identifies the bank automatically." },
-    { icon: QrCodeScanIcon, title: "QR code scanning", body: "Scan receipt QR codes with your camera or upload a photo. Works on mobile." },
+    { icon: QrCodeScanIcon, title: "QR + photo OCR", body: "Scan QR codes, upload a screenshot, or take a photo of a receipt. OCR reads the transaction number if no QR is visible." },
     { icon: BookOpen01Icon, title: "Open source", body: "MIT licensed. Read the code, contribute, fork it. No black box." },
   ];
 
@@ -574,10 +652,11 @@ export default function Home() {
                 {[
                   { mode: "reference" as const, label: "Reference" },
                   { mode: "url" as const, label: "Receipt URL" },
+                  { mode: "photo" as const, label: "Photo" },
                 ].map((tab) => (
                   <button
                     key={tab.mode}
-                    onClick={() => { setInputMode(tab.mode); setReference(""); setQrData(""); setShowQrPaste(false); setResult(null); setError(null); }}
+                    onClick={() => { setInputMode(tab.mode); setReference(""); setQrData(""); setShowQrPaste(false); setResult(null); setError(null); setPhotoPreview(null); setPhotoProcessing(false); setShowScanner(false); stopScanner(); }}
                     style={{
                       padding: "8px 16px", fontSize: "13px", fontWeight: 600,
                       border: "none", borderBottom: inputMode === tab.mode ? "2px solid var(--green)" : "2px solid transparent",
@@ -597,13 +676,54 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* QR Scanner overlay */}
+              {/* QR Scanner / photo capture overlay */}
               {showScanner && (
                 <div style={{ marginBottom: "16px", borderRadius: "10px", overflow: "hidden", border: "2px solid var(--green)", position: "relative" }}>
                   <video ref={videoRef} style={{ width: "100%", display: "block" }} playsInline muted />
                   <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: "200px", height: "200px", border: "2px solid rgba(255,255,255,0.7)", borderRadius: "12px", boxShadow: "0 0 0 9999px rgba(0,0,0,0.3)" }} />
-                  <p style={{ position: "absolute", bottom: "8px", left: 0, right: 0, textAlign: "center", color: "#fff", fontSize: "13px", fontWeight: 500 }}>Point camera at QR code</p>
+                  <p style={{ position: "absolute", bottom: "44px", left: 0, right: 0, textAlign: "center", color: "#fff", fontSize: "13px", fontWeight: 500 }}>Point camera at QR code, or tap capture to read the receipt</p>
+                  <button onClick={capturePhotoFromVideo} style={{ position: "absolute", bottom: "10px", left: "50%", transform: "translateX(-50%)", width: "48px", height: "48px", borderRadius: "50%", border: "3px solid #fff", background: "rgba(255,255,255,0.3)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <div style={{ width: "36px", height: "36px", borderRadius: "50%", background: "#fff" }} />
+                  </button>
                 </div>
+              )}
+
+              {/* Photo mode UI */}
+              {inputMode === "photo" && !photoPreview && !showScanner && (
+                <div className="fade-in" style={{ marginBottom: "16px" }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                    <button onClick={() => photoInputRef.current?.click()} style={{ padding: "24px 16px", borderRadius: "10px", border: "1px dashed var(--border)", background: "var(--surface)", color: "var(--ink-2)", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: "8px" }}>
+                      <Icon icon={Upload01Icon} size={24} color="var(--green)" />
+                      <span style={{ fontSize: "13px", fontWeight: 600 }}>Upload screenshot</span>
+                      <span style={{ fontSize: "11px", color: "var(--ink-3)" }}>PNG, JPG, WebP</span>
+                    </button>
+                    <button onClick={() => startScanner()} style={{ padding: "24px 16px", borderRadius: "10px", border: "1px dashed var(--border)", background: "var(--surface)", color: "var(--ink-2)", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: "8px" }}>
+                      <Icon icon={Camera01Icon} size={24} color="var(--green)" />
+                      <span style={{ fontSize: "13px", fontWeight: 600 }}>Take photo</span>
+                      <span style={{ fontSize: "11px", color: "var(--ink-3)" }}>Camera or phone</span>
+                    </button>
+                  </div>
+                  <p style={{ fontSize: "12px", color: "var(--ink-3)", marginTop: "10px", textAlign: "center" }}>We scan the QR code first. If none is visible, we read the transaction number with OCR.</p>
+                  <input ref={photoInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handlePhotoUpload} />
+                </div>
+              )}
+
+              {/* Photo preview and OCR status */}
+              {photoPreview && (
+                <div className="fade-in" style={{ marginBottom: "16px", borderRadius: "10px", overflow: "hidden", border: "1px solid var(--border)", position: "relative" }}>
+                  <img src={photoPreview} alt="Receipt preview" style={{ width: "100%", maxHeight: "300px", objectFit: "contain", background: "#000" }} />
+                  {photoProcessing && (
+                    <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.55)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "#fff", gap: "8px" }}>
+                      <span className="spin" style={{ width: "24px", height: "24px", border: "3px solid rgba(255,255,255,0.3)", borderTopColor: "#fff", borderRadius: "50%", display: "inline-block" }} />
+                      <span style={{ fontSize: "13px", fontWeight: 600 }}>{ocrProgress ? `${ocrProgress.status} ${Math.round(ocrProgress.progress * 100)}%` : "Scanning QR..."}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+              {photoPreview && !photoProcessing && (
+                <button onClick={() => { setPhotoPreview(null); if (photoInputRef.current) photoInputRef.current.value = ""; }} style={{ fontSize: "12px", color: "var(--ink-3)", background: "none", border: "none", cursor: "pointer", padding: "0", marginBottom: "16px", display: "flex", alignItems: "center", gap: "4px" }}>
+                  <Icon icon={Camera01Icon} size={12} color="var(--ink-3)" /> Take another photo
+                </button>
               )}
 
               <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
