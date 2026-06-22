@@ -6,8 +6,8 @@ const path = require("path");
 const https = require("https");
 
 const OUT_DIR = path.join(__dirname, "..", "public");
-const OUT_FILE = path.join(OUT_DIR, "eng.traineddata.gz");
-const URL = "https://cdn.jsdelivr.net/npm/@tesseract.js-data/eng/4.0.0_best_int/eng.traineddata.gz";
+const TESSDATA_FILE = path.join(OUT_DIR, "eng.traineddata.gz");
+const TESSDATA_URL = "https://cdn.jsdelivr.net/npm/@tesseract.js-data/eng/4.0.0_best_int/eng.traineddata.gz";
 
 function download(url, dest) {
   return new Promise((resolve, reject) => {
@@ -34,17 +34,15 @@ function download(url, dest) {
 }
 
 async function main() {
-  if (fs.existsSync(OUT_FILE)) {
-    const stats = fs.statSync(OUT_FILE);
-    if (stats.size > 1000000) {
-      console.log("Tesseract trained data already present:", OUT_FILE);
-      return;
-    }
-  }
   fs.mkdirSync(OUT_DIR, { recursive: true });
-  console.log("Downloading Tesseract trained data...");
-  await download(URL, OUT_FILE);
-  console.log("Saved:", OUT_FILE, "size:", fs.statSync(OUT_FILE).size);
+
+  if (!fs.existsSync(TESSDATA_FILE) || fs.statSync(TESSDATA_FILE).size < 1000000) {
+    console.log("Downloading Tesseract trained data...");
+    await download(TESSDATA_URL, TESSDATA_FILE);
+    console.log("Saved:", TESSDATA_FILE, "size:", fs.statSync(TESSDATA_FILE).size);
+  } else {
+    console.log("Tesseract trained data already present:", TESSDATA_FILE);
+  }
 }
 
 main().catch((err) => {
