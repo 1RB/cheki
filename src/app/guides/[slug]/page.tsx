@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { articles, getArticle, getRelatedArticles, type ContentBlock } from "@/lib/guides";
 import { Nav, Footer } from "@/components/Chrome";
 import { CodeBlock } from "@/components/CodeBlock";
@@ -227,7 +228,7 @@ async function renderBlock(block: ContentBlock, key: number): Promise<React.Reac
 export default async function ArticlePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const article = getArticle(slug);
-  if (!article) return <div>Article not found</div>;
+  if (!article) notFound();
 
   const related = getRelatedArticles(slug);
 

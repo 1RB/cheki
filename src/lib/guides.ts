@@ -876,7 +876,7 @@ export const articles: Article[] = [
           ["/api/health", "GET", "Check API and per-bank endpoint latency"],
         ],
       },
-      { type: "text", text: "Base URL: https://chekiapp.vercel.app/api" },
+      { type: "text", text: "Base URL: https://chekiapp.vercel.app" },
       { type: "callout", variant: "success", title: "No authentication", text: "cheki's API requires no API key, no Bearer token, and no signup. Just POST and get JSON. This is different from check.et which requires a business account and Authorization header." },
 
       { type: "heading", text: "Single verification" },

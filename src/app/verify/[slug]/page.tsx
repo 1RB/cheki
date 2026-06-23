@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { seoPages, allSeoPages, getSeoPage, getRelatedSeoPages } from "@/lib/seo-pages";
 import { Nav, Footer } from "@/components/Chrome";
 import { BankLogoByName } from "@/components/BankLogo";
@@ -37,7 +38,7 @@ export function generateMetadata({ params }: { params: Promise<{ slug: string }>
 export default function SeoPage({ params }: { params: Promise<{ slug: string }> }) {
   return params.then((p) => {
     const page = getSeoPage(p.slug);
-    if (!page) return <div>Page not found</div>;
+    if (!page) notFound();
 
     const related = getRelatedSeoPages(p.slug);
 
