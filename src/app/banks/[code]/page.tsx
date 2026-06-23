@@ -158,18 +158,15 @@ export default async function BankPage({ params }: { params: Promise<{ code: str
             <p>See the <a href="/docs">API documentation</a> for full details.</p>
 
             <h2>Frequently asked questions</h2>
-            <BouncyAccordion
-              items={bank.faq.map((f, i) => ({
-                id: `faq-${i}`,
-                title: f.q,
-                description: f.a,
-              }))}
-              classNames={{
-                item: "border border-[var(--border)]",
-                trigger: "rounded-lg",
-                content: "border-t border-[var(--border)]",
-              }}
-            />
+            <div style={{ border: "1px solid var(--border)", borderRadius: "12px", overflow: "hidden" }}>
+              <BouncyAccordion
+                items={bank.faq.map((f, i) => ({
+                  id: `faq-${i}`,
+                  title: f.q,
+                  description: f.a,
+                }))}
+              />
+            </div>
           </div>
 
           <aside>
