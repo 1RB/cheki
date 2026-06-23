@@ -3,6 +3,7 @@ import { articles, getArticle, getRelatedArticles, type ContentBlock } from "@/l
 import { Nav, Footer } from "@/components/Chrome";
 import { CodeBlock } from "@/components/CodeBlock";
 import { highlightCode, getLangLabel } from "@/lib/highlight";
+import { BouncyAccordion } from "@/components/motion/bouncy-accordion";
 
 export function generateStaticParams() {
   return articles.map((a) => ({ slug: a.slug }));
@@ -309,12 +310,18 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
             {article.faq && article.faq.length > 0 && (
               <div>
                 <h2>Frequently asked questions</h2>
-                {article.faq.map((f, i) => (
-                  <details key={i} style={{ marginBottom: "12px", padding: "12px 16px", border: "1px solid var(--border)", borderRadius: "8px", background: "var(--surface)" }}>
-                    <summary style={{ fontWeight: 600, fontSize: "15px", cursor: "pointer" }}>{f.q}</summary>
-                    <p style={{ marginTop: "8px", color: "var(--ink-2)", fontSize: "14px", lineHeight: 1.6 }}>{renderRichText(f.a)}</p>
-                  </details>
-                ))}
+                <BouncyAccordion
+                  items={article.faq.map((f, i) => ({
+                    id: `faq-${i}`,
+                    title: f.q,
+                    description: renderRichText(f.a),
+                  }))}
+                  classNames={{
+                    item: "border border-[var(--border)]",
+                    trigger: "rounded-lg",
+                    content: "border-t border-[var(--border)]",
+                  }}
+                />
               </div>
             )}
 
