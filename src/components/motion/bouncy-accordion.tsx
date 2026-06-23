@@ -149,50 +149,21 @@ function BouncyAccordionRow({
           aria-expanded={open}
           aria-controls={contentId}
           onClick={onToggle}
-          style={{
-            display: "flex",
-            width: "100%",
-            minHeight: "50px",
-            alignItems: "center",
-            gap: "12px",
-            padding: "14px 18px",
-            textAlign: "left",
-            outline: "none",
-            border: "none",
-            borderBottom: "1px solid var(--border)",
-            background: "transparent",
-            cursor: item.disabled ? "default" : "pointer",
-            transition: "background 0.15s",
-          }}
-          onMouseEnter={(e) => {
-            if (!item.disabled) e.currentTarget.style.background = "var(--surface-alt)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = "transparent";
-          }}
+          className="bouncy-accordion-trigger"
         >
           {item.icon && (
             <span style={{ display: "grid", placeItems: "center", width: 24, height: 24, flexShrink: 0, color: "var(--ink-3)" }}>
               {item.icon}
             </span>
           )}
-          <span style={{
-            flex: 1,
-            minWidth: 0,
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            fontSize: "15px",
-            fontWeight: 600,
-            color: "var(--ink)",
-            fontFamily: "var(--sans)",
-          }}>
+          <span className="bouncy-accordion-title">
             {item.title}
           </span>
           <motion.span
             aria-hidden
             animate={{ rotate: open ? 180 : 0 }}
             transition={reduce ? { duration: 0 } : CHEVRON_TRANSITION}
-            style={{ display: "grid", placeItems: "center", width: 20, height: 20, flexShrink: 0, color: "var(--ink-3)" }}
+            className="bouncy-accordion-chevron"
           >
             <ChevronDown style={{ width: 16, height: 16 }} />
           </motion.span>
@@ -212,14 +183,8 @@ function BouncyAccordionRow({
             ref={contentRef}
             animate={{ opacity: open ? 1 : 0 }}
             transition={reduce ? { duration: 0 } : DESCRIPTION_TRANSITION}
-            style={{ padding: "14px 18px 18px" }}
           >
-            <div style={{
-              fontSize: "14px",
-              lineHeight: 1.7,
-              color: "var(--ink-2)",
-              fontFamily: "var(--sans)",
-            }}>
+            <div className="bouncy-accordion-content">
               {item.description}
             </div>
           </motion.div>
