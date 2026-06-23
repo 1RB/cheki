@@ -357,12 +357,13 @@
     "sslVerify": false,
     "color": "#E2231A",
     "initials": "AB",
-    "notes": "URL structure reverse engineered: -{base36(txID)}-{base36(counter)}. The txID has structure YYMMDDHHMM + 5-digit per-minute seq. The counter is server-side, increases ~7/sec since ~Feb 2025, R²=0.9998. Backend is MoonlightMBanking (Java) behind F5 BIG-IP WAF. Cannot derive counter from txID alone. Need 20-50 more sample URLs to narrow the model.",
-    "description": "Awash Bank publishes transaction receipts as public HTML pages on awashpay.awashbank.com. The share link has a two-part token: the first part is the numeric Transaction ID encoded in base-36, and the second part is a server-side counter that increases with transaction time. You must use the full share link; the visible Transaction ID alone is not accepted.",
-    "referenceFormat": "Awash share link (e.g. https://awashpay.awashbank.com:8225/-2KDL95Z0NR-4U61O6). The first segment is base-36 of the Transaction ID; the second segment is a server counter.",
+    "notes": "URL fully reverse engineered with 18 samples (Apr 2025-Jun 2026). URL format: -{base36(txID)}-{base36(counter)}. txID has YYMMDDHHMM+5-digit-seq structure (2026+). Counter is monotonically increasing with accelerating rate (4.4/sec in 2025 to 7.5/sec in Jun 2026). Share link sent via SMS automatically. 2 successful brute-force proofs (May 14, Apr 1). Backend: MoonlightMBanking (Java) behind F5 BIG-IP WAF. Need more samples from underrepresented periods.",
+    "description": "Awash Bank publishes transaction receipts as public HTML pages on awashpay.awashbank.com. The share link has a two-part token: the first part is the numeric Transaction ID encoded in base-36, and the second part is a server-side counter that increases with transaction time. The link is sent automatically via SMS after every transaction. You can also share it from the Awash app.",
+    "referenceFormat": "Awash share link from SMS (e.g. https://awashpay.awashbank.com:8225/-2KDL95Z0NR-4U61O6). The first segment is base-36 of the Transaction ID; the second segment is a server counter.",
     "referenceExample": "2KDL95Z0NR-4U61O6",
     "howToVerify": [
-      "Open the Awash app and share the receipt as a link",
+      "Find the receipt link in your Awash SMS message (sent automatically after every transaction)",
+      "Or open the Awash app and share the receipt as a link",
       "Paste the full share link (https://awashpay.awashbank.com:8225/-...) into cheki",
       "cheki fetches the official receipt and extracts the payment details"
     ],
@@ -382,15 +383,19 @@
       },
       {
         "q": "Can cheki generate the share link from the Transaction ID?",
-        "a": "We have proven it is possible. By converting the Transaction ID to base-36 (part 1) and brute-forcing the counter (part 2) around a time-based prediction, we successfully constructed a valid share URL from just the Transaction ID. The scan took 18 minutes with our current 5-sample model. With 20-50 community-shared sample URLs, we could narrow the prediction and reduce scan time to seconds. If you have Awash share links to contribute, please share them on GitHub."
+        "a": "We have proven it is possible. By converting the Transaction ID to base-36 (part 1) and brute-forcing the counter (part 2) around a time-based prediction, we successfully constructed valid share URLs from just the Transaction ID twice. With 18 samples spanning April 2025 to June 2026, our prediction model is accurate enough for nearby dates. With more community samples, brute-force time could drop to under 1 minute."
       },
       {
         "q": "Is the second part of the Awash URL random?",
-        "a": "It appears to be a counter, not random. From the sample URLs we have analyzed, the second part increases with transaction time at an average rate of roughly 7 per second (R-squared = 0.9998). The counter epoch is around February 2025. More data is needed to confirm whether it is a global counter or per-entity counter."
+        "a": "It is a monotonically increasing counter, not random. From 18 analyzed samples, the counter rate is accelerating: 4.4/sec in mid-2025, 6.4/sec by January 2026, and 7.5/sec by June 2026. A quadratic model fits with R-squared = 0.9999. The share link is sent automatically via SMS after every transaction."
       },
       {
         "q": "What is the Transaction ID structure?",
-        "a": "The numeric Transaction ID is not random. It has a fixed format: YYMMDDHHMM followed by a 5-digit per-minute sequence number. For example, 260607112275735 means 2026-06-07 at 11:22, sequence 75735 within that minute. This means the transaction date and time are encoded directly in the Transaction ID."
+        "a": "Since 2026, the Transaction ID has a fixed format: YYMMDDHHMM followed by a 5-digit per-minute sequence number. For example, 260607112275735 means 2026-06-07 at 11:22, sequence 75735 within that minute. Transactions before 2026 use a different hex-like format. The transaction date and time are encoded directly in the Transaction ID."
+      },
+      {
+        "q": "Where do I find the share link?",
+        "a": "Awash Bank sends the receipt link automatically via SMS after every transaction. Look for a message starting with 'Dear Customer' containing a link to awashpay.awashbank.com:8225. You can also share the receipt from the AwashBirr Pro app."
       }
     ],
     "seo": {
