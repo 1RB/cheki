@@ -310,15 +310,13 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
             {article.faq && article.faq.length > 0 && (
               <div>
                 <h2>Frequently asked questions</h2>
-                <div style={{ border: "1px solid var(--border)", borderRadius: "12px", overflow: "hidden" }}>
-                  <BouncyAccordion
-                    items={article.faq.map((f, i) => ({
-                      id: `faq-${i}`,
-                      title: f.q,
-                      description: renderRichText(f.a),
-                    }))}
-                  />
-                </div>
+                <BouncyAccordion
+                  items={article.faq.map((f, i) => ({
+                    id: `faq-${i}`,
+                    title: f.q,
+                    description: renderRichText(f.a),
+                  }))}
+                />
               </div>
             )}
 

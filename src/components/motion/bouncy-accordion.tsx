@@ -130,10 +130,10 @@ function BouncyAccordionRow({
         data-state={open ? "open" : "closed"}
         initial={false}
         animate={{
-          borderTopLeftRadius: startsGroup ? 12 : 0,
-          borderTopRightRadius: startsGroup ? 12 : 0,
-          borderBottomLeftRadius: endsGroup ? 12 : 0,
-          borderBottomRightRadius: endsGroup ? 12 : 0,
+          borderTopLeftRadius: startsGroup ? 14 : 0,
+          borderTopRightRadius: startsGroup ? 14 : 0,
+          borderBottomLeftRadius: endsGroup ? 14 : 0,
+          borderBottomRightRadius: endsGroup ? 14 : 0,
         }}
         transition={reduce ? { duration: 0 } : ROW_TRANSITION}
         style={{

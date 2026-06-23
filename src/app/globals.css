@@ -939,25 +939,28 @@ details > p, details > div {
    Override tailwind preflight reset for accordion buttons
    ============================================================ */
 .bouncy-accordion-trigger {
-  padding: 14px 18px !important;
+  padding: 0 20px !important;
   font-size: 15px !important;
-  font-weight: 600 !important;
+  font-weight: 500 !important;
   color: var(--ink) !important;
-  min-height: 50px !important;
+  min-height: 52px !important;
   border: none !important;
-  border-bottom: 1px solid var(--border) !important;
   background: transparent !important;
   cursor: pointer !important;
   display: flex !important;
   width: 100% !important;
   align-items: center !important;
-  gap: 12px !important;
+  gap: 14px !important;
   text-align: left !important;
   outline: none !important;
   transition: background 0.15s !important;
   font-family: var(--sans) !important;
+  letter-spacing: -0.01em !important;
 }
 .bouncy-accordion-trigger:hover {
+  background: var(--surface-alt) !important;
+}
+.bouncy-accordion-trigger:focus-visible {
   background: var(--surface-alt) !important;
 }
 .bouncy-accordion-title {
@@ -970,15 +973,15 @@ details > p, details > div {
 .bouncy-accordion-chevron {
   display: grid !important;
   place-items: center !important;
-  width: 20px !important;
-  height: 20px !important;
+  width: 18px !important;
+  height: 18px !important;
   flex-shrink: 0 !important;
   color: var(--ink-3) !important;
 }
 .bouncy-accordion-content {
   font-size: 14px !important;
-  line-height: 1.7 !important;
+  line-height: 1.65 !important;
   color: var(--ink-2) !important;
   font-family: var(--sans) !important;
-  padding: 14px 18px 18px !important;
+  padding: 0 20px 18px !important;
 }
