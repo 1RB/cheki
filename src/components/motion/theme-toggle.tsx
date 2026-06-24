@@ -65,7 +65,7 @@ export function ThemeToggle({ size = 36 }: { size?: number }) {
   }, [theme, reduce, animating]);
 
   if (!mounted) {
-    return <div style={{ width: size, height: size, borderRadius: "999px", flexShrink: 0 }} />;
+    return <div style={{ width: size * 0.44, height: size * 0.44, flexShrink: 0 }} />;
   }
 
   return (
@@ -76,19 +76,15 @@ export function ThemeToggle({ size = 36 }: { size?: number }) {
       disabled={animating}
       aria-label={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
       style={{
-        width: size,
-        height: size,
-        borderRadius: "999px",
+        background: "transparent",
         border: "none",
-        background: "var(--surface)",
         cursor: animating ? "wait" : "pointer",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
         flexShrink: 0,
-        overflow: "hidden",
+        padding: 0,
         position: "relative",
-        transition: "background 0.2s, border-color 0.2s",
       }}
     >
       <AnimatePresence mode="popLayout" initial={false}>
@@ -103,7 +99,6 @@ export function ThemeToggle({ size = 36 }: { size?: number }) {
             alignItems: "center",
             justifyContent: "center",
             position: "absolute",
-            inset: 0,
           }}
         >
           {theme === "light" ? (

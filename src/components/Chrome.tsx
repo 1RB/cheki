@@ -16,16 +16,11 @@ export function Nav() {
 
   useEffect(() => {
     if (mobileOpen) {
-      const scrollY = window.scrollY;
       document.body.style.overflow = "hidden";
       document.body.style.touchAction = "none";
-      document.body.style.overscrollBehavior = "none";
-      document.body.dataset.scrollY = String(scrollY);
       return () => {
         document.body.style.overflow = "";
         document.body.style.touchAction = "";
-        document.body.style.overscrollBehavior = "";
-        window.scrollTo(0, Number(document.body.dataset.scrollY || 0));
       };
     } else {
       document.body.style.overflow = "";
@@ -116,12 +111,31 @@ export function Nav() {
       </nav>
       {mobileOpen && createPortal(
         <div className="nav-mobile-menu" style={{
-          position: "fixed", top: "var(--nav-h)", left: 0, right: 0,
-          height: "calc(100dvh - var(--nav-h))",
-          background: "var(--bg)", zIndex: 99,
+          position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+          background: "var(--bg)", zIndex: 200,
           display: "flex", flexDirection: "column",
           overflow: "hidden", isolation: "isolate",
         }}>
+          {/* Menu header with logo + close */}
+          <div style={{
+            height: "var(--nav-h)",
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            padding: "0 16px",
+            borderBottom: "1px solid var(--border)",
+            flexShrink: 0,
+          }}>
+            <a href="/" onClick={() => setMobileOpen(false)} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <span style={{ fontWeight: 800, fontSize: "20px", letterSpacing: "-0.03em", color: "var(--ink)" }}>cheki</span>
+              <span style={{ fontSize: "10px", fontWeight: 600, color: "var(--green)", border: "1px solid var(--green-light)", padding: "2px 6px", borderRadius: "4px", background: "var(--green-light)" }}>OSS</span>
+            </a>
+            <button onClick={() => setMobileOpen(false)} style={{
+              background: "transparent", border: "none", cursor: "pointer", padding: "8px",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
+              <Icon icon={Cancel01Icon} size={22} color="var(--ink)" />
+            </button>
+          </div>
+          {/* Scrollable menu content */}
           <div style={{
             flex: 1,
             padding: "24px",
