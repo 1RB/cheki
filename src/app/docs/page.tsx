@@ -233,8 +233,8 @@ function MethodBadge({ method }: { method: string }) {
         fontSize: "12px",
         fontWeight: 700,
         fontFamily: "var(--mono)",
-        background: method === "GET" ? "var(--green-light)" : "#ede9fe",
-        color: method === "GET" ? "var(--green-dark)" : "#6d28d9",
+        background: method === "GET" ? "var(--green-light)" : "color-mix(in srgb, var(--ink) 8%, var(--surface))",
+        color: method === "GET" ? "var(--green-dark)" : "var(--ink-2)",
         flexShrink: 0,
       }}
     >
@@ -1005,7 +1005,7 @@ docker-compose up -d
                   }}
                 >
                   Developer guide{" "}
-                  <Icon icon={ArrowRight01Icon} size={14} color="#fff" />
+                  <Icon icon={ArrowRight01Icon} size={14} color="var(--bg)" />
                 </a>
                 <a
                   href="https://github.com/1RB/cheki"

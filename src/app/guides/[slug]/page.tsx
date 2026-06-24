@@ -38,12 +38,12 @@ export function generateMetadata({ params }: { params: Promise<{ slug: string }>
 }
 
 const calloutStyles: Record<string, { bg: string; border: string; text: string; icon: string }> = {
-  info: { bg: "#eff6ff", border: "#bfdbfe", text: "#1e40af", icon: "ℹ" },
-  warning: { bg: "#fffbeb", border: "#fde68a", text: "#92400e", icon: "⚠" },
-  tip: { bg: "#f0fdf4", border: "#bbf7d0", text: "#166534", icon: "💡" },
-  success: { bg: "#f0fdf4", border: "#bbf7d0", text: "#166534", icon: "✓" },
-  danger: { bg: "#fef2f2", border: "#fecaca", text: "#991b1b", icon: "✕" },
-  quote: { bg: "#f5f2ec", border: "#d4d0c8", text: "#555", icon: "❝" },
+  info: { bg: "color-mix(in srgb, var(--green) 6%, var(--surface))", border: "color-mix(in srgb, var(--green) 20%, transparent)", text: "var(--green-dark)", icon: "ℹ" },
+  warning: { bg: "var(--amber-light)", border: "color-mix(in srgb, var(--amber) 25%, transparent)", text: "var(--amber)", icon: "⚠" },
+  tip: { bg: "var(--green-light)", border: "color-mix(in srgb, var(--green) 20%, transparent)", text: "var(--green-dark)", icon: "💡" },
+  success: { bg: "var(--green-light)", border: "color-mix(in srgb, var(--green) 20%, transparent)", text: "var(--green-dark)", icon: "✓" },
+  danger: { bg: "var(--red-light)", border: "color-mix(in srgb, var(--red) 20%, transparent)", text: "var(--red)", icon: "✕" },
+  quote: { bg: "var(--surface-alt)", border: "var(--border)", text: "var(--ink-2)", icon: "❝" },
 };
 
 /** Auto-link URLs and code references in text content */
@@ -206,7 +206,7 @@ async function renderBlock(block: ContentBlock, key: number): Promise<React.Reac
               <div style={{
                 width: "28px", height: "28px", borderRadius: "50%", background: "var(--green)",
                 display: "flex", alignItems: "center", justifyContent: "center",
-                color: "#fff", fontWeight: 700, fontSize: "13px", flexShrink: 0,
+                color: "var(--bg)", fontWeight: 700, fontSize: "13px", flexShrink: 0,
               }}>{i + 1}</div>
               <div>
                 <p style={{ fontWeight: 600, fontSize: "15px", marginBottom: "4px" }}>{renderRichText(step.title)}</p>

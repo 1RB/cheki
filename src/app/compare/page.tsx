@@ -168,10 +168,10 @@ export default function ComparePage() {
             {t("compare.verdict")}
           </p>
           <a href="/" style={{
-            display: "inline-flex", alignItems: "center", gap: "6px", padding: "10px 20px", borderRadius: "8px", background: "var(--green)", color: "#fff", fontSize: "14px", fontWeight: 600,
+            display: "inline-flex", alignItems: "center", gap: "6px", padding: "10px 20px", borderRadius: "8px", background: "var(--green)", color: "var(--bg)", fontSize: "14px", fontWeight: 600,
           }}>
             {t("compare.cta")}
-            <Icon icon={ArrowRight01Icon} size={14} color="#fff" />
+            <Icon icon={ArrowRight01Icon} size={14} color="var(--bg)" />
           </a>
         </div>
 
