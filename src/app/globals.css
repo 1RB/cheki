@@ -30,6 +30,8 @@
   --nav-h: 56px;
   --code-bg: #24292e;
   --code-text: #e1e4e8;
+  --invert-bg: #1a1a1a;
+  --invert-text: #faf9f6;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -52,6 +54,8 @@
     --dotted: #2a2e38;
     --code-bg: #0a0c10;
     --code-text: #b4b9c4;
+    --invert-bg: #16181d;
+    --invert-text: #e8e6e3;
   }
 }
 
@@ -74,6 +78,8 @@
   --dotted: #2a2e38;
   --code-bg: #0a0c10;
   --code-text: #b4b9c4;
+  --invert-bg: #16181d;
+  --invert-text: #e8e6e3;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }

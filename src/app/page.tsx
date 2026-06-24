@@ -1152,12 +1152,12 @@ export default function Home() {
                 key={f.title}
                 max={6}
                 glare={i === 0}
+                className={i === 0 ? "bento-wide" : undefined}
                 style={{
                   borderRadius: "12px",
                 }}
               >
               <div
-                className={i === 0 ? "bento-wide" : ""}
                 style={{
                   padding: "20px",
                   borderRadius: "12px",
@@ -1251,22 +1251,22 @@ export default function Home() {
           </p>
         </section>
         <section className="container" style={{ marginTop: "40px" }}>
-          <div style={{ padding: "28px", borderRadius: "16px", background: "var(--ink)", color: "var(--bg)" }}>
+          <div style={{ padding: "28px", borderRadius: "16px", background: "var(--invert-bg)", color: "var(--invert-text)", border: "1px solid var(--border)" }}>
             <div className="grid-2" style={{ alignItems: "center", gap: "24px" }}>
               <div>
                 <p style={{ fontSize: "12px", fontWeight: 600, color: "var(--green)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "8px" }}>Open source</p>
                 <h2 style={{ fontSize: "clamp(20px, 4vw, 26px)", fontWeight: 800, marginBottom: "14px", letterSpacing: "-0.02em" }}>
                   Built by the community, for the community
                 </h2>
-                <p style={{ fontSize: "15px", color: "color-mix(in srgb, var(--bg) 70%, transparent)", lineHeight: 1.6, marginBottom: "20px" }}>
+                <p style={{ fontSize: "15px", color: "color-mix(in srgb, var(--invert-text) 70%, transparent)", lineHeight: 1.6, marginBottom: "20px" }}>
                   cheki is MIT licensed and lives on GitHub. No company owns it. No one can shut it down. If a bank changes their endpoint, anyone can submit a fix.
                 </p>
                 <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-                  <a href="https://github.com/1RB/cheki" target="_blank" rel="noopener" style={{ padding: "12px 24px", borderRadius: "8px", background: "var(--green)", color: "var(--bg)", fontSize: "14px", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "8px" }}>
-                    <Icon icon={StarIcon} size={16} color="var(--bg)" /> Star on GitHub
+                  <a href="https://github.com/1RB/cheki" target="_blank" rel="noopener" style={{ padding: "12px 24px", borderRadius: "8px", background: "var(--green)", color: "var(--invert-bg)", fontSize: "14px", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "8px" }}>
+                    <Icon icon={StarIcon} size={16} color="var(--invert-bg)" /> Star on GitHub
                   </a>
-                  <a href="https://github.com/1RB/cheki/blob/main/README.md#contributing" target="_blank" rel="noopener" style={{ padding: "12px 24px", borderRadius: "8px", border: "1px solid color-mix(in srgb, var(--bg) 20%, transparent)", color: "var(--bg)", fontSize: "14px", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "8px" }}>
-                    <Icon icon={GithubIcon} size={16} color="var(--bg)" /> Contribute
+                  <a href="https://github.com/1RB/cheki/blob/main/README.md#contributing" target="_blank" rel="noopener" style={{ padding: "12px 24px", borderRadius: "8px", border: "1px solid color-mix(in srgb, var(--invert-text) 20%, transparent)", color: "var(--invert-text)", fontSize: "14px", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "8px" }}>
+                    <Icon icon={GithubIcon} size={16} color="var(--invert-text)" /> Contribute
                   </a>
                 </div>
               </div>
@@ -1282,8 +1282,8 @@ export default function Home() {
                   { label: "Self-hosting", value: "Docker included" },
                   { label: "SDK", value: "TS, Python, Dart, PHP, Go" },
                 ].map((item) => (
-                  <div key={item.label} style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid color-mix(in srgb, var(--bg) 10%, transparent)" }}>
-                    <span style={{ fontSize: "13px", color: "color-mix(in srgb, var(--bg) 50%, transparent)" }}>{item.label}</span>
+                  <div key={item.label} style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid color-mix(in srgb, var(--invert-text) 10%, transparent)" }}>
+                    <span style={{ fontSize: "13px", color: "color-mix(in srgb, var(--invert-text) 50%, transparent)" }}>{item.label}</span>
                     <span style={{ fontSize: "13px", fontWeight: 600 }}>{item.value}</span>
                   </div>
                 ))}

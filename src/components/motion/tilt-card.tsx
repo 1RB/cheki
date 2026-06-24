@@ -9,10 +9,11 @@ export interface TiltCardProps {
   children: ReactNode;
   max?: number;
   glare?: boolean;
+  className?: string;
   style?: React.CSSProperties;
 }
 
-export function TiltCard({ children, max = 8, glare = true, style }: TiltCardProps) {
+export function TiltCard({ children, max = 8, glare = true, className, style }: TiltCardProps) {
   const ref = useRef<HTMLDivElement>(null);
   const reduce = useReducedMotion();
   const canHover = useHoverCapable();
@@ -51,6 +52,7 @@ export function TiltCard({ children, max = 8, glare = true, style }: TiltCardPro
       ref={ref}
       onMouseMove={onMove}
       onMouseLeave={onLeave}
+      className={className}
       style={{ transform, transformStyle: "preserve-3d", ...style }}
     >
       {children}
