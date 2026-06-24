@@ -10,6 +10,8 @@ import { BankSelector } from "@/components/BankSelector";
 import { useTranslation } from "@/lib/i18n/use-translation";
 import { Icon, BoltIcon, Key01Icon, Layers01Icon, CodeIcon, ReceiptTextIcon, Search01Icon, Camera01Icon, QrCode01Icon, QrCodeScanIcon, BookOpen01Icon, ContainerIcon, CheckmarkCircle01Icon, ArrowRight01Icon, GithubIcon, StarIcon, Copy01Icon, CopyCheckIcon, ChevronDownIcon, Alert01Icon, Upload01Icon } from "@/components/Icon";
 import { extractTextFromImage } from "@/lib/ocr";
+import { Tabs, TabsList, TabsTrigger } from "@/components/motion/tabs";
+import { NumberTicker } from "@/components/motion/number-ticker";
 
 export default function Home() {
   const { t } = useTranslation();
@@ -654,24 +656,13 @@ export default function Home() {
               boxShadow: "0 1px 3px rgba(0,0,0,0.04), 0 0 0 1px var(--border)",
             }}>
               {/* Input mode tabs */}
-              <div style={{ display: "flex", gap: "0", marginBottom: "16px", borderBottom: "1px solid var(--border)" }}>
-                {[
-                  { mode: "reference" as const, label: "Reference" },
-                  { mode: "url" as const, label: "Receipt URL" },
-                  { mode: "photo" as const, label: "Photo" },
-                ].map((tab) => (
-                  <button
-                    key={tab.mode}
-                    onClick={() => { setInputMode(tab.mode); setReference(""); setQrData(""); setShowQrPaste(false); setResult(null); setError(null); setPhotoPreview(null); setPhotoProcessing(false); setPhotoExtracted(null); setShowScanner(false); stopScanner(); }}
-                    style={{
-                      padding: "8px 16px", fontSize: "13px", fontWeight: 600,
-                      border: "none", borderBottom: inputMode === tab.mode ? "2px solid var(--green)" : "2px solid transparent",
-                      background: "transparent", color: inputMode === tab.mode ? "var(--green)" : "var(--ink-3)",
-                      cursor: "pointer", transition: "all 0.15s", marginBottom: "-1px",
-                    }}
-                  >{tab.label}</button>
-                ))}
-              </div>
+              <Tabs value={inputMode} onValueChange={(v) => { const mode = v as "reference" | "url" | "photo"; setInputMode(mode); setReference(""); setQrData(""); setShowQrPaste(false); setResult(null); setError(null); setPhotoPreview(null); setPhotoProcessing(false); setPhotoExtracted(null); setShowScanner(false); stopScanner(); }} variant="underline" style={{ marginBottom: "16px" }}>
+                <TabsList>
+                  <TabsTrigger value="reference">Reference</TabsTrigger>
+                  <TabsTrigger value="url">Receipt URL</TabsTrigger>
+                  <TabsTrigger value="photo">Photo</TabsTrigger>
+                </TabsList>
+              </Tabs>
               <input ref={fileInputRef} type="file" accept="image/*" multiple style={{ display: "none" }} onChange={handleFileUpload} />
 
               {/* Photo extraction banner (shown in Reference mode after a photo was read) */}
@@ -1235,19 +1226,15 @@ export default function Home() {
 }
 
 function AnimatedAmount({ value }: { value: string }) {
-  // transitions.dev number pop-in: split into digit spans with stagger
-  const chars = [...value];
-  let digitIdx = 0;
+  // Parse amount and currency from "1,234 ETB" format
+  const match = value.match(/^([\d,]+)\s*(.*)$/);
+  if (!match) return <span>{value}</span>;
+  const num = parseInt(match[1].replace(/,/g, ""), 10);
+  const currency = match[2] || "";
   return (
-    <span className="t-digit-group is-animating">
-      {chars.map((ch, i) => {
-        if (/\d/.test(ch)) {
-          const stagger = Math.min(digitIdx % 3, 2);
-          digitIdx++;
-          return <span key={i} className="t-digit" data-stagger={stagger}>{ch}</span>;
-        }
-        return <span key={i}>{ch}</span>;
-      })}
+    <span style={{ display: "inline-flex", alignItems: "baseline", gap: "4px" }}>
+      <NumberTicker value={num} locale duration={0.6} stagger={0.03} style={{ fontSize: "15px", fontWeight: 500, fontFamily: "var(--mono)" }} />
+      {currency && <span style={{ fontSize: "13px", color: "var(--ink-3)" }}>{currency}</span>}
     </span>
   );
 }
