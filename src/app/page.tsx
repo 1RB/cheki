@@ -659,7 +659,7 @@ export default function Home() {
               boxShadow: "0 1px 3px rgba(0,0,0,0.04), 0 0 0 1px var(--border)",
             }}>
               {/* Input mode tabs */}
-              <Tabs value={inputMode} onValueChange={(v) => { const mode = v as "reference" | "url" | "photo"; setInputMode(mode); setReference(""); setQrData(""); setShowQrPaste(false); setResult(null); setError(null); setPhotoPreview(null); setPhotoProcessing(false); setPhotoExtracted(null); setShowScanner(false); stopScanner(); }} variant="underline" style={{ marginBottom: "16px" }}>
+              <Tabs value={inputMode} onValueChange={(v) => { const mode = v as "reference" | "url" | "photo"; setInputMode(mode); setReference(""); setQrData(""); setShowQrPaste(false); setResult(null); setError(null); setPhotoPreview(null); setPhotoProcessing(false); setPhotoExtracted(null); setShowScanner(false); stopScanner(); }} variant="pill" style={{ marginBottom: "16px" }}>
                 <TabsList>
                   <TabsTrigger value="reference">Reference</TabsTrigger>
                   <TabsTrigger value="url">Receipt URL</TabsTrigger>
@@ -1297,10 +1297,10 @@ function ReceiptCard({ result, copied, onCopy }: { result: VerifyResult; copied:
   const visibleRows = rows.filter((r) => r.value);
 
   return (
-    <section className="t-panel-slide" data-open={revealed} style={{ borderRadius: "12px", overflow: "hidden", background: "var(--receipt-bg)", border: "1px solid var(--dotted)", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
+    <section className="t-panel-slide" data-open={revealed} style={{ borderRadius: "12px", overflow: "visible", background: "var(--receipt-bg)", border: "1px solid var(--dotted)", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
       <div style={{ padding: "20px 24px", borderBottom: "2px dotted var(--dotted)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <span className="t-success-check" data-state={checkState}>
+          <span className="t-success-check" data-state={checkState} style={{ display: "inline-flex", alignItems: "center" }}>
             <Icon icon={CheckmarkCircle01Icon} size={24} color="var(--green)" />
           </span>
           <span style={{ fontSize: "16px", fontWeight: 700, color: "var(--ink)" }}>receipt verified</span>
@@ -1310,7 +1310,7 @@ function ReceiptCard({ result, copied, onCopy }: { result: VerifyResult; copied:
           {copied ? "Copied" : "Copy JSON"}
         </button>
       </div>
-      <div style={{ padding: "8px 24px" }}>
+      <div style={{ padding: "8px 24px", overflow: "hidden" }}>
         {visibleRows.map((row, i) => (
           <div key={i}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", padding: "12px 0" }}>
@@ -1340,8 +1340,11 @@ function ReceiptCard({ result, copied, onCopy }: { result: VerifyResult; copied:
       )}
       {result.sourceUrl && (
         <div style={{ padding: "16px 24px", borderTop: "2px dotted var(--dotted)", background: "rgba(0,0,0,0.02)" }}>
-          <p style={{ fontSize: "11px", color: "var(--ink-3)", marginBottom: "4px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Source (public bank endpoint)</p>
-          <p style={{ fontSize: "12px", fontFamily: "var(--mono)", color: "var(--ink-2)", wordBreak: "break-all" }}>{result.sourceUrl}</p>
+          <p style={{ fontSize: "11px", color: "var(--ink-3)", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Source (public bank endpoint)</p>
+          <a href={result.sourceUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: "12px", fontFamily: "var(--mono)", color: "var(--green)", wordBreak: "break-all", textDecoration: "none", display: "flex", alignItems: "flex-start", gap: "6px" }}>
+            <span style={{ flex: 1 }}>{result.sourceUrl}</span>
+            <Icon icon={ArrowRight01Icon} size={12} color="var(--green)" />
+          </a>
         </div>
       )}
     </section>
