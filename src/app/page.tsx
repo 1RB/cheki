@@ -984,8 +984,8 @@ export default function Home() {
               {/* Step 1: Open receipt */}
               <div style={{ padding: "14px 20px", borderBottom: "1px solid #fde68a" }}>
                 <p style={{ fontSize: "12px", fontWeight: 600, color: "#92400e", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "8px" }}>Step 1: Open your receipt</p>
-                <a href={fallbackBankUrl} target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", padding: "10px 16px", borderRadius: "8px", background: "var(--green)", color: "#fff", fontSize: "14px", fontWeight: 600, textDecoration: "none", width: "fit-content" }}>
-                  <Icon icon={ArrowRight01Icon} size={16} color="#fff" />
+                <a href={fallbackBankUrl} target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", padding: "10px 16px", borderRadius: "8px", background: "var(--green)", color: "var(--bg)", fontSize: "14px", fontWeight: 600, textDecoration: "none", width: "fit-content" }}>
+                  <Icon icon={ArrowRight01Icon} size={16} color="var(--bg)" />
                   Open receipt page
                 </a>
                 <p style={{ fontSize: "11px", color: "#92400e", marginTop: "6px", fontFamily: "var(--mono)", wordBreak: "break-all", opacity: 0.7 }}>{fallbackBankUrl}</p>
@@ -1023,7 +1023,7 @@ export default function Home() {
                     <button
                       onClick={handleFallbackVerify}
                       disabled={fallbackLoading || !pasteContent.trim()}
-                      style={{ width: "100%", marginTop: "10px", padding: "12px 20px", fontSize: "14px", fontWeight: 600, border: "none", borderRadius: "8px", background: fallbackLoading || !pasteContent.trim() ? "#d4d4d4" : "var(--green)", color: fallbackLoading || !pasteContent.trim() ? "#999" : "#fff", cursor: fallbackLoading || !pasteContent.trim() ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", minHeight: "44px" }}
+                      style={{ width: "100%", marginTop: "10px", padding: "12px 20px", fontSize: "14px", fontWeight: 600, border: "none", borderRadius: "8px", background: fallbackLoading || !pasteContent.trim() ? "var(--border)" : "var(--green)", color: fallbackLoading || !pasteContent.trim() ? "var(--ink-3)" : "var(--bg)", cursor: fallbackLoading || !pasteContent.trim() ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", minHeight: "44px" }}
                     >
                       {fallbackLoading ? (<><span className="spin" style={{ width: "16px", height: "16px", border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "#fff", borderRadius: "50%", display: "inline-block" }} /> Parsing...</>) : "Verify pasted content"}
                     </button>
@@ -1058,14 +1058,14 @@ export default function Home() {
                         style={{
                           display: "inline-flex", alignItems: "center", gap: "6px",
                           padding: "10px 18px", borderRadius: "8px",
-                          background: "var(--green)", color: "#fff",
+                          background: "var(--green)", color: "var(--bg)",
                           fontSize: "14px", fontWeight: 600, textDecoration: "none",
                           cursor: "grab", userSelect: "none",
-                          border: "2px dashed rgba(255,255,255,0.4)",
+                          border: "2px dashed color-mix(in srgb, var(--bg) 40%, transparent)",
                         }}
                         title="Drag me to your bookmarks bar"
                       >
-                        <Icon icon={CheckmarkCircle01Icon} size={16} color="#fff" />
+                        <Icon icon={CheckmarkCircle01Icon} size={16} color="var(--bg)" />
                         Verify with cheki
                       </a>
                       <span style={{ fontSize: "11px", color: "#92400e", opacity: 0.7 }}>
@@ -1081,7 +1081,7 @@ export default function Home() {
                       </div>
                     )}
 
-                    <div style={{ padding: "12px 14px", borderRadius: "8px", background: "rgba(255,255,255,0.5)", border: "1px solid #fde68a" }}>
+                    <div style={{ padding: "12px 14px", borderRadius: "8px", background: "var(--surface)", border: "1px solid #fde68a" }}>
                       <p style={{ fontSize: "12px", color: "#92400e", lineHeight: 1.5 }}>
                         After installing, the bookmarklet reads the receipt page and sends it to cheki for parsing. An overlay appears on the page showing the verified result. No data is stored.
                       </p>
@@ -1282,8 +1282,8 @@ export default function Home() {
                   { label: "Self-hosting", value: "Docker included" },
                   { label: "SDK", value: "TS, Python, Dart, PHP, Go" },
                 ].map((item) => (
-                  <div key={item.label} style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
-                    <span style={{ fontSize: "13px", color: "rgba(255,255,255,0.5)" }}>{item.label}</span>
+                  <div key={item.label} style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid color-mix(in srgb, var(--bg) 10%, transparent)" }}>
+                    <span style={{ fontSize: "13px", color: "color-mix(in srgb, var(--bg) 50%, transparent)" }}>{item.label}</span>
                     <span style={{ fontSize: "13px", fontWeight: 600 }}>{item.value}</span>
                   </div>
                 ))}

@@ -93,7 +93,7 @@ export default async function BankPage({ params }: { params: Promise<{ code: str
         </p>
 
         <div style={{ display: "flex", gap: "12px", marginBottom: "40px", flexWrap: "wrap" }}>
-          <a href={`/#verify`} style={{ padding: "12px 24px", borderRadius: "8px", background: "var(--green)", color: "#fff", fontSize: "14px", fontWeight: 600 }}>
+          <a href={`/#verify`} style={{ padding: "12px 24px", borderRadius: "8px", background: "var(--green)", color: "var(--bg)", fontSize: "14px", fontWeight: 600 }}>
             Verify {bank.shortName} now
           </a>
           <span style={{

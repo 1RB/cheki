@@ -167,7 +167,7 @@ export function TabsTrigger({
           fontWeight: 600,
           border: "none",
           borderRadius: radius,
-          color: active ? "#fff" : "var(--ink-3)",
+          color: active ? "var(--bg)" : "var(--ink-3)",
           cursor: "pointer",
           transition: "color 0.15s",
           ...style,

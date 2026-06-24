@@ -996,7 +996,7 @@ docker-compose up -d
                     padding: "12px 24px",
                     borderRadius: "8px",
                     background: "var(--green)",
-                    color: "#fff",
+                    color: "var(--bg)",
                     fontSize: "14px",
                     fontWeight: 600,
                     display: "inline-flex",

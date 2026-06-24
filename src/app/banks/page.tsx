@@ -105,7 +105,7 @@ export default function BanksPage() {
           </p>
           <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
             <a href="https://github.com/1RB/cheki/issues/new?labels=new-bank&title=Add+support+for+%5Bbank+name%5D&body=Bank%3A%20%0AReceipt%20URL%20or%20QR%20screenshot%3A%20%0AReference%20number%3A%20" target="_blank" rel="noopener" style={{
-              padding: "12px 24px", borderRadius: "8px", background: "var(--green)", color: "#fff",
+              padding: "12px 24px", borderRadius: "8px", background: "var(--green)", color: "var(--bg)",
               fontSize: "14px", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "8px",
             }}>
               Submit a bank on GitHub
