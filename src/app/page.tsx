@@ -681,7 +681,7 @@ export default function Home() {
             }}
             >
               {/* Input mode tabs */}
-              <Tabs value={inputMode} onValueChange={(v) => { const mode = v as "reference" | "url" | "photo"; setInputMode(mode); setReference(""); setQrData(""); setShowQrPaste(false); setResult(null); setError(null); setPhotoPreview(null); setPhotoProcessing(false); setPhotoExtracted(null); setShowScanner(false); stopScanner(); }} variant="pill" style={{ marginBottom: "16px" }}>
+              <Tabs value={inputMode} onValueChange={(v) => { const mode = v as "reference" | "url" | "photo"; setInputMode(mode); setReference(""); setQrData(""); setShowQrPaste(false); setResult(null); setError(null); setPhotoPreview(null); setPhotoProcessing(false); setPhotoExtracted(null); setShowScanner(false); stopScanner(); }} variant="underline" style={{ marginBottom: "16px" }}>
                 <TabsList>
                   <TabsTrigger value="reference">Reference</TabsTrigger>
                   <TabsTrigger value="url">Receipt URL</TabsTrigger>

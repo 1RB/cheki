@@ -104,16 +104,16 @@ export function TabsTrigger({
           padding: "8px 16px",
           marginBottom: "-1px",
           fontSize: "13px",
-          fontWeight: 600,
+          fontWeight: active ? 600 : 500,
           minHeight: "44px",
           display: "inline-flex",
           alignItems: "center",
           border: "none",
-          borderBottom: active ? "2px solid var(--green)" : "2px solid transparent",
+          borderBottom: "2px solid transparent",
           background: "transparent",
-          color: active ? "var(--green)" : "var(--ink-3)",
+          color: active ? "var(--ink)" : "var(--ink-3)",
           cursor: "pointer",
-          transition: "color 0.15s, border-color 0.15s",
+          transition: "color 0.15s",
           ...style,
         }}
       >
@@ -127,7 +127,7 @@ export function TabsTrigger({
               left: 0,
               right: 0,
               height: "2px",
-              background: "var(--green)",
+              background: "var(--ink)",
             }}
           />
         ) : null}
