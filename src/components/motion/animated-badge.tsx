@@ -24,7 +24,7 @@ const STATUS_STYLE: Record<BadgeStatus, React.CSSProperties> = {
   neutral: { borderColor: "var(--border)", background: "var(--surface)", color: "var(--ink-3)" },
   info: { borderColor: "rgba(22,163,74,0.3)", background: "var(--green-light)", color: "var(--green-dark)" },
   success: { borderColor: "rgba(22,163,74,0.3)", background: "var(--green-light)", color: "var(--green-dark)" },
-  warning: { borderColor: "rgba(245,158,11,0.3)", background: "var(--amber-light)", color: "#92400e" },
+  warning: { borderColor: "rgba(245,158,11,0.3)", background: "var(--amber-light)", color: "var(--amber-text)" },
   danger: { borderColor: "rgba(220,38,38,0.3)", background: "var(--red-light)", color: "var(--red)" },
   loading: { borderColor: "rgba(22,163,74,0.3)", background: "var(--green-light)", color: "var(--green-dark)" },
 };

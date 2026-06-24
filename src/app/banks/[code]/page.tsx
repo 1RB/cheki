@@ -103,7 +103,7 @@ export default async function BankPage({ params }: { params: Promise<{ code: str
             {bank.status === "live" ? "Live and working" : "In development"}
           </span>
           {bank.geoBlocked && (
-            <span style={{ padding: "12px 16px", borderRadius: "8px", border: "1px solid #fde68a", fontSize: "14px", fontWeight: 500, color: "#92400e", background: "var(--amber-light)" }}>
+            <span style={{ padding: "12px 16px", borderRadius: "8px", border: "1px solid color-mix(in srgb, var(--amber) 30%, transparent)", fontSize: "14px", fontWeight: 500, color: "var(--amber-text)", background: "var(--amber-light)" }}>
               Ethiopia only
             </span>
           )}

@@ -411,8 +411,8 @@ export function BankSelector({ value, onChange }: BankSelectorProps) {
                                 fontSize: "10px",
                                 padding: "2px 6px",
                                 borderRadius: "3px",
-                                background: "#fef3c7",
-                                color: "#92400e",
+                                background: "var(--amber-light)",
+                                color: "var(--amber-text)",
                               }}
                             >
                               ET only

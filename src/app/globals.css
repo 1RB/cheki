@@ -22,6 +22,7 @@
   --red: #dc2626;
   --red-light: #fef2f2;
   --amber: #f59e0b;
+  --amber-text: #92400e;
   --amber-light: #fffbeb;
   --border: #e5e2dc;
   --dotted: #d4d0c8;
@@ -49,6 +50,7 @@
     --red: #f0556a;
     --red-light: rgba(240, 85, 106, 0.08);
     --amber: #f5b049;
+    --amber-text: #f5b049;
     --amber-light: rgba(245, 176, 73, 0.08);
     --border: #262932;
     --dotted: #2a2e38;
@@ -73,6 +75,7 @@
   --red: #f0556a;
   --red-light: rgba(240, 85, 106, 0.08);
   --amber: #f5b049;
+  --amber-text: #f5b049;
   --amber-light: rgba(245, 176, 73, 0.08);
   --border: #262932;
   --dotted: #2a2e38;

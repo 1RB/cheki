@@ -9,11 +9,10 @@ import { Nav, Footer } from "@/components/Chrome";
 import { BankLogoByName } from "@/components/BankLogo";
 import { BankSelector } from "@/components/BankSelector";
 import { useTranslation } from "@/lib/i18n/use-translation";
-import { Icon, BoltIcon, Key01Icon, Layers01Icon, CodeIcon, ReceiptTextIcon, Search01Icon, Camera01Icon, QrCode01Icon, QrCodeScanIcon, BookOpen01Icon, ContainerIcon, CheckmarkCircle01Icon, ArrowRight01Icon, GithubIcon, StarIcon, Copy01Icon, CopyCheckIcon, ChevronDownIcon, Alert01Icon, Upload01Icon } from "@/components/Icon";
+import { Icon, CodeIcon, Search01Icon, Camera01Icon, QrCode01Icon, CheckmarkCircle01Icon, ArrowRight01Icon, GithubIcon, StarIcon, Copy01Icon, CopyCheckIcon, ChevronDownIcon, Alert01Icon, Upload01Icon } from "@/components/Icon";
 import { extractTextFromImage } from "@/lib/ocr";
 import { Tabs, TabsList, TabsTrigger } from "@/components/motion/tabs";
 import { NumberTicker } from "@/components/motion/number-ticker";
-import { TiltCard } from "@/components/motion/tilt-card";
 import { AnimatedBadge } from "@/components/motion/animated-badge";
 import { StatefulButton } from "@/components/motion/stateful-button";
 import { useToastStack, ToastStack } from "@/components/motion/toast-stack";
@@ -622,15 +621,15 @@ export default function Home() {
   };
 
   const features = [
-    { icon: BoltIcon, title: "1-3 second verification", body: "Fetch receipts from bank endpoints in real time. Fast enough for checkout counters." },
-    { icon: Key01Icon, title: "No API key, no signup", body: "Start verifying immediately. No account, no business plan, no credit limit." },
-    { icon: Layers01Icon, title: "Batch verification", body: "Verify up to 50 receipts in a single API call. Perfect for end-of-day reconciliation." },
-    { icon: ReceiptTextIcon, title: "Python library", body: "pip install cheki. Server-side verification from Ethiopian networks. CLI included." },
-    { icon: ContainerIcon, title: "Self-host with Docker", body: "Run cheki on your own infrastructure. Bypass geo-blocks with an Ethiopian IP." },
-    { icon: CodeIcon, title: "Structured JSON", body: "Every bank returns the same response shape. Write the integration once." },
-    { icon: Search01Icon, title: "Auto-detect bank", body: "Paste a reference or URL and cheki identifies the bank automatically." },
-    { icon: QrCodeScanIcon, title: "QR + photo OCR", body: "Scan QR codes, upload a screenshot, or take a photo of a receipt. OCR reads the transaction number if no QR is visible." },
-    { icon: BookOpen01Icon, title: "Open source", body: "MIT licensed. Read the code, contribute, fork it. No black box." },
+    { title: "1-3 second verification", body: "Fetch receipts from bank endpoints in real time. Fast enough for checkout counters." },
+    { title: "No API key, no signup", body: "Start verifying immediately. No account, no business plan, no credit limit." },
+    { title: "Batch verification", body: "Verify up to 50 receipts in a single API call. Perfect for end-of-day reconciliation." },
+    { title: "Python library", body: "pip install cheki. Server-side verification from Ethiopian networks. CLI included." },
+    { title: "Self-host with Docker", body: "Run cheki on your own infrastructure. Bypass geo-blocks with an Ethiopian IP." },
+    { title: "Structured JSON", body: "Every bank returns the same response shape. Write the integration once." },
+    { title: "Auto-detect bank", body: "Paste a reference or URL and cheki identifies the bank automatically." },
+    { title: "QR + photo OCR", body: "Scan QR codes, upload a screenshot, or take a photo of a receipt. OCR reads the transaction number if no QR is visible." },
+    { title: "Open source", body: "MIT licensed. Read the code, contribute, fork it. No black box." },
   ];
 
   return (
@@ -784,11 +783,11 @@ export default function Home() {
                   )}
 
                   {isGeoBlocked && inputMode === "reference" && (
-                  <div className="fade-in" style={{ padding: "10px 14px", borderRadius: "8px", background: "var(--amber-light)", border: "1px solid #fde68a", display: "flex", gap: "8px", alignItems: "flex-start" }}>
-                    <Icon icon={Alert01Icon} size={16} color="#92400e" />
-                    <p style={{ fontSize: "12px", color: "#92400e", lineHeight: 1.5 }}>
+                  <div className="fade-in" style={{ padding: "10px 14px", borderRadius: "8px", background: "var(--amber-light)", border: "1px solid color-mix(in srgb, var(--amber) 30%, transparent)", display: "flex", gap: "8px", alignItems: "flex-start" }}>
+                    <Icon icon={Alert01Icon} size={16} color="var(--amber-text)" />
+                    <p style={{ fontSize: "12px", color: "var(--amber-text)", lineHeight: 1.5 }}>
                       This bank blocks requests from outside Ethiopia.{" "}
-                      <a href="https://github.com/1RB/cheki#self-hosting" target="_blank" rel="noopener" style={{ color: "#92400e", fontWeight: 600, textDecoration: "underline" }}>Self-host</a>, or just click Verify and we&apos;ll guide you through a 10-second browser fallback.
+                      <a href="https://github.com/1RB/cheki#self-hosting" target="_blank" rel="noopener" style={{ color: "var(--amber-text)", fontWeight: 600, textDecoration: "underline" }}>Self-host</a>, or just click Verify and we&apos;ll guide you through a 10-second browser fallback.
                     </p>
                   </div>
                 )}
@@ -964,43 +963,43 @@ export default function Home() {
         {/* Smart Fallback for geo-blocked banks */}
         {showFallback && (
           <section className="container-narrow" style={{ marginBottom: "32px", padding: "0 24px" }}>
-            <div className="fade-up" style={{ borderRadius: "12px", background: "var(--amber-light)", border: "1px solid #fde68a", overflow: "hidden" }}>
+            <div className="fade-up" style={{ borderRadius: "12px", background: "var(--amber-light)", border: "1px solid color-mix(in srgb, var(--amber) 30%, transparent)", overflow: "hidden" }}>
               {/* Header */}
-              <div style={{ padding: "16px 20px", borderBottom: "1px solid #fde68a" }}>
+              <div style={{ padding: "16px 20px", borderBottom: "1px solid color-mix(in srgb, var(--amber) 30%, transparent)" }}>
                 <div style={{ display: "flex", alignItems: "flex-start", gap: "10px" }}>
-                  <Icon icon={Alert01Icon} size={20} color="#92400e" />
+                  <Icon icon={Alert01Icon} size={20} color="var(--amber-text)" />
                   <div style={{ flex: 1 }}>
-                    <p style={{ fontSize: "15px", fontWeight: 700, color: "#92400e", marginBottom: "4px" }}>
+                    <p style={{ fontSize: "15px", fontWeight: 700, color: "var(--amber-text)", marginBottom: "4px" }}>
                       {selectedBank.name} blocks cheki's server
                     </p>
-                    <p style={{ fontSize: "13px", color: "#92400e", lineHeight: 1.5 }}>
+                    <p style={{ fontSize: "13px", color: "var(--amber-text)", lineHeight: 1.5 }}>
                       The receipt endpoint only allows Ethiopian IP addresses. But your browser can reach it. Verify in 10 seconds:
                     </p>
                   </div>
-                  <button onClick={() => setShowFallback(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "#92400e", fontSize: "18px", padding: "0 4px", lineHeight: 1 }}>x</button>
+                  <button onClick={() => setShowFallback(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--amber-text)", fontSize: "18px", padding: "0 4px", lineHeight: 1 }}>x</button>
                 </div>
               </div>
 
               {/* Step 1: Open receipt */}
-              <div style={{ padding: "14px 20px", borderBottom: "1px solid #fde68a" }}>
-                <p style={{ fontSize: "12px", fontWeight: 600, color: "#92400e", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "8px" }}>Step 1: Open your receipt</p>
+              <div style={{ padding: "14px 20px", borderBottom: "1px solid color-mix(in srgb, var(--amber) 30%, transparent)" }}>
+                <p style={{ fontSize: "12px", fontWeight: 600, color: "var(--amber-text)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "8px" }}>Step 1: Open your receipt</p>
                 <a href={fallbackBankUrl} target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", padding: "10px 16px", borderRadius: "8px", background: "var(--green)", color: "var(--bg)", fontSize: "14px", fontWeight: 600, textDecoration: "none", width: "fit-content" }}>
                   <Icon icon={ArrowRight01Icon} size={16} color="var(--bg)" />
                   Open receipt page
                 </a>
-                <p style={{ fontSize: "11px", color: "#92400e", marginTop: "6px", fontFamily: "var(--mono)", wordBreak: "break-all", opacity: 0.7 }}>{fallbackBankUrl}</p>
+                <p style={{ fontSize: "11px", color: "var(--amber-text)", marginTop: "6px", fontFamily: "var(--mono)", wordBreak: "break-all", opacity: 0.7 }}>{fallbackBankUrl}</p>
               </div>
 
               {/* Step 2: Bring data back, tabs */}
               <div style={{ padding: "14px 20px" }}>
-                <p style={{ fontSize: "12px", fontWeight: 600, color: "#92400e", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "10px" }}>Step 2: Bring the data back to cheki</p>
+                <p style={{ fontSize: "12px", fontWeight: 600, color: "var(--amber-text)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "10px" }}>Step 2: Bring the data back to cheki</p>
 
                 {/* Tab switcher */}
-                <div style={{ display: "flex", gap: "0", marginBottom: "14px", borderBottom: "1px solid #fde68a" }}>
-                  <button onClick={() => setFallbackTab("paste")} style={{ padding: "8px 14px", fontSize: "13px", fontWeight: 600, border: "none", borderBottom: fallbackTab === "paste" ? "2px solid #92400e" : "2px solid transparent", background: "transparent", color: fallbackTab === "paste" ? "#92400e" : "#b45309", cursor: "pointer", marginBottom: "-1px" }}>
+                <div style={{ display: "flex", gap: "0", marginBottom: "14px", borderBottom: "1px solid color-mix(in srgb, var(--amber) 30%, transparent)" }}>
+                  <button onClick={() => setFallbackTab("paste")} style={{ padding: "8px 14px", fontSize: "13px", fontWeight: 600, border: "none", borderBottom: fallbackTab === "paste" ? "2px solid #92400e" : "2px solid transparent", background: "transparent", color: fallbackTab === "paste" ? "var(--amber-text)" : "var(--amber)", cursor: "pointer", marginBottom: "-1px" }}>
                     Copy and Paste {isMobile ? "(recommended)" : ""}
                   </button>
-                  <button onClick={() => setFallbackTab("bookmarklet")} style={{ padding: "8px 14px", fontSize: "13px", fontWeight: 600, border: "none", borderBottom: fallbackTab === "bookmarklet" ? "2px solid #92400e" : "2px solid transparent", background: "transparent", color: fallbackTab === "bookmarklet" ? "#92400e" : "#b45309", cursor: "pointer", marginBottom: "-1px" }}>
+                  <button onClick={() => setFallbackTab("bookmarklet")} style={{ padding: "8px 14px", fontSize: "13px", fontWeight: 600, border: "none", borderBottom: fallbackTab === "bookmarklet" ? "2px solid #92400e" : "2px solid transparent", background: "transparent", color: fallbackTab === "bookmarklet" ? "var(--amber-text)" : "var(--amber)", cursor: "pointer", marginBottom: "-1px" }}>
                     Bookmarklet {!isMobile ? "(recommended)" : ""}
                   </button>
                 </div>
@@ -1008,7 +1007,7 @@ export default function Home() {
                 {/* Paste tab */}
                 {fallbackTab === "paste" && (
                   <div className="fade-in">
-                    <div style={{ fontSize: "13px", color: "#92400e", lineHeight: 1.6, marginBottom: "10px" }}>
+                    <div style={{ fontSize: "13px", color: "var(--amber-text)", lineHeight: 1.6, marginBottom: "10px" }}>
                       <p style={{ marginBottom: "4px" }}>1. Open the receipt page (Step 1 above)</p>
                       <p style={{ marginBottom: "4px" }}>2. Long press on the page, then Select All, then Copy</p>
                       <p style={{ marginBottom: "10px" }}>3. Come back here and paste into the box below</p>
@@ -1017,7 +1016,7 @@ export default function Home() {
                       value={pasteContent}
                       onChange={(e) => setPasteContent(e.target.value)}
                       placeholder="Paste the receipt page content here..."
-                      style={{ width: "100%", padding: "12px 14px", fontSize: "13px", border: "1px solid #fde68a", borderRadius: "8px", background: "var(--surface)", color: "var(--ink)", fontFamily: "var(--mono)", minHeight: "120px", resize: "vertical" }}
+                      style={{ width: "100%", padding: "12px 14px", fontSize: "13px", border: "1px solid color-mix(in srgb, var(--amber) 30%, transparent)", borderRadius: "8px", background: "var(--surface)", color: "var(--ink)", fontFamily: "var(--mono)", minHeight: "120px", resize: "vertical" }}
                       spellCheck={false}
                     />
                     <button
@@ -1043,7 +1042,7 @@ export default function Home() {
                 {/* Bookmarklet tab */}
                 {fallbackTab === "bookmarklet" && (
                   <div className="fade-in">
-                    <div style={{ fontSize: "13px", color: "#92400e", lineHeight: 1.6, marginBottom: "12px" }}>
+                    <div style={{ fontSize: "13px", color: "var(--amber-text)", lineHeight: 1.6, marginBottom: "12px" }}>
                       <p style={{ marginBottom: "6px", fontWeight: 600 }}>One-time setup (30 seconds):</p>
                       <p style={{ marginBottom: "4px" }}>1. Drag the button below to your bookmarks bar</p>
                       <p style={{ marginBottom: "4px" }}>2. Open any Telebirr or M-Pesa receipt page</p>
@@ -1068,7 +1067,7 @@ export default function Home() {
                         <Icon icon={CheckmarkCircle01Icon} size={16} color="var(--bg)" />
                         Verify with cheki
                       </a>
-                      <span style={{ fontSize: "11px", color: "#92400e", opacity: 0.7 }}>
+                      <span style={{ fontSize: "11px", color: "var(--amber-text)", opacity: 0.7 }}>
                         {isMobile ? "Long press, copy, then add as bookmark" : "Drag to bookmarks bar"}
                       </span>
                     </div>
@@ -1081,8 +1080,8 @@ export default function Home() {
                       </div>
                     )}
 
-                    <div style={{ padding: "12px 14px", borderRadius: "8px", background: "var(--surface)", border: "1px solid #fde68a" }}>
-                      <p style={{ fontSize: "12px", color: "#92400e", lineHeight: 1.5 }}>
+                    <div style={{ padding: "12px 14px", borderRadius: "8px", background: "var(--surface)", border: "1px solid color-mix(in srgb, var(--amber) 30%, transparent)" }}>
+                      <p style={{ fontSize: "12px", color: "var(--amber-text)", lineHeight: 1.5 }}>
                         After installing, the bookmarklet reads the receipt page and sends it to cheki for parsing. An overlay appears on the page showing the verified result. No data is stored.
                       </p>
                     </div>
@@ -1141,45 +1140,54 @@ export default function Home() {
         </section>
 
         {/* The Scam / Comparison - single panel, inline columns */}
-        <section className="container" style={{ marginTop: "64px" }}>
-          <h2 style={{ fontSize: "clamp(22px, 4vw, 30px)", fontWeight: 800, letterSpacing: "-0.02em", marginBottom: "20px" }}>
-            Everything you need, nothing you don&apos;t
-          </h2>
-          <div className="bento-grid">
-            {features.map((f, i) => (
-              <TiltCard
-                key={f.title}
-                max={6}
-                glare={i === 0}
-                className={i === 0 ? "bento-wide" : undefined}
-                style={{
-                  borderRadius: "12px",
-                }}
-              >
-              <div
-                style={{
-                  padding: i === 0 ? "28px 32px" : "22px",
-                  borderRadius: "12px",
-                  background: "var(--surface)",
-                  border: "1px solid var(--border)",
-                  display: "flex",
-                  flexDirection: i === 0 ? "row" : "column",
-                  alignItems: i === 0 ? "center" : "flex-start",
-                  gap: i === 0 ? "20px" : "12px",
-                  position: "relative",
-                  overflow: "hidden",
-                  minHeight: i === 0 ? "auto" : "100%",
-                  transition: "border-color 0.2s",
-                }}
-              >
-                <div style={{ marginBottom: i === 0 ? 0 : "10px", flexShrink: 0 }}><Icon icon={f.icon} size={i === 0 ? 32 : 24} color="var(--green)" /></div>
-                <div>
-                  <h3 style={{ fontSize: i === 0 ? "18px" : "15px", fontWeight: 700, marginBottom: "4px" }}>{f.title}</h3>
-                  <p style={{ fontSize: "14px", color: "var(--ink-2)", lineHeight: 1.5 }}>{f.body}</p>
+        <section className="container" style={{ marginTop: "80px" }}>
+          <div className="grid-2" style={{ gap: "48px", alignItems: "start" }}>
+            {/* Sticky heading */}
+            <div style={{ position: "sticky", top: "calc(var(--nav-h) + 24px)" }}>
+              <h2 style={{ fontSize: "clamp(24px, 4vw, 34px)", fontWeight: 800, letterSpacing: "-0.03em", lineHeight: 1.1, marginBottom: "16px" }}>
+                Everything you need,<br />nothing you don&apos;t
+              </h2>
+              <p style={{ fontSize: "15px", color: "var(--ink-2)", lineHeight: 1.6, maxWidth: "320px" }}>
+                Cheki is a single-purpose tool. No dashboards, no analytics, no billing portal. Just fast, accurate receipt verification.
+              </p>
+            </div>
+
+            {/* Manifest list */}
+            <div>
+              {features.map((f, i) => (
+                <div
+                  key={f.title}
+                  style={{
+                    padding: "20px 0",
+                    borderTop: "1px solid var(--border)",
+                    display: "flex",
+                    gap: "20px",
+                    alignItems: "flex-start",
+                  }}
+                >
+                  <span style={{
+                    fontSize: "13px",
+                    fontWeight: 700,
+                    fontFamily: "var(--mono)",
+                    color: "var(--ink-3)",
+                    minWidth: "28px",
+                    paddingTop: "2px",
+                  }}>
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                  <div>
+                    <h3 style={{ fontSize: "15px", fontWeight: 700, marginBottom: "4px", letterSpacing: "-0.01em" }}>
+                      {f.title}
+                    </h3>
+                    <p style={{ fontSize: "14px", color: "var(--ink-2)", lineHeight: 1.6, maxWidth: "440px" }}>
+                      {f.body}
+                    </p>
+                  </div>
                 </div>
-              </div>
-              </TiltCard>
-            ))}
+              ))}
+              {/* Bottom rule for closure */}
+              <div style={{ borderTop: "1px solid var(--border)", marginTop: "0px" }} />
+            </div>
           </div>
         </section>
 
