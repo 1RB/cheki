@@ -14,6 +14,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/motion/tabs";
 import { NumberTicker } from "@/components/motion/number-ticker";
 import { TiltCard } from "@/components/motion/tilt-card";
 import { AnimatedBadge } from "@/components/motion/animated-badge";
+import { StatefulButton } from "@/components/motion/stateful-button";
 
 export default function Home() {
   const { t } = useTranslation();
@@ -802,15 +803,15 @@ export default function Home() {
                   </div>
                 )}
 
-                <button onClick={handleVerify} disabled={loading || (inputMode === "reference" && isDisabled) || (!showQrPaste && !reference.trim()) || (showQrPaste && !qrData.trim())} style={{
-                  width: "100%", padding: "14px 24px", fontSize: "15px", fontWeight: 600, border: "none", borderRadius: "8px",
-                  background: loading || (inputMode === "reference" && isDisabled) || (!showQrPaste && !reference.trim()) || (showQrPaste && !qrData.trim()) ? "var(--border)" : "var(--green)",
-                  color: loading || (inputMode === "reference" && isDisabled) || (!showQrPaste && !reference.trim()) || (showQrPaste && !qrData.trim()) ? "var(--ink-3)" : "#fff",
-                  cursor: loading || (inputMode === "reference" && isDisabled) || (!showQrPaste && !reference.trim()) || (showQrPaste && !qrData.trim()) ? "not-allowed" : "pointer",
-                  transition: "all 0.15s", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", minHeight: "48px",
-                }}>
-                  {loading ? (<><span className="spin" style={{ width: "16px", height: "16px", border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "#fff", borderRadius: "50%", display: "inline-block" }} /><span key="loading" className="t-text-swap-enter">{t("hero.verifying")}</span></>) : (inputMode === "reference" && isDisabled) ? <span key="disabled" className="t-text-swap-enter">{t("banks.inDevelopment")}</span> : <span key="idle" className="t-text-swap-enter">{t("hero.verifyButton")}</span>}
-                </button>
+                <StatefulButton
+                  state={loading ? "loading" : result?.success ? "success" : "idle"}
+                  disabled={loading || (inputMode === "reference" && isDisabled) || (!showQrPaste && !reference.trim()) || (showQrPaste && !qrData.trim())}
+                  onClick={handleVerify}
+                  loadingLabel={t("hero.verifying")}
+                  successLabel="Verified"
+                >
+                  {(inputMode === "reference" && isDisabled) ? t("banks.inDevelopment") : t("hero.verifyButton")}
+                </StatefulButton>
               </div>
             ) : null}
 
