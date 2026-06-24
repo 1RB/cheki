@@ -29,7 +29,7 @@ export default function Home() {
   const [result, setResult] = useState<VerifyResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const [history, setHistory] = useState<{ bank: string; ref: string; date: string }[]>([]);
+  const [history, setHistory] = useState<{ bank: string; ref: string; date: string; amount?: number; currency?: string; senderName?: string; receiverName?: string }[]>([]);
   const [showScanner, setShowScanner] = useState(false);
   const [inputMode, setInputMode] = useState<"reference" | "url" | "photo">("reference");
   const [showQrPaste, setShowQrPaste] = useState(false);
@@ -188,7 +188,7 @@ export default function Home() {
         setResult(data);
         setShowFallback(false);
         showToast({ title: "Receipt verified", description: `${data.amount != null ? data.amount.toLocaleString() + " ETB" : ""} · ${data.senderName || data.receiverName || data.reference || ""}`.trim(), status: "success", duration: 4000 });
-        const entry = { bank, ref: reference.trim(), date: new Date().toISOString() };
+        const entry = { bank, ref: reference.trim(), date: new Date().toISOString(), amount: data.amount, currency: data.currency, senderName: data.senderName, receiverName: data.receiverName };
         const newHistory = [entry, ...history.filter((h) => h.ref !== reference.trim())].slice(0, 5);
         setHistory(newHistory);
         try { localStorage.setItem("cheki_history", JSON.stringify(newHistory)); } catch {}
@@ -853,21 +853,28 @@ export default function Home() {
 
             {history.length > 0 && !result && !loading && (
                 <div style={{ marginTop: "14px" }}>
-                  <p style={{ fontSize: "11px", fontWeight: 600, color: "var(--ink-3)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "8px" }}>Recent checks · swipe to remove</p>
+                  <p style={{ fontSize: "11px", fontWeight: 600, color: "var(--ink-3)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "8px" }}>Recent checks</p>
                   <SwipeableList
-                    items={history.map((h, i) => ({
-                      id: `hist-${i}`,
-                      title: h.ref.length > 25 ? h.ref.slice(0, 25) + "..." : h.ref,
-                      description: banks.find((b) => b.code === h.bank)?.shortName || h.bank,
-                      meta: new Date(h.date).toLocaleDateString(undefined, { month: "short", day: "numeric" }),
-                      rightActions: [
-                        { id: "delete", label: "Delete", icon: "×", tone: "danger", onClick: () => {
-                          const newHist = history.filter((_, idx) => idx !== i);
-                          setHistory(newHist);
-                          try { localStorage.setItem("cheki_history", JSON.stringify(newHist)); } catch {}
-                        } },
-                      ],
-                    }))}
+                    items={history.map((h, i) => {
+                      const bankInfo = banks.find((b) => b.code === h.bank);
+                      const amountStr = h.amount != null ? `${h.amount.toLocaleString()} ${h.currency || "ETB"}` : "";
+                      const personStr = h.receiverName || h.senderName || "";
+                      const dateStr = new Date(h.date).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+                      const descParts = [bankInfo?.shortName || h.bank, amountStr, personStr].filter(Boolean);
+                      return {
+                        id: `hist-${i}`,
+                        title: h.ref.length > 28 ? h.ref.slice(0, 28) + "..." : h.ref,
+                        description: descParts.join(" · "),
+                        meta: dateStr,
+                        rightActions: [
+                          { id: "delete", label: "Delete", icon: "×", tone: "danger", onClick: () => {
+                            const newHist = history.filter((_, idx) => idx !== i);
+                            setHistory(newHist);
+                            try { localStorage.setItem("cheki_history", JSON.stringify(newHist)); } catch {}
+                          } },
+                        ],
+                      };
+                    })}
                     onItemClick={(item) => {
                       const idx = parseInt(item.id.replace("hist-", ""));
                       const h = history[idx];
@@ -1010,7 +1017,7 @@ export default function Home() {
                       value={pasteContent}
                       onChange={(e) => setPasteContent(e.target.value)}
                       placeholder="Paste the receipt page content here..."
-                      style={{ width: "100%", padding: "12px 14px", fontSize: "13px", border: "1px solid #fde68a", borderRadius: "8px", background: "#fff", color: "var(--ink)", fontFamily: "var(--mono)", minHeight: "120px", resize: "vertical" }}
+                      style={{ width: "100%", padding: "12px 14px", fontSize: "13px", border: "1px solid #fde68a", borderRadius: "8px", background: "var(--surface)", color: "var(--ink)", fontFamily: "var(--mono)", minHeight: "120px", resize: "vertical" }}
                       spellCheck={false}
                     />
                     <button
@@ -1244,22 +1251,22 @@ export default function Home() {
           </p>
         </section>
         <section className="container" style={{ marginTop: "40px" }}>
-          <div style={{ padding: "28px", borderRadius: "16px", background: "var(--ink)", color: "#fff" }}>
+          <div style={{ padding: "28px", borderRadius: "16px", background: "var(--ink)", color: "var(--bg)" }}>
             <div className="grid-2" style={{ alignItems: "center", gap: "24px" }}>
               <div>
                 <p style={{ fontSize: "12px", fontWeight: 600, color: "var(--green)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "8px" }}>Open source</p>
                 <h2 style={{ fontSize: "clamp(20px, 4vw, 26px)", fontWeight: 800, marginBottom: "14px", letterSpacing: "-0.02em" }}>
                   Built by the community, for the community
                 </h2>
-                <p style={{ fontSize: "15px", color: "rgba(255,255,255,0.7)", lineHeight: 1.6, marginBottom: "20px" }}>
+                <p style={{ fontSize: "15px", color: "color-mix(in srgb, var(--bg) 70%, transparent)", lineHeight: 1.6, marginBottom: "20px" }}>
                   cheki is MIT licensed and lives on GitHub. No company owns it. No one can shut it down. If a bank changes their endpoint, anyone can submit a fix.
                 </p>
                 <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-                  <a href="https://github.com/1RB/cheki" target="_blank" rel="noopener" style={{ padding: "12px 24px", borderRadius: "8px", background: "var(--green)", color: "#fff", fontSize: "14px", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "8px" }}>
-                    <Icon icon={StarIcon} size={16} color="#fff" /> Star on GitHub
+                  <a href="https://github.com/1RB/cheki" target="_blank" rel="noopener" style={{ padding: "12px 24px", borderRadius: "8px", background: "var(--green)", color: "var(--bg)", fontSize: "14px", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "8px" }}>
+                    <Icon icon={StarIcon} size={16} color="var(--bg)" /> Star on GitHub
                   </a>
-                  <a href="https://github.com/1RB/cheki/blob/main/README.md#contributing" target="_blank" rel="noopener" style={{ padding: "12px 24px", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", fontSize: "14px", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "8px" }}>
-                    <Icon icon={GithubIcon} size={16} color="#fff" /> Contribute
+                  <a href="https://github.com/1RB/cheki/blob/main/README.md#contributing" target="_blank" rel="noopener" style={{ padding: "12px 24px", borderRadius: "8px", border: "1px solid color-mix(in srgb, var(--bg) 20%, transparent)", color: "var(--bg)", fontSize: "14px", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "8px" }}>
+                    <Icon icon={GithubIcon} size={16} color="var(--bg)" /> Contribute
                   </a>
                 </div>
               </div>

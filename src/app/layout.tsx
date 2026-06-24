@@ -187,6 +187,18 @@ export default function RootLayout({
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/favicon.ico" />
         <link rel="manifest" href="/manifest.webmanifest" />
+        <style>{`
+          html { background: var(--bg); }
+          ::view-transition-old(root), ::view-transition-new(root) {
+            animation: none; mix-blend-mode: normal;
+          }
+          ::view-transition-old(root) { z-index: 1; }
+          ::view-transition-new(root) { z-index: 9999; }
+          nav { view-transition-name: nav; }
+          ::view-transition-old(nav) { animation: none; }
+          ::view-transition-new(nav) { animation: none; }
+        `}</style>
+        <script dangerouslySetInnerHTML={{ __html: `(function(){try{var s=localStorage.getItem('cheki-theme');var d=window.matchMedia('(prefers-color-scheme: dark)').matches;var t=s||((d?'dark':'light'));document.documentElement.setAttribute('data-theme',t);}catch(e){}})();` }} />
       </head>
       <body>
         <I18nProvider>{children}</I18nProvider>

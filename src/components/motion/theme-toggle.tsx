@@ -79,7 +79,7 @@ export function ThemeToggle({ size = 36 }: { size?: number }) {
         width: size,
         height: size,
         borderRadius: "999px",
-        border: "1px solid var(--border)",
+        border: "none",
         background: "var(--surface)",
         cursor: animating ? "wait" : "pointer",
         display: "flex",
