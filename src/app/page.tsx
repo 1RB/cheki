@@ -1094,7 +1094,7 @@ export default function Home() {
         )}
 
         {/* How it works - terminal-style list, not cards */}
-        <section className="container" style={{ paddingTop: "32px", marginTop: "24px" }}>
+        <section className="container" style={{ paddingTop: "48px", paddingBottom: "16px" }}>
           <h2 style={{ fontSize: "clamp(22px, 4vw, 30px)", fontWeight: 800, letterSpacing: "-0.02em", marginBottom: "12px" }}>
             The banks publish receipts on public URLs
           </h2>
@@ -1141,8 +1141,7 @@ export default function Home() {
         </section>
 
         {/* The Scam / Comparison - single panel, inline columns */}
-
-        <section className="container" style={{ marginTop: "40px" }}>
+        <section className="container" style={{ marginTop: "64px" }}>
           <h2 style={{ fontSize: "clamp(22px, 4vw, 30px)", fontWeight: 800, letterSpacing: "-0.02em", marginBottom: "20px" }}>
             Everything you need, nothing you don&apos;t
           </h2>
@@ -1159,16 +1158,18 @@ export default function Home() {
               >
               <div
                 style={{
-                  padding: "20px",
+                  padding: i === 0 ? "28px 32px" : "22px",
                   borderRadius: "12px",
                   background: "var(--surface)",
                   border: "1px solid var(--border)",
                   display: "flex",
                   flexDirection: i === 0 ? "row" : "column",
                   alignItems: i === 0 ? "center" : "flex-start",
-                  gap: i === 0 ? "16px" : "10px",
+                  gap: i === 0 ? "20px" : "12px",
                   position: "relative",
                   overflow: "hidden",
+                  minHeight: i === 0 ? "auto" : "100%",
+                  transition: "border-color 0.2s",
                 }}
               >
                 <div style={{ marginBottom: i === 0 ? 0 : "10px", flexShrink: 0 }}><Icon icon={f.icon} size={i === 0 ? 32 : 24} color="var(--green)" /></div>
@@ -1183,7 +1184,7 @@ export default function Home() {
         </section>
 
         {/* Guides discovery - featured + list layout */}
-        <section className="container" style={{ marginTop: "40px" }}>
+        <section className="container" style={{ marginTop: "64px" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
             <h2 style={{ fontSize: "clamp(22px, 4vw, 30px)", fontWeight: 800, letterSpacing: "-0.02em" }}>
               Guides and articles
@@ -1228,7 +1229,7 @@ export default function Home() {
         </section>
 
         {/* Supported Banks */}
-        <section className="container" style={{ marginTop: "40px" }}>
+        <section className="container" style={{ marginTop: "64px" }}>
           <h2 style={{ fontSize: "clamp(22px, 4vw, 30px)", fontWeight: 800, letterSpacing: "-0.02em", marginBottom: "10px" }}>
             {banks.length} banks and wallets supported
           </h2>
@@ -1250,8 +1251,8 @@ export default function Home() {
             {banks.filter((b) => b.status === "soon").length - 4} more banks researching. <a href="/banks" style={{ color: "var(--green)", fontWeight: 600 }}>Help us add them →</a>
           </p>
         </section>
-        <section className="container" style={{ marginTop: "40px" }}>
-          <div style={{ padding: "28px", borderRadius: "16px", background: "var(--invert-bg)", color: "var(--invert-text)", border: "1px solid var(--border)" }}>
+        <section className="container" style={{ marginTop: "64px", marginBottom: "80px" }}>
+          <div style={{ padding: "32px", borderRadius: "16px", background: "var(--invert-bg)", color: "var(--invert-text)", border: "1px solid color-mix(in srgb, var(--invert-text) 8%, transparent)", boxShadow: "0 4px 24px rgba(0,0,0,0.08)" }}>
             <div className="grid-2" style={{ alignItems: "center", gap: "24px" }}>
               <div>
                 <p style={{ fontSize: "12px", fontWeight: 600, color: "var(--green)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "8px" }}>Open source</p>
