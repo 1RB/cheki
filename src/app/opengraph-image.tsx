@@ -128,7 +128,7 @@ export default async function OpenGraphImage() {
               }}
             />
             <span style={{ fontSize: 18, fontWeight: 600, color: "#16a34a" }}>
-              9 live banks
+              10 live banks
             </span>
           </div>
         </div>

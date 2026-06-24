@@ -6,7 +6,7 @@
  *
  * Generated categories:
  *   1. Per-bank verification pages (banks without an existing manual page)
- *   2. Per-bank "check payment" pages (all 9 banks)
+ *   2. Per-bank "check payment" pages (all 10 live banks)
  *   3. Per-bank fake receipt detection (top 5 banks)
  *   4. Per-bank receipt format reference (top 5 banks)
  *   5. API endpoint documentation pages (4)
@@ -380,7 +380,7 @@ const apiEndpointPages: SeoPage[] = [
     intent: "transactional",
     faq: [
       { q: "What does GET /api/banks return?", a: "A JSON array of all supported banks and wallets. Each bank object includes: code, name, shortName, type (bank/wallet/mobile), requiresAccount, accountDigits, endpoint, responseType, and status (live/soon)." },
-      { q: "How many banks are supported?", a: "cheki currently supports 9 banks and wallets: CBE, Telebirr, Bank of Abyssinia, M-Pesa, Dashen Bank, Awash Bank, Zemen Bank, CBE Birr, and Siinqee Bank. New banks are added as their public endpoints are discovered." },
+      { q: "How many banks are supported?", a: "cheki currently supports 10 live banks and wallets: CBE, Telebirr, Bank of Abyssinia, M-Pesa, Dashen Bank, Awash Bank, Zemen Bank, CBE Birr, Siinqee Bank, and eBirr. New banks are added as their public endpoints are discovered." },
       { q: "Can I use this to auto-detect which bank a reference belongs to?", a: "Yes. The response includes refPrefixes for each bank (e.g. CBE references start with 'FT'). You can use this to automatically route verification requests to the correct bank." },
     ],
     sections: [

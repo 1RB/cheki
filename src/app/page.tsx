@@ -13,6 +13,7 @@ import { Icon, CodeIcon, Search01Icon, Camera01Icon, QrCode01Icon, CheckmarkCirc
 import { extractTextFromImage } from "@/lib/ocr";
 import { Tabs, TabsList, TabsTrigger } from "@/components/motion/tabs";
 import { NumberTicker } from "@/components/motion/number-ticker";
+import { MagneticButton } from "@/components/motion/magnetic-button";
 import { AnimatedBadge } from "@/components/motion/animated-badge";
 import { StatefulButton } from "@/components/motion/stateful-button";
 import { useToastStack, ToastStack } from "@/components/motion/toast-stack";
@@ -1239,24 +1240,24 @@ export default function Home() {
         {/* Supported Banks */}
         <section className="container" style={{ marginTop: "64px" }}>
           <h2 style={{ fontSize: "clamp(22px, 4vw, 30px)", fontWeight: 800, letterSpacing: "-0.02em", marginBottom: "10px" }}>
-            {banks.length} banks and wallets supported
+            {banks.filter((b) => b.status === "live").length} banks live now
           </h2>
           <p style={{ color: "var(--ink-2)", fontSize: "15px", marginBottom: "20px" }}>
-            {banks.filter((b) => b.status === "live").length} live now, {banks.filter((b) => b.status === "soon").length} in development. All use public endpoints.
+            {banks.filter((b) => b.status === "soon").length} more in research. All use public endpoints.
           </p>
           <div className="bank-grid" style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "10px" }}>
-            {banks.map((b) => (
+            {banks.filter((b) => b.status === "live").map((b) => (
               <a key={b.code} href={`/banks/${b.code}`} style={{ padding: "12px", borderRadius: "10px", background: "var(--surface)", border: "1px solid var(--border)", display: "flex", alignItems: "center", gap: "10px" }}>
                 <BankLogoByName code={b.code} size={32} />
                 <div style={{ minWidth: 0 }}>
                   <p style={{ fontSize: "13px", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{b.shortName}</p>
-                  <AnimatedBadge status={b.status === "live" ? "success" : "neutral"} size="sm" showIcon={false}>{b.status === "live" ? "Live" : "In development"}</AnimatedBadge>
+                  <AnimatedBadge status="success" size="sm" showIcon={false}>Live</AnimatedBadge>
                 </div>
               </a>
             ))}
           </div>
           <p style={{ marginTop: "16px", fontSize: "13px", color: "var(--ink-3)" }}>
-            {banks.filter((b) => b.status === "soon").length - 4} more banks researching. <a href="/banks" style={{ color: "var(--green)", fontWeight: 600 }}>Help us add them →</a>
+            {banks.filter((b) => b.status === "soon").length} banks still in research — <a href="/banks" style={{ color: "var(--green)", fontWeight: 600 }}>Help us add them →</a>
           </p>
         </section>
         <section className="container" style={{ marginTop: "64px", marginBottom: "80px" }}>
@@ -1271,12 +1272,12 @@ export default function Home() {
                   cheki is MIT licensed and lives on GitHub. No company owns it. No one can shut it down. If a bank changes their endpoint, anyone can submit a fix.
                 </p>
                 <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-                  <a href="https://github.com/1RB/cheki" target="_blank" rel="noopener" style={{ padding: "12px 24px", borderRadius: "8px", background: "var(--green)", color: "var(--invert-bg)", fontSize: "14px", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "8px" }}>
+                  <MagneticButton href="https://github.com/1RB/cheki" target="_blank" rel="noopener" style={{ padding: "12px 24px", borderRadius: "8px", background: "var(--green)", color: "var(--invert-bg)", fontSize: "14px", fontWeight: 600 }}>
                     <Icon icon={StarIcon} size={16} color="var(--invert-bg)" /> Star on GitHub
-                  </a>
-                  <a href="https://github.com/1RB/cheki/blob/main/README.md#contributing" target="_blank" rel="noopener" style={{ padding: "12px 24px", borderRadius: "8px", border: "1px solid color-mix(in srgb, var(--invert-text) 20%, transparent)", color: "var(--invert-text)", fontSize: "14px", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "8px" }}>
+                  </MagneticButton>
+                  <MagneticButton href="https://github.com/1RB/cheki/blob/main/README.md#contributing" target="_blank" rel="noopener" style={{ padding: "12px 24px", borderRadius: "8px", border: "1px solid color-mix(in srgb, var(--invert-text) 20%, transparent)", color: "var(--invert-text)", fontSize: "14px", fontWeight: 600 }}>
                     <Icon icon={GithubIcon} size={16} color="var(--invert-text)" /> Contribute
-                  </a>
+                  </MagneticButton>
                 </div>
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
@@ -1285,7 +1286,7 @@ export default function Home() {
                   { label: "Language", value: "TypeScript + Python" },
                   { label: "Framework", value: "Next.js 16" },
                   { label: "Architecture", value: "Hexagonal / Ports" },
-                  { label: "Tests", value: "87 (vitest)" },
+                  { label: "Tests", value: "122 (vitest)" },
                   { label: "Banks", value: `${banks.length} (${banks.filter((b) => b.status === "live").length} live)` },
                   { label: "CLI", value: "cheki verify, info, health" },
                   { label: "Self-hosting", value: "Docker included" },

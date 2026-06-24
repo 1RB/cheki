@@ -266,10 +266,10 @@ export const articles: Article[] = [
     slug: "ethiopian-bank-receipt-formats",
     title: "Ethiopian Bank Receipt Formats: A Complete Reference",
     description:
-      "Every Ethiopian bank receipt reference format, endpoint URL, and response type in one place. CBE, Telebirr, BOA, M-Pesa, Dashen, Awash, Zemen, CBE Birr, Siinqee.",
+      "Every Ethiopian bank receipt reference format, endpoint URL, and response type in one place. CBE, Telebirr, BOA, M-Pesa, Dashen, Awash, Zemen, CBE Birr, Siinqee, eBirr.",
     category: "technical",
     excerpt:
-      "The definitive reference for Ethiopian bank receipt formats. Reference patterns, endpoint URLs, required fields, and response types for all 9 banks and wallets.",
+      "The definitive reference for Ethiopian bank receipt formats. Reference patterns, endpoint URLs, required fields, and response types for all 11 banks and wallets.",
     date: "2026-06-18",
     readTime: "6 min",
     content: [
@@ -604,7 +604,7 @@ export const articles: Article[] = [
     related: ["cbe-receipt-qr-code", "self-hosting-docker-guide", "payment-verification-api-guide"],
     seo: {
       title: "Ethiopian Bank Receipt Formats: Complete Reference",
-      description: "Every Ethiopian bank receipt reference format, endpoint URL, and response type. CBE, Telebirr, BOA, M-Pesa, Dashen, Awash, Zemen, CBE Birr, Siinqee.",
+      description: "Every Ethiopian bank receipt reference format, endpoint URL, and response type. CBE, Telebirr, BOA, M-Pesa, Dashen, Awash, Zemen, CBE Birr, Siinqee, eBirr.",
       keywords: ["ethiopian bank receipt format", "CBE FT reference", "telebirr transaction ID format", "BOA receipt endpoint", "ethiopian bank API", "receipt verification reference pattern"],
     },
   },
@@ -812,7 +812,7 @@ export const articles: Article[] = [
 
       { type: "heading", text: "cheki: the details" },
       { type: "text", text: "cheki is MIT licensed open source built with Next.js. It requires no signup, no API key, and has no limits. The hosted version is at chekiapp.vercel.app, and the full source code is on GitHub." },
-      { type: "text", text: "cheki supports 31 banks with 9 live (CBE, Telebirr, BOA, M-Pesa, Dashen, Zemen, CBE Birr, Siinqee, eBirr) and 22 in development. eBirr alone covers 4 additional banks through a single integration (Nib International, Wegagen, Ahadu, KAAFI Microfinance). It supports both the old and new CBE receipt systems, BOA QR code decryption, and unified QR scanning with multi-scale auto-detection." },
+      { type: "text", text: "cheki supports 31 banks with 10 live (CBE, Telebirr, BOA, M-Pesa, Dashen, Awash, Zemen, CBE Birr, Siinqee, eBirr) and 21 in development. eBirr alone covers 4 additional banks through a single integration (Nib International, Wegagen, Ahadu, KAAFI Microfinance). It supports both the old and new CBE receipt systems, BOA QR code decryption, and unified QR scanning with multi-scale auto-detection." },
       { type: "text", text: "Recent updates: cheki now parses mobile 'Select All' receipt text. This matters because Telebirr and M-Pesa block cloud servers from reaching their endpoints. If you copy the receipt text from the Telebirr app and paste it into cheki, the parser extracts the full transaction details locally without ever calling the geo-blocked endpoint." },
       { type: "text", text: "Strengths: free, open source, no signup, self-hosting, batch verification, Python library, TypeScript SDK, Docker, QR code scanning with BOA AES decryption, URL auto-detection, allows AI crawlers, shows receipt source URLs, and now parses pasted receipt text." },
       { type: "text", text: "Weaknesses: no mobile app (web only, but PWA-installable), no employee management, no dashboard for businesses, no duplicate detection built-in, no geo-block bypass relay, fewer live banks than check.et/verify.et/qbirr/tinaverify." },

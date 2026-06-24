@@ -38,7 +38,7 @@ export default function ComparePage() {
 
   const platformData = [
     { feature: "Banks supported", cheki: "31", checket: "9", verifyet: "10", qbirr: "7", tinaverify: "6", tally: "4" },
-    { feature: "Banks live", cheki: "9", checket: "9", verifyet: "9", qbirr: "7", tinaverify: "6", tally: "4" },
+    { feature: "Banks live", cheki: "10", checket: "9", verifyet: "9", qbirr: "7", tinaverify: "6", tally: "4" },
     { feature: "REST API", cheki: check, checket: check, verifyet: check, qbirr: check, tinaverify: dash, tally: dash },
     { feature: "QR code scanning", cheki: check, checket: check, verifyet: check, qbirr: dash, tinaverify: check, tally: dash },
     { feature: "BOA QR decryption", cheki: check, checket: dash, verifyet: dash, qbirr: dash, tinaverify: dash, tally: dash },
@@ -107,7 +107,7 @@ export default function ComparePage() {
       name: "verify.et",
       tagline: "Suba Software's offering",
       url: "https://verify.et",
-      banks: "10 banks, 9 live",
+      banks: "11 banks, 10 live",
       pricing: "$20-40/mo USD. 200 free (one-time).",
       strengths: ["Android app on Play Store", "Blog content, status pages per bank", "TypeScript SDK published"],
       limitations: ["Charges in USD", "Requires Telegram OAuth signup", "Blocks AI crawlers (GPTBot, ClaudeBot, CCBot)", "No open source, no self-hosting", "No batch verification, no Python library"],
@@ -266,7 +266,7 @@ export default function ComparePage() {
           ))}
         </div>
         <p style={{ marginTop: "16px", fontSize: "14px", color: "var(--ink-2)" }}>
-          cheki combines these approaches: a web UI, REST API, batch verification, TypeScript SDK, Python library, Docker, 9 live banks, guide pages, and BOA QR decryption. All free and open source.
+          cheki combines these approaches: a web UI, REST API, batch verification, TypeScript SDK, Python library, Docker, 10 live banks, guide pages, and BOA QR decryption. All free and open source.
         </p>
       </main>
       <Footer />

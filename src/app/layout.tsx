@@ -136,7 +136,7 @@ export const metadata: Metadata = {
           name: "Which banks are supported?",
           acceptedAnswer: {
             "@type": "Answer",
-            text: "cheki supports 9 live banks and wallets: CBE, Telebirr, Bank of Abyssinia, M-Pesa, Dashen Bank, Awash Bank, Zemen Bank, CBE Birr, and Siinqee Bank. Additional banks are in development and can be added by the community.",
+            text: "cheki supports 10 live banks and wallets: CBE, Telebirr, Bank of Abyssinia, M-Pesa, Dashen Bank, Awash Bank, Zemen Bank, CBE Birr, Siinqee Bank, and eBirr. Additional banks are in development and can be added by the community.",
           },
         },
         {

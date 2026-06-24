@@ -187,7 +187,7 @@ export const seoPages: SeoPage[] = [
     intent: "commercial",
     faq: [
       { q: "Is receipt verification really free?", a: "Yes. cheki is 100% free with no limits. No signup, no API key, no credit card. You can verify unlimited receipts. check.et charges 499 ETB/month after 200 verifications. verify.et charges $20-40/month." },
-      { q: "Which banks are supported?", a: "cheki supports 10 banks and wallets: CBE, CBE Birr, Telebirr, Bank of Abyssinia, M-Pesa, Dashen Bank, Awash Bank, Zemen Bank, Siinqee Bank, and CBE Birr. All use public endpoints published by the banks themselves." },
+      { q: "Which banks are supported?", a: "cheki supports 10 live banks and wallets: CBE, CBE Birr, Telebirr, Bank of Abyssinia, M-Pesa, Dashen Bank, Awash Bank, Zemen Bank, Siinqee Bank, and eBirr. All use public endpoints published by the banks themselves." },
       { q: "How is this different from check.et?", a: "check.et charges 499 ETB/month for the same data. cheki uses the exact same bank endpoints but is free and open source. check.et also requires a business account and API key. cheki requires nothing." },
       { q: "Can I use this for my business?", a: "Yes. cheki is MIT licensed. You can use the API, self-host with Docker, or integrate the TypeScript/Python SDK into your existing systems. No restrictions." },
     ],
