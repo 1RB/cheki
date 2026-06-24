@@ -83,22 +83,26 @@ export function ThemeToggle({ size = 36 }: { size?: number }) {
         alignItems: "center",
         justifyContent: "center",
         flexShrink: 0,
-        padding: 0,
+        padding: "4px",
         position: "relative",
+        width: "32px",
+        height: "32px",
+        overflow: "hidden",
       }}
     >
       <AnimatePresence mode="popLayout" initial={false}>
         <motion.span
           key={theme}
-          initial={reduce ? { opacity: 0 } : { opacity: 0, y: -14, scale: 0.4, filter: "blur(6px)" }}
+          initial={reduce ? { opacity: 0 } : { opacity: 0, y: -16, scale: 0.3, filter: "blur(8px)" }}
           animate={reduce ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
-          exit={reduce ? { opacity: 0 } : { opacity: 0, y: 14, scale: 0.4, filter: "blur(6px)" }}
+          exit={reduce ? { opacity: 0 } : { opacity: 0, y: 16, scale: 0.3, filter: "blur(8px)" }}
           transition={SPRING_SWAP}
           style={{
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             position: "absolute",
+            inset: 0,
           }}
         >
           {theme === "light" ? (

@@ -125,39 +125,27 @@ export function CommandPalette({
       <button
         type="button"
         onClick={() => setOpen(true)}
+        aria-label="Search (⌘K)"
         style={{
           display: "flex",
           alignItems: "center",
-          gap: "8px",
-          padding: "6px 12px",
+          justifyContent: "center",
+          width: "32px",
+          height: "32px",
           borderRadius: "8px",
-          border: "1px solid var(--border)",
-          background: "var(--surface)",
+          border: "none",
+          background: "transparent",
           cursor: "pointer",
-          fontSize: "13px",
-          fontWeight: 500,
-          color: "var(--ink-3)",
-          fontFamily: "var(--sans)",
-          transition: "all 0.15s",
+          flexShrink: 0,
+          transition: "background 0.15s",
         }}
-        onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--green)"; }}
-        onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border)"; }}
+        onMouseEnter={(e) => { e.currentTarget.style.background = "var(--surface-alt)"; }}
+        onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
       >
-        <Search style={{ width: 14, height: 14, color: "var(--ink-3)" }} />
-        <span>Search</span>
-        <kbd style={{
-          fontSize: "10px",
-          fontWeight: 600,
-          padding: "2px 6px",
-          borderRadius: "4px",
-          background: "var(--surface-alt)",
-          color: "var(--ink-3)",
-          fontFamily: "var(--mono)",
-          border: "1px solid var(--border)",
-        }}>⌘K</kbd>
+        <Search style={{ width: 16, height: 16, color: "var(--ink-3)" }} />
       </button>
 
-      {createPortal(
+      {open ? createPortal(
         <AnimatePresence>
           {open ? (
             <>
@@ -346,7 +334,7 @@ export function CommandPalette({
           ) : null}
         </AnimatePresence>,
         document.body,
-      )}
+      ) : null}
     </>
   );
 }

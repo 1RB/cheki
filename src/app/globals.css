@@ -34,46 +34,46 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #0f0f0f;
-    --surface: #1a1a1a;
-    --surface-alt: #242424;
-    --receipt-bg: #161616;
-    --ink: #f5f5f5;
-    --ink-2: #a8a8a8;
-    --ink-3: #6b6b6b;
-    --green: #22c55e;
-    --green-dark: #16a34a;
-    --green-light: rgba(34, 197, 94, 0.12);
-    --red: #ef4444;
-    --red-light: rgba(239, 68, 68, 0.1);
-    --amber: #f59e0b;
-    --amber-light: rgba(245, 158, 11, 0.1);
-    --border: #2a2a2a;
-    --dotted: #333;
-    --code-bg: #0d1117;
-    --code-text: #c9d1d9;
+    --bg: #0c0d10;
+    --surface: #16181d;
+    --surface-alt: #1c1f26;
+    --receipt-bg: #131519;
+    --ink: #e8e6e3;
+    --ink-2: #9a9a9a;
+    --ink-3: #65686f;
+    --green: #2ddb6a;
+    --green-dark: #20b854;
+    --green-light: rgba(45, 219, 106, 0.1);
+    --red: #f0556a;
+    --red-light: rgba(240, 85, 106, 0.08);
+    --amber: #f5b049;
+    --amber-light: rgba(245, 176, 73, 0.08);
+    --border: #262932;
+    --dotted: #2a2e38;
+    --code-bg: #0a0c10;
+    --code-text: #b4b9c4;
   }
 }
 
 [data-theme="dark"] {
-  --bg: #0f0f0f;
-  --surface: #1a1a1a;
-  --surface-alt: #242424;
-  --receipt-bg: #161616;
-  --ink: #f5f5f5;
-  --ink-2: #a8a8a8;
-  --ink-3: #6b6b6b;
-  --green: #22c55e;
-  --green-dark: #16a34a;
-  --green-light: rgba(34, 197, 94, 0.12);
-  --red: #ef4444;
-  --red-light: rgba(239, 68, 68, 0.1);
-  --amber: #f59e0b;
-  --amber-light: rgba(245, 158, 11, 0.1);
-  --border: #2a2a2a;
-  --dotted: #333;
-  --code-bg: #0d1117;
-  --code-text: #c9d1d9;
+  --bg: #0c0d10;
+  --surface: #16181d;
+  --surface-alt: #1c1f26;
+  --receipt-bg: #131519;
+  --ink: #e8e6e3;
+  --ink-2: #9a9a9a;
+  --ink-3: #65686f;
+  --green: #2ddb6a;
+  --green-dark: #20b854;
+  --green-light: rgba(45, 219, 106, 0.1);
+  --red: #f0556a;
+  --red-light: rgba(240, 85, 106, 0.08);
+  --amber: #f5b049;
+  --amber-light: rgba(245, 176, 73, 0.08);
+  --border: #262932;
+  --dotted: #2a2e38;
+  --code-bg: #0a0c10;
+  --code-text: #b4b9c4;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }

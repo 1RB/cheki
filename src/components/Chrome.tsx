@@ -66,25 +66,32 @@ export function Nav() {
         borderBottom: "1px solid var(--border)", height: "var(--nav-h)",
       }}>
         <div className="container" style={{
-          height: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
+          height: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px",
         }}>
-          <a href="/" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <span style={{
-              fontWeight: 800, fontSize: "20px", letterSpacing: "-0.03em", color: "var(--ink)",
-            }}>cheki</span>
-            <span style={{
-              fontSize: "10px", fontWeight: 600, color: "var(--green)", border: "1px solid var(--green-light)",
-              padding: "2px 6px", borderRadius: "4px", background: "var(--green-light)",
-            }}>OSS</span>
-          </a>
-          <div className="nav-desktop" style={{ display: "flex", gap: "2px", alignItems: "center" }}>
+          {/* Left: logo + nav links */}
+          <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
+            <a href="/" style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
+              <span style={{
+                fontWeight: 800, fontSize: "20px", letterSpacing: "-0.03em", color: "var(--ink)",
+              }}>cheki</span>
+              <span style={{
+                fontSize: "10px", fontWeight: 600, color: "var(--green)", border: "1px solid var(--green-light)",
+                padding: "2px 6px", borderRadius: "4px", background: "var(--green-light)",
+              }}>OSS</span>
+            </a>
+            <div className="nav-desktop" style={{ display: "flex", gap: "2px", alignItems: "center" }}>
+              {links.map((l) => (
+                <a key={l.href} href={l.href} style={{
+                  padding: "6px 12px", fontSize: "14px", fontWeight: 500, color: "var(--ink-2)",
+                  borderRadius: "6px", transition: "color 0.15s",
+                }}>{l.label}</a>
+              ))}
+            </div>
+          </div>
+
+          {/* Right: utilities */}
+          <div className="nav-desktop" style={{ display: "flex", gap: "4px", alignItems: "center", flexShrink: 0 }}>
             <CommandPalette items={commandItems} />
-            {links.map((l) => (
-              <a key={l.href} href={l.href} style={{
-                padding: "6px 12px", fontSize: "14px", fontWeight: 500, color: "var(--ink-2)",
-                borderRadius: "6px", transition: "all 0.15s",
-              }}>{l.label}</a>
-            ))}
             <LanguageSwitcher />
             <ThemeToggle />
             <a href="https://github.com/1RB/cheki" target="_blank" rel="noopener" style={{
@@ -96,6 +103,8 @@ export function Nav() {
               GitHub
             </a>
           </div>
+
+          {/* Mobile toggle */}
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <div className="nav-mobile-only" style={{ display: "none" }}>
               <ThemeToggle size={32} />
