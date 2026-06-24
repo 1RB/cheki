@@ -12,6 +12,8 @@ import { Icon, BoltIcon, Key01Icon, Layers01Icon, CodeIcon, ReceiptTextIcon, Sea
 import { extractTextFromImage } from "@/lib/ocr";
 import { Tabs, TabsList, TabsTrigger } from "@/components/motion/tabs";
 import { NumberTicker } from "@/components/motion/number-ticker";
+import { TiltCard } from "@/components/motion/tilt-card";
+import { AnimatedBadge } from "@/components/motion/animated-badge";
 
 export default function Home() {
   const { t } = useTranslation();
@@ -846,9 +848,12 @@ export default function Home() {
                   <div key={i} style={{ padding: "12px 14px", borderRadius: "8px", border: "1px solid var(--border)", background: r.status === "done" && r.data?.success ? "var(--green-light)" : r.status === "error" ? "var(--red-light)" : "var(--surface)" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: r.data?.success ? "8px" : 0 }}>
                       <span style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink)", fontFamily: "var(--mono)", wordBreak: "break-all" }}>{r.fileName}</span>
-                      <span style={{ fontSize: "11px", fontWeight: 600, padding: "2px 8px", borderRadius: "4px", background: r.status === "done" && r.data?.success ? "var(--green)" : r.status === "error" ? "var(--red)" : "var(--border)", color: r.status === "done" && r.data?.success || r.status === "error" ? "#fff" : "var(--ink-3)" }}>
+                      <AnimatedBadge
+                        status={r.status === "done" && r.data?.success ? "success" : r.status === "error" ? "danger" : "loading"}
+                        size="sm"
+                      >
                         {r.status === "scanning" ? "Scanning..." : r.status === "verifying" ? "Verifying..." : r.status === "error" ? "Failed" : r.data?.success ? "Verified" : "Not found"}
-                      </span>
+                      </AnimatedBadge>
                     </div>
                     {r.data?.success && (
                       <div style={{ fontSize: "12px", color: "var(--ink-2)", display: "flex", flexWrap: "wrap", gap: "12px" }}>
@@ -1068,9 +1073,7 @@ export default function Home() {
                   <span style={{ fontSize: "12px", fontFamily: "var(--mono)", color: "var(--ink-3)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {b.endpointFormat}
                   </span>
-                  <span style={{ fontSize: "10px", fontWeight: 600, padding: "2px 8px", borderRadius: "3px", background: b.geoBlocked ? "var(--amber-light)" : "var(--green-light)", color: b.geoBlocked ? "#92400e" : "var(--green-dark)", whiteSpace: "nowrap" }}>
-                    {b.geoBlocked ? "ET only" : "Global"}
-                  </span>
+                  <AnimatedBadge status={b.geoBlocked ? "warning" : "success"} size="sm" showIcon={false}>{b.geoBlocked ? "ET only" : "Global"}</AnimatedBadge>
                 </a>
               ))}
             </div>
@@ -1085,8 +1088,15 @@ export default function Home() {
           </h2>
           <div className="bento-grid">
             {features.map((f, i) => (
-              <div
+              <TiltCard
                 key={f.title}
+                max={6}
+                glare={i === 0}
+                style={{
+                  borderRadius: "12px",
+                }}
+              >
+              <div
                 className={i === 0 ? "bento-wide" : ""}
                 style={{
                   padding: "20px",
@@ -1097,6 +1107,8 @@ export default function Home() {
                   flexDirection: i === 0 ? "row" : "column",
                   alignItems: i === 0 ? "center" : "flex-start",
                   gap: i === 0 ? "16px" : "10px",
+                  position: "relative",
+                  overflow: "hidden",
                 }}
               >
                 <div style={{ marginBottom: i === 0 ? 0 : "10px", flexShrink: 0 }}><Icon icon={f.icon} size={i === 0 ? 32 : 24} color="var(--green)" /></div>
@@ -1105,6 +1117,7 @@ export default function Home() {
                   <p style={{ fontSize: "14px", color: "var(--ink-2)", lineHeight: 1.5 }}>{f.body}</p>
                 </div>
               </div>
+              </TiltCard>
             ))}
           </div>
         </section>
@@ -1168,7 +1181,7 @@ export default function Home() {
                 <BankLogoByName code={b.code} size={32} />
                 <div style={{ minWidth: 0 }}>
                   <p style={{ fontSize: "13px", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{b.shortName}</p>
-                  <p style={{ fontSize: "10px", color: b.status === "live" ? "var(--green)" : "var(--ink-3)" }}>{b.status === "live" ? "Live" : "In development"}</p>
+                  <AnimatedBadge status={b.status === "live" ? "success" : "neutral"} size="sm" showIcon={false}>{b.status === "live" ? "Live" : "In development"}</AnimatedBadge>
                 </div>
               </a>
             ))}
