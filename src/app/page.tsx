@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
+import { motion } from "motion/react";
 import jsQR from "jsqr";
 import { banks, detectBank, type BankCode, type VerifyResult } from "@/lib/banks";
 import { articles } from "@/lib/guides";
@@ -657,7 +658,21 @@ export default function Home() {
             <div className="verify-card" style={{
               background: "var(--surface)", borderRadius: "14px", padding: "20px",
               boxShadow: "0 1px 3px rgba(0,0,0,0.04), 0 0 0 1px var(--border)",
-            }}>
+            }}
+            onPaste={(e) => {
+              const items = e.clipboardData?.items;
+              if (!items) return;
+              for (const item of items) {
+                if (item.type.startsWith("image/")) {
+                  e.preventDefault();
+                  setInputMode("photo");
+                  const file = item.getAsFile();
+                  if (file) handlePhoto(file);
+                  break;
+                }
+              }
+            }}
+            >
               {/* Input mode tabs */}
               <Tabs value={inputMode} onValueChange={(v) => { const mode = v as "reference" | "url" | "photo"; setInputMode(mode); setReference(""); setQrData(""); setShowQrPaste(false); setResult(null); setError(null); setPhotoPreview(null); setPhotoProcessing(false); setPhotoExtracted(null); setShowScanner(false); stopScanner(); }} variant="pill" style={{ marginBottom: "16px" }}>
                 <TabsList>
@@ -703,7 +718,21 @@ export default function Home() {
 
               {/* Photo mode UI */}
               {inputMode === "photo" && (
-                <div className="fade-in" style={{ marginBottom: "16px" }}>
+                <div className="fade-in" style={{ marginBottom: "16px" }}
+                  onPaste={(e) => {
+                    const items = e.clipboardData?.items;
+                    if (!items) return;
+                    for (const item of items) {
+                      if (item.type.startsWith("image/")) {
+                        e.preventDefault();
+                        const file = item.getAsFile();
+                        if (file) handlePhoto(file);
+                        break;
+                      }
+                    }
+                  }}
+                  tabIndex={0}
+                >
                   {!photoPreview && !showScanner && (
                     <div>
                       <button onClick={() => startScanner()} style={{ width: "100%", padding: "28px 16px", borderRadius: "12px", border: "1px dashed var(--border)", background: "var(--surface)", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: "10px", marginBottom: "12px" }}>
@@ -714,7 +743,7 @@ export default function Home() {
                       <button onClick={() => photoInputRef.current?.click()} style={{ width: "100%", padding: "14px 16px", borderRadius: "10px", border: "1px solid var(--border)", background: "var(--surface)", color: "var(--ink-2)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", fontSize: "14px", fontWeight: 500 }}>
                         <Icon icon={Upload01Icon} size={18} color="var(--ink-3)" /> Upload a screenshot
                       </button>
-                      <p style={{ fontSize: "12px", color: "var(--ink-3)", marginTop: "12px", textAlign: "center", lineHeight: 1.5 }}>QR code is scanned first. If none is visible, OCR reads the transaction number.</p>
+                      <p style={{ fontSize: "12px", color: "var(--ink-3)", marginTop: "12px", textAlign: "center", lineHeight: 1.5 }}>QR code is scanned first. If none is visible, OCR reads the transaction number. You can also paste an image with Ctrl+V.</p>
                     </div>
                   )}
 
@@ -1256,11 +1285,9 @@ function AnimatedAmount({ value }: { value: string }) {
 function ReceiptCard({ result, copied, onCopy }: { result: VerifyResult; copied: boolean; onCopy: () => void }) {
   // transitions.dev: panel reveal + success check animations
   const [revealed, setRevealed] = useState(false);
-  const [checkState, setCheckState] = useState<"out" | "in">("out");
   useEffect(() => {
     const raf = requestAnimationFrame(() => setRevealed(true));
-    const timer = setTimeout(() => setCheckState("in"), 120);
-    return () => { cancelAnimationFrame(raf); clearTimeout(timer); };
+    return () => cancelAnimationFrame(raf);
   }, []);
 
   if (!result.verified) return null;
@@ -1300,9 +1327,14 @@ function ReceiptCard({ result, copied, onCopy }: { result: VerifyResult; copied:
     <section className="t-panel-slide" data-open={revealed} style={{ borderRadius: "12px", overflow: "visible", background: "var(--receipt-bg)", border: "1px solid var(--dotted)", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
       <div style={{ padding: "20px 24px", borderBottom: "2px dotted var(--dotted)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <span className="t-success-check" data-state={checkState} style={{ display: "inline-flex", alignItems: "center" }}>
+          <motion.span
+            initial={{ opacity: 0, scale: 0.5, rotate: -45 }}
+            animate={{ opacity: 1, scale: 1, rotate: 0 }}
+            transition={{ type: "spring", stiffness: 260, damping: 18, mass: 0.8, delay: 0.12 }}
+            style={{ display: "inline-flex", alignItems: "center", justifyContent: "center" }}
+          >
             <Icon icon={CheckmarkCircle01Icon} size={24} color="var(--green)" />
-          </span>
+          </motion.span>
           <span style={{ fontSize: "16px", fontWeight: 700, color: "var(--ink)" }}>receipt verified</span>
         </div>
         <button onClick={onCopy} style={{ padding: "6px 14px", fontSize: "12px", fontWeight: 500, border: "1px solid var(--border)", borderRadius: "6px", background: "var(--surface)", color: copied ? "var(--green)" : "var(--ink-2)", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}>
