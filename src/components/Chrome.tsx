@@ -5,6 +5,10 @@ import { createPortal } from "react-dom";
 import { Icon, GithubIcon, Menu01Icon, Cancel01Icon, ArrowRight01Icon } from "@/components/Icon";
 import { useTranslation } from "@/lib/i18n/use-translation";
 import { LanguageSwitcher } from "@/components/language-switcher";
+import { ThemeToggle } from "@/components/motion/theme-toggle";
+import { CommandPalette, type CommandItem } from "@/components/motion/command-palette";
+import { banks } from "@/lib/banks";
+import { articles } from "@/lib/guides";
 
 export function Nav() {
   const { t } = useTranslation();
@@ -36,11 +40,34 @@ export function Nav() {
     { href: "/developers", label: t("nav.developers") },
     { href: "/compare", label: t("nav.compare") },
   ];
+
+  const commandItems: CommandItem[] = [
+    { id: "page-verify", href: "/", label: "Verify a receipt", group: "Pages" },
+    { id: "page-banks", href: "/banks", label: "All banks", group: "Pages" },
+    { id: "page-guides", href: "/guides", label: "All guides", group: "Pages" },
+    { id: "page-docs", href: "/docs", label: "API documentation", group: "Pages" },
+    { id: "page-compare", href: "/compare", label: "Compare services", group: "Pages" },
+    { id: "page-developers", href: "/developers", label: "Developers", group: "Pages" },
+    ...banks.map((b) => ({
+      id: `bank-${b.code}`,
+      label: b.name,
+      description: b.status === "live" ? "Live" : "In development",
+      href: `/banks/${b.code}`,
+      group: "Banks",
+    })),
+    ...articles.map((a) => ({
+      id: `guide-${a.slug}`,
+      label: a.title,
+      description: a.excerpt,
+      href: `/guides/${a.slug}`,
+      group: "Guides",
+    })),
+  ];
   return (
     <>
       <nav style={{
         position: "sticky", top: 0, zIndex: 100,
-        background: "rgba(250,249,246,0.92)", backdropFilter: "blur(12px)",
+        background: "color-mix(in srgb, var(--bg) 92%, transparent)", backdropFilter: "blur(12px)",
         borderBottom: "1px solid var(--border)", height: "var(--nav-h)",
       }}>
         <div className="container" style={{
@@ -56,6 +83,7 @@ export function Nav() {
             }}>OSS</span>
           </a>
           <div className="nav-desktop" style={{ display: "flex", gap: "2px", alignItems: "center" }}>
+            <CommandPalette items={commandItems} />
             {links.map((l) => (
               <a key={l.href} href={l.href} style={{
                 padding: "6px 12px", fontSize: "14px", fontWeight: 500, color: "var(--ink-2)",
@@ -63,6 +91,7 @@ export function Nav() {
               }}>{l.label}</a>
             ))}
             <LanguageSwitcher />
+            <ThemeToggle />
             <a href="https://github.com/1RB/cheki" target="_blank" rel="noopener" style={{
               padding: "6px 14px", fontSize: "14px", fontWeight: 600, color: "#fff",
               background: "var(--ink)", borderRadius: "6px", marginLeft: "4px",
@@ -110,6 +139,10 @@ export function Nav() {
             <div style={{ flexShrink: 0, padding: "16px 20px", borderRadius: "10px", background: "var(--surface)", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <span style={{ fontSize: "18px", fontWeight: 600, color: "var(--ink)" }}>{t("language.switch")}</span>
               <LanguageSwitcher />
+            </div>
+            <div style={{ flexShrink: 0, padding: "16px 20px", borderRadius: "10px", background: "var(--surface)", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <span style={{ fontSize: "18px", fontWeight: 600, color: "var(--ink)" }}>Theme</span>
+              <ThemeToggle size={40} />
             </div>
             <a href="https://github.com/1RB/cheki" target="_blank" rel="noopener" onClick={() => setMobileOpen(false)} style={{
               flexShrink: 0,
