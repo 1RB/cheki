@@ -1,5 +1,5 @@
 import { Nav, Footer } from "@/components/Chrome";
-import { Glitch404 } from "@/components/motion/glitch-404";
+import { NotFound404 } from "@/components/motion/glitch-404";
 
 export default function NotFound() {
   return (
@@ -10,26 +10,21 @@ export default function NotFound() {
         style={{
           paddingTop: "80px",
           paddingBottom: "120px",
-          textAlign: "center",
-          maxWidth: "600px",
+          maxWidth: "520px",
           margin: "0 auto",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
+          textAlign: "center",
         }}
       >
-        {/* Animated glitch 404 — scramble + chromatic split */}
-        <div style={{ marginBottom: "28px" }}>
-          <Glitch404 />
-        </div>
+        <NotFound404 />
 
         <h1
           style={{
-            fontSize: "clamp(28px, 5vw, 40px)",
-            fontWeight: 800,
-            letterSpacing: "-0.03em",
+            fontSize: "24px",
+            fontWeight: 700,
+            letterSpacing: "-0.02em",
             color: "var(--ink)",
-            marginBottom: "12px",
+            marginBottom: "8px",
+            marginTop: "8px",
           }}
         >
           Page not found
@@ -37,70 +32,56 @@ export default function NotFound() {
 
         <p
           style={{
-            fontSize: "17px",
+            fontSize: "15px",
             color: "var(--ink-2)",
             lineHeight: 1.6,
             marginBottom: "32px",
-            maxWidth: "440px",
           }}
         >
-          The page you're looking for doesn't exist or may have moved.
-          Try one of these instead:
+          The page you're looking for doesn't exist or has moved.
         </p>
 
-        <div
-          style={{
-            display: "flex",
-            gap: "12px",
-            justifyContent: "center",
-            flexWrap: "wrap",
-          }}
-        >
-          {/* Green primary — verify */}
+        <div style={{ display: "flex", gap: "10px", justifyContent: "center", flexWrap: "wrap" }}>
           <a
             href="/"
             style={{
               padding: "12px 24px",
-              borderRadius: "8px",
+              borderRadius: "10px",
               background: "var(--green)",
               color: "#fff",
               fontSize: "14px",
               fontWeight: 600,
-              display: "inline-block",
+              textDecoration: "none",
             }}
           >
             Verify a receipt
           </a>
-
-          {/* Outline — guides */}
           <a
             href="/guides"
             style={{
               padding: "12px 24px",
-              borderRadius: "8px",
+              borderRadius: "10px",
               border: "1px solid var(--border)",
               color: "var(--ink)",
               fontSize: "14px",
               fontWeight: 500,
               background: "var(--surface)",
-              display: "inline-block",
+              textDecoration: "none",
             }}
           >
             Browse guides
           </a>
-
-          {/* Outline — banks */}
           <a
             href="/banks"
             style={{
               padding: "12px 24px",
-              borderRadius: "8px",
+              borderRadius: "10px",
               border: "1px solid var(--border)",
               color: "var(--ink)",
               fontSize: "14px",
               fontWeight: 500,
               background: "var(--surface)",
-              display: "inline-block",
+              textDecoration: "none",
             }}
           >
             All banks

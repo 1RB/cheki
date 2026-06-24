@@ -16,6 +16,9 @@ import { NumberTicker } from "@/components/motion/number-ticker";
 import { TiltCard } from "@/components/motion/tilt-card";
 import { AnimatedBadge } from "@/components/motion/animated-badge";
 import { StatefulButton } from "@/components/motion/stateful-button";
+import { useToastStack, ToastStack } from "@/components/motion/toast-stack";
+import { SwipeableList, type SwipeAction } from "@/components/motion/swipeable-list";
+import { Trash2 } from "lucide-react";
 
 export default function Home() {
   const { t } = useTranslation();
@@ -51,6 +54,8 @@ export default function Home() {
   const [photoProcessing, setPhotoProcessing] = useState(false);
   const [ocrProgress, setOcrProgress] = useState<{ status: string; progress: number } | null>(null);
   const [photoExtracted, setPhotoExtracted] = useState<{ reference: string; bank: BankCode } | null>(null);
+
+  const { toasts, showToast, dismissToast } = useToastStack();
 
   const selectedBank = banks.find((b) => b.code === bank)!;
   const needsAccount = selectedBank.requiresAccount;
@@ -166,6 +171,7 @@ export default function Home() {
       if (!data.success) {
         setError(data.error || "Verification failed.");
         setResult(data);
+        showToast({ title: "Verification failed", description: data.error || "Could not verify receipt", status: "error", duration: 5000 });
         // Trigger smart fallback for geo-blocked banks
         if (data.fallbackUrl || isGeoBlocked) {
           const fbUrl = data.fallbackUrl || buildFallbackUrl(bank, reference.trim());
@@ -181,6 +187,7 @@ export default function Home() {
       } else {
         setResult(data);
         setShowFallback(false);
+        showToast({ title: "Receipt verified", description: `${data.amount != null ? data.amount.toLocaleString() + " ETB" : ""} · ${data.senderName || data.receiverName || data.reference || ""}`.trim(), status: "success", duration: 4000 });
         const entry = { bank, ref: reference.trim(), date: new Date().toISOString() };
         const newHistory = [entry, ...history.filter((h) => h.ref !== reference.trim())].slice(0, 5);
         setHistory(newHistory);
@@ -846,12 +853,28 @@ export default function Home() {
 
             {history.length > 0 && !result && !loading && (
                 <div style={{ marginTop: "14px" }}>
-                  <p style={{ fontSize: "11px", fontWeight: 600, color: "var(--ink-3)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "8px" }}>Recent checks</p>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-                    {history.map((h, i) => (
-                      <button key={i} onClick={() => { setReference(h.ref); setInputMode("reference"); }} style={{ padding: "5px 10px", fontSize: "12px", fontFamily: "var(--mono)", border: "1px solid var(--border)", borderRadius: "20px", background: "var(--surface)", color: "var(--ink-2)", cursor: "pointer" }}>{h.ref.length > 20 ? h.ref.slice(0, 20) + "..." : h.ref}</button>
-                    ))}
-                  </div>
+                  <p style={{ fontSize: "11px", fontWeight: 600, color: "var(--ink-3)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "8px" }}>Recent checks · swipe to remove</p>
+                  <SwipeableList
+                    items={history.map((h, i) => ({
+                      id: `hist-${i}`,
+                      title: h.ref.length > 25 ? h.ref.slice(0, 25) + "..." : h.ref,
+                      description: banks.find((b) => b.code === h.bank)?.shortName || h.bank,
+                      meta: new Date(h.date).toLocaleDateString(undefined, { month: "short", day: "numeric" }),
+                      rightActions: [
+                        { id: "delete", label: "Delete", icon: "×", tone: "danger", onClick: () => {
+                          const newHist = history.filter((_, idx) => idx !== i);
+                          setHistory(newHist);
+                          try { localStorage.setItem("cheki_history", JSON.stringify(newHist)); } catch {}
+                        } },
+                      ],
+                    }))}
+                    onItemClick={(item) => {
+                      const idx = parseInt(item.id.replace("hist-", ""));
+                      const h = history[idx];
+                      if (h) { setReference(h.ref); setInputMode("reference"); }
+                    }}
+                    style={{ borderRadius: "10px", overflow: "hidden" }}
+                  />
                 </div>
               )}
             </div>
@@ -1264,6 +1287,7 @@ export default function Home() {
 
         <Footer />
       </main>
+      <ToastStack toasts={toasts} onDismiss={dismissToast} position="bottom-right" />
     </>
   );
 }
@@ -1371,7 +1395,7 @@ function ReceiptCard({ result, copied, onCopy }: { result: VerifyResult; copied:
         </div>
       )}
       {result.sourceUrl && (
-        <div style={{ padding: "16px 24px", borderTop: "2px dotted var(--dotted)", background: "rgba(0,0,0,0.02)" }}>
+        <div style={{ padding: "16px 24px", borderTop: "2px dotted var(--dotted)", background: "var(--surface-alt)" }}>
           <p style={{ fontSize: "11px", color: "var(--ink-3)", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Source (public bank endpoint)</p>
           <a href={result.sourceUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: "12px", fontFamily: "var(--mono)", color: "var(--green)", wordBreak: "break-all", textDecoration: "none", display: "flex", alignItems: "flex-start", gap: "6px" }}>
             <span style={{ flex: 1 }}>{result.sourceUrl}</span>

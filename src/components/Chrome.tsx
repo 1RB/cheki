@@ -93,20 +93,25 @@ export function Nav() {
             <LanguageSwitcher />
             <ThemeToggle />
             <a href="https://github.com/1RB/cheki" target="_blank" rel="noopener" style={{
-              padding: "6px 14px", fontSize: "14px", fontWeight: 600, color: "#fff",
+              padding: "6px 14px", fontSize: "14px", fontWeight: 600, color: "var(--bg)",
               background: "var(--ink)", borderRadius: "6px", marginLeft: "4px",
               display: "flex", alignItems: "center", gap: "6px",
             }}>
-              <Icon icon={GithubIcon} size={14} color="#fff" />
+              <Icon icon={GithubIcon} size={14} color="var(--bg)" />
               GitHub
             </a>
           </div>
-          <button className="nav-mobile-toggle" onClick={() => setMobileOpen(!mobileOpen)} style={{
-            background: "transparent", border: "none", cursor: "pointer", padding: "8px",
-            display: "none",
-          }}>
-            <Icon icon={mobileOpen ? Cancel01Icon : Menu01Icon} size={22} color="var(--ink)" />
-          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <div className="nav-mobile-only" style={{ display: "none" }}>
+              <ThemeToggle size={32} />
+            </div>
+            <button className="nav-mobile-toggle" onClick={() => setMobileOpen(!mobileOpen)} style={{
+              background: "transparent", border: "none", cursor: "pointer", padding: "8px",
+              display: "none",
+            }}>
+              <Icon icon={mobileOpen ? Cancel01Icon : Menu01Icon} size={22} color="var(--ink)" />
+            </button>
+          </div>
         </div>
       </nav>
       {mobileOpen && createPortal(
@@ -140,17 +145,13 @@ export function Nav() {
               <span style={{ fontSize: "18px", fontWeight: 600, color: "var(--ink)" }}>{t("language.switch")}</span>
               <LanguageSwitcher />
             </div>
-            <div style={{ flexShrink: 0, padding: "16px 20px", borderRadius: "10px", background: "var(--surface)", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <span style={{ fontSize: "18px", fontWeight: 600, color: "var(--ink)" }}>Theme</span>
-              <ThemeToggle size={40} />
-            </div>
             <a href="https://github.com/1RB/cheki" target="_blank" rel="noopener" onClick={() => setMobileOpen(false)} style={{
               flexShrink: 0,
-              padding: "16px 20px", fontSize: "18px", fontWeight: 600, color: "#fff",
+              padding: "16px 20px", fontSize: "18px", fontWeight: 600, color: "var(--bg)",
               background: "var(--ink)", borderRadius: "10px",
               display: "flex", alignItems: "center", gap: "10px",
             }}>
-              <Icon icon={GithubIcon} size={18} color="#fff" />
+              <Icon icon={GithubIcon} size={18} color="var(--bg)" />
               GitHub
             </a>
           </div>

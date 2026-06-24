@@ -76,6 +76,18 @@
   --code-text: #c9d1d9;
 }
 
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+::view-transition-old(root) {
+  z-index: 1;
+}
+::view-transition-new(root) {
+  z-index: 9999;
+}
+
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 html { font-size: 16px; }
@@ -274,11 +286,13 @@ a { color: inherit; text-decoration: none; }
 /* nav: show desktop links, hide mobile toggle by default */
 .nav-desktop { display: flex !important; }
 .nav-mobile-toggle { display: none !important; }
+.nav-mobile-only { display: none !important; }
 .nav-mobile-menu { display: flex !important; }
 
 @media (max-width: 768px) {
   .nav-desktop { display: none !important; }
   .nav-mobile-toggle { display: flex !important; align-items: center; }
+  .nav-mobile-only { display: flex !important; align-items: center; }
 }
 
 /* hide on mobile */

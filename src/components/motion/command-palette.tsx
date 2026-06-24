@@ -135,6 +135,7 @@ export function CommandPalette({
           background: "var(--surface)",
           cursor: "pointer",
           fontSize: "13px",
+          fontWeight: 500,
           color: "var(--ink-3)",
           fontFamily: "var(--sans)",
           transition: "all 0.15s",
