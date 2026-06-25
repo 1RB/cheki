@@ -1,7 +1,7 @@
 "use client";
 
-import { useRef, type ReactNode, useCallback } from "react";
 import { motion, useMotionValue, useSpring } from "motion/react";
+import { useRef, type ReactNode, useCallback } from "react";
 
 interface MagneticButtonProps {
   children: ReactNode;
@@ -24,7 +24,7 @@ export function MagneticButton({
   strength = 0.3,
   style,
 }: MagneticButtonProps) {
-  const ref = useRef<HTMLAnchorElement | HTMLButtonElement>(null);
+  const ref = useRef<HTMLElement>(null);
   const x = useMotionValue(0);
   const y = useMotionValue(0);
   const springX = useSpring(x, { stiffness: 150, damping: 15, mass: 0.1 });
@@ -48,38 +48,36 @@ export function MagneticButton({
     y.set(0);
   }, [x, y]);
 
+  const motionStyle = {
+    x: springX,
+    y: springY,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    ...style,
+  } as React.CSSProperties;
+
   const sharedProps = {
     ref: ref as any,
     onMouseMove: handleMouseMove,
     onMouseLeave: handleMouseLeave,
     className,
-    style: {
-      display: "inline-flex",
-      alignItems: "center",
-      justifyContent: "center",
-      ...style,
-    },
+    style: motionStyle,
   };
 
-  const inner = (
-    <motion.span
-      style={{ x: springX, y: springY, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
-    >
-      {children}
-    </motion.span>
-  );
+  const content = <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>{children}</span>;
 
   if (href) {
     return (
-      <a href={href} target={target} rel={rel} {...sharedProps}>
-        {inner}
-      </a>
+      <motion.a href={href} target={target} rel={rel} {...sharedProps}>
+        {content}
+      </motion.a>
     );
   }
 
   return (
-    <button onClick={onClick} {...sharedProps}>
-      {inner}
-    </button>
+    <motion.button onClick={onClick} {...sharedProps}>
+      {content}
+    </motion.button>
   );
 }

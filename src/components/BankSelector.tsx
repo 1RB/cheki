@@ -2,7 +2,9 @@
 
 import { useState, useRef, useEffect, useMemo, useCallback, useLayoutEffect } from "react";
 import { createPortal } from "react-dom";
+import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import { banks, type Bank } from "@/lib/banks";
+import { SPRING_PANEL } from "@/lib/ease";
 
 interface BankSelectorProps {
   value: string;
@@ -10,9 +12,9 @@ interface BankSelectorProps {
 }
 
 const GROUP_ORDER: { label: string; filter: (b: Bank) => boolean }[] = [
-  { label: "Live now", filter: (b) => b.status === "live" },
+  { label: "Live", filter: (b) => b.status === "live" },
   { label: "Via eBirr", filter: (b) => ["nib", "wegagen", "ahadu", "kaafi"].includes(b.code) },
-  { label: "In development", filter: (b) => b.status === "soon" && !["nib", "wegagen", "ahadu", "kaafi"].includes(b.code) },
+  { label: "Researching", filter: (b) => b.status === "soon" && !["nib", "wegagen", "ahadu", "kaafi"].includes(b.code) },
 ];
 
 export function BankSelector({ value, onChange }: BankSelectorProps) {
@@ -21,9 +23,7 @@ export function BankSelector({ value, onChange }: BankSelectorProps) {
   const [highlighted, setHighlighted] = useState(0);
   const [mounted, setMounted] = useState(false);
   const [panelRect, setPanelRect] = useState<{ top: number; left: number; width: number } | null>(null);
-  // transitions.dev menu dropdown: start hidden, reveal via rAF so the
-  // CSS transition from .t-dropdown → .t-dropdown.is-open actually plays.
-  const [panelOpen, setPanelOpen] = useState(false);
+  const reduce = useReducedMotion();
 
   const containerRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -32,7 +32,6 @@ export function BankSelector({ value, onChange }: BankSelectorProps) {
 
   const selectedBank = banks.find((b) => b.code === value);
 
-  // Mount check for portal (SSR safe)
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -62,20 +61,18 @@ export function BankSelector({ value, onChange }: BankSelectorProps) {
     [onChange]
   );
 
-  // Calculate panel position from trigger button rect
   const updatePosition = useCallback(() => {
     if (!triggerRef.current) return;
     const rect = triggerRef.current.getBoundingClientRect();
-    setPanelRect({ top: rect.bottom + 2, left: rect.left, width: rect.width });
+    setPanelRect({ top: rect.bottom + 4, left: rect.left, width: rect.width });
   }, []);
 
-  // Close on outside click (check both trigger container and portal panel)
+  // Close on outside click
   useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
       const target = e.target as Node;
       if (containerRef.current?.contains(target)) return;
-      // Portal panel is in document.body, check by data attribute
       const panel = document.querySelector("[data-bank-selector-panel]");
       if (panel?.contains(target)) return;
       setOpen(false);
@@ -105,18 +102,6 @@ export function BankSelector({ value, onChange }: BankSelectorProps) {
       window.removeEventListener("resize", onResize);
     };
   }, [open, updatePosition]);
-
-  // transitions.dev menu dropdown: trigger enter animation via rAF.
-  // Panel mounts with .t-dropdown (pre-scale, opacity 0); adding
-  // .is-open on the next frame makes the CSS transition play.
-  useEffect(() => {
-    if (!open) {
-      setPanelOpen(false);
-      return;
-    }
-    const raf = requestAnimationFrame(() => setPanelOpen(true));
-    return () => cancelAnimationFrame(raf);
-  }, [open]);
 
   // Keyboard navigation
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -162,14 +147,13 @@ export function BankSelector({ value, onChange }: BankSelectorProps) {
     }
   }, [highlighted, open]);
 
-  // Clamp panel height to viewport
-  const maxPanelHeight = panelRect ? Math.min(380, window.innerHeight - panelRect.top - 8) : 380;
+  const maxPanelHeight = panelRect ? Math.min(400, window.innerHeight - panelRect.top - 8) : 400;
 
   return (
     <div ref={containerRef} style={{ position: "relative" }}>
       <input type="hidden" value={value} />
 
-      {/* Trigger button */}
+      {/* Trigger */}
       <button
         ref={triggerRef}
         type="button"
@@ -188,8 +172,8 @@ export function BankSelector({ value, onChange }: BankSelectorProps) {
           width: "100%",
           padding: "12px 16px",
           fontSize: "15px",
-          border: `1px solid ${open ? "var(--green)" : "var(--border)"}`,
-          borderRadius: open ? "8px 8px 0 0" : "8px",
+          border: `1px solid ${open ? "var(--border-strong)" : "var(--border)"}`,
+          borderRadius: "10px",
           background: "var(--surface)",
           color: "var(--ink)",
           cursor: "pointer",
@@ -230,9 +214,6 @@ export function BankSelector({ value, onChange }: BankSelectorProps) {
             }}
           >
             {selectedBank?.name || "Select a bank..."}
-            {selectedBank?.status === "soon" && (
-              <span style={{ color: "var(--ink-3)", fontSize: "13px", fontWeight: 400 }}> (in development)</span>
-            )}
           </span>
         </span>
         <svg
@@ -255,230 +236,201 @@ export function BankSelector({ value, onChange }: BankSelectorProps) {
         </svg>
       </button>
 
-      {/* Dropdown panel - rendered via portal to escape stacking contexts */}
+      {/* Dropdown panel */}
       {open && mounted && panelRect && createPortal(
-        <div
-          data-bank-selector-panel
-          role="listbox"
-          onClick={(e) => e.stopPropagation()}
-          className={`t-dropdown${panelOpen ? " is-open" : ""}`}
-          style={{
-            position: "fixed",
-            top: `${panelRect.top}px`,
-            left: `${panelRect.left}px`,
-            width: `${panelRect.width}px`,
-            background: "var(--surface)",
-            border: "1px solid var(--green)",
-            borderTop: "none",
-            borderRadius: "0 0 8px 8px",
-            zIndex: 99999,
-            maxHeight: `${maxPanelHeight}px`,
-            display: "flex",
-            flexDirection: "column",
-            boxShadow: "0 12px 32px rgba(0,0,0,0.12), 0 0 0 1px var(--border)",
-          }}
-        >
-          {/* Search input */}
-          <div style={{ padding: "8px", borderBottom: "1px solid var(--border)", flexShrink: 0 }}>
-            <input
-              ref={inputRef}
-              type="text"
-              value={query}
-              onChange={(e) => {
-                setQuery(e.target.value);
-                setHighlighted(0);
-              }}
-              onKeyDown={handleKeyDown}
-              placeholder={`Search ${banks.length} banks...`}
-              style={{
-                width: "100%",
-                padding: "8px 12px",
-                fontSize: "14px",
-                border: "1px solid var(--border)",
-                borderRadius: "6px",
-                background: "var(--bg)",
-                color: "var(--ink)",
-                outline: "none",
-              }}
-            />
-          </div>
-
-          {/* Options list */}
-          <div ref={listRef} style={{ overflowY: "auto", flex: 1, padding: "4px 0" }}>
-            {flatFiltered.length === 0 && (
-              <p style={{ padding: "16px", fontSize: "14px", color: "var(--ink-3)", textAlign: "center" }}>
-                No banks found for &quot;{query}&quot;
-              </p>
-            )}
-
-            {GROUP_ORDER.map((group) => {
-              const groupBanks = filtered.filter(group.filter);
-              if (groupBanks.length === 0) return null;
-
-              return (
-                <div key={group.label}>
-                  <p
-                    style={{
-                      fontSize: "11px",
-                      fontWeight: 700,
-                      textTransform: "uppercase",
-                      letterSpacing: "0.06em",
-                      color: group.label === "Live now" ? "var(--green)" : "var(--ink-3)",
-                      padding: "8px 14px 4px",
-                    }}
-                  >
-                    {group.label}
-                  </p>
-                  {groupBanks.map((b) => {
-                    const flatIdx = flatFiltered.indexOf(b);
-                    const isSelected = b.code === value;
-                    const isHighlighted = flatIdx === highlighted;
-
-                    return (
-                      <button
-                        key={b.code}
-                        type="button"
-                        data-idx={flatIdx}
-                        onClick={() => handleSelect(b.code)}
-                        onMouseEnter={() => setHighlighted(flatIdx)}
-                        style={{
-                          width: "100%",
-                          padding: "8px 14px",
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "10px",
-                          border: "none",
-                          background: isSelected
-                            ? "var(--green-light)"
-                            : isHighlighted
-                              ? "var(--surface-alt)"
-                              : "transparent",
-                          cursor: "pointer",
-                          textAlign: "left",
-                          transition: "background 0.1s",
-                        }}
-                      >
-                        <span
-                          style={{
-                            width: "26px",
-                            height: "26px",
-                            borderRadius: "5px",
-                            background: b.color,
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            color: "#fff",
-                            fontWeight: 700,
-                            fontSize: "10px",
-                            flexShrink: 0,
-                          }}
-                        >
-                          {b.shortName.slice(0, 3)}
-                        </span>
-                        <span style={{ flex: 1, minWidth: 0 }}>
-                          <span
-                            style={{
-                              display: "block",
-                              fontSize: "14px",
-                              fontWeight: isSelected ? 600 : 500,
-                              color: "var(--ink)",
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                              whiteSpace: "nowrap",
-                            }}
-                          >
-                            {b.shortName}
-                          </span>
-                          <span
-                            style={{
-                              display: "block",
-                              fontSize: "12px",
-                              color: "var(--ink-3)",
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                              whiteSpace: "nowrap",
-                            }}
-                          >
-                            {b.name}
-                          </span>
-                        </span>
-                        {/* Status indicators */}
-                        <span style={{ display: "flex", gap: "4px", flexShrink: 0 }}>
-                          {b.geoBlocked && (
-                            <span
-                              title="Geo-blocked (Ethiopian IPs only)"
-                              style={{
-                                fontSize: "10px",
-                                padding: "2px 6px",
-                                borderRadius: "3px",
-                                background: "var(--amber-light)",
-                                color: "var(--amber-text)",
-                              }}
-                            >
-                              ET only
-                            </span>
-                          )}
-                          {b.status === "live" && (
-                            <span
-                              style={{
-                                fontSize: "10px",
-                                padding: "2px 6px",
-                                borderRadius: "3px",
-                                background: "var(--green-light)",
-                                color: "var(--green-dark)",
-                                fontWeight: 600,
-                              }}
-                            >
-                              Live
-                            </span>
-                          )}
-                        </span>
-                        {isSelected && (
-                          <svg
-                            width="16"
-                            height="16"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="var(--green)"
-                            strokeWidth="2.5"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            style={{ flexShrink: 0 }}
-                          >
-                            <path d="M20 6 9 17l-5-5" />
-                          </svg>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Footer */}
-          <div
+        <AnimatePresence>
+          <motion.div
+            data-bank-selector-panel
+            role="listbox"
+            onClick={(e) => e.stopPropagation()}
+            initial={reduce ? { opacity: 0 } : { opacity: 0, y: -8, scale: 0.98 }}
+            animate={reduce ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1 }}
+            exit={reduce ? { opacity: 0 } : { opacity: 0, y: -8, scale: 0.98 }}
+            transition={SPRING_PANEL}
             style={{
-              padding: "8px 14px",
-              borderTop: "1px solid var(--border)",
-              fontSize: "12px",
-              color: "var(--ink-3)",
+              position: "fixed",
+              top: `${panelRect.top}px`,
+              left: `${panelRect.left}px`,
+              width: `${panelRect.width}px`,
+              background: "var(--surface)",
+              border: "1px solid var(--border-strong)",
+              borderRadius: "10px",
+              zIndex: 99999,
+              maxHeight: `${maxPanelHeight}px`,
               display: "flex",
-              justifyContent: "space-between",
-              flexShrink: 0,
+              flexDirection: "column",
+              boxShadow: "0 12px 32px rgba(0,0,0,0.08), 0 0 0 1px var(--border)",
+              overflow: "hidden",
+              transformOrigin: "top",
             }}
           >
-            <span>{filtered.length} of {banks.length} banks</span>
-            <span>
-              <kbd style={{ fontSize: "10px", padding: "1px 5px", border: "1px solid var(--border)", borderRadius: "3px" }}>arrows</kbd>{" "}
-              navigate{" "}
-              <kbd style={{ fontSize: "10px", padding: "1px 5px", border: "1px solid var(--border)", borderRadius: "3px" }}>enter</kbd>{" "}
-              select{" "}
-              <kbd style={{ fontSize: "10px", padding: "1px 5px", border: "1px solid var(--border)", borderRadius: "3px" }}>esc</kbd>{" "}
-              close
-            </span>
-          </div>
-        </div>,
+            {/* Search */}
+            <div style={{ padding: "10px", borderBottom: "1px solid var(--border)", flexShrink: 0 }}>
+              <input
+                ref={inputRef}
+                type="text"
+                value={query}
+                onChange={(e) => {
+                  setQuery(e.target.value);
+                  setHighlighted(0);
+                }}
+                onKeyDown={handleKeyDown}
+                placeholder="Search banks..."
+                style={{
+                  width: "100%",
+                  padding: "8px 12px",
+                  fontSize: "14px",
+                  border: "1px solid var(--border)",
+                  borderRadius: "8px",
+                  background: "var(--bg)",
+                  color: "var(--ink)",
+                  outline: "none",
+                }}
+              />
+            </div>
+
+            {/* List */}
+            <div ref={listRef} style={{ overflowY: "auto", flex: 1, padding: "4px 0" }}>
+              {flatFiltered.length === 0 && (
+                <p style={{ padding: "20px", fontSize: "14px", color: "var(--ink-3)", textAlign: "center" }}>
+                  No banks found
+                </p>
+              )}
+
+              {GROUP_ORDER.map((group) => {
+                const groupBanks = filtered.filter(group.filter);
+                if (groupBanks.length === 0) return null;
+
+                return (
+                  <div key={group.label}>
+                    <p
+                      style={{
+                        fontSize: "11px",
+                        fontWeight: 600,
+                        textTransform: "uppercase",
+                        letterSpacing: "0.06em",
+                        color: "var(--ink-3)",
+                        padding: "10px 14px 6px",
+                      }}
+                    >
+                      {group.label}
+                    </p>
+                    {groupBanks.map((b) => {
+                      const flatIdx = flatFiltered.indexOf(b);
+                      const isSelected = b.code === value;
+                      const isHighlighted = flatIdx === highlighted;
+
+                      return (
+                        <button
+                          key={b.code}
+                          type="button"
+                          data-idx={flatIdx}
+                          onClick={() => handleSelect(b.code)}
+                          onMouseEnter={() => setHighlighted(flatIdx)}
+                          style={{
+                            width: "100%",
+                            padding: "8px 14px",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "10px",
+                            border: "none",
+                            background: isSelected
+                              ? "var(--surface-alt)"
+                              : isHighlighted
+                                ? "var(--surface-alt)"
+                                : "transparent",
+                            cursor: "pointer",
+                            textAlign: "left",
+                            transition: "background 0.08s",
+                          }}
+                        >
+                          <span
+                            style={{
+                              width: "24px",
+                              height: "24px",
+                              borderRadius: "5px",
+                              background: b.color,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              color: "#fff",
+                              fontWeight: 700,
+                              fontSize: "9px",
+                              flexShrink: 0,
+                            }}
+                          >
+                            {b.shortName.slice(0, 3)}
+                          </span>
+                          <span style={{ flex: 1, minWidth: 0 }}>
+                            <span
+                              style={{
+                                display: "block",
+                                fontSize: "14px",
+                                fontWeight: isSelected ? 600 : 500,
+                                color: "var(--ink)",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                whiteSpace: "nowrap",
+                              }}
+                            >
+                              {b.shortName}
+                            </span>
+                          </span>
+                          {/* Minimal status: just a dot */}
+                          <span
+                            style={{
+                              width: "6px",
+                              height: "6px",
+                              borderRadius: "50%",
+                              background: b.status === "live" ? "var(--green)" : "var(--ink-3)",
+                              flexShrink: 0,
+                              opacity: isSelected ? 1 : 0.5,
+                            }}
+                          />
+                          {isSelected && (
+                            <svg
+                              width="14"
+                              height="14"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="var(--green)"
+                              strokeWidth="2.5"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              style={{ flexShrink: 0 }}
+                            >
+                              <path d="M20 6 9 17l-5-5" />
+                            </svg>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Minimal footer */}
+            <div
+              style={{
+                padding: "8px 14px",
+                borderTop: "1px solid var(--border)",
+                fontSize: "12px",
+                color: "var(--ink-3)",
+                display: "flex",
+                justifyContent: "space-between",
+                flexShrink: 0,
+              }}
+            >
+              <span>{filtered.length} banks</span>
+              <span style={{ display: "flex", gap: "8px" }}>
+                <kbd style={{ fontSize: "10px", padding: "1px 5px", border: "1px solid var(--border)", borderRadius: "4px" }}>↑↓</kbd>
+                <kbd style={{ fontSize: "10px", padding: "1px 5px", border: "1px solid var(--border)", borderRadius: "4px" }}>↵</kbd>
+                <kbd style={{ fontSize: "10px", padding: "1px 5px", border: "1px solid var(--border)", borderRadius: "4px" }}>esc</kbd>
+              </span>
+            </div>
+          </motion.div>
+        </AnimatePresence>,
         document.body
       )}
     </div>
