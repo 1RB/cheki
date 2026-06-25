@@ -2,6 +2,21 @@
 
 **Free, open-source Ethiopian bank receipt verification. No signup. No API key. No scam.**
 
+[![CI](https://img.shields.io/github/actions/workflow/status/1RB/cheki/ci.yml?branch=main&style=flat&label=CI&logo=github)](https://github.com/1RB/cheki/actions/workflows/ci.yml)
+[![Publish](https://img.shields.io/github/actions/workflow/status/1RB/cheki/publish.yml?style=flat&label=Publish&logo=github)](https://github.com/1RB/cheki/actions/workflows/publish.yml)
+[![npm](https://img.shields.io/npm/v/cheki-verify?style=flat&label=npm&logo=npm&color=CB383D)](https://www.npmjs.com/package/cheki-verify)
+[![PyPI](https://img.shields.io/pypi/v/cheki?style=flat&label=PyPI&logo=pypi&color=3775A9)](https://pypi.org/project/cheki/)
+[![Packagist](https://img.shields.io/packagist/v/cheki/cheki?style=flat&label=Packagist&logo=packagist&logoColor=fff&color=F2848E)](https://packagist.org/packages/cheki/cheki)
+[![GitHub Packages](https://img.shields.io/badge/dynamic/json?style=flat&label=%401RB&logo=github&query=$.metadata.container.tags[0]&url=https://ghcr.io/v2/1rb/cheki-verify/tags/list&color=blue)](https://github.com/1RB/cheki/pkgs/npm/cheki-verify)
+[![Go Reference](https://img.shields.io/badge/go-reference-00ADD8?style=flat&logo=go&logoColor=fff)](https://pkg.go.dev/github.com/1RB/cheki/sdks/go)
+[![Dart](https://img.shields.io/pub/v/cheki?style=flat&label=pub.dev&logo=dart&logoColor=fff&color=0175C2)](https://pub.dev/packages/cheki)
+[![License: MIT](https://img.shields.io/github/license/1RB/cheki?style=flat&label=License&color=2ddb6a)](https://github.com/1RB/cheki/blob/main/LICENSE)
+[![Stars](https://img.shields.io/github/stars/1RB/cheki?style=flat&label=Stars&logo=github)](https://github.com/1RB/cheki/stargazers)
+[![Issues](https://img.shields.io/github/issues/1RB/cheki?style=flat&label=Issues&logo=github)](https://github.com/1RB/cheki/issues)
+[![Tests](https://img.shields.io/badge/tests-122%20vitest-2ddb6a?style=flat&logo=vitest&logoColor=fff)](https://github.com/1RB/cheki/blob/main/src/lib/parsers/__tests__)
+[![Banks](https://img.shields.io/badge/banks-10%20live%20%E2%80%A2%2021%20researching-2ddb6a?style=flat)](https://chekiapp.vercel.app/banks)
+[![Website](https://img.shields.io/website?style=flat&label=chekiapp.vercel.app&url=https%3A%2F%2Fchekiapp.vercel.app&logo=vercel&logoColor=fff)](https://chekiapp.vercel.app)
+
 cheki verifies Ethiopian bank and mobile money receipts by fetching public bank endpoints. The data is free. The code is MIT licensed. No one should charge you for accessing public bank data.
 
 ## Why?
@@ -465,6 +480,23 @@ Version bumps are automated. All package versions (web, TypeScript SDK, Python S
 ```
 
 This triggers the publish workflow which publishes to npm, GitHub Packages, PyPI, and Packagist simultaneously.
+
+## Contributing
+
+Contributions are welcome. See [CONTRIBUTING](https://chekiapp.vercel.app/guides/contribute-new-bank) for the full guide.
+
+- **Add a bank**: follow the [step-by-step guide](#adding-a-bank) above, or [open an issue](https://github.com/1RB/cheki/issues) with a receipt reference and we'll write the parser
+- **Report a bug**: [open an issue](https://github.com/1RB/cheki/issues) with the bank, reference number, and what you expected vs what happened
+- **Improve docs**: PRs welcome for guides, API docs, or SDK README improvements
+- **Spread the word**: star the repo, share chekiapp.vercel.app, tell anyone paying for receipt verification
+
+### Contributors
+
+[![Contributors](https://img.shields.io/github/contributors/1RB/cheki?style=flat&logo=github&color=2ddb6a)](https://github.com/1RB/cheki/graphs/contributors)
+
+## Stargazers
+
+[![Stargazers](https://img.shields.io/github/stars/1RB/cheki?style=social)](https://github.com/1RB/cheki/stargazers)
 
 ## License
 
