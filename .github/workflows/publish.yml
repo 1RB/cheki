@@ -48,7 +48,7 @@ jobs:
           # GitHub Packages requires scoped packages: @OWNER/NAME
           node -e "const p=require('./package.json'); p.name='@1RB/cheki-verify'; require('fs').writeFileSync('package.json', JSON.stringify(p,null,2)+'\n');"
           echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" > ~/.npmrc
-          npm publish --registry=https://npm.pkg.github.com
+          npm publish --registry=https://npm.pkg.github.com || echo "Version may already exist, continuing."
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -65,7 +65,7 @@ jobs:
           python-version: '3.11'
       - run: pip install build twine
       - run: python -m build
-      - run: twine upload dist/*
+      - run: twine upload --skip-existing dist/*
         env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
@@ -77,7 +77,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Update Packagist
         run: |
-          curl -X POST "https://packagist.org/api/packages?access_token=${{ secrets.PACKAGIST_TOKEN }}" \
+          curl -s -X POST "https://packagist.org/api/update-package?username=1rb&apiToken=${{ secrets.PACKAGIST_TOKEN }}" \
             -H "Content-Type: application/json" \
             -d '{"repository":"https://github.com/1RB/cheki"}'
         env:

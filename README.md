@@ -7,9 +7,8 @@
 [![npm](https://img.shields.io/npm/v/cheki-verify?style=flat&label=npm&logo=npm&color=CB383D)](https://www.npmjs.com/package/cheki-verify)
 [![PyPI](https://img.shields.io/pypi/v/cheki?style=flat&label=PyPI&logo=pypi&color=3775A9)](https://pypi.org/project/cheki/)
 [![Packagist](https://img.shields.io/packagist/v/cheki/cheki?style=flat&label=Packagist&logo=packagist&logoColor=fff&color=F2848E)](https://packagist.org/packages/cheki/cheki)
-[![GitHub Packages](https://img.shields.io/badge/dynamic/json?style=flat&label=%401RB&logo=github&query=$.metadata.container.tags[0]&url=https://ghcr.io/v2/1rb/cheki-verify/tags/list&color=blue)](https://github.com/1RB/cheki/pkgs/npm/cheki-verify)
-[![Go Reference](https://img.shields.io/badge/go-reference-00ADD8?style=flat&logo=go&logoColor=fff)](https://pkg.go.dev/github.com/1RB/cheki/sdks/go)
-[![Dart](https://img.shields.io/pub/v/cheki?style=flat&label=pub.dev&logo=dart&logoColor=fff&color=0175C2)](https://pub.dev/packages/cheki)
+[![GitHub Packages](https://img.shields.io/badge/%401RB-cheki--verify-blue?style=flat&logo=github)](https://github.com/1RB/cheki/pkgs/npm/cheki-verify)
+[![Go Reference](https://pkg.go.dev/badge/github.com/1RB/cheki/sdks/go.svg)](https://pkg.go.dev/github.com/1RB/cheki/sdks/go)
 [![License: MIT](https://img.shields.io/github/license/1RB/cheki?style=flat&label=License&color=2ddb6a)](https://github.com/1RB/cheki/blob/main/LICENSE)
 [![Stars](https://img.shields.io/github/stars/1RB/cheki?style=flat&label=Stars&logo=github)](https://github.com/1RB/cheki/stargazers)
 [![Issues](https://img.shields.io/github/issues/1RB/cheki?style=flat&label=Issues&logo=github)](https://github.com/1RB/cheki/issues)
@@ -55,7 +54,7 @@ cheki ships SDKs in 5 languages. All wrap the same REST API with idiomatic patte
 | **TypeScript** | `npm install cheki-verify` | [`cheki-verify`](https://www.npmjs.com/package/cheki-verify) | npm · [GitHub Packages](https://github.com/1RB/cheki/pkgs/npm/cheki-verify) |
 | **Python** | `pip install cheki` | [`cheki`](https://pypi.org/project/cheki/) | PyPI |
 | **Go** | `go get github.com/1RB/cheki/sdks/go` | `github.com/1RB/cheki/sdks/go` | [Go modules](https://pkg.go.dev/github.com/1RB/cheki/sdks/go) |
-| **Dart** | `dart pub add cheki` | [`cheki`](https://pub.dev) | pub.dev |
+| **Dart** | *Coming soon* | `cheki` | pub.dev (pending) |
 | **PHP** | `composer require cheki/cheki` | [`cheki/cheki`](https://packagist.org/packages/cheki/cheki) | Packagist |
 
 ### TypeScript

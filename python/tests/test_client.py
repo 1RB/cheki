@@ -344,33 +344,26 @@ def test_get_receipt_url():
 
 @responses.activate
 def test_api_error_raised_on_500_after_retries():
-    """A persistent 500 raises ChekiAPIError after exhausting retries."""
+    """A persistent 500 returns a result with error set (raise_on_error=False)."""
     responses.add(responses.POST, f"{API}/api/verify", json={"error": "boom"}, status=500)
     with ChekiClient(max_retries=0) as cheki:
-        try:
-            cheki.verify("cbe", "FT1")
-        except ChekiAPIError as exc:
-            assert exc.status_code == 500
-        else:
-            raise AssertionError("expected ChekiAPIError")
+        result = cheki.verify("cbe", "FT1")
+        assert result.is_verified is False
+        assert result.error is not None
 
 
 @responses.activate
 def test_api_error_message_from_body():
-    """ChekiAPIError surfaces the API's own error message."""
+    """The API's error message surfaces in result.error."""
     responses.add(
         responses.POST, f"{API}/api/verify",
         json={"success": False, "error": "Unsupported bank: foo."},
         status=404,
     )
     with ChekiClient(max_retries=0) as cheki:
-        try:
-            cheki.verify("foo", "FT1")
-        except ChekiAPIError as exc:
-            assert exc.status_code == 404
-            assert "Unsupported bank" in str(exc)
-        else:
-            raise AssertionError("expected ChekiAPIError")
+        result = cheki.verify("foo", "FT1")
+        assert result.is_verified is False
+        assert "Unsupported bank" in (result.error or "")
 
 
 @responses.activate
