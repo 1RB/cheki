@@ -38,7 +38,7 @@
     },
     "autoload": {
         "psr-4": {
-            "Cheki\\": "src/"
+            "Cheki\\": "sdks/php/src/"
         }
     },
     "minimum-stability": "stable"
