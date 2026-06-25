@@ -44,3 +44,31 @@ jobs:
       - name: Run tests
         working-directory: python
         run: pytest -q
+
+  version-check:
+    name: Check version sync
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Check version alignment
+        run: |
+          WEB=$(node -p "require('./package.json').version")
+          TS=$(node -p "require('./sdks/typescript/package.json').version")
+          PY=$(python3 -c "import json; print(json.load(open('python/pyproject.toml'))['project']['version'])")
+
+          if [ "$WEB" != "$TS" ]; then
+            echo "❌ Version mismatch: web ($WEB) vs TypeScript SDK ($TS)"
+            exit 1
+          fi
+
+          if [ "$WEB" != "$PY" ]; then
+            echo "❌ Version mismatch: web ($WEB) vs Python SDK ($PY)"
+            exit 1
+          fi
+
+          echo "✅ All versions synced: $WEB"

@@ -1,9 +1,9 @@
 name: cheki
 description: >
   A Dart client library for cheki, a free Ethiopian receipt verification service.
-  Verify bank transfer receipts from Ethiopian banks via the cheki REST API.
+  Verify bank transfer receipts from CBE, Telebirr, BOA, M-Pesa, Dashen, Awash, Zemen, CBE Birr, Siinqee, and eBirr.
 version: 1.4.0
-homepage: https://github.com/1RB/cheki
+homepage: https://chekiapp.vercel.app
 repository: https://github.com/1RB/cheki
 issue_tracker: https://github.com/1RB/cheki/issues
 
@@ -23,3 +23,10 @@ topics:
   - receipt
   - verification
   - ethiopia
+  - cbe
+  - telebirr
+  - m-pesa
+  - dashen
+  - awash
+  - zemen
+  - eBirr
