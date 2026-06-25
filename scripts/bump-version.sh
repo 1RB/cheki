@@ -23,7 +23,11 @@ echo "== Bumping to v$NEW_VERSION =="
 
 # Web app
 node -e "const p=require('./package.json'); p.version='$NEW_VERSION'; require('fs').writeFileSync('package.json', JSON.stringify(p, null, 2)+'\n');" 2>/dev/null
-echo "  ✅ package.json"
+# Also update package-lock.json if it exists
+if [ -f package-lock.json ]; then
+  sed -i 's/"version": "'"$OLD_VERSION"'"/"version": "'"$NEW_VERSION"'"/' package-lock.json 2>/dev/null || true
+fi
+echo "  ✅ package.json (+ package-lock.json if exists)"
 
 # TypeScript SDK
 node -e "const p=require('./sdks/typescript/package.json'); p.version='$NEW_VERSION'; require('fs').writeFileSync('sdks/typescript/package.json', JSON.stringify(p, null, 2)+'\n');" 2>/dev/null

@@ -18,7 +18,7 @@ jobs:
         with:
           node-version: 20
           registry-url: https://registry.npmjs.org
-      - run: npm ci || true
+      - run: npm install --prefer-offline
       - run: npm run build || true
       - run: npm publish --access public
         env:
