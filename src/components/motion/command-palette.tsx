@@ -166,10 +166,10 @@ export function CommandPalette({
               />
               {/* Panel */}
               <motion.div
-                initial={reduce ? { opacity: 0 } : { opacity: 0, y: -20, scale: 0.96, filter: "blur(8px)" }}
-                animate={reduce ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1, filter: "blur(0px)", x: "-50%" }}
-                exit={reduce ? { opacity: 0 } : { opacity: 0, y: -20, scale: 0.96, filter: "blur(8px)", x: "-50%" }}
-                transition={SPRING_PANEL}
+                initial={reduce ? { opacity: 0 } : { opacity: 0, y: -8, scale: 0.98, x: "-50%" }}
+                animate={reduce ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1, x: "-50%" }}
+                exit={reduce ? { opacity: 0 } : { opacity: 0, y: -8, scale: 0.98, x: "-50%" }}
+                transition={{ type: "spring", stiffness: 600, damping: 35, mass: 0.4 }}
                 style={{
                   position: "fixed",
                   top: "15vh",
