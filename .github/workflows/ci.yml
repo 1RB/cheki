@@ -59,7 +59,7 @@ jobs:
         run: |
           WEB=$(node -p "require('./package.json').version")
           TS=$(node -p "require('./sdks/typescript/package.json').version")
-          PY=$(python3 -c "import json; print(json.load(open('python/pyproject.toml'))['project']['version'])")
+          PY=$(grep '^version = ' python/pyproject.toml | head -1 | sed 's/version = "\(.*\)"/\1/')
 
           if [ "$WEB" != "$TS" ]; then
             echo "❌ Version mismatch: web ($WEB) vs TypeScript SDK ($TS)"
