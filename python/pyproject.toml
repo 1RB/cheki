@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "cheki"
-version = "1.4.0"
+version = "1.4.1"
 description = "Free, open-source Ethiopian bank/wallet receipt verification. 10 live banks: CBE, Telebirr, BOA, M-Pesa, Dashen, Awash, Zemen, CBE Birr, Siinqee, eBirr."
 readme = "README.md"
 license = {text = "MIT"}
