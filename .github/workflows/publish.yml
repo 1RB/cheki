@@ -20,13 +20,22 @@ jobs:
           registry-url: https://registry.npmjs.org
       - run: npm install --prefer-offline
       - run: npm run build || true
-      - run: npm publish --access public
+      - run: |
+          # Skip if version already published
+          if npm view cheki-verify@"$(node -p 'require("./package.json").version')" version >/dev/null 2>&1; then
+            echo "Version already published, skipping."
+            exit 0
+          fi
+          npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   publish-github-packages:
     name: Publish to GitHub Packages
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     defaults:
       run:
         working-directory: sdks/typescript
