@@ -17,6 +17,7 @@ import { ok, err } from "../core/types";
 export const MAX_RETRIES = 2;
 export const RETRY_BACKOFF_MS = 1000;
 export const DEFAULT_TIMEOUT_MS = 15000;
+export const SLOW_BANK_TIMEOUT_MS = 30000; // CBE legacy PDF endpoint is slow
 export const ETHIOPIAN_IP = "197.156.96.83";
 
 // Direct IPs for geo-blocked services
@@ -53,10 +54,12 @@ export abstract class BaseParser {
   ): Promise<Result<HttpResult>> {
     const url = this.buildUrl(ref, account, phone);
     const maxRetries = MAX_RETRIES;
+    // CBE legacy PDF endpoint is notoriously slow — give it more time
+    const timeoutMs = this.bankId === "cbe" ? SLOW_BANK_TIMEOUT_MS : DEFAULT_TIMEOUT_MS;
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
-        const result = await this.doFetch(url);
+        const result = await this.doFetch(url, timeoutMs);
         if (result.ok) return result;
 
         // On last attempt, return error or fallback
@@ -101,7 +104,7 @@ export abstract class BaseParser {
     });
   }
 
-  private async doFetch(url: string): Promise<Result<HttpResult>> {
+  private async doFetch(url: string, timeoutMs: number = DEFAULT_TIMEOUT_MS): Promise<Result<HttpResult>> {
     if (this.geoBlocked) {
       return this.fetchGeoBlocked(url);
     }
@@ -109,7 +112,7 @@ export abstract class BaseParser {
     try {
       const resp = await fetch(url, {
         headers: { "User-Agent": BROWSER_UA },
-        signal: AbortSignal.timeout(DEFAULT_TIMEOUT_MS),
+        signal: AbortSignal.timeout(timeoutMs),
       });
 
       if (resp.status === 404) {

@@ -5,7 +5,7 @@ import * as https from "node:https";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-function checkEndpoint(url: string, sslVerify: boolean): Promise<void> {
+function checkEndpoint(url: string, sslVerify: boolean, timeoutMs: number = 5000): Promise<void> {
   return new Promise((resolve, reject) => {
     if (!sslVerify) {
       // Use node:https with SSL verification disabled for banks with broken certs
@@ -15,12 +15,12 @@ function checkEndpoint(url: string, sslVerify: boolean): Promise<void> {
         () => resolve()
       );
       req.on("error", reject);
-      req.setTimeout(5000, () => req.destroy(new Error("timeout")));
+      req.setTimeout(timeoutMs, () => req.destroy(new Error("timeout")));
       return;
     }
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 5000);
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
     fetch(url, {
       method: "GET",
       signal: controller.signal,
@@ -56,7 +56,9 @@ export async function GET() {
           .replace("{ref}", "test")
           .replace("{account}", "00000000")
           .replace("{phone}", "0000000000");
-        await checkEndpoint(url, b.sslVerify);
+        // CBE legacy PDF endpoint is slow — give it 15s in health checks
+        const healthTimeout = b.id === "cbe" ? 15000 : 5000;
+        await checkEndpoint(url, b.sslVerify, healthTimeout);
         return {
           id: b.id,
           name: b.name,
