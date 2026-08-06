@@ -21,7 +21,7 @@ async function main() {
 Usage:
   cheki info                                      List supported banks
   cheki verify <bank> <ref> [-a <account>]        Verify a receipt
-  cheki verify-qr <bank> <qr-data>                Verify from QR code (BOA only)
+  cheki verify-qr <bank> <qr-data>                Verify from QR code
   cheki health                                    Check endpoint health
   cheki --version                                 Show version
 

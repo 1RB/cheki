@@ -1144,7 +1144,7 @@ export default function Home() {
         <section className="container" style={{ marginTop: "80px" }}>
           <div className="grid-2" style={{ gap: "48px", alignItems: "start" }}>
             {/* Sticky heading */}
-            <div style={{ position: "sticky", top: "calc(var(--nav-h) + 24px)" }}>
+            <div className="sticky-desktop" style={{ top: "calc(var(--nav-h) + 24px)" }}>
               <h2 style={{ fontSize: "clamp(24px, 4vw, 34px)", fontWeight: 800, letterSpacing: "-0.03em", lineHeight: 1.1, marginBottom: "16px" }}>
                 Everything you need,<br />nothing you don&apos;t
               </h2>

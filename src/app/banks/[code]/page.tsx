@@ -168,8 +168,8 @@ export default async function BankPage({ params }: { params: Promise<{ code: str
           </div>
 
           <aside>
-            <div style={{
-              position: "sticky", top: "calc(var(--nav-h) + 24px)", padding: "24px",
+            <div className="sticky-desktop" style={{
+              top: "calc(var(--nav-h) + 24px)", padding: "24px",
               borderRadius: "12px", background: "var(--surface)", border: "1px solid var(--border)",
             }}>
               <p style={{ fontSize: "12px", fontWeight: 600, color: "var(--ink-3)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "16px" }}>Other supported providers</p>
