@@ -57,7 +57,7 @@ export function errorToMessage(error: ChekiError): string {
     case "REF_ERROR":
       return `[${error.bank}] ${error.message}`;
     case "ENDPOINT_ERROR":
-      return error.message;
+      return `[${error.bank}] ${error.message}${error.fallbackUrl ? ` Try the new receipt format: ${error.fallbackUrl}` : ""}`;
     case "EXTRACTION_ERROR":
       return `[${error.bank}] ${error.message}`;
     case "MISSING_INPUT":
