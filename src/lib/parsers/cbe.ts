@@ -158,7 +158,6 @@ export class CBEParser extends BaseParser {
           kind: "ENDPOINT_ERROR" as const,
           bank: this.bankName,
           message: "CBE no longer supports the old FT reference format. Ask the sender for the new receipt link (mbreciept.cbe.com.et).",
-          fallbackUrl: options?.fallbackUrl,
         });
       }
 
@@ -169,7 +168,6 @@ export class CBEParser extends BaseParser {
         kind: "ENDPOINT_ERROR" as const,
         bank: this.bankName,
         message: "CBE no longer supports the old FT reference format. Ask the sender for the new receipt link (mbreciept.cbe.com.et).",
-        fallbackUrl: options?.fallbackUrl,
       });
     }
   }
