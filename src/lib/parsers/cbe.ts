@@ -124,6 +124,55 @@ export class CBEParser extends BaseParser {
       return "";
     }
   }
+
+  /**
+   * Override fetchReceipt for legacy CBE: the old apps.cbe.com.et:100 PDF endpoint
+   * has been decommissioned by CBE in favor of mbreciept.cbe.com.et links.
+   */
+  async fetchReceipt(
+    ref: string,
+    account?: string,
+    _phone?: string,
+    options?: { fallbackUrl?: string }
+  ) {
+    const { ok, err } = await import("../core/types");
+    const url = this.buildUrl(ref, account);
+    const timeoutMs = 30000;
+
+    try {
+      const resp = await fetch(url, {
+        headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" },
+        signal: AbortSignal.timeout(timeoutMs),
+      });
+
+      if (resp.status === 404) {
+        return err({
+          kind: "EXTRACTION_ERROR" as const,
+          bank: this.bankName,
+          message: "Receipt not found. Check the reference number and account suffix.",
+        });
+      }
+
+      if (!resp.ok) {
+        return err({
+          kind: "ENDPOINT_ERROR" as const,
+          bank: this.bankName,
+          message: "CBE no longer supports the old FT reference format. Ask the sender for the new receipt link (mbreciept.cbe.com.et).",
+          fallbackUrl: options?.fallbackUrl,
+        });
+      }
+
+      const data = Buffer.from(await resp.arrayBuffer());
+      return ok({ status: resp.status, data, contentType: "application/pdf" });
+    } catch {
+      return err({
+        kind: "ENDPOINT_ERROR" as const,
+        bank: this.bankName,
+        message: "CBE no longer supports the old FT reference format. Ask the sender for the new receipt link (mbreciept.cbe.com.et).",
+        fallbackUrl: options?.fallbackUrl,
+      });
+    }
+  }
 }
 
 export class CBENewParser extends BaseParser {
