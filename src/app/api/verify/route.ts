@@ -4,6 +4,7 @@ import { Verifier, errorToHttpStatus, errorToMessage } from "@/lib";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const regions = ["fra1"];
+export const maxDuration = 60; // CBE legacy PDF endpoint can take 10-30s
 
 const verifier = new Verifier();
 
