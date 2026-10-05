@@ -95,6 +95,42 @@ describe("detectBankFromUrl", () => {
     expect(result!.reference).toBe("ABC123");
   });
 
+  it("detects CBE Birr receipt URLs and lifts the payer phone", () => {
+    const result = detectBankFromUrl("https://cbepay1.cbe.com.et/aureceipt?TID=DHG00LX0AAA&PH=251911223344");
+    expect(result).not.toBeNull();
+    expect(result!.bank).toBe("cbebirr");
+    expect(result!.reference).toBe("DHG00LX0AAA");
+    expect(result!.phoneNumber).toBe("251911223344");
+  });
+
+  it("leaves phoneNumber unset when the CBE Birr URL has no PH", () => {
+    const result = detectBankFromUrl("https://cbepay1.cbe.com.et/aureceipt?TID=DHG00LX0AAA");
+    expect(result).not.toBeNull();
+    expect(result!.bank).toBe("cbebirr");
+    expect(result!.phoneNumber).toBeUndefined();
+  });
+
+  it("names the issuing bank from an eBirr white-label tenant", () => {
+    const result = detectBankFromUrl("https://receipt.ebirr.com/siinqee/SQ12345678");
+    expect(result).not.toBeNull();
+    expect(result!.bank).toBe("siinqee");
+    expect(result!.reference).toBe("SQ12345678");
+  });
+
+  it("maps a named eBirr tenant to its own bank", () => {
+    const result = detectBankFromUrl("https://receipt.ebirr.com/nib/abc123def");
+    expect(result).not.toBeNull();
+    expect(result!.bank).toBe("nib");
+    expect(result!.reference).toBe("abc123def");
+  });
+
+  it("falls back to eBirr for a tenant cheki does not name", () => {
+    const result = detectBankFromUrl("https://receipt.ebirr.com/somewhere/abc123def");
+    expect(result).not.toBeNull();
+    expect(result!.bank).toBe("ebirr");
+    expect(result!.reference).toBe("abc123def");
+  });
+
   it("returns null for unknown URLs", () => {
     const result = detectBankFromUrl("https://example.com/something");
     expect(result).toBeNull();

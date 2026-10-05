@@ -4,12 +4,13 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { motion } from "motion/react";
 import jsQR from "jsqr";
 import { banks, detectBank, type BankCode, type VerifyResult } from "@/lib/banks";
+import { detectBankFromUrl, isUrl } from "@/lib/adapters/url-detector";
 import { articles } from "@/lib/guides";
 import { Nav, Footer } from "@/components/Chrome";
 import { BankLogoByName } from "@/components/BankLogo";
 import { BankSelector } from "@/components/BankSelector";
 import { useTranslation } from "@/lib/i18n/use-translation";
-import { Icon, CodeIcon, Search01Icon, Camera01Icon, QrCode01Icon, CheckmarkCircle01Icon, ArrowRight01Icon, GithubIcon, StarIcon, Copy01Icon, CopyCheckIcon, ChevronDownIcon, Alert01Icon, Upload01Icon } from "@/components/Icon";
+import { Icon, CodeIcon, Camera01Icon, QrCode01Icon, CheckmarkCircle01Icon, ArrowRight01Icon, GithubIcon, StarIcon, Copy01Icon, CopyCheckIcon, ChevronDownIcon, Alert01Icon, Upload01Icon } from "@/components/Icon";
 import { extractTextFromImage } from "@/lib/ocr";
 import { NumberTicker } from "@/components/motion/number-ticker";
 import { MagneticButton } from "@/components/motion/magnetic-button";
@@ -18,6 +19,20 @@ import { StatefulButton } from "@/components/motion/stateful-button";
 import { useToastStack, ToastStack } from "@/components/motion/toast-stack";
 import { SwipeableList, type SwipeAction } from "@/components/motion/swipeable-list";
 import { Trash2 } from "lucide-react";
+
+/**
+ * One example receipt URL per live bank, used for the rolling placeholder.
+ * The formats come straight from the manifest, so they can never drift from
+ * what the API actually accepts.
+ */
+const PLACEHOLDER_EXAMPLES = banks
+  .filter((b) => b.status === "live" && b.endpointFormat.startsWith("http"))
+  .map((b) => ({
+    code: b.code,
+    name: b.shortName,
+    color: b.color,
+    url: b.endpointFormat.replace(/^https?:\/\//, ""),
+  }));
 
 export default function Home() {
   const { t } = useTranslation();
@@ -69,6 +84,26 @@ export default function Home() {
   const missingAccountNumber =
     !showQrPaste && inputMode === "reference" && (needsAccount || needsPhone) && !accountNumber.trim();
 
+  // What has been pasted: a receipt URL names its own bank, a bare reference
+  // is matched against each bank's pattern, and anything else stays silent.
+  const pasted = reference.trim();
+  const pastedIsUrl = pasted.length > 0 && isUrl(pasted);
+  const urlHit = pastedIsUrl ? detectBankFromUrl(pasted) : null;
+  const detectedCode = urlHit?.bank ?? (!pastedIsUrl && pasted ? detectBank(pasted) : null);
+  const detectedBank =
+    detectedCode == null
+      ? null
+      : banks.find((b) => b.code === (detectedCode === "cbe-new" ? "cbe" : detectedCode)) ?? null;
+
+  // Rolling placeholder — advances only while the field is empty.
+  const [phIndex, setPhIndex] = useState(0);
+  useEffect(() => {
+    if (pasted) return;
+    const id = setInterval(() => setPhIndex((i) => i + 1), 3000);
+    return () => clearInterval(id);
+  }, [pasted]);
+  const example = PLACEHOLDER_EXAMPLES[phIndex % PLACEHOLDER_EXAMPLES.length];
+
   useEffect(() => {
     setIsMobile(/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent));
     try {
@@ -80,8 +115,13 @@ export default function Home() {
   useEffect(() => {
     if (!reference) return;
     const trimmed = reference.trim();
-    if (trimmed.startsWith("http")) {
+    if (isUrl(trimmed)) {
       setInputMode("url");
+      // A receipt URL names its bank; pre-select it so switching to reference
+      // mode keeps the right account field. cbe-new is a parser alias for cbe.
+      const hit = detectBankFromUrl(trimmed);
+      const code = hit && (hit.bank === "cbe-new" ? "cbe" : hit.bank);
+      if (code && code !== bank && banks.some((b) => b.code === code)) setBank(code as BankCode);
       return;
     }
     setInputMode("reference");
@@ -905,7 +945,25 @@ ${receipt}`;
                     {inputMode === "url" ? "Receipt URL or link" : t("hero.referenceLabel")}
                   </label>
                   <div className="verify-row">
-                    <input className="verify-input" type="text" value={reference} onChange={(e) => setReference(e.target.value)} onKeyDown={(e) => e.key === "Enter" && !loading && handleVerify()} placeholder={inputMode === "url" ? "Paste receipt link..." : t("hero.referencePlaceholder")} spellCheck={false} autoCapitalize="characters" />
+                    <div className="verify-input-wrap">
+                      <input className="verify-input" type="text" value={reference} onChange={(e) => setReference(e.target.value)} onKeyDown={(e) => e.key === "Enter" && !loading && handleVerify()} placeholder="" aria-label={inputMode === "url" ? "Receipt URL or link" : t("hero.referenceLabel")} spellCheck={false} autoCapitalize="characters" />
+                      {!reference && (
+                        <span className="ph-overlay" aria-hidden="true">
+                          <span key={phIndex} className="ph-pop">
+                            <span className="ph-name" style={{ color: example.color, borderColor: `${example.color}40`, background: `${example.color}14` }}>{example.name}</span>
+                            <span className="ph-url">
+                              {example.url.split(/(\{[^}]*\})/).filter(Boolean).map((part, i) =>
+                                part.startsWith("{") ? (
+                                  <span key={i} className="ph-token" style={{ color: example.color }}>{part}</span>
+                                ) : (
+                                  <span key={i}>{part}</span>
+                                )
+                              )}
+                            </span>
+                          </span>
+                        </span>
+                      )}
+                    </div>
                     <StatefulButton
                       state={loading ? "loading" : result?.success ? "success" : "idle"}
                       disabled={loading || (inputMode === "reference" && isDisabled) || (!showQrPaste && !reference.trim()) || (showQrPaste && !qrData.trim()) || missingAccountNumber}
@@ -917,18 +975,21 @@ ${receipt}`;
                       {(inputMode === "reference" && isDisabled) ? t("banks.inDevelopment") : t("hero.verifyButton")}
                     </StatefulButton>
                   </div>
-                  {reference && inputMode === "reference" && detectBank(reference) && (
-                    <p style={{ fontSize: "12px", color: "var(--green)", marginTop: "6px", fontWeight: 500, display: "flex", alignItems: "center", gap: "4px" }}>
-                      <Icon icon={Search01Icon} size={12} color="var(--green)" /> Detected: {banks.find((b) => b.code === detectBank(reference))?.name}
+                  {pasted && detectedBank && (
+                    <p className="detected-chip">
+                      <BankLogoByName code={detectedBank.code} size={18} />
+                      <span>Detected <strong>{detectedBank.name}</strong></span>
+                      {urlHit?.reference && <span className="detected-ref">{urlHit.reference}</span>}
                     </p>
                   )}
-                  {reference && inputMode === "url" && reference.startsWith("http") && (
-                    <p style={{ fontSize: "12px", color: "var(--green)", marginTop: "6px", fontWeight: 500, display: "flex", alignItems: "center", gap: "4px" }}>
-                      <Icon icon={Search01Icon} size={12} color="var(--green)" /> Bank will be auto-detected from URL
+                  {pastedIsUrl && !urlHit && (
+                    <p className="detected-chip detected-chip--warn">
+                      <Icon icon={Alert01Icon} size={16} color="var(--amber-text)" />
+                      <span>We can&apos;t read a bank from this link yet.</span>
                     </p>
                   )}
-                  {!reference && inputMode === "reference" && (
-                    <p style={{ fontSize: "12px", color: "var(--ink-3)", marginTop: "8px", lineHeight: 1.5 }}>
+                  {!pasted && inputMode === "reference" && (
+                    <p className="form-hint">
                       A receipt link works here too — paste one and the bank is detected for you.
                     </p>
                   )}
@@ -1005,7 +1066,7 @@ ${receipt}`;
         {/* Result */}
         {result && result.success && (
           <section className="container-narrow" style={{ marginBottom: "32px", padding: "0 24px" }}>
-            <div ref={resultRef}><ReceiptCard result={result} copied={copied} onCopy={copyResult} /></div>
+            <div className="rc-slot" ref={resultRef}><ReceiptCard result={result} copied={copied} onCopy={copyResult} /></div>
           </section>
         )}
 
@@ -1423,20 +1484,27 @@ ${receipt}`;
   );
 }
 
-function AnimatedAmount({ value }: { value: string }) {
+function AnimatedAmount({ value, size = 15, weight = 500 }: { value: string; size?: number; weight?: number }) {
   // Parse amount and currency from "1,234 ETB" format
   const match = value.match(/^([\d,]+)\s*(.*)$/);
   if (!match) return <span>{value}</span>;
   const num = parseInt(match[1].replace(/,/g, ""), 10);
   const currency = match[2] || "";
   return (
-    <span style={{ display: "inline-flex", alignItems: "baseline", gap: "4px" }}>
-      <NumberTicker value={num} locale duration={0.6} stagger={0.03} style={{ fontSize: "15px", fontWeight: 500, fontFamily: "var(--mono)" }} />
-      {currency && <span style={{ fontSize: "13px", color: "var(--ink-3)" }}>{currency}</span>}
+    <span style={{ display: "inline-flex", alignItems: "baseline", gap: "6px" }}>
+      <NumberTicker value={num} locale duration={0.6} stagger={0.03} style={{ fontSize: `${size}px`, fontWeight: weight, fontFamily: "var(--mono)", letterSpacing: "-0.02em" }} />
+      {currency && (
+        <span style={{ fontSize: `${Math.max(12, Math.round(size * 0.4))}px`, fontWeight: 600, color: "var(--ink-3)" }}>{currency}</span>
+      )}
     </span>
   );
 }
 
+/**
+ * The verified receipt, laid out the way a payment reads: who paid, who was
+ * paid, how much, when, why. Everything a machine wants sits underneath in
+ * the details, the fee breakdown and the raw JSON.
+ */
 function ReceiptCard({ result, copied, onCopy }: { result: VerifyResult; copied: boolean; onCopy: () => void }) {
   // transitions.dev: panel reveal + success check animations
   const [revealed, setRevealed] = useState(false);
@@ -1447,45 +1515,46 @@ function ReceiptCard({ result, copied, onCopy }: { result: VerifyResult; copied:
   }, []);
 
   if (!result.verified) return null;
-  const rows: { label: string; value: string | undefined; mono?: boolean }[] = [
-    { label: "Bank", value: result.bank },
-    { label: "Reference", value: result.reference, mono: true },
+
+  // cbe-new is a parser alias for the same institution as cbe.
+  const bankCode = result.bank === "cbe-new" ? "cbe" : (result.bank ?? "");
+  const bankInfo = banks.find((b) => b.code === bankCode);
+  const bankName = bankInfo?.name ?? result.bank ?? "Bank";
+  const status = result.transactionStatus || "Verified";
+  const amount = result.amount != null ? `${result.amount.toLocaleString()} ${result.currency || "ETB"}` : null;
+  const senderAccount = result.senderAccount || result.bankAccountNumber;
+  const receiverAccount = result.receiverAccount;
+
+  const detailRows = [
     { label: "Invoice No", value: result.invoiceNumber, mono: true },
-    { label: "Status", value: result.transactionStatus || "Verified" },
-    { label: "Amount", value: result.amount != null ? `${result.amount.toLocaleString()} ${result.currency || "ETB"}` : undefined, mono: true },
-    { label: "Sender", value: result.senderName },
-    { label: "Sender Account", value: result.senderAccount, mono: true },
-    { label: "Receiver", value: result.receiverName },
-    { label: "Receiver Account", value: result.receiverAccount, mono: true },
-    { label: "Bank Account", value: result.bankAccountNumber, mono: true },
-    { label: "Bank Account Name", value: result.bankAccountName },
-    { label: "Date", value: result.date, mono: true },
     { label: "Branch", value: result.branch },
-    { label: "Reason", value: result.reason },
     { label: "Payment Mode", value: result.paymentMode },
     { label: "Payment Channel", value: result.paymentChannel },
-  ];
+    { label: "Bank Account", value: result.bankAccountNumber, mono: true },
+    { label: "Account Name", value: result.bankAccountName },
+  ].filter((r) => r.value);
 
-  // Fee breakdown section (Telebirr)
-  const hasFees = result.settledAmount != null || result.serviceFee != null || result.totalPaid != null;
-  const feeRows: { label: string; value: string | undefined; mono?: boolean; bold?: boolean }[] = [
+  const feeRows = [
     { label: "Settled Amount", value: result.settledAmount != null ? `${result.settledAmount.toLocaleString()} ETB` : undefined, mono: true },
     { label: "Stamp Duty", value: result.stampDuty != null ? `${result.stampDuty} ETB` : undefined, mono: true },
     { label: "Discount", value: result.discountAmount != null ? `${result.discountAmount} ETB` : undefined, mono: true },
     { label: "Service Fee", value: result.serviceFee != null ? `${result.serviceFee} ETB` : undefined, mono: true },
     { label: "Service Fee VAT", value: result.serviceFeeVat != null ? `${result.serviceFeeVat} ETB` : undefined, mono: true },
     { label: "Total Paid", value: result.totalPaid != null ? `${result.totalPaid.toLocaleString()} ETB` : undefined, mono: true, bold: true },
-  ];
-  const visibleFeeRows = feeRows.filter((r) => r.value);
-  const visibleRows = rows.filter((r) => r.value);
+  ].filter((r) => r.value);
 
   // The header copies the receipt as readable text — the shape someone drops
   // into a message. The JSON stays behind the disclosure below, for machines.
   const copySummary = () => {
-    const lines = [
-      "Receipt verified — cheki",
-      ...visibleRows.map((r) => `${r.label}: ${r.value}`),
-    ];
+    const lines = ["Receipt verified — cheki", `Bank: ${bankName} (${status})`];
+    if (amount) lines.push(`Amount: ${amount}`);
+    if (result.date) lines.push(`Date: ${result.date}`);
+    const from = [result.senderName, senderAccount].filter(Boolean).join(" · ");
+    const to = [result.receiverName, receiverAccount].filter(Boolean).join(" · ");
+    if (from) lines.push(`From: ${from}`);
+    if (to) lines.push(`To: ${to}`);
+    if (result.reason) lines.push(`Reason: ${result.reason}`);
+    if (result.reference) lines.push(`Reference: ${result.reference}`);
     if (result.sourceUrl) lines.push(`Source: ${result.sourceUrl}`);
     navigator.clipboard.writeText(lines.join("\n"));
     setSummaryCopied(true);
@@ -1493,70 +1562,119 @@ function ReceiptCard({ result, copied, onCopy }: { result: VerifyResult; copied:
   };
 
   return (
-    <section className="t-panel-slide" data-open={revealed} style={{ borderRadius: "12px", overflow: "visible", background: "var(--receipt-bg)", border: "1px solid var(--dotted)", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
-      <div style={{ padding: "20px 24px", borderBottom: "2px dotted var(--dotted)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-          <motion.span
-            initial={{ opacity: 0, scale: 0.5, rotate: -45 }}
-            animate={{ opacity: 1, scale: 1, rotate: 0 }}
-            transition={{ type: "spring", stiffness: 260, damping: 18, mass: 0.8, delay: 0.12 }}
-            style={{ display: "inline-flex", alignItems: "center", justifyContent: "center" }}
-          >
-            <Icon icon={CheckmarkCircle01Icon} size={24} color="var(--green)" />
-          </motion.span>
-          <span style={{ fontSize: "16px", fontWeight: 700, color: "var(--ink)" }}>receipt verified</span>
-          {result.cached && (
-            <span style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.04em", color: "var(--green-dark)", background: "var(--green-light)", border: "1px solid color-mix(in srgb, var(--green) 40%, transparent)", borderRadius: "999px", padding: "3px 9px", whiteSpace: "nowrap" }}>
-              instant · repeat check
+    <section className="t-panel-slide rc" data-open={revealed} style={{ borderRadius: "12px", overflow: "visible", background: "var(--receipt-bg)", border: "1px solid var(--dotted)", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
+      {/* Who issued it, and whether the bank confirmed it */}
+      <div className="rc-head">
+        <div className="rc-bank">
+          <BankLogoByName code={bankCode || "cheki"} size={36} />
+          <div className="rc-bank-text">
+            <span className="rc-bank-name">{bankName}</span>
+            <span className="rc-bank-sub">
+              {bankInfo?.type === "wallet" || bankInfo?.type === "mobile" ? "Mobile wallet" : "Bank"} receipt
             </span>
-          )}
-        </div>
-        <button onClick={copySummary} style={{ padding: "6px 14px", fontSize: "12px", fontWeight: 500, border: "1px solid var(--border)", borderRadius: "6px", background: "var(--surface)", color: summaryCopied ? "var(--green)" : "var(--ink-2)", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px", flexShrink: 0 }}>
-          <Icon icon={summaryCopied ? CopyCheckIcon : Copy01Icon} size={14} color={summaryCopied ? "var(--green)" : "var(--ink-2)"} />
-          {summaryCopied ? "Copied" : "Copy"}
-        </button>
-      </div>
-      <div style={{ padding: "8px 24px", overflow: "hidden" }}>
-        {visibleRows.map((row, i) => (
-          <div key={i}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", padding: "12px 0" }}>
-              <span style={{ fontSize: "13px", color: "var(--ink-3)", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.03em", flexShrink: 0 }}>{row.label}</span>
-              <span style={{ fontSize: "15px", color: "var(--ink)", textAlign: "right", fontFamily: row.mono ? "var(--mono)" : "var(--sans)", fontWeight: row.mono ? 500 : 400, wordBreak: "break-word" }}>{row.label === "Amount" && row.value ? <AnimatedAmount value={row.value} /> : row.value}</span>
-            </div>
-            {i < visibleRows.length - 1 && <hr className="dotted-line" />}
           </div>
-        ))}
+        </div>
+        <div className="rc-head-right">
+          <span className="rc-status">
+            <motion.span
+              initial={{ opacity: 0, scale: 0.5, rotate: -45 }}
+              animate={{ opacity: 1, scale: 1, rotate: 0 }}
+              transition={{ type: "spring", stiffness: 260, damping: 18, mass: 0.8, delay: 0.12 }}
+              style={{ display: "inline-flex" }}
+            >
+              <Icon icon={CheckmarkCircle01Icon} size={15} color="var(--green)" />
+            </motion.span>
+            {status}
+          </span>
+          {result.cached && <span className="rc-cache">instant · repeat check</span>}
+          <button className="rc-copybtn" onClick={copySummary}>
+            <Icon icon={summaryCopied ? CopyCheckIcon : Copy01Icon} size={14} color={summaryCopied ? "var(--green)" : "var(--ink-2)"} />
+            {summaryCopied ? "Copied" : "Copy"}
+          </button>
+        </div>
       </div>
-      {visibleFeeRows.length > 0 && (
-        <div style={{ padding: "8px 24px", borderTop: "2px dotted var(--dotted)" }}>
-          <p style={{ fontSize: "11px", color: "var(--ink-3)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", padding: "12px 0 4px" }}>Fee breakdown</p>
-          {visibleFeeRows.map((row, i) => (
+
+      {/* How much */}
+      <div className="rc-amount">
+        {amount ? (
+          <AnimatedAmount value={amount} size={34} weight={700} />
+        ) : (
+          <span className="rc-amount-none">amount not published</span>
+        )}
+      </div>
+
+      {/* Who paid whom, when, and why */}
+      <div className="rc-grid">
+        <div className="rc-cell">
+          <span className="rc-lbl">From</span>
+          <span className="rc-val">{result.senderName || "—"}</span>
+          {senderAccount && <span className="rc-sub">{senderAccount}</span>}
+        </div>
+        <div className="rc-cell">
+          <span className="rc-lbl">To</span>
+          <span className="rc-val">{result.receiverName || "—"}</span>
+          {receiverAccount && <span className="rc-sub">{receiverAccount}</span>}
+        </div>
+        <div className="rc-cell">
+          <span className="rc-lbl">Date</span>
+          <span className="rc-val rc-val--mono">{result.date || "—"}</span>
+        </div>
+        <div className="rc-cell">
+          <span className="rc-lbl">Reference</span>
+          <span className="rc-val rc-val--mono">{result.reference || "—"}</span>
+        </div>
+        <div className="rc-cell rc-cell--wide">
+          <span className="rc-lbl">Reason</span>
+          <span className="rc-val">{result.reason || "—"}</span>
+        </div>
+      </div>
+
+      {detailRows.length > 0 && (
+        <div className="rc-section">
+          <p className="rc-section-title">Details</p>
+          {detailRows.map((row, i) => (
             <div key={i}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", padding: "10px 0" }}>
-                <span style={{ fontSize: "13px", color: "var(--ink-3)", fontWeight: 500, flexShrink: 0 }}>{row.label}</span>
-                <span style={{ fontSize: "14px", color: row.bold ? "var(--ink)" : "var(--ink-2)", textAlign: "right", fontFamily: "var(--mono)", fontWeight: row.bold ? 700 : 400 }}>{row.value}</span>
+              <div className="rc-row">
+                <span className="rc-lbl">{row.label}</span>
+                <span className={row.mono ? "rc-row-val rc-row-val--mono" : "rc-row-val"}>{row.value}</span>
               </div>
-              {i < visibleFeeRows.length - 1 && <hr className="dotted-line" />}
+              {i < detailRows.length - 1 && <hr className="dotted-line" />}
             </div>
           ))}
-          {result.amountInWords && (
-            <p style={{ fontSize: "12px", color: "var(--ink-3)", fontStyle: "italic", padding: "10px 0 4px", textTransform: "capitalize" }}>{result.amountInWords}</p>
-          )}
         </div>
       )}
+
+      {feeRows.length > 0 && (
+        <div className="rc-section">
+          <p className="rc-section-title">Fee breakdown</p>
+          {feeRows.map((row, i) => (
+            <div key={i}>
+              <div className="rc-row">
+                <span className="rc-lbl">{row.label}</span>
+                <span className={row.mono ? "rc-row-val rc-row-val--mono" : "rc-row-val"} style={row.bold ? { fontWeight: 700, color: "var(--ink)" } : undefined}>{row.value}</span>
+              </div>
+              {i < feeRows.length - 1 && <hr className="dotted-line" />}
+            </div>
+          ))}
+          {result.amountInWords && <p className="rc-words">{result.amountInWords}</p>}
+        </div>
+      )}
+
       {result.sourceUrl && (
-        <div style={{ padding: "16px 24px", borderTop: "2px dotted var(--dotted)", background: "var(--surface-alt)" }}>
-          <p style={{ fontSize: "11px", color: "var(--ink-3)", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Source (public bank endpoint)</p>
-          <a href={result.sourceUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: "12px", fontFamily: "var(--mono)", color: "var(--green)", wordBreak: "break-all", textDecoration: "none", display: "flex", alignItems: "flex-start", gap: "6px" }}>
-            <span style={{ flex: 1 }}>{result.sourceUrl}</span>
+        <div className="rc-foot">
+          <p className="rc-section-title">Source (public bank endpoint)</p>
+          <a href={result.sourceUrl} target="_blank" rel="noopener noreferrer" className="rc-source">
+            <span>{result.sourceUrl}</span>
             <Icon icon={ArrowRight01Icon} size={12} color="var(--green)" />
           </a>
         </div>
       )}
-      <div style={{ padding: "16px 24px", borderTop: "2px dotted var(--dotted)", background: "var(--surface-alt)" }}>
+
+      {/* For developers: the exact payload we got back */}
+      <div className="rc-foot">
         <details>
           <summary style={{ padding: "10px 14px", fontSize: "13px" }}>
-            <span style={{ fontSize: "11px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--ink-3)" }}>Raw JSON</span>
+            <span className="rc-section-title" style={{ padding: 0 }}>Raw JSON</span>
           </summary>
           <div style={{ padding: "0 14px 14px" }}>
             <pre style={{ margin: 0, padding: "12px 14px", fontSize: "12px", lineHeight: 1.6, fontFamily: "var(--mono)", background: "var(--surface)", border: "1px solid var(--dotted)", borderRadius: "8px", color: "var(--ink-2)", overflow: "auto", maxHeight: "340px" }}>{JSON.stringify(result, null, 2)}</pre>

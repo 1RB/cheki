@@ -10,12 +10,25 @@
  *   - awashpay.awashbank.com:8225/-{ref}   → Awash
  *   - share.zemenbank.com/rt/{ref}/pdf      → Zemen
  *   - m-pesabusiness.safaricom.et/...       → M-Pesa
+ *   - cbepay1.cbe.com.et/aureceipt?TID=     → CBE Birr
+ *   - receipt.ebirr.com/{tenant}/{token}    → eBirr white-label (Siinqee, …)
  */
 export interface DetectedReceipt {
   bank: string;
   reference: string;
   accountNumber?: string;
+  phoneNumber?: string;
 }
+
+/** eBirr white-label tenants that cheki recognises by name. */
+const EBIRR_TENANTS: Record<string, string> = {
+  siinqee: "siinqee",
+  nib: "nib",
+  wegagen: "wegagen",
+  ahadu: "ahadu",
+  kaafimf: "kaafi",
+  kaafi: "kaafi",
+};
 
 export function detectBankFromUrl(input: string): DetectedReceipt | null {
   try {
@@ -99,6 +112,25 @@ export function detectBankFromUrl(input: string): DetectedReceipt | null {
     if (host.includes("safaricom.et")) {
       const trx = url.searchParams.get("trxNo");
       if (trx) return { bank: "mpesa", reference: trx };
+    }
+
+    // CBE Birr: https://cbepay1.cbe.com.et/aureceipt?TID={REFERENCE}&PH={PAYER_PHONE}
+    if (host.startsWith("cbepay1") || host.startsWith("cbepay2")) {
+      const tid = url.searchParams.get("TID");
+      if (tid) {
+        const phone = url.searchParams.get("PH");
+        return { bank: "cbebirr", reference: tid, ...(phone ? { phoneNumber: phone } : {}) };
+      }
+    }
+
+    // eBirr white-label: https://receipt.ebirr.com/{tenant}/{token}
+    // The tenant names the issuing bank; an unknown tenant falls back to eBirr.
+    if (host.includes("ebirr.com")) {
+      const parts = url.pathname.split("/").filter(Boolean);
+      if (parts.length >= 2) {
+        const tenant = parts[0].toLowerCase();
+        return { bank: EBIRR_TENANTS[tenant] ?? "ebirr", reference: parts[parts.length - 1] };
+      }
     }
 
     return null;

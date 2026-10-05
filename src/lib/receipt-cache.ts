@@ -88,10 +88,10 @@ export function cacheKeyFor(input: {
 /**
  * Cache key for an incoming API body.
  *
- * The verifier rewrites a receipt URL into (bank, reference, accountNumber)
- * before fetching, so the key has to mirror that rewrite. Otherwise the same
- * URL pasted with a different pre-selected bank would miss the cache every
- * time, and the point of caching is precisely that it does not.
+ * The verifier rewrites a receipt URL into (bank, reference, accountNumber,
+ * phoneNumber) before fetching, so the key has to mirror that rewrite.
+ * Otherwise the same URL pasted with a different pre-selected bank would miss
+ * the cache every time, and the point of caching is precisely that it does not.
  */
 export function verificationCacheKey(input: {
   bank?: string;
@@ -109,6 +109,9 @@ export function verificationCacheKey(input: {
       normalized.reference = detected.reference;
       if (detected.accountNumber && !input.accountNumber) {
         normalized.accountNumber = detected.accountNumber;
+      }
+      if (detected.phoneNumber && !input.phoneNumber) {
+        normalized.phoneNumber = detected.phoneNumber;
       }
     }
   }

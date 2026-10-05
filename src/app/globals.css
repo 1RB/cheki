@@ -558,6 +558,244 @@ details > p, details > div {
 }
 @media (max-width: 560px) {
   .verify-row { flex-direction: column; gap: 10px; }
+  .verify-input-wrap { flex: none; }
+}
+
+
+/* ── Rolling placeholder ──────────────────────────────────────────────
+   While the field is empty it shows one live bank's real receipt URL,
+   rotating every 3s, with the reference token in the bank's colour. */
+.verify-input-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+.verify-input-wrap .verify-input {
+  width: 100%;
+}
+.ph-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  overflow: hidden;
+  white-space: nowrap;
+  pointer-events: none;
+  font-family: var(--mono);
+  font-size: 13px;
+}
+.ph-pop {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  animation: ph-pop 0.4s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+.ph-name {
+  flex-shrink: 0;
+  font-family: var(--sans);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 2px 7px;
+  border: 1px solid;
+  border-radius: 999px;
+}
+.ph-url {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--ink-3);
+}
+.ph-token {
+  font-weight: 700;
+}
+@keyframes ph-pop {
+  from { opacity: 0; transform: translateY(5px); }
+  to   { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ph-pop { animation: none; }
+}
+
+/* ── Detected bank under the input ──────────────────────────────────── */
+.form-hint {
+  margin-top: 8px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ink-3);
+}
+.detected-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--green-dark);
+}
+.detected-chip strong { font-weight: 700; }
+.detected-chip--warn { color: var(--amber-text); }
+.detected-ref {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
+/* ── Verified receipt: reads like the payment it describes ──────────── */
+/* scrollIntoView on verify must clear the sticky header */
+.rc-slot { scroll-margin-top: 84px; }
+.rc-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 18px 24px;
+  border-bottom: 2px dotted var(--dotted);
+}
+.rc-bank { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.rc-bank-text { display: flex; flex-direction: column; min-width: 0; }
+.rc-bank-name { font-size: 16px; font-weight: 700; color: var(--ink); }
+.rc-bank-sub { font-size: 12px; color: var(--ink-3); }
+.rc-head-right { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.rc-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 11px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: var(--green-dark);
+  background: var(--green-light);
+  border: 1px solid color-mix(in srgb, var(--green) 40%, transparent);
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.rc-cache {
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--ink-3);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.rc-copybtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--ink-2);
+  cursor: pointer;
+}
+.rc-amount {
+  padding: 22px 24px;
+  text-align: center;
+  border-bottom: 2px dotted var(--dotted);
+}
+.rc-amount-none {
+  font-size: 15px;
+  font-style: italic;
+  color: var(--ink-3);
+}
+.rc-grid { display: grid; grid-template-columns: 1fr 1fr; }
+.rc-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 24px;
+  min-width: 0;
+  border-bottom: 1px dotted var(--dotted);
+}
+.rc-cell:nth-child(even) { border-left: 1px dotted var(--dotted); }
+.rc-cell:last-child { border-bottom: none; }
+.rc-cell--wide { grid-column: 1 / -1; }
+.rc-lbl {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-3);
+}
+.rc-val {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--ink);
+  word-break: break-word;
+}
+.rc-val--mono { font-family: var(--mono); font-size: 15px; }
+.rc-sub {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--ink-3);
+  word-break: break-all;
+}
+.rc-section {
+  padding: 4px 24px 8px;
+  border-top: 2px dotted var(--dotted);
+}
+.rc-section-title {
+  margin: 0;
+  padding: 12px 0 4px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-3);
+}
+.rc-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 11px 0;
+}
+.rc-row-val {
+  font-size: 14px;
+  color: var(--ink-2);
+  text-align: right;
+  word-break: break-word;
+}
+.rc-row-val--mono { font-family: var(--mono); }
+.rc-words {
+  margin: 6px 0 8px;
+  font-size: 12px;
+  font-style: italic;
+  color: var(--ink-3);
+  text-transform: capitalize;
+}
+.rc-foot {
+  padding: 14px 24px;
+  border-top: 2px dotted var(--dotted);
+  background: var(--surface-alt);
+}
+.rc-source {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--green);
+  text-decoration: none;
+  word-break: break-all;
+}
+@media (max-width: 640px) {
+  .rc-grid { grid-template-columns: 1fr; }
+  .rc-cell:nth-child(even) { border-left: none; }
+  .rc-head { padding: 16px 18px; }
+  .rc-cell, .rc-section, .rc-foot, .rc-amount { padding-left: 18px; padding-right: 18px; }
 }
 
 /* mobile: touch targets */

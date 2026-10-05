@@ -48,6 +48,9 @@ export class Verifier {
         if (detected.accountNumber && !accountNumber) {
           accountNumber = detected.accountNumber;
         }
+        if (detected.phoneNumber && !phoneNumber) {
+          phoneNumber = detected.phoneNumber;
+        }
       } else {
         return err({
           kind: "MISSING_INPUT",
