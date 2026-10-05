@@ -116,7 +116,7 @@ export default async function OpenGraphImage() {
           }}
         >
           <span style={{ fontSize: 18, fontWeight: 500, color: "#888" }}>
-            chekiapp.vercel.app
+            cheki.et
           </span>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <span

@@ -13,7 +13,7 @@ export const metadata: Metadata = {
     description:
       "Six receipt verification services in Ethiopia. All use the same public bank endpoints. Compare pricing, features, and transparency.",
     type: "website",
-    url: "https://chekiapp.vercel.app/compare",
+    url: "https://cheki.et/compare",
   },
   twitter: {
     card: "summary_large_image",

@@ -26,7 +26,7 @@ export function generateMetadata({ params }: { params: Promise<{ slug: string }>
         description: article.seo.description,
         type: "article",
         publishedTime: article.date,
-        url: `https://chekiapp.vercel.app/guides/${article.slug}`,
+        url: `https://cheki.et/guides/${article.slug}`,
       },
       twitter: {
         card: "summary_large_image",
@@ -255,9 +255,9 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Home", item: "https://chekiapp.vercel.app/" },
-      { "@type": "ListItem", position: 2, name: "Guides", item: "https://chekiapp.vercel.app/guides" },
-      { "@type": "ListItem", position: 3, name: article.title, item: `https://chekiapp.vercel.app/guides/${article.slug}` },
+      { "@type": "ListItem", position: 1, name: "Home", item: "https://cheki.et/" },
+      { "@type": "ListItem", position: 2, name: "Guides", item: "https://cheki.et/guides" },
+      { "@type": "ListItem", position: 3, name: article.title, item: `https://cheki.et/guides/${article.slug}` },
     ],
   };
 

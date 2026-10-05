@@ -535,6 +535,31 @@ details > p, details > div {
   details > p, details > div { padding: 12px 14px; font-size: 13px; }
 }
 
+/* The verify form is one field and one button on a single line: the form
+   reads as a single action rather than a stack of labelled controls. */
+.verify-row {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+.verify-input {
+  flex: 1;
+  min-width: 0;
+  padding: 13px 16px;
+  font-size: 16px;
+  font-family: var(--mono);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink);
+}
+.verify-input:focus {
+  box-shadow: 0 0 0 3px var(--green-light);
+}
+@media (max-width: 560px) {
+  .verify-row { flex-direction: column; gap: 10px; }
+}
+
 /* mobile: touch targets */
 @media (max-width: 640px) {
   input, select, button { min-height: 44px; }

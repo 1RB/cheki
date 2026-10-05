@@ -1,6 +1,6 @@
 # cheki Dart SDK
 
-A Dart client library for [cheki](https://chekiapp.vercel.app), a free
+A Dart client library for [cheki](https://cheki.et), a free
 Ethiopian receipt verification service. Verify bank transfer receipts from
 Ethiopian banks via a simple typed API.
 
@@ -56,7 +56,7 @@ The main client class. Creates an HTTP connection to the cheki API.
 
 | Parameter   | Type           | Default                        | Description                    |
 | ----------- | -------------- | ------------------------------ | ------------------------------ |
-| `baseUrl`   | `String?`      | `https://chekiapp.vercel.app`  | Override the API base URL.     |
+| `baseUrl`   | `String?`      | `https://cheki.et`  | Override the API base URL.     |
 | `client`    | `http.Client?` | `http.Client()`                | Inject a custom HTTP client.   |
 | `timeout`   | `Duration?`    | `Duration(seconds: 30)`        | Per-request timeout. `null` disables. |
 
@@ -127,7 +127,7 @@ service. This is a convenience method that does not make an HTTP request.
 
 ```dart
 final url = client.getReceiptUrl('cbe', 'RT123456789');
-print(url); // https://chekiapp.vercel.app/receipt/cbe/RT123456789
+print(url); // https://cheki.et/receipt/cbe/RT123456789
 ```
 
 ##### `close()`

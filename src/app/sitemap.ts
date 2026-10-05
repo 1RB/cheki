@@ -4,7 +4,7 @@ import { guides } from "@/lib/guides";
 import { allSeoPages } from "@/lib/seo-pages";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const base = "https://chekiapp.vercel.app";
+  const base = "https://cheki.et";
   const now = new Date();
 
   const staticPages: MetadataRoute.Sitemap = [

@@ -11,7 +11,6 @@ import { BankSelector } from "@/components/BankSelector";
 import { useTranslation } from "@/lib/i18n/use-translation";
 import { Icon, CodeIcon, Search01Icon, Camera01Icon, QrCode01Icon, CheckmarkCircle01Icon, ArrowRight01Icon, GithubIcon, StarIcon, Copy01Icon, CopyCheckIcon, ChevronDownIcon, Alert01Icon, Upload01Icon } from "@/components/Icon";
 import { extractTextFromImage } from "@/lib/ocr";
-import { Tabs, TabsList, TabsTrigger } from "@/components/motion/tabs";
 import { NumberTicker } from "@/components/motion/number-ticker";
 import { MagneticButton } from "@/components/motion/magnetic-button";
 import { AnimatedBadge } from "@/components/motion/animated-badge";
@@ -29,6 +28,7 @@ export default function Home() {
   const [result, setResult] = useState<VerifyResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [agentCopied, setAgentCopied] = useState(false);
   const [history, setHistory] = useState<{ bank: string; ref: string; date: string; amount?: number; currency?: string; senderName?: string; receiverName?: string }[]>([]);
   const [showScanner, setShowScanner] = useState(false);
   const [inputMode, setInputMode] = useState<"reference" | "url" | "photo">("reference");
@@ -62,6 +62,12 @@ export default function Home() {
   const needsPhone = selectedBank.requiresPhone;
   const isDisabled = selectedBank.status === "soon";
   const isGeoBlocked = selectedBank.geoBlocked;
+
+  // The API answers MISSING_INPUT when a bank needs an account number and we
+  // did not send one. A non-developer should never have to read that error,
+  // so the button waits instead.
+  const missingAccountNumber =
+    !showQrPaste && inputMode === "reference" && (needsAccount || needsPhone) && !accountNumber.trim();
 
   useEffect(() => {
     setIsMobile(/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent));
@@ -165,7 +171,16 @@ export default function Home() {
       const resp = await fetch("/api/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ bank, reference: reference.trim(), accountNumber: accountNumber.trim() || undefined }),
+        body: JSON.stringify({
+          bank,
+          reference: reference.trim(),
+          // CBE Birr identifies the payer by phone, not account number. The
+          // UI keeps both in one field, so route it to the field the parser
+          // actually reads.
+          ...(needsPhone
+            ? { phoneNumber: accountNumber.trim() || undefined }
+            : { accountNumber: accountNumber.trim() || undefined }),
+        }),
       });
       const data: VerifyResult = await resp.json();
       if (!data.success) {
@@ -198,7 +213,7 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
-  }, [bank, reference, accountNumber, isDisabled, history, showQrPaste, qrData, verifyQr, isGeoBlocked, isMobile, buildFallbackUrl]);
+  }, [bank, reference, accountNumber, needsPhone, isDisabled, history, showQrPaste, qrData, verifyQr, isGeoBlocked, isMobile, buildFallbackUrl]);
 
   useEffect(() => {
     if (result && result.success && resultRef.current) {
@@ -534,6 +549,52 @@ export default function Home() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  // ── Agent hand-off ─────────────────────────────────────────────────────
+  // Same idea as clicking "verify" by hand, except the reader is Claude Code
+  // or Cursor. Built at click time from window.location.origin so the copied
+  // prompt is correct on whatever domain the visitor arrived on.
+
+  const copyAgentPrompt = useCallback(() => {
+    const origin = typeof window !== "undefined" ? window.location.origin : "https://cheki.et";
+    const receipt = reference.trim()
+      ? [
+          `Bank: ${bank}`,
+          `Reference: ${reference.trim()}`,
+          accountNumber.trim() ? `Account: ${accountNumber.trim()}` : null,
+        ]
+          .filter(Boolean)
+          .join("\n")
+      : "Bank: \nReference: \nAccount: ";
+
+    const prompt = `Verify an Ethiopian bank receipt with cheki. It is free, needs no signup, and no API key.
+
+1. Read ${origin}/llms.txt — it documents every endpoint, bank code and reference format.
+2. POST ${origin}/api/verify with a JSON body:
+     {"bank": "cbe", "reference": "FT26140P01YB", "accountNumber": "60536171"}
+   accountNumber is required only for cbe and boa. If you have a receipt URL
+   instead of a reference, send it in "reference" and cheki detects the bank.
+3. Use the response:
+     result.verified        the answer — true means the bank confirms this receipt
+     result.amount          amount in ETB
+     result.senderName      who paid
+     result.receiverName    who was paid
+     result.sourceUrl       the public bank endpoint that produced this
+   A repeat check of the same receipt returns "cached": true instantly, so
+   re-verifying before releasing goods costs nothing.
+4. To reconcile many receipts, POST ${origin}/api/verify/batch with
+   {"receipts": [{...}, ...]} — up to 50 per call.
+5. GET ${origin}/api/health reports per-bank latency if a check is slow.
+
+Source: https://github.com/1RB/cheki
+
+Receipt I want verified:
+${receipt}`;
+
+    navigator.clipboard.writeText(prompt);
+    setAgentCopied(true);
+    setTimeout(() => setAgentCopied(false), 3000);
+  }, [bank, reference, accountNumber]);
+
   // ── Smart fallback for geo-blocked banks ──────────────────────────────
   // When Telebirr/M-Pesa verification fails (server can't reach the bank),
   // the user can verify from their own browser. Two paths:
@@ -586,7 +647,7 @@ export default function Home() {
     o.appendChild(b);
     document.body.appendChild(o);
     o.addEventListener('click',function(e){if(e.target===o)o.remove();});
-    fetch('https://chekiapp.vercel.app/api/parse',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({bank:bank,html:html,url:url})})
+    fetch('https://cheki.et/api/parse',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({bank:bank,html:html,url:url})})
     .then(function(r){return r.json();})
     .then(function(d){
       if(d.success){
@@ -603,7 +664,7 @@ export default function Home() {
         if(d.transactionStatus)rows.push(['Status',d.transactionStatus]);
         if(d.paymentMode)rows.push(['Mode',d.paymentMode]);
         var rh=rows.map(function(r){return '<div style="display:flex;justify-content:space-between;padding:7px 0;font-size:14px;border-bottom:1px solid #f0f0f0"><span style="color:#888;flex-shrink:0">'+r[0]+'</span><span style="color:#1a1a1a;font-weight:500;text-align:right;word-break:break-word">'+r[1]+'</span></div>';}).join('');
-        b.innerHTML='<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="11" fill="#16a34a"/><path d="M7 12.5l3 3 7-7" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg><span style="font-size:16px;font-weight:700;color:#1a1a1a">Receipt verified</span></div><div style="border-top:1px solid #eee;padding-top:8px">'+rh+'</div><div style="display:flex;gap:8px;margin-top:16px"><a href="https://chekiapp.vercel.app" target="_blank" style="flex:1;text-align:center;padding:10px;border:1px solid #16a34a;border-radius:8px;background:#fff;color:#16a34a;font-size:13px;font-weight:600;text-decoration:none">Open cheki</a><button onclick="document.getElementById(\\'cheki-overlay\\').remove()" style="flex:1;padding:10px;border:none;border-radius:8px;background:#16a34a;color:#fff;font-size:13px;font-weight:600;cursor:pointer">Done</button></div>';
+        b.innerHTML='<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="11" fill="#16a34a"/><path d="M7 12.5l3 3 7-7" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg><span style="font-size:16px;font-weight:700;color:#1a1a1a">Receipt verified</span></div><div style="border-top:1px solid #eee;padding-top:8px">'+rh+'</div><div style="display:flex;gap:8px;margin-top:16px"><a href="https://cheki.et" target="_blank" style="flex:1;text-align:center;padding:10px;border:1px solid #16a34a;border-radius:8px;background:#fff;color:#16a34a;font-size:13px;font-weight:600;text-decoration:none">Open cheki</a><button onclick="document.getElementById(\\'cheki-overlay\\').remove()" style="flex:1;padding:10px;border:none;border-radius:8px;background:#16a34a;color:#fff;font-size:13px;font-weight:600;cursor:pointer">Done</button></div>';
       }else{
         b.innerHTML='<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px"><svg width="20" height="20" viewBox="0 0 24 24" fill="#dc2626"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15h2v-2h-2v2zm0-4h2V7h-2v6z"/></svg><span style="font-size:15px;font-weight:600;color:#dc2626">Could not verify</span></div><p style="font-size:13px;color:#666;margin-bottom:16px;line-height:1.5">'+(d.error||'Make sure you are on the bank receipt page.')+'</p><button onclick="document.getElementById(\\'cheki-overlay\\').remove()" style="width:100%;padding:10px;border:none;border-radius:8px;background:#f3f4f6;color:#1a1a1a;font-size:14px;font-weight:600;cursor:pointer">Close</button>';
       }
@@ -619,6 +680,21 @@ export default function Home() {
     navigator.clipboard.writeText(bookmarkletUrl);
     setBookmarkletCopied(true);
     setTimeout(() => setBookmarkletCopied(false), 3000);
+  };
+
+  // Photo capture is entered from the two buttons under the verify form.
+  // Mode switch and cleanup live together so every entry point behaves alike.
+  const openPhoto = (kind: "camera" | "upload") => {
+    stopScanner();
+    setInputMode("photo");
+    setPhotoPreview(null);
+    setPhotoProcessing(false);
+    setPhotoExtracted(null);
+    setShowScanner(false);
+    setResult(null);
+    setError(null);
+    if (kind === "camera") startScanner();
+    else photoInputRef.current?.click();
   };
 
   const features = [
@@ -654,10 +730,32 @@ export default function Home() {
               <p style={{ color: "var(--ink-2)", fontSize: "16px", lineHeight: 1.5, maxWidth: "440px", marginBottom: "20px" }}>
                 {t("hero.subtitle")}
               </p>
-              <div className="hide-mobile" style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-                <a href="/docs" style={{ padding: "10px 20px", borderRadius: "8px", border: "1px solid var(--border)", color: "var(--ink)", fontSize: "14px", fontWeight: 500, background: "var(--surface)" }}>API Docs</a>
-                <a href="/guides" style={{ padding: "10px 20px", borderRadius: "8px", border: "1px solid var(--border)", color: "var(--ink)", fontSize: "14px", fontWeight: 500, background: "var(--surface)" }}>Guides</a>
-                <a href="/compare" style={{ padding: "10px 20px", borderRadius: "8px", border: "1px solid var(--border)", color: "var(--ink)", fontSize: "14px", fontWeight: 500, background: "var(--surface)" }}>Compare services</a>
+
+              {/* Let a coding agent do the integration instead */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px", alignItems: "flex-start" }}>
+                <button
+                  onClick={copyAgentPrompt}
+                  style={{
+                    display: "inline-flex", alignItems: "center", gap: "8px",
+                    padding: "10px 18px", borderRadius: "8px",
+                    border: "1px solid var(--border)", background: "var(--surface)",
+                    color: "var(--ink)", fontSize: "14px", fontWeight: 600, cursor: "pointer",
+                  }}
+                >
+                  <Icon icon={agentCopied ? CopyCheckIcon : CodeIcon} size={15} color={agentCopied ? "var(--green)" : "var(--ink-2)"} />
+                  {agentCopied ? "Prompt copied" : "Let your agent verify it for you"}
+                </button>
+                <p style={{ fontSize: "12px", color: "var(--ink-3)", lineHeight: 1.5, maxWidth: "420px", margin: 0 }}>
+                  {agentCopied
+                    ? "Paste it into Claude Code, Cursor or any agent — it knows the rest."
+                    : "Copies a prompt for Claude Code, Cursor, or any coding agent. It reads cheki's llms.txt and writes the integration."}
+                </p>
+              </div>
+
+              <div style={{ display: "flex", gap: "16px", flexWrap: "wrap", marginTop: "18px", fontSize: "13px" }}>
+                <a href="/docs" style={{ color: "var(--ink-2)", fontWeight: 500 }}>API Docs</a>
+                <a href="/guides" style={{ color: "var(--ink-2)", fontWeight: 500 }}>Guides</a>
+                <a href="/compare" style={{ color: "var(--ink-2)", fontWeight: 500 }}>Compare services</a>
               </div>
             </div>
 
@@ -680,15 +778,8 @@ export default function Home() {
               }
             }}
             >
-              {/* Input mode tabs */}
-              <Tabs value={inputMode} onValueChange={(v) => { const mode = v as "reference" | "url" | "photo"; setInputMode(mode); setReference(""); setQrData(""); setShowQrPaste(false); setResult(null); setError(null); setPhotoPreview(null); setPhotoProcessing(false); setPhotoExtracted(null); setShowScanner(false); stopScanner(); }} variant="underline" style={{ marginBottom: "16px" }}>
-                <TabsList>
-                  <TabsTrigger value="reference">Reference</TabsTrigger>
-                  <TabsTrigger value="url">Receipt URL</TabsTrigger>
-                  <TabsTrigger value="photo">Photo</TabsTrigger>
-                </TabsList>
-              </Tabs>
               <input ref={fileInputRef} type="file" accept="image/*" multiple style={{ display: "none" }} onChange={handleFileUpload} />
+              <input ref={photoInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handlePhotoUpload} />
 
               {/* Photo extraction banner (shown in Reference mode after a photo was read) */}
               {photoExtracted && inputMode === "reference" && (
@@ -770,7 +861,9 @@ export default function Home() {
                       <Icon icon={Camera01Icon} size={12} color="var(--ink-3)" /> Take another photo
                     </button>
                   )}
-                  <input ref={photoInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handlePhotoUpload} />
+                  <button onClick={() => { setInputMode("reference"); setShowScanner(false); stopScanner(); setPhotoPreview(null); setPhotoProcessing(false); if (photoInputRef.current) photoInputRef.current.value = ""; }} style={{ fontSize: "13px", color: "var(--ink-2)", background: "none", border: "none", cursor: "pointer", padding: "8px 0 0", marginTop: "6px", textAlign: "center", width: "100%", fontWeight: 500 }}>
+                    Have a reference number or link instead?
+                  </button>
                 </div>
               )}
 
@@ -793,11 +886,37 @@ export default function Home() {
                   </div>
                 )}
 
+                {needsAccount && inputMode === "reference" && (
+                  <div className="fade-in">
+                    <label style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink-2)", marginBottom: "6px", display: "block" }}>{selectedBank.accountLabel || t("hero.accountLabel")}</label>
+                    <input type="text" value={accountNumber} onChange={(e) => setAccountNumber(e.target.value)} onKeyDown={(e) => e.key === "Enter" && !loading && handleVerify()} placeholder={`Last ${selectedBank.accountDigits} digits minimum`} style={{ width: "100%", padding: "12px 16px", fontSize: "15px", border: "1px solid var(--border)", borderRadius: "8px", background: "var(--surface)", color: "var(--ink)", fontFamily: "var(--mono)" }} spellCheck={false} />
+                  </div>
+                )}
+
+                {needsPhone && inputMode === "reference" && (
+                  <div className="fade-in">
+                    <label style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink-2)", marginBottom: "6px", display: "block" }}>Payer phone number</label>
+                    <input type="text" value={accountNumber} onChange={(e) => setAccountNumber(e.target.value)} placeholder="2519XXXXXXXXX" style={{ width: "100%", padding: "12px 16px", fontSize: "15px", border: "1px solid var(--border)", borderRadius: "8px", background: "var(--surface)", color: "var(--ink)", fontFamily: "var(--mono)" }} spellCheck={false} />
+                  </div>
+                )}
+
                 <div>
                   <label style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink-2)", marginBottom: "6px", display: "block" }}>
                     {inputMode === "url" ? "Receipt URL or link" : t("hero.referenceLabel")}
                   </label>
-                  <input type="text" value={reference} onChange={(e) => setReference(e.target.value)} onKeyDown={(e) => e.key === "Enter" && !loading && handleVerify()} placeholder={inputMode === "url" ? "Paste receipt link..." : t("hero.referencePlaceholder")} style={{ width: "100%", padding: "12px 16px", fontSize: "15px", border: "1px solid var(--border)", borderRadius: "8px", background: "var(--surface)", color: "var(--ink)", fontFamily: "var(--mono)" }} spellCheck={false} autoCapitalize="characters" />
+                  <div className="verify-row">
+                    <input className="verify-input" type="text" value={reference} onChange={(e) => setReference(e.target.value)} onKeyDown={(e) => e.key === "Enter" && !loading && handleVerify()} placeholder={inputMode === "url" ? "Paste receipt link..." : t("hero.referencePlaceholder")} spellCheck={false} autoCapitalize="characters" />
+                    <StatefulButton
+                      state={loading ? "loading" : result?.success ? "success" : "idle"}
+                      disabled={loading || (inputMode === "reference" && isDisabled) || (!showQrPaste && !reference.trim()) || (showQrPaste && !qrData.trim()) || missingAccountNumber}
+                      onClick={handleVerify}
+                      loadingLabel={t("hero.verifying")}
+                      successLabel="Verified"
+                      style={{ width: "auto", flexShrink: 0, padding: "0 24px" }}
+                    >
+                      {(inputMode === "reference" && isDisabled) ? t("banks.inDevelopment") : t("hero.verifyButton")}
+                    </StatefulButton>
+                  </div>
                   {reference && inputMode === "reference" && detectBank(reference) && (
                     <p style={{ fontSize: "12px", color: "var(--green)", marginTop: "6px", fontWeight: 500, display: "flex", alignItems: "center", gap: "4px" }}>
                       <Icon icon={Search01Icon} size={12} color="var(--green)" /> Detected: {banks.find((b) => b.code === detectBank(reference))?.name}
@@ -806,6 +925,11 @@ export default function Home() {
                   {reference && inputMode === "url" && reference.startsWith("http") && (
                     <p style={{ fontSize: "12px", color: "var(--green)", marginTop: "6px", fontWeight: 500, display: "flex", alignItems: "center", gap: "4px" }}>
                       <Icon icon={Search01Icon} size={12} color="var(--green)" /> Bank will be auto-detected from URL
+                    </p>
+                  )}
+                  {!reference && inputMode === "reference" && (
+                    <p style={{ fontSize: "12px", color: "var(--ink-3)", marginTop: "8px", lineHeight: 1.5 }}>
+                      A receipt link works here too — paste one and the bank is detected for you.
                     </p>
                   )}
                 </div>
@@ -825,29 +949,19 @@ export default function Home() {
                   </button>
                 )}
 
-                {needsAccount && inputMode === "reference" && (
-                  <div className="fade-in">
-                    <label style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink-2)", marginBottom: "6px", display: "block" }}>{selectedBank.accountLabel || t("hero.accountLabel")}</label>
-                    <input type="text" value={accountNumber} onChange={(e) => setAccountNumber(e.target.value)} onKeyDown={(e) => e.key === "Enter" && !loading && handleVerify()} placeholder={`Last ${selectedBank.accountDigits} digits minimum`} style={{ width: "100%", padding: "12px 16px", fontSize: "15px", border: "1px solid var(--border)", borderRadius: "8px", background: "var(--surface)", color: "var(--ink)", fontFamily: "var(--mono)" }} spellCheck={false} />
-                  </div>
-                )}
-
-                {needsPhone && inputMode === "reference" && (
-                  <div className="fade-in">
-                    <label style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink-2)", marginBottom: "6px", display: "block" }}>Payer phone number</label>
-                    <input type="text" value={accountNumber} onChange={(e) => setAccountNumber(e.target.value)} placeholder="2519XXXXXXXXX" style={{ width: "100%", padding: "12px 16px", fontSize: "15px", border: "1px solid var(--border)", borderRadius: "8px", background: "var(--surface)", color: "var(--ink)", fontFamily: "var(--mono)" }} spellCheck={false} />
-                  </div>
-                )}
-
-                <StatefulButton
-                  state={loading ? "loading" : result?.success ? "success" : "idle"}
-                  disabled={loading || (inputMode === "reference" && isDisabled) || (!showQrPaste && !reference.trim()) || (showQrPaste && !qrData.trim())}
-                  onClick={handleVerify}
-                  loadingLabel={t("hero.verifying")}
-                  successLabel="Verified"
-                >
-                  {(inputMode === "reference" && isDisabled) ? t("banks.inDevelopment") : t("hero.verifyButton")}
-                </StatefulButton>
+                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                  <span style={{ flex: 1, height: "1px", background: "var(--border)" }} />
+                  <span style={{ fontSize: "11px", fontWeight: 600, color: "var(--ink-3)", textTransform: "uppercase", letterSpacing: "0.06em" }}>or</span>
+                  <span style={{ flex: 1, height: "1px", background: "var(--border)" }} />
+                </div>
+                <div style={{ display: "flex", gap: "8px" }}>
+                  <button onClick={() => openPhoto("camera")} style={{ flex: 1, padding: "12px", borderRadius: "8px", border: "1px solid var(--border)", background: "var(--surface)", color: "var(--ink-2)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", fontSize: "14px", fontWeight: 500 }}>
+                    <Icon icon={Camera01Icon} size={18} color="var(--green)" /> Take a photo
+                  </button>
+                  <button onClick={() => openPhoto("upload")} style={{ flex: 1, padding: "12px", borderRadius: "8px", border: "1px solid var(--border)", background: "var(--surface)", color: "var(--ink-2)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", fontSize: "14px", fontWeight: 500 }}>
+                    <Icon icon={Upload01Icon} size={18} color="var(--green)" /> Upload receipt
+                  </button>
+                </div>
               </div>
             ) : null}
 
@@ -1326,6 +1440,7 @@ function AnimatedAmount({ value }: { value: string }) {
 function ReceiptCard({ result, copied, onCopy }: { result: VerifyResult; copied: boolean; onCopy: () => void }) {
   // transitions.dev: panel reveal + success check animations
   const [revealed, setRevealed] = useState(false);
+  const [summaryCopied, setSummaryCopied] = useState(false);
   useEffect(() => {
     const raf = requestAnimationFrame(() => setRevealed(true));
     return () => cancelAnimationFrame(raf);
@@ -1364,10 +1479,23 @@ function ReceiptCard({ result, copied, onCopy }: { result: VerifyResult; copied:
   const visibleFeeRows = feeRows.filter((r) => r.value);
   const visibleRows = rows.filter((r) => r.value);
 
+  // The header copies the receipt as readable text — the shape someone drops
+  // into a message. The JSON stays behind the disclosure below, for machines.
+  const copySummary = () => {
+    const lines = [
+      "Receipt verified — cheki",
+      ...visibleRows.map((r) => `${r.label}: ${r.value}`),
+    ];
+    if (result.sourceUrl) lines.push(`Source: ${result.sourceUrl}`);
+    navigator.clipboard.writeText(lines.join("\n"));
+    setSummaryCopied(true);
+    setTimeout(() => setSummaryCopied(false), 2000);
+  };
+
   return (
     <section className="t-panel-slide" data-open={revealed} style={{ borderRadius: "12px", overflow: "visible", background: "var(--receipt-bg)", border: "1px solid var(--dotted)", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
       <div style={{ padding: "20px 24px", borderBottom: "2px dotted var(--dotted)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
           <motion.span
             initial={{ opacity: 0, scale: 0.5, rotate: -45 }}
             animate={{ opacity: 1, scale: 1, rotate: 0 }}
@@ -1377,10 +1505,15 @@ function ReceiptCard({ result, copied, onCopy }: { result: VerifyResult; copied:
             <Icon icon={CheckmarkCircle01Icon} size={24} color="var(--green)" />
           </motion.span>
           <span style={{ fontSize: "16px", fontWeight: 700, color: "var(--ink)" }}>receipt verified</span>
+          {result.cached && (
+            <span style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.04em", color: "var(--green-dark)", background: "var(--green-light)", border: "1px solid color-mix(in srgb, var(--green) 40%, transparent)", borderRadius: "999px", padding: "3px 9px", whiteSpace: "nowrap" }}>
+              instant · repeat check
+            </span>
+          )}
         </div>
-        <button onClick={onCopy} style={{ padding: "6px 14px", fontSize: "12px", fontWeight: 500, border: "1px solid var(--border)", borderRadius: "6px", background: "var(--surface)", color: copied ? "var(--green)" : "var(--ink-2)", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}>
-          <Icon icon={copied ? CopyCheckIcon : Copy01Icon} size={14} color={copied ? "var(--green)" : "var(--ink-2)"} />
-          {copied ? "Copied" : "Copy JSON"}
+        <button onClick={copySummary} style={{ padding: "6px 14px", fontSize: "12px", fontWeight: 500, border: "1px solid var(--border)", borderRadius: "6px", background: "var(--surface)", color: summaryCopied ? "var(--green)" : "var(--ink-2)", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px", flexShrink: 0 }}>
+          <Icon icon={summaryCopied ? CopyCheckIcon : Copy01Icon} size={14} color={summaryCopied ? "var(--green)" : "var(--ink-2)"} />
+          {summaryCopied ? "Copied" : "Copy"}
         </button>
       </div>
       <div style={{ padding: "8px 24px", overflow: "hidden" }}>
@@ -1420,6 +1553,20 @@ function ReceiptCard({ result, copied, onCopy }: { result: VerifyResult; copied:
           </a>
         </div>
       )}
+      <div style={{ padding: "16px 24px", borderTop: "2px dotted var(--dotted)", background: "var(--surface-alt)" }}>
+        <details>
+          <summary style={{ padding: "10px 14px", fontSize: "13px" }}>
+            <span style={{ fontSize: "11px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--ink-3)" }}>Raw JSON</span>
+          </summary>
+          <div style={{ padding: "0 14px 14px" }}>
+            <pre style={{ margin: 0, padding: "12px 14px", fontSize: "12px", lineHeight: 1.6, fontFamily: "var(--mono)", background: "var(--surface)", border: "1px solid var(--dotted)", borderRadius: "8px", color: "var(--ink-2)", overflow: "auto", maxHeight: "340px" }}>{JSON.stringify(result, null, 2)}</pre>
+            <button onClick={onCopy} style={{ marginTop: "10px", padding: "6px 14px", fontSize: "12px", fontWeight: 500, border: "1px solid var(--border)", borderRadius: "6px", background: "var(--surface)", color: copied ? "var(--green)" : "var(--ink-2)", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}>
+              <Icon icon={copied ? CopyCheckIcon : Copy01Icon} size={14} color={copied ? "var(--green)" : "var(--ink-2)"} />
+              {copied ? "Copied" : "Copy JSON"}
+            </button>
+          </div>
+        </details>
+      </div>
     </section>
   );
 }

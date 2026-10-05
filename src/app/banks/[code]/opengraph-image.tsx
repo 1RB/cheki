@@ -20,7 +20,7 @@ export default async function OgImage({
   const bankFullName = bank?.name || "Ethiopian Bank";
   const taglineText = `${bankName} verification`;
   const headlineText = `Verify ${bankFullName}`;
-  const urlPath = `chekiapp.vercel.app/banks/${code}`;
+  const urlPath = `cheki.et/banks/${code}`;
 
   return new ImageResponse(
     (

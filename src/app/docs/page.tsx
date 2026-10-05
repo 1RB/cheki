@@ -142,7 +142,7 @@ $health = $client->getHealth();`,
   {
     lang: "cURL",
     shikiLang: "bash",
-    code: `curl -X POST https://chekiapp.vercel.app/api/verify \\
+    code: `curl -X POST https://cheki.et/api/verify \\
   -H "Content-Type: application/json" \\
   -d '{"bank":"cbe","reference":"FT26140P01YB","accountNumber":"1000560536171"}'`,
   },
@@ -335,7 +335,7 @@ export default async function DocsPage() {
   );
 
   // Pre-highlight all standalone code blocks
-  const baseUrlHtml = await highlightCode("https://chekiapp.vercel.app", "plaintext");
+  const baseUrlHtml = await highlightCode("https://cheki.et", "plaintext");
   const verifyReqHtml = await highlightCode(
     JSON.stringify(
       {
@@ -450,7 +450,7 @@ docker-compose up -d
     "bash"
   );
   const quickstartHtml = await highlightCode(
-    `curl -X POST https://chekiapp.vercel.app/api/verify \\
+    `curl -X POST https://cheki.et/api/verify \\
   -H "Content-Type: application/json" \\
   -d '{"bank":"cbe","reference":"FT26140P01YB","accountNumber":"1000560536171"}'`,
     "bash"
@@ -603,7 +603,7 @@ docker-compose up -d
                 Base URL
               </p>
               <CodeBlock
-                code="https://chekiapp.vercel.app"
+                code="https://cheki.et"
                 highlightedHtml={baseUrlHtml}
                 langLabel="url"
               />
@@ -621,7 +621,7 @@ docker-compose up -d
                 Verify a CBE receipt with one cURL call:
               </p>
               <CodeBlock
-                code={`curl -X POST https://chekiapp.vercel.app/api/verify \\
+                code={`curl -X POST https://cheki.et/api/verify \\
   -H "Content-Type: application/json" \\
   -d '{"bank":"cbe","reference":"FT26140P01YB","accountNumber":"1000560536171"}'`}
                 highlightedHtml={quickstartHtml}

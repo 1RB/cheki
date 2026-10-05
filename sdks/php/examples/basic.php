@@ -21,13 +21,13 @@ echo "════════════════════════�
 echo "  cheki PHP SDK - Basic Example\n";
 echo "═══════════════════════════════════════════\n\n";
 
-// --- 1. Create a client (default base URL: https://chekiapp.vercel.app)
+// --- 1. Create a client (default base URL: https://cheki.et)
 $client = new ChekiClient();
 
 // Or with custom options:
 // $client = new ChekiClient(
 //     (new VerifyOptions())
-//         ->withBaseUrl('https://chekiapp.vercel.app')
+//         ->withBaseUrl('https://cheki.et')
 //         ->withTimeout(15)
 // );
 

@@ -29,7 +29,7 @@ from cheki import ChekiClient, verify, supported_banks
 ```python
 from cheki import ChekiClient
 
-cheki = ChekiClient()  # uses https://chekiapp.vercel.app by default
+cheki = ChekiClient()  # uses https://cheki.et by default
 
 # CBE requires the receiving account number
 result = cheki.verify("cbe", "FT26140P01YB", account_number="1000560536171")
@@ -134,7 +134,7 @@ needed for direct verification of PDF/HTML receipts).
 
 ```python
 ChekiClient(
-    base_url="https://chekiapp.vercel.app",
+    base_url="https://cheki.et",
     api_key=None,
     timeout=30,
     max_retries=3,
@@ -145,7 +145,7 @@ ChekiClient(
 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
-| `base_url` | `str` | `https://chekiapp.vercel.app` | cheki API root URL. |
+| `base_url` | `str` | `https://cheki.et` | cheki API root URL. |
 | `api_key` | `str \| None` | `None` | Optional bearer token. The public API does not require one. |
 | `timeout` | `float` | `30` | Per-request timeout in seconds. |
 | `max_retries` | `int` | `3` | Retries on HTTP 408/429/5xx (in addition to the first attempt). |
@@ -331,7 +331,7 @@ cheki-verify --list-banks --api
 | `--phone` | Payer phone number (required for cbebirr). |
 | `--qr` | Raw QR payload (Bank of Abyssinia inter-bank receipts). |
 | `--api` | Use the hosted cheki REST API instead of direct verification. |
-| `--base-url` | cheki API base URL (default: `https://chekiapp.vercel.app`). |
+| `--base-url` | cheki API base URL (default: `https://cheki.et`). |
 | `--api-key` | Optional bearer token. |
 | `--timeout` | Per-request timeout in seconds (API mode, default: 30). |
 | `--json` | Output raw JSON. |

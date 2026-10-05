@@ -12,7 +12,7 @@ export const metadata: Metadata = {
     description:
       "10 live banks and wallets supported for free receipt verification. CBE, Telebirr, BOA, M-Pesa, and more.",
     type: "website",
-    url: "https://chekiapp.vercel.app/banks",
+    url: "https://cheki.et/banks",
   },
   twitter: {
     card: "summary_large_image",

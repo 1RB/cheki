@@ -5,7 +5,7 @@ import { Nav, Footer } from "@/components/Chrome";
 import { Icon, ArrowRight01Icon } from "@/components/Icon";
 
 const codeExamples: Record<string, string> = {
-  cURL: `curl -X POST https://chekiapp.vercel.app/api/verify \\
+  cURL: `curl -X POST https://cheki.et/api/verify \\
   -H "Content-Type: application/json" \\
   -d '{
     "bank": "cbe",
@@ -14,7 +14,7 @@ const codeExamples: Record<string, string> = {
   }'`,
   JavaScript: `import { Cheki } from "cheki";
 
-const cheki = new Cheki("https://chekiapp.vercel.app");
+const cheki = new Cheki("https://cheki.et");
 const result = await cheki.verify("cbe", "FT26140P01YB", {
   accountNumber: "1000560536171"
 });

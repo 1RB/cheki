@@ -356,7 +356,7 @@ export const seoPages: SeoPage[] = [
       },
       {
         heading: "Quick start",
-        body: "POST to https://chekiapp.vercel.app/api/verify with a JSON body containing the bank code, reference number, and (for CBE/BOA) the account number. The response includes sender name, receiver name, amount, date, and the source URL from the bank.",
+        body: "POST to https://cheki.et/api/verify with a JSON body containing the bank code, reference number, and (for CBE/BOA) the account number. The response includes sender name, receiver name, amount, date, and the source URL from the bank.",
       },
       {
         heading: "Available endpoints",

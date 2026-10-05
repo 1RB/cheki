@@ -13,8 +13,8 @@
 [![Stars](https://img.shields.io/github/stars/1RB/cheki?style=flat&label=Stars&logo=github)](https://github.com/1RB/cheki/stargazers)
 [![Issues](https://img.shields.io/github/issues/1RB/cheki?style=flat&label=Issues&logo=github)](https://github.com/1RB/cheki/issues)
 [![Tests](https://img.shields.io/badge/tests-122%20vitest-2ddb6a?style=flat&logo=vitest&logoColor=fff)](https://github.com/1RB/cheki/blob/main/src/lib/parsers/__tests__)
-[![Banks](https://img.shields.io/badge/banks-10%20live%20%E2%80%A2%2021%20researching-2ddb6a?style=flat)](https://chekiapp.vercel.app/banks)
-[![Website](https://img.shields.io/website?style=flat&label=chekiapp.vercel.app&url=https%3A%2F%2Fchekiapp.vercel.app&logo=vercel&logoColor=fff)](https://chekiapp.vercel.app)
+[![Banks](https://img.shields.io/badge/banks-10%20live%20%E2%80%A2%2021%20researching-2ddb6a?style=flat)](https://cheki.et/banks)
+[![Website](https://img.shields.io/website?style=flat&label=cheki.et&url=https%3A%2F%2Fcheki.et&logo=vercel&logoColor=fff)](https://cheki.et)
 
 cheki verifies Ethiopian bank and mobile money receipts by fetching public bank endpoints. The data is free. The code is MIT licensed. No one should charge you for accessing public bank data.
 
@@ -136,7 +136,7 @@ if ($result->isVerified()) {
 
 ### Web UI
 
-Visit [chekiapp.vercel.app](https://chekiapp.vercel.app). No signup required.
+Visit [cheki.et](https://cheki.et). No signup required.
 
 ### CLI
 
@@ -147,7 +147,7 @@ npx cheki verify cbe FT26140P01YB --account 1000560536171
 ### API
 
 ```bash
-curl -X POST https://chekiapp.vercel.app/api/verify \
+curl -X POST https://cheki.et/api/verify \
   -H "Content-Type: application/json" \
   -d '{"bank":"cbe","reference":"FT26140P01YB","accountNumber":"1000560536171"}'
 ```
@@ -465,7 +465,7 @@ Include the reference number you tested with (or note that you tested from an Et
 
 ### Need help?
 
-- [Contribution guide](https://chekiapp.vercel.app/guides/contribute-new-bank): three ways to contribute without writing code
+- [Contribution guide](https://cheki.et/guides/contribute-new-bank): three ways to contribute without writing code
 - [Open an issue](https://github.com/1RB/cheki/issues) with a receipt screenshot or reference and we'll help reverse-engineer the endpoint
 - Share a receipt reference and bank name, and we'll write the parser for you
 
@@ -482,12 +482,12 @@ This triggers the publish workflow which publishes to npm, GitHub Packages, PyPI
 
 ## Contributing
 
-Contributions are welcome. See [CONTRIBUTING](https://chekiapp.vercel.app/guides/contribute-new-bank) for the full guide.
+Contributions are welcome. See [CONTRIBUTING](https://cheki.et/guides/contribute-new-bank) for the full guide.
 
 - **Add a bank**: follow the [step-by-step guide](#adding-a-bank) above, or [open an issue](https://github.com/1RB/cheki/issues) with a receipt reference and we'll write the parser
 - **Report a bug**: [open an issue](https://github.com/1RB/cheki/issues) with the bank, reference number, and what you expected vs what happened
 - **Improve docs**: PRs welcome for guides, API docs, or SDK README improvements
-- **Spread the word**: star the repo, share chekiapp.vercel.app, tell anyone paying for receipt verification
+- **Spread the word**: star the repo, share cheki.et, tell anyone paying for receipt verification
 
 ### Contributors
 

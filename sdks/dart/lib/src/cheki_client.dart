@@ -77,7 +77,7 @@ class ChekiClient {
     String? baseUrl,
     http.Client? client,
     this.timeout = const Duration(seconds: 30),
-  })  : baseUrl = (baseUrl ?? 'https://chekiapp.vercel.app').replaceAll(
+  })  : baseUrl = (baseUrl ?? 'https://cheki.et').replaceAll(
             RegExp(r'/+$'),
             ''),
         httpClient = client ?? http.Client();

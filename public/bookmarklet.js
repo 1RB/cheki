@@ -9,7 +9,7 @@
 // This bypasses geo-blocking because the user's browser fetched the page, not cheki's server.
 
 (function () {
-  const API = "https://chekiapp.vercel.app/api/parse";
+  const API = "https://cheki.et/api/parse";
   const url = window.location.href;
   const html = document.documentElement.outerHTML;
 
@@ -68,7 +68,7 @@
         o.innerHTML =
           '<div style="background:#fff;border-radius:12px;padding:32px;max-width:420px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.3);"><div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;"><span style="font-weight:800;font-size:20px;color:#16a34a;">cheki</span><span style="font-size:10px;font-weight:600;color:#16a34a;border:1px solid #dcfce7;padding:2px 6px;border-radius:4px;background:#dcfce7;">OSS</span><span style="margin-left:auto;padding:4px 10px;border-radius:6px;background:#dcfce7;color:#16a34a;font-size:12px;font-weight:700;">VERIFIED</span></div><table style="width:100%;border-collapse:collapse;margin-top:8px;">' +
           rows +
-          '</table><div style="margin-top:16px;display:flex;gap:8px;"><button onclick="document.getElementById(\'cheki-overlay\').remove()" style="flex:1;padding:10px;border:1px solid #e5e5e5;border-radius:8px;background:#fff;color:#666;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">Close</button><a href="https://chekiapp.vercel.app" target="_blank" style="flex:1;padding:10px;border:none;border-radius:8px;background:#16a34a;color:#fff;font-size:13px;font-weight:600;text-decoration:none;text-align:center;cursor:pointer;font-family:inherit;">Open cheki</a></div></div>';
+          '</table><div style="margin-top:16px;display:flex;gap:8px;"><button onclick="document.getElementById(\'cheki-overlay\').remove()" style="flex:1;padding:10px;border:1px solid #e5e5e5;border-radius:8px;background:#fff;color:#666;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">Close</button><a href="https://cheki.et" target="_blank" style="flex:1;padding:10px;border:none;border-radius:8px;background:#16a34a;color:#fff;font-size:13px;font-weight:600;text-decoration:none;text-align:center;cursor:pointer;font-family:inherit;">Open cheki</a></div></div>';
       } else {
         o.innerHTML =
           '<div style="background:#fff;border-radius:12px;padding:32px;max-width:420px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.3);"><div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;"><span style="font-weight:800;font-size:20px;color:#dc2626;">cheki</span></div><div style="color:#666;font-size:14px;line-height:1.5;">' +

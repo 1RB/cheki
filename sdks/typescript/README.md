@@ -1,6 +1,6 @@
 # cheki
 
-> TypeScript SDK for the [cheki](https://chekiapp.vercel.app) receipt verification API.
+> TypeScript SDK for the [cheki](https://cheki.et) receipt verification API.
 
 Verify Ethiopian bank transfer receipts from CBE, Telebirr, BOA, Dashen, M-Pesa, and more, with zero runtime dependencies.
 
@@ -91,7 +91,7 @@ Pass a configuration object (or a base URL string) to the `Cheki` constructor:
 
 ```typescript
 const cheki = new Cheki({
-  baseUrl: "https://chekiapp.vercel.app",
+  baseUrl: "https://cheki.et",
   timeoutMs: 10_000,
   maxRetries: 5,
   apiKey: "sk_live_...",
@@ -102,7 +102,7 @@ const cheki = new Cheki({
 
 | Option | Type | Default | Description |
 |---|---|---|---|
-| `baseUrl` | `string` | `"https://chekiapp.vercel.app"` | Base URL of the cheki API. |
+| `baseUrl` | `string` | `"https://cheki.et"` | Base URL of the cheki API. |
 | `timeoutMs` | `number` | `30000` | Default request timeout in milliseconds. |
 | `maxRetries` | `number` | `3` | Default maximum retry attempts for transient failures. |
 | `apiKey` | `string` | `undefined` | Optional API key sent as `Bearer` token in the `Authorization` header. |
@@ -112,7 +112,7 @@ const cheki = new Cheki({
 You can also pass just a URL string:
 
 ```typescript
-const cheki = new Cheki("https://chekiapp.vercel.app");
+const cheki = new Cheki("https://cheki.et");
 ```
 
 ### Per-Call Overrides

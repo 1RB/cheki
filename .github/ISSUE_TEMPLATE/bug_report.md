@@ -31,7 +31,7 @@ What happened instead.
 - cheki version (or SDK + version):
 - Bank and reference number tested:
 - Browser / OS / runtime:
-- Self-hosted or chekiapp.vercel.app?
+- Self-hosted or cheki.et?
 
 ## Screenshots / logs
 

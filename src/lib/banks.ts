@@ -116,6 +116,8 @@ export interface VerifyResult {
   success: boolean;
   error?: string;
   fallbackUrl?: string;
+  /** True when the API served this from the in-memory receipt cache. */
+  cached?: boolean;
   bank?: string;
   reference?: string;
   sourceUrl?: string;

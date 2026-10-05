@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { I18nProvider } from "@/lib/i18n/context";
 
-const SITE_URL = "https://chekiapp.vercel.app";
+const SITE_URL = "https://cheki.et";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

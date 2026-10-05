@@ -11,7 +11,7 @@
   "bugs": {
     "url": "https://github.com/1RB/cheki/issues"
   },
-  "homepage": "https://chekiapp.vercel.app",
+  "homepage": "https://cheki.et",
   "scripts": {
     "prebuild": "node scripts/download-tesseract-data.js",
     "dev": "next dev",

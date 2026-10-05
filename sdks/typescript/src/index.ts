@@ -27,7 +27,7 @@
 const VERSION = "1.0.0";
 
 /** Default API base URL. */
-const DEFAULT_BASE_URL = "https://chekiapp.vercel.app";
+const DEFAULT_BASE_URL = "https://cheki.et";
 
 /** Default request timeout in milliseconds (30 seconds). */
 const DEFAULT_TIMEOUT_MS = 30_000;
@@ -361,7 +361,7 @@ export class ChekiTimeoutError extends ChekiError {
 export interface ChekiConfig {
   /**
    * Base URL of the cheki API.
-   * @default "https://chekiapp.vercel.app"
+   * @default "https://cheki.et"
    */
   baseUrl?: string;
   /**
@@ -439,7 +439,7 @@ interface ResolvedConfig {
  * @example With configuration
  * ```ts
  * const cheki = new Cheki({
- *   baseUrl: "https://chekiapp.vercel.app",
+ *   baseUrl: "https://cheki.et",
  *   timeoutMs: 10_000,
  *   maxRetries: 5,
  *   apiKey: "sk_live_...",
@@ -609,7 +609,7 @@ export class Cheki {
    * @example
    * ```ts
    * const url = cheki.getReceiptUrl("cbe", "FT26140P01YB", "1000560536171");
-   * // "https://chekiapp.vercel.app/api/receipt?bank=cbe&reference=FT26140P01YB&account=1000560536171"
+   * // "https://cheki.et/api/receipt?bank=cbe&reference=FT26140P01YB&account=1000560536171"
    * ```
    */
   getReceiptUrl(bank: string, reference: string, accountNumber?: string): string {
