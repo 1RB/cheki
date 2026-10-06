@@ -9,7 +9,7 @@ const dash = "-";
 
 function Cell({ value, highlight }: { value: string; highlight?: boolean }) {
   if (value === check) {
-    return <span style={{ color: highlight ? "var(--green)" : "var(--ink-2)", fontWeight: 700, fontSize: "15px" }}>{check}</span>;
+    return <span style={{ color: highlight ? "var(--green-dark)" : "var(--ink-2)", fontWeight: 700, fontSize: "15px" }}>{check}</span>;
   }
   if (value === dash) {
     return <span style={{ color: "var(--ink-4)" }}>{dash}</span>;
@@ -20,7 +20,7 @@ function Cell({ value, highlight }: { value: string; highlight?: boolean }) {
 export default function ComparePage() {
   const { t } = useTranslation();
   const services = [
-    { key: "cheki", name: "cheki", href: "/", color: "var(--green)" },
+    { key: "cheki", name: "cheki", href: "/", color: "var(--green-dark)" },
     { key: "checket", name: "check.et", href: "https://check.et" },
     { key: "verifyet", name: "verify.et", href: "https://verify.et" },
     { key: "qbirr", name: "qbirr", href: "https://qbirr.com" },
@@ -145,8 +145,18 @@ export default function ComparePage() {
     },
   ];
 
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: "https://cheki.et/" },
+      { "@type": "ListItem", position: 2, name: "Compare", item: "https://cheki.et/compare" },
+    ],
+  };
+
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
       <Nav />
       <main className="container" style={{ paddingTop: "48px", paddingBottom: "48px" }}>
         <nav style={{ fontSize: "13px", color: "var(--ink-3)", marginBottom: "16px" }}>
@@ -196,7 +206,7 @@ export default function ComparePage() {
             {t("compare.coreFactText")}
           </p>
           <a href="/guides/check-et-vs-verify-et-vs-cheki" style={{
-            display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "14px", color: "var(--green)", fontWeight: 600,
+            display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "14px", color: "var(--green-dark)", fontWeight: 600,
           }}>
             Read the full guide
             <Icon icon={ArrowRight01Icon} size={14} color="var(--green)" />
@@ -222,7 +232,7 @@ export default function ComparePage() {
                   <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
                     {c.strengths.map((s) => (
                       <li key={s} style={{ fontSize: "13px", color: "var(--ink-2)", lineHeight: 1.5, marginBottom: "4px", paddingLeft: "14px", position: "relative" }}>
-                        <span style={{ position: "absolute", left: 0, color: "var(--green)" }}>+</span>{s}
+                        <span style={{ position: "absolute", left: 0, color: "var(--green-dark)" }}>+</span>{s}
                       </li>
                     ))}
                   </ul>

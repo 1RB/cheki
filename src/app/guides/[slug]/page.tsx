@@ -67,7 +67,7 @@ function renderRichText(text: string): React.ReactNode[] {
           href={part}
           target="_blank"
           rel={isCompetitor(part) ? "noopener noreferrer nofollow" : "noopener noreferrer"}
-          style={{ color: "var(--green)", textDecoration: "none", borderBottom: "1px solid var(--green-light)" }}
+          style={{ color: "var(--green-dark)", textDecoration: "none", borderBottom: "1px solid var(--green-light)" }}
         >
           {display}
         </a>
@@ -81,7 +81,7 @@ function renderRichText(text: string): React.ReactNode[] {
           href={href}
           target="_blank"
           rel={isCompetitor(part) ? "noopener noreferrer nofollow" : "noopener noreferrer"}
-          style={{ color: "var(--green)", textDecoration: "none", fontWeight: 500 }}
+          style={{ color: "var(--green-dark)", textDecoration: "none", fontWeight: 500 }}
         >
           {part}
         </a>
@@ -289,14 +289,14 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
               </p>
               <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                 {article.content.map((b, i) => b.type === "heading" ? (
-                  <a key={i} href={`#section-${i}`} style={{ fontSize: "13px", color: "var(--ink-2)", lineHeight: 1.4, padding: "4px 0", borderLeft: "2px solid transparent", paddingLeft: "10px", transition: "all 0.15s" }} className="toc-link">{b.text}</a>
+                  <a key={i} href={`#section-${i}`} style={{ fontSize: "13px", color: "var(--ink-2)", lineHeight: 1.4, padding: "4px 0", borderLeft: "2px solid transparent", paddingLeft: "10px", transition: "background-color 0.15s, color 0.15s, border-color 0.15s, transform 0.15s" }} className="toc-link">{b.text}</a>
                 ) : null)}
               </div>
             </div>
           </aside>
 
           <article className="prose" style={{ maxWidth: "720px", order: 2, minWidth: 0, overflowWrap: "break-word" }}>
-            <p style={{ fontSize: "12px", fontWeight: 600, color: "var(--green)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "8px" }}>
+            <p style={{ fontSize: "12px", fontWeight: 600, color: "var(--green-dark)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "8px" }}>
               {article.category.replace("-", " ")} · {article.readTime} read
             </p>
             <h1 style={{ fontSize: "28px", fontWeight: 800, letterSpacing: "-0.02em", marginBottom: "12px", lineHeight: 1.15 }}>
@@ -353,13 +353,13 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
                     <a key={r.slug} href={`/guides/${r.slug}`} style={{
                       padding: "18px 22px", borderRadius: "12px", background: "var(--surface)", border: "1px solid var(--border)",
                       display: "flex", alignItems: "center", justifyContent: "space-between", gap: "14px",
-                      transition: "all 0.15s", textDecoration: "none",
+                      transition: "background-color 0.15s, color 0.15s, border-color 0.15s, transform 0.15s", textDecoration: "none",
                     }} className="related-card">
                       <div style={{ minWidth: 0 }}>
                         <p style={{ fontSize: "15px", fontWeight: 700, marginBottom: "4px", color: "var(--ink)" }}>{r.title}</p>
                         <p style={{ fontSize: "13px", color: "var(--ink-2)", lineHeight: 1.5, overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{r.excerpt}</p>
                       </div>
-                      <span style={{ flexShrink: 0, width: "36px", height: "36px", borderRadius: "50%", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--green)", fontSize: "16px", fontWeight: 700, transition: "all 0.15s" }} className="related-arrow">{"\u2192"}</span>
+                      <span style={{ flexShrink: 0, width: "36px", height: "36px", borderRadius: "50%", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--green-dark)", fontSize: "16px", fontWeight: 700, transition: "background-color 0.15s, color 0.15s, border-color 0.15s, transform 0.15s" }} className="related-arrow">{"\u2192"}</span>
                     </a>
                   ))}
                 </div>

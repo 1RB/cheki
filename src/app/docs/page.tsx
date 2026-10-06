@@ -210,15 +210,6 @@ function SectionTitle({ id, children }: { id: string; children: React.ReactNode 
         gap: "10px",
       }}
     >
-      <span
-        style={{
-          width: "4px",
-          height: "22px",
-          background: "var(--green)",
-          borderRadius: "2px",
-          flexShrink: 0,
-        }}
-      />
       {children}
     </h2>
   );
@@ -283,6 +274,7 @@ function EndpointHeader({
           fontSize: "14px",
           marginBottom: "16px",
           lineHeight: 1.5,
+          maxWidth: "60ch",
         }}
       >
         {desc}
@@ -481,8 +473,18 @@ docker-compose up -d
     rawCode: ex.code,
   }));
 
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: "https://cheki.et/" },
+      { "@type": "ListItem", position: 2, name: "API Docs", item: "https://cheki.et/docs" },
+    ],
+  };
+
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
       <Nav />
       <div style={{ minHeight: "100vh" }}>
         <div
@@ -536,7 +538,7 @@ docker-compose up -d
                   marginBottom: "8px",
                 }}
               >
-                Free REST API. No auth. No rate limit. No scam.
+                One POST request returns the full receipt.
               </p>
               <div
                 style={{
@@ -573,6 +575,7 @@ docker-compose up -d
                   color: "var(--ink-2)",
                   lineHeight: 1.6,
                   marginBottom: "16px",
+                  maxWidth: "60ch",
                 }}
               >
                 The cheki API verifies Ethiopian bank and mobile money receipts by

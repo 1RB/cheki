@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import "./globals.css";
 import { I18nProvider } from "@/lib/i18n/context";
 
@@ -104,66 +105,6 @@ export const metadata: Metadata = {
         "Self-hosting with Docker",
         "Bank receipt endpoint health monitoring",
       ],
-      aggregateRating: {
-        "@type": "AggregateRating",
-        ratingValue: "5",
-        ratingCount: "1",
-      },
-    }),
-    // JSON-LD structured data - FAQPage
-    "script:ld+json:faq": JSON.stringify({
-      "@context": "https://schema.org",
-      "@type": "FAQPage",
-      mainEntity: [
-        {
-          "@type": "Question",
-          name: "Is cheki really free?",
-          acceptedAnswer: {
-            "@type": "Answer",
-            text: "Yes. cheki is 100% free with no limits. No signup, no API key, no credit card. You can verify unlimited receipts. check.et charges 499 ETB/month after 200 verifications. verify.et charges $20-40/month.",
-          },
-        },
-        {
-          "@type": "Question",
-          name: "How does receipt verification work?",
-          acceptedAnswer: {
-            "@type": "Answer",
-            text: "Every Ethiopian bank and mobile wallet publishes transaction receipts at publicly accessible URLs. These URLs require no authentication. cheki fetches these URLs, parses the response (PDF, HTML, or JSON), and returns clean structured JSON with sender name, receiver name, amount, date, and reference number.",
-          },
-        },
-        {
-          "@type": "Question",
-          name: "Which banks are supported?",
-          acceptedAnswer: {
-            "@type": "Answer",
-            text: "cheki supports 10 live banks and wallets: CBE, Telebirr, Bank of Abyssinia, M-Pesa, Dashen Bank, Awash Bank, Zemen Bank, CBE Birr, Siinqee Bank, and eBirr. Additional banks are in development and can be added by the community.",
-          },
-        },
-        {
-          "@type": "Question",
-          name: "Do I need an API key?",
-          acceptedAnswer: {
-            "@type": "Answer",
-            text: "No. cheki's API requires no authentication. No API key, no bearer token, no OAuth. Just POST to /api/verify with a JSON body containing the bank code, reference number, and (for some banks) the account number.",
-          },
-        },
-        {
-          "@type": "Question",
-          name: "Can I self-host cheki?",
-          acceptedAnswer: {
-            "@type": "Answer",
-            text: "Yes. cheki is MIT licensed and includes Docker support. Clone the repo, run docker-compose up, and the API is available at localhost:3000. Self-hosting on an Ethiopian IP also bypasses geo-blocks on Telebirr and M-Pesa endpoints.",
-          },
-        },
-        {
-          "@type": "Question",
-          name: "How is cheki different from check.et and verify.et?",
-          acceptedAnswer: {
-            "@type": "Answer",
-            text: "All services use the same public bank endpoints. cheki is free and open source (MIT). check.et charges 499 ETB/month. verify.et charges $20-40/month. cheki requires no signup, shows the source URL, allows AI crawlers, and can be self-hosted.",
-          },
-        },
-      ],
     }),
   },
 };
@@ -183,7 +124,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <link rel="preconnect" href="https://rsms.me" />
+        {/* Self-hosted: an origin the page has never visited costs DNS + TLS
+            before the first paint. Preloaded because a swap-phase font is a
+            guaranteed flash of fallback text. */}
+        <link rel="preload" href="/fonts/InterVariable.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/favicon.ico" />
         <link rel="manifest" href="/manifest.webmanifest" />
@@ -198,7 +142,11 @@ export default function RootLayout({
           ::view-transition-old(nav) { animation: none; }
           ::view-transition-new(nav) { animation: none; }
         `}</style>
-        <script dangerouslySetInnerHTML={{ __html: `(function(){try{var s=localStorage.getItem('cheki-theme');var d=window.matchMedia('(prefers-color-scheme: dark)').matches;var t=s||((d?'dark':'light'));document.documentElement.setAttribute('data-theme',t);}catch(e){}})();` }} />
+        <Script
+          id="cheki-theme-init"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{ __html: `(function(){try{var s=localStorage.getItem('cheki-theme');var d=window.matchMedia('(prefers-color-scheme: dark)').matches;var t=s||((d?'dark':'light'));document.documentElement.setAttribute('data-theme',t);}catch(e){}})();` }}
+        />
       </head>
       <body>
         <I18nProvider>{children}</I18nProvider>

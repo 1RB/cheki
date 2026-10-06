@@ -109,7 +109,7 @@ export function DocsSidebar({ sections }: DocsSidebarProps) {
                       lineHeight: 1.4,
                       padding: "6px 12px",
                       borderRadius: "6px",
-                      transition: "all 0.15s",
+                      transition: "background-color 0.15s, color 0.15s, border-color 0.15s, transform 0.15s",
                       color:
                         activeSection === s.id
                           ? "var(--green-dark)"

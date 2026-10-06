@@ -31,7 +31,7 @@ export function LanguageSwitcher() {
           display: "flex", alignItems: "center", gap: "6px",
           padding: "5px 10px", borderRadius: "20px", border: "1px solid var(--border)",
           background: "var(--surface)", color: "var(--ink-2)", fontSize: "12px", fontWeight: 700,
-          cursor: "pointer", transition: "all 0.15s", letterSpacing: "0.02em", lineHeight: 1,
+          cursor: "pointer", transition: "background-color 0.15s, color 0.15s, border-color 0.15s, transform 0.15s", letterSpacing: "0.02em", lineHeight: 1,
         }}
       >
         <Icon icon={Globe02Icon} size={14} color="var(--ink-3)" strokeWidth={1.6} />

@@ -79,7 +79,7 @@ export default async function BankPage({ params }: { params: Promise<{ code: str
             {bank.shortName.slice(0, 3)}
           </div>
           <div>
-            <p style={{ fontSize: "12px", fontWeight: 600, color: "var(--green)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+            <p style={{ fontSize: "12px", fontWeight: 600, color: "var(--green-dark)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
               {bank.type === "mobile" ? "Mobile wallet" : bank.type === "wallet" ? "Wallet" : "Bank verification"}
             </p>
             <h1 style={{ fontSize: "clamp(24px, 4vw, 32px)", fontWeight: 800, letterSpacing: "-0.02em" }}>
@@ -175,12 +175,12 @@ export default async function BankPage({ params }: { params: Promise<{ code: str
               <p style={{ fontSize: "12px", fontWeight: 600, color: "var(--ink-3)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "16px" }}>Other supported providers</p>
               <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                 {otherBanks.map((b) => (
-                  <a key={b.code} href={`/banks/${b.code}`} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "8px 12px", borderRadius: "8px", transition: "all 0.15s" }}>
+                  <a key={b.code} href={`/banks/${b.code}`} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "8px 12px", borderRadius: "8px", transition: "background-color 0.15s, color 0.15s, border-color 0.15s, transform 0.15s" }}>
                     <div style={{ width: "28px", height: "28px", borderRadius: "6px", background: b.color, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700, fontSize: "11px", flexShrink: 0 }}>
                       {b.shortName.slice(0, 3)}
                     </div>
                     <span style={{ fontSize: "14px", fontWeight: 500, color: "var(--ink-2)" }}>{b.shortName}</span>
-                    {b.status === "soon" && <span style={{ fontSize: "10px", color: "var(--ink-3)" }}>soon</span>}
+                    {b.status === "soon" && <span style={{ fontSize: "11px", color: "var(--ink-3)" }}>soon</span>}
                   </a>
                 ))}
               </div>

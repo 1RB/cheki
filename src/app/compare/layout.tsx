@@ -8,6 +8,7 @@ export const metadata: Metadata = {
     canonical: "/compare",
   },
   openGraph: {
+    images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "cheki - verify Ethiopian receipts for free" }],
     title:
       "Compare Ethiopian receipt verification services",
     description:

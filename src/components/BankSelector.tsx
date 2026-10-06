@@ -424,9 +424,9 @@ export function BankSelector({ value, onChange }: BankSelectorProps) {
             >
               <span>{filtered.length} banks</span>
               <span style={{ display: "flex", gap: "8px" }}>
-                <kbd style={{ fontSize: "10px", padding: "1px 5px", border: "1px solid var(--border)", borderRadius: "4px" }}>↑↓</kbd>
-                <kbd style={{ fontSize: "10px", padding: "1px 5px", border: "1px solid var(--border)", borderRadius: "4px" }}>↵</kbd>
-                <kbd style={{ fontSize: "10px", padding: "1px 5px", border: "1px solid var(--border)", borderRadius: "4px" }}>esc</kbd>
+                <kbd style={{ fontSize: "11px", padding: "1px 5px", border: "1px solid var(--border)", borderRadius: "4px" }}>↑↓</kbd>
+                <kbd style={{ fontSize: "11px", padding: "1px 5px", border: "1px solid var(--border)", borderRadius: "4px" }}>↵</kbd>
+                <kbd style={{ fontSize: "11px", padding: "1px 5px", border: "1px solid var(--border)", borderRadius: "4px" }}>esc</kbd>
               </span>
             </div>
           </motion.div>

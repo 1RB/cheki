@@ -65,7 +65,7 @@ export function DocsTabs({ tabs }: DocsTabsProps) {
               border: "1px solid var(--border)",
               borderBottom: active === i ? "none" : "1px solid var(--border)",
               cursor: "pointer",
-              transition: "all 0.15s",
+              transition: "background-color 0.15s, color 0.15s, border-color 0.15s, transform 0.15s",
               whiteSpace: "nowrap",
               fontFamily: "var(--sans)",
             }}
@@ -98,7 +98,7 @@ export function DocsTabs({ tabs }: DocsTabsProps) {
             borderRadius: "6px",
             color: copied ? "var(--green)" : "rgba(255,255,255,0.6)",
             cursor: "pointer",
-            transition: "all 0.15s",
+            transition: "background-color 0.15s, color 0.15s, border-color 0.15s, transform 0.15s",
             fontFamily: "var(--sans)",
             zIndex: 1,
           }}

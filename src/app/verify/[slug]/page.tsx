@@ -155,7 +155,7 @@ export default function SeoPage({ params }: { params: Promise<{ slug: string }> 
                       <a key={r.slug} href={`/verify/${r.slug}`} className="related-card" style={{
                         padding: "18px 22px", borderRadius: "12px", background: "var(--surface)", border: "1px solid var(--border)",
                         display: "flex", alignItems: "center", justifyContent: "space-between", gap: "14px",
-                        transition: "all 0.15s", textDecoration: "none",
+                        transition: "background-color 0.15s, color 0.15s, border-color 0.15s, transform 0.15s", textDecoration: "none",
                       }}>
                         <div style={{ minWidth: 0 }}>
                           <p style={{ fontSize: "15px", fontWeight: 700, marginBottom: "4px", color: "var(--ink)" }}>{r.h1}</p>
@@ -164,7 +164,7 @@ export default function SeoPage({ params }: { params: Promise<{ slug: string }> 
                         <span className="related-arrow" style={{
                           flexShrink: 0, width: "36px", height: "36px", borderRadius: "50%",
                           border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center",
-                          color: "var(--green)", fontSize: "16px", fontWeight: 700, transition: "all 0.15s",
+                          color: "var(--green-dark)", fontSize: "16px", fontWeight: 700, transition: "background-color 0.15s, color 0.15s, border-color 0.15s, transform 0.15s",
                         }}>{"\u2192"}</span>
                       </a>
                     ))}
@@ -187,12 +187,12 @@ export default function SeoPage({ params }: { params: Promise<{ slug: string }> 
                   {page.sections.map((s, i) => (
                     <a key={i} href={`#section-${i}`} className="toc-link" style={{
                       fontSize: "13px", color: "var(--ink-2)", lineHeight: 1.4,
-                      padding: "4px 0", borderLeft: "2px solid transparent", paddingLeft: "10px", transition: "all 0.15s",
+                      padding: "4px 0", borderLeft: "2px solid transparent", paddingLeft: "10px", transition: "background-color 0.15s, color 0.15s, border-color 0.15s, transform 0.15s",
                     }}>{s.heading}</a>
                   ))}
                   <a href="#faq" className="toc-link" style={{
                     fontSize: "13px", color: "var(--ink-2)", lineHeight: 1.4,
-                    padding: "4px 0", borderLeft: "2px solid transparent", paddingLeft: "10px", transition: "all 0.15s",
+                    padding: "4px 0", borderLeft: "2px solid transparent", paddingLeft: "10px", transition: "background-color 0.15s, color 0.15s, border-color 0.15s, transform 0.15s",
                   }}>FAQ</a>
                 </div>
               </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import { createPortal } from "react-dom";
 import { Icon, GithubIcon, Menu01Icon, Cancel01Icon, ArrowRight01Icon } from "@/components/Icon";
 import { useTranslation } from "@/lib/i18n/use-translation";
@@ -12,6 +13,7 @@ import { articles } from "@/lib/guides";
 
 export function Nav() {
   const { t } = useTranslation();
+  const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
@@ -43,6 +45,7 @@ export function Nav() {
     { id: "page-docs", href: "/docs", label: "API documentation", group: "Pages" },
     { id: "page-compare", href: "/compare", label: "Compare services", group: "Pages" },
     { id: "page-developers", href: "/developers", label: "Developers", group: "Pages" },
+    { id: "page-verify-index", href: "/verify", label: "Verify guides", group: "Pages" },
     ...banks.map((b) => ({
       id: `bank-${b.code}`,
       label: b.name,
@@ -75,17 +78,22 @@ export function Nav() {
                 fontWeight: 800, fontSize: "20px", letterSpacing: "-0.03em", color: "var(--ink)",
               }}>cheki</span>
               <span style={{
-                fontSize: "10px", fontWeight: 600, color: "var(--green)", border: "1px solid var(--green-light)",
+                fontSize: "11px", fontWeight: 600, color: "var(--green-dark)", border: "1px solid var(--green-light)",
                 padding: "2px 6px", borderRadius: "4px", background: "var(--green-light)",
               }}>OSS</span>
             </a>
             <div className="nav-desktop" style={{ display: "flex", gap: "2px", alignItems: "center" }}>
-              {links.map((l) => (
-                <a key={l.href} href={l.href} style={{
-                  padding: "6px 12px", fontSize: "14px", fontWeight: 500, color: "var(--ink-2)",
-                  borderRadius: "6px", transition: "color 0.15s",
-                }}>{l.label}</a>
-              ))}
+              {links.map((l) => {
+                const here = l.href === "/" ? pathname === "/" : pathname === l.href || pathname.startsWith(`${l.href}/`);
+                return (
+                  <a key={l.href} href={l.href} aria-current={here ? "page" : undefined} style={{
+                    padding: "6px 12px", fontSize: "14px", fontWeight: here ? 600 : 500,
+                    color: here ? "var(--ink)" : "var(--ink-2)",
+                    background: here ? "color-mix(in srgb, var(--border) 70%, transparent)" : "transparent",
+                    borderRadius: "6px", transition: "color 0.15s, background-color 0.15s",
+                  }}>{l.label}</a>
+                );
+              })}
             </div>
           </div>
 
@@ -109,7 +117,12 @@ export function Nav() {
             <div className="nav-mobile-only" style={{ display: "none" }}>
               <ThemeToggle size={32} />
             </div>
-            <button className="nav-mobile-toggle" onClick={() => setMobileOpen(!mobileOpen)} style={{
+            <button
+              className="nav-mobile-toggle"
+              onClick={() => setMobileOpen(!mobileOpen)}
+              aria-label={mobileOpen ? "Close menu" : "Open menu"}
+              aria-expanded={mobileOpen}
+              style={{
               background: "transparent", border: "none", cursor: "pointer", padding: "8px",
               display: "none",
             }}>
@@ -135,7 +148,7 @@ export function Nav() {
           }}>
             <a href="/" onClick={() => setMobileOpen(false)} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <span style={{ fontWeight: 800, fontSize: "20px", letterSpacing: "-0.03em", color: "var(--ink)" }}>cheki</span>
-              <span style={{ fontSize: "10px", fontWeight: 600, color: "var(--green)", border: "1px solid var(--green-light)", padding: "2px 6px", borderRadius: "4px", background: "var(--green-light)" }}>OSS</span>
+              <span style={{ fontSize: "11px", fontWeight: 600, color: "var(--green-dark)", border: "1px solid var(--green-light)", padding: "2px 6px", borderRadius: "4px", background: "var(--green-light)" }}>OSS</span>
             </a>
             <button onClick={() => setMobileOpen(false)} style={{
               background: "transparent", border: "none", cursor: "pointer", padding: "8px",
@@ -204,6 +217,7 @@ export function Footer() {
   const resourceLinks = [
     { href: "/developers", label: "API" },
     { href: "/docs", label: t("footer.apiDocs") },
+    { href: "/verify", label: "Verify guides" },
     { href: "https://github.com/1RB/cheki", label: t("footer.github") },
     { href: "https://github.com/1RB/cheki/tree/main/python", label: t("footer.python") },
   ];
@@ -217,7 +231,7 @@ export function Footer() {
             <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
               <span style={{ fontWeight: 800, fontSize: "18px", letterSpacing: "-0.03em" }}>cheki</span>
               <span style={{
-                fontSize: "10px", fontWeight: 600, color: "var(--green)", border: "1px solid var(--green-light)",
+                fontSize: "11px", fontWeight: 600, color: "var(--green-dark)", border: "1px solid var(--green-light)",
                 padding: "2px 6px", borderRadius: "4px", background: "var(--green-light)",
               }}>OSS</span>
             </div>

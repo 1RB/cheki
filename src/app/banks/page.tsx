@@ -34,7 +34,7 @@ export default function BanksPage() {
       <p style={{ fontSize: "13px", color: "var(--ink-2)", lineHeight: 1.5 }}>
         {b.description.slice(0, 120)}...
       </p>
-      <div style={{ display: "flex", gap: "12px", fontSize: "12px", color: "var(--ink-3)" }}>
+      <div style={{ display: "flex", gap: "12px", fontSize: "12px", color: "var(--ink-3)", marginTop: "auto" }}>
         {b.requiresAccount && <span>{t("banks.accountRequired")}</span>}
         {b.geoBlocked && <span>{t("banks.ethiopiaOnly")}</span>}
         {!b.requiresAccount && !b.geoBlocked && <span>{t("banks.referenceOnly")}</span>}
@@ -42,8 +42,18 @@ export default function BanksPage() {
     </a>
   );
 
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: "https://cheki.et/" },
+      { "@type": "ListItem", position: 2, name: "Banks", item: "https://cheki.et/banks" },
+    ],
+  };
+
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
       <Nav />
       <main className="container" style={{ paddingTop: "48px", paddingBottom: "48px" }}>
         <nav style={{ fontSize: "13px", color: "var(--ink-3)", marginBottom: "16px" }}>
@@ -98,9 +108,9 @@ export default function BanksPage() {
             <h2 style={{ fontSize: "22px", fontWeight: 800, letterSpacing: "-0.02em" }}>
               {t("banks.contribute")}
             </h2>
-            <span style={{ fontSize: "13px", color: "var(--green)", fontWeight: 600 }}>Open source</span>
+            <span style={{ fontSize: "13px", color: "var(--green-dark)", fontWeight: 600 }}>Open source</span>
           </div>
-          <p style={{ fontSize: "15px", color: "var(--ink-2)", lineHeight: 1.7, marginBottom: "20px" }}>
+          <p style={{ fontSize: "15px", color: "var(--ink-2)", lineHeight: 1.7, marginBottom: "20px", maxWidth: "60ch" }}>
             {inDev.length} Ethiopian banks still need receipt endpoints. If you use one of these banks and can share a receipt with a QR code or receipt URL, we can reverse-engineer the endpoint and add it to cheki for free. No technical knowledge needed, just send us a screenshot or link.
           </p>
           <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>

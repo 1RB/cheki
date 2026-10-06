@@ -118,7 +118,6 @@ export function CommandPalette({
     el?.scrollIntoView({ block: "nearest" });
   }, [activeIndex]);
 
-  if (typeof document === "undefined") return null;
 
   return (
     <>
@@ -304,7 +303,7 @@ export function CommandPalette({
                                 )}
                               </span>
                               {isActive && (
-                                <ArrowRight style={{ width: 14, height: 14, color: "var(--green)", flexShrink: 0 }} />
+                                <ArrowRight style={{ width: 14, height: 14, color: "var(--green-dark)", flexShrink: 0 }} />
                               )}
                             </a>
                           );
@@ -339,7 +338,7 @@ export function CommandPalette({
 }
 
 const kbdStyle: React.CSSProperties = {
-  fontSize: "10px",
+  fontSize: "11px",
   fontWeight: 600,
   padding: "1px 5px",
   borderRadius: "3px",

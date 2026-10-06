@@ -18,7 +18,7 @@ export const translations = {
       title: "Verify Ethiopian receipts for free",
       subtitle: "No signup. No API key. No charge. Paste the transaction reference and confirm the payment before you release the goods.",
       bankLabel: "Bank or wallet",
-      referenceLabel: "Reference number",
+      referenceLabel: "Receipt",
       referencePlaceholder: "e.g. FT26140P01YB",
       accountLabel: "Account number",
       accountPlaceholder: "Required for CBE and BOA",

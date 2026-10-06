@@ -56,8 +56,18 @@ export default function DevelopersPage() {
     { method: "GET", path: "/api/receipt", desc: "Download the raw receipt file (PDF/HTML) from the bank endpoint." },
   ];
 
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: "https://cheki.et/" },
+      { "@type": "ListItem", position: 2, name: "Developers", item: "https://cheki.et/developers" },
+    ],
+  };
+
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
       <Nav />
       <main className="container" style={{ paddingTop: "48px", paddingBottom: "48px" }}>
         <h1 style={{ fontSize: "clamp(28px, 5vw, 40px)", fontWeight: 800, letterSpacing: "-0.03em", marginBottom: "16px" }}>
@@ -79,7 +89,7 @@ export default function DevelopersPage() {
                   background: activeLang === lang ? "var(--code-bg)" : "var(--surface-alt)",
                   color: activeLang === lang ? "#fff" : "var(--ink-3)",
                   border: "1px solid var(--border)", borderBottom: activeLang === lang ? "none" : "1px solid var(--border)",
-                  cursor: "pointer", transition: "all 0.15s", whiteSpace: "nowrap",
+                  cursor: "pointer", transition: "background-color 0.15s, color 0.15s, border-color 0.15s, transform 0.15s", whiteSpace: "nowrap",
                 }}
               >{lang}</button>
             ))}
@@ -132,7 +142,7 @@ export default function DevelopersPage() {
               }}>{ep.method}</span>
               <div style={{ minWidth: 0 }}>
                 <p style={{ fontSize: "14px", fontFamily: "var(--mono)", fontWeight: 600, marginBottom: "4px", wordBreak: "break-all" }}>{ep.path}</p>
-                <p style={{ fontSize: "14px", color: "var(--ink-2)" }}>{ep.desc}</p>
+                <p style={{ fontSize: "14px", color: "var(--ink-2)", maxWidth: "60ch" }}>{ep.desc}</p>
               </div>
             </div>
           ))}
@@ -151,7 +161,7 @@ export default function DevelopersPage() {
                   background: activeSdk === lang ? "var(--surface)" : "var(--surface-alt)",
                   color: activeSdk === lang ? "var(--ink)" : "var(--ink-3)",
                   border: "1px solid var(--border)", borderBottom: activeSdk === lang ? "none" : "1px solid var(--border)",
-                  cursor: "pointer", transition: "all 0.15s", whiteSpace: "nowrap",
+                  cursor: "pointer", transition: "background-color 0.15s, color 0.15s, border-color 0.15s, transform 0.15s", whiteSpace: "nowrap",
                 }}
               >{lang}</button>
             ))}

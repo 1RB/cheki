@@ -10,7 +10,7 @@ interface LogoProps {
 export function BankLogo({ size = 36, shortName, color }: LogoProps) {
   const initials = shortName.slice(0, 3).toUpperCase();
   return (
-    <svg width={size} height={size} viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg width={size} height={size} viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
       <rect width="40" height="40" rx="8" fill={color} />
       <text
         x="20" y="20"
@@ -33,7 +33,7 @@ export function CBEOCogo({ size = 36 }: { size?: number }) {
 // Telebirr - orange with "Tb"
 export function TelebirrLogo({ size = 36 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg width={size} height={size} viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
       <rect width="40" height="40" rx="8" fill="#e8a000" />
       <text x="20" y="20" dominantBaseline="central" textAnchor="middle" fill="#fff" fontSize="14" fontWeight="800" fontFamily="Inter, system-ui, sans-serif">Tb</text>
     </svg>
@@ -48,7 +48,7 @@ export function BOALogo({ size = 36 }: { size?: number }) {
 // M-Pesa - green (Safaricom green)
 export function MPesaLogo({ size = 36 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg width={size} height={size} viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
       <rect width="40" height="40" rx="8" fill="#16a34a" />
       <text x="20" y="20" dominantBaseline="central" textAnchor="middle" fill="#fff" fontSize="11" fontWeight="700" fontFamily="Inter, system-ui, sans-serif">M-P</text>
     </svg>
@@ -73,7 +73,7 @@ export function ZemenLogo({ size = 36 }: { size?: number }) {
 // CBE Birr - sky blue
 export function CBEBirrLogo({ size = 36 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg width={size} height={size} viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
       <rect width="40" height="40" rx="8" fill="#0ea5e9" />
       <text x="20" y="20" dominantBaseline="central" textAnchor="middle" fill="#fff" fontSize="10" fontWeight="700" fontFamily="Inter, system-ui, sans-serif">CBEb</text>
     </svg>

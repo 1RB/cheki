@@ -30,8 +30,8 @@ const STATUS_STYLE: Record<BadgeStatus, React.CSSProperties> = {
 };
 
 const SIZE_STYLE: Record<BadgeSize, React.CSSProperties> = {
-  sm: { height: "22px", gap: "5px", padding: "0 8px", fontSize: "10px" },
-  md: { height: "28px", gap: "6px", padding: "0 10px", fontSize: "11px" },
+  sm: { height: "24px", gap: "5px", padding: "8px 10px", fontSize: "11px" },
+  md: { height: "28px", gap: "6px", padding: "8px 12px", fontSize: "11px" },
 };
 
 const ICONS: Record<BadgeStatus, typeof Circle> = {

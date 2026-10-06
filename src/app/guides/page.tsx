@@ -51,8 +51,18 @@ export default function GuidesPage() {
     return [...filtered].sort((a, b) => b.date.localeCompare(a.date));
   }, [filtered]);
 
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: "https://cheki.et/" },
+      { "@type": "ListItem", position: 2, name: "Guides", item: "https://cheki.et/guides" },
+    ],
+  };
+
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
       <Nav />
       <main style={{ paddingTop: "40px", paddingBottom: "48px" }}>
         {/* Header */}
@@ -152,7 +162,7 @@ export default function GuidesPage() {
                 background: !activeTag ? "var(--green-light)" : "var(--surface)",
                 color: !activeTag ? "var(--green-dark)" : "var(--ink-2)",
                 cursor: "pointer",
-                transition: "all 0.15s",
+                transition: "background-color 0.15s, color 0.15s, border-color 0.15s, transform 0.15s",
               }}
             >
               All ({articles.length})
@@ -172,9 +182,9 @@ export default function GuidesPage() {
                     border: `1px solid ${isActive ? color : "var(--border)"}`,
                     borderRadius: "20px",
                     background: isActive ? `${color}15` : "var(--surface)",
-                    color: isActive ? color : "var(--ink-2)",
+                    color: isActive ? `color-mix(in srgb, ${color} 72%, var(--ink))` : "var(--ink-2)",
                     cursor: "pointer",
-                    transition: "all 0.15s",
+                    transition: "background-color 0.15s, color 0.15s, border-color 0.15s, transform 0.15s",
                     display: "flex",
                     alignItems: "center",
                     gap: "6px",
@@ -195,7 +205,7 @@ export default function GuidesPage() {
               <p style={{ fontSize: "16px", color: "var(--ink-3)", marginBottom: "8px" }}>No articles found</p>
               <p style={{ fontSize: "14px", color: "var(--ink-3)" }}>
                 Try a different search or{" "}
-                <button onClick={() => { setQuery(""); setActiveTag(null); }} style={{ color: "var(--green)", background: "none", border: "none", cursor: "pointer", fontWeight: 600 }}>
+                <button onClick={() => { setQuery(""); setActiveTag(null); }} style={{ color: "var(--green-dark)", background: "none", border: "none", cursor: "pointer", fontWeight: 600 }}>
                   clear filters
                 </button>
               </p>
@@ -238,7 +248,7 @@ export default function GuidesPage() {
                         <span style={{
                           fontSize: "11px",
                           fontWeight: 700,
-                          color: color,
+                          color: `color-mix(in srgb, ${color} 72%, var(--ink))`,
                           textTransform: "uppercase",
                           letterSpacing: "0.06em",
                           display: "flex",

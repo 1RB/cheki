@@ -8,6 +8,7 @@ export const metadata: Metadata = {
     canonical: "/banks",
   },
   openGraph: {
+    images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "cheki - verify Ethiopian receipts for free" }],
     title: "cheki - Supported Ethiopian Banks and Wallets",
     description:
       "10 live banks and wallets supported for free receipt verification. CBE, Telebirr, BOA, M-Pesa, and more.",
