@@ -86,17 +86,17 @@ export function HomePage() {
   const missingAccountNumber =
     !showQrPaste && inputMode === "reference" && (needsAccount || needsPhone) && !accountNumber.trim();
 
-  // A grey primary button with no stated reason is indistinguishable from a
-  // broken one, and the default state of this page (CBE selected, no account
-  // digits yet) is exactly that grey state. Name what the form is waiting for.
+  // A grey button with no stated reason looks the same as a broken one. The
+  // default state of this page is that grey state, so say what the form is
+  // waiting for.
   const waitingFor: string | null = loading
     ? null
     : isDisabled && inputMode === "reference"
       ? null
       : missingAccountNumber
         ? needsPhone
-          ? `Enter the payer phone number — ${selectedBank.shortName} matches the receipt on it.`
-          : `Enter your ${selectedBank.accountLabel ?? "account number"} — ${selectedBank.shortName} looks the receipt up on it.`
+          ? `Enter the payer phone number. ${selectedBank.shortName} matches the receipt on it.`
+          : `Enter your ${selectedBank.accountLabel ?? "account number"}. ${selectedBank.shortName} looks the receipt up on it.`
         : showQrPaste
           ? qrData.trim()
             ? null
@@ -104,7 +104,7 @@ export function HomePage() {
           : reference.trim()
             ? null
             : inputMode === "photo"
-              ? "Read a receipt first — its reference is filled in for you."
+              ? "Read a receipt first. Its reference is filled in for you."
               : "Paste a receipt link or reference number to start.";
 
   // What has been pasted: a receipt URL names its own bank, a bare reference
@@ -621,10 +621,9 @@ export function HomePage() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // The loop only closes if the peak moment has an exit. Without this the
-  // button keeps reading "Verified" and the previous reference and account
-  // digits stay in the fields, so checking the next receipt means selecting
-  // and deleting both by hand.
+  // Without a reset the button keeps reading "Verified" and the old reference
+  // and account digits stay in the fields, so checking the next receipt means
+  // clearing both by hand.
   const resetVerification = useCallback(() => {
     setReference("");
     setAccountNumber("");
@@ -663,13 +662,13 @@ export function HomePage() {
 
     const prompt = `Verify an Ethiopian bank receipt with cheki. It is free, needs no signup, and no API key.
 
-1. Read ${origin}/llms.txt — it documents every endpoint, bank code and reference format.
+1. Read ${origin}/llms.txt. It documents every endpoint, bank code and reference format.
 2. POST ${origin}/api/verify with a JSON body:
      {"bank": "cbe", "reference": "FT26140P01YB", "accountNumber": "60536171"}
    accountNumber is required only for cbe and boa. If you have a receipt URL
    instead of a reference, send it in "reference" and cheki detects the bank.
 3. Use the response:
-     result.verified        the answer — true means the bank confirms this receipt
+     result.verified        the answer; true means the bank confirms this receipt
      result.amount          amount in ETB
      result.senderName      who paid
      result.receiverName    who was paid
@@ -677,7 +676,7 @@ export function HomePage() {
    A repeat check of the same receipt returns "cached": true instantly, so
    re-verifying before releasing goods costs nothing.
 4. To reconcile many receipts, POST ${origin}/api/verify/batch with
-   {"receipts": [{...}, ...]} — up to 50 per call.
+   {"receipts": [{...}, ...]}, up to 50 per call.
 5. GET ${origin}/api/health reports per-bank latency if a check is slow.
 
 Source: https://github.com/1RB/cheki
@@ -839,7 +838,7 @@ ${receipt}`;
                 </button>
                 <p style={{ fontSize: "12px", color: "var(--ink-3)", lineHeight: 1.5, maxWidth: "420px", margin: 0 }}>
                   {agentCopied
-                    ? "Paste it into Claude Code, Cursor or any agent — it knows the rest."
+                    ? "Paste it into Claude Code, Cursor or any agent. It knows the rest."
                     : "Copies a prompt for Claude Code, Cursor, or any coding agent. It reads cheki's llms.txt and writes the integration."}
                 </p>
               </div>
@@ -988,7 +987,7 @@ ${receipt}`;
                     </label>
                     <input id="verify-account" type="text" value={accountNumber} onChange={(e) => setAccountNumber(e.target.value)} onKeyDown={(e) => e.key === "Enter" && !loading && handleVerify()} placeholder={`Last ${selectedBank.accountDigits} digits minimum`} aria-describedby="verify-account-hint" style={{ width: "100%", padding: "12px 16px", fontSize: "15px", border: "1px solid var(--border)", borderRadius: "8px", background: "var(--surface)", color: "var(--ink)", fontFamily: "var(--mono)" }} spellCheck={false} inputMode="numeric" autoComplete="off" />
                     <p id="verify-account-hint" className="form-hint">
-                      Last digits only. Sent to {selectedBank.shortName}&apos;s public receipt endpoint over HTTPS to look up this receipt — cheki has no signup, so nothing here is tied to an account.
+                      Last digits only. Sent to {selectedBank.shortName}&apos;s public receipt endpoint over HTTPS to look up this receipt. cheki has no signup, so nothing here is tied to an account.
                     </p>
                   </div>
                 )}
@@ -1001,7 +1000,7 @@ ${receipt}`;
                     </label>
                     <input id="verify-phone" type="text" value={accountNumber} onChange={(e) => setAccountNumber(e.target.value)} onKeyDown={(e) => e.key === "Enter" && !loading && handleVerify()} placeholder="2519XXXXXXXXX" aria-describedby="verify-phone-hint" style={{ width: "100%", padding: "12px 16px", fontSize: "15px", border: "1px solid var(--border)", borderRadius: "8px", background: "var(--surface)", color: "var(--ink)", fontFamily: "var(--mono)" }} spellCheck={false} inputMode="tel" autoComplete="tel" />
                     <p id="verify-phone-hint" className="form-hint">
-                      Sent to {selectedBank.shortName}&apos;s public receipt endpoint over HTTPS to look up this receipt — cheki has no signup, so nothing here is tied to an account.
+                      Sent to {selectedBank.shortName}&apos;s public receipt endpoint over HTTPS to look up this receipt. cheki has no signup, so nothing here is tied to an account.
                     </p>
                   </div>
                 )}
@@ -1197,7 +1196,7 @@ ${receipt}`;
                     <li>The reference was mistyped or truncated. Read the digits off the original receipt again.</li>
                     <li>
                       The receipt is not in {selectedBank.shortName}&apos;s published records. That is also what a
-                      fabricated screenshot looks like — here is how to tell the two apart.
+                      fabricated screenshot looks like. Here is how to tell the two apart.
                     </li>
                   </ol>
                   <Link href="/guides/payment-fraud-ethiopia" style={{ display: "inline-block", marginTop: "8px", fontSize: "13px", fontWeight: 600, color: "var(--green-dark)", textDecoration: "underline" }}>
@@ -1521,7 +1520,7 @@ ${receipt}`;
             ))}
           </div>
           <p style={{ marginTop: "16px", fontSize: "13px", color: "var(--ink-3)" }}>
-            {banks.filter((b) => b.status === "soon").length} banks still in research — <a href="/banks" style={{ color: "var(--green-dark)", fontWeight: 600 }}>Help us add them →</a>
+            {banks.filter((b) => b.status === "soon").length} banks are still in research. <a href="/banks" style={{ color: "var(--green-dark)", fontWeight: 600 }}>Help us add them →</a>
           </p>
         </section>
         <section className="container" style={{ marginTop: "64px", marginBottom: "80px" }}>
@@ -1566,15 +1565,15 @@ ${receipt}`;
         </section>
 
         {/* FAQ. The FAQPage JSON-LD on this route is generated from these
-            exact strings — schema that describes content nobody can see is
-            the fastest way to lose a rich result. */}
+            exact strings. Schema that describes content nobody can see will
+            lose the rich result. */}
         <section className="container" style={{ marginTop: "72px", marginBottom: "88px" }}>
           <h2 style={{ fontSize: "clamp(22px, 4vw, 30px)", fontWeight: 800, letterSpacing: "-0.02em", marginBottom: "10px" }}>
             Questions people actually ask
           </h2>
           <p style={{ color: "var(--ink-2)", fontSize: "16px", lineHeight: 1.5, maxWidth: "60ch", marginBottom: "20px" }}>
             If yours is not here,{" "}
-            <a href="https://github.com/1RB/cheki/issues" target="_blank" rel="noopener noreferrer" style={{ color: "var(--green-dark)", fontWeight: 600 }}>open an issue</a> — the answers stay in public.
+            <a href="https://github.com/1RB/cheki/issues" target="_blank" rel="noopener noreferrer" style={{ color: "var(--green-dark)", fontWeight: 600 }}>open an issue</a>. The answers stay in public.
           </p>
           <div style={{ maxWidth: 760 }}>
             {homeFaqs.map((f) => (
@@ -1652,10 +1651,10 @@ function ReceiptCard({ result, copied, onCopy, onReset }: { result: VerifyResult
     { label: "Total Paid", value: result.totalPaid != null ? `${result.totalPaid.toLocaleString()} ETB` : undefined, mono: true, bold: true },
   ].filter((r) => r.value);
 
-  // The header copies the receipt as readable text — the shape someone drops
+  // The header copies the receipt as readable text, the shape someone drops
   // into a message. The JSON stays behind the disclosure below, for machines.
   const copySummary = () => {
-    const lines = ["Receipt verified — cheki", `Bank: ${bankName} (${status})`];
+    const lines = ["Receipt verified by cheki", `Bank: ${bankName} (${status})`];
     if (amount) lines.push(`Amount: ${amount}`);
     if (result.date) lines.push(`Date: ${result.date}`);
     const from = [result.senderName, senderAccount].filter(Boolean).join(" · ");

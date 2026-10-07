@@ -6,7 +6,7 @@
  *
  * The highlighter instance is cached (createHighlighter loads WASM + grammars
  * and is expensive). Highlighting runs at build time in server components,
- * producing static HTML with inline color styles — no client-side JS needed.
+ * producing static HTML with inline color styles, so no client-side JS is needed.
  */
 
 import {
@@ -17,7 +17,7 @@ import {
 
 const THEME = "github-dark";
 
-/** Languages we bundle — keep this list small to control bundle size. */
+/** Languages we bundle. Keep this list small to control bundle size. */
 const LANGS = [
   "bash",
   "json",
@@ -48,7 +48,7 @@ const SHIKI_LANG_MAP: Record<string, string> = {
   http: "http",
 };
 
-// Cache the highlighter — createHighlighter loads grammars and is expensive.
+// Cache the highlighter: createHighlighter loads grammars and is expensive.
 // We use the JavaScript regex engine (not the default oniguruma WASM engine)
 // to avoid WASM-related crashes in some build/CI environments.
 let highlighterPromise: Promise<Highlighter> | null = null;
@@ -92,7 +92,7 @@ function escapeHtml(s: string): string {
  * The code block keeps a fixed dark surface in both themes (comments must not
  * invert on a light page), but GitHub Dark ships comment grey `#6A737D` which
  * is only 3.04:1 on that surface. Every emitted foreground is therefore lifted
- * toward white until it clears 4.5:1 — colours that already pass are returned
+ * toward white until it clears 4.5:1. Colours that already pass are returned
  * untouched, so token hues are preserved.
  */
 const CODE_BG = "#24292e";
@@ -162,7 +162,7 @@ export function fitColorsToCodeBlock(html: string): string {
  * Highlight code and return an HTML string of <span> elements with inline
  * color styles (from Shiki's GitHub Dark theme).
  *
- * Safe to inject via dangerouslySetInnerHTML — Shiki escapes all source
+ * Safe to inject via dangerouslySetInnerHTML, because Shiki escapes all source
  * content. Unknown languages fall back to plaintext.
  */
 export async function highlightCode(
@@ -189,7 +189,7 @@ export async function highlightCode(
       });
       return fitColorsToCodeBlock(extractInnerCode(html));
     } catch {
-      // Ultimate fallback — escaped raw text
+      // Ultimate fallback: escaped raw text
       return escapeHtml(code);
     }
   }

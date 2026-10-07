@@ -54,7 +54,7 @@ export abstract class BaseParser {
   ): Promise<Result<HttpResult>> {
     const url = this.buildUrl(ref, account, phone);
     const maxRetries = MAX_RETRIES;
-    // CBE legacy PDF endpoint is notoriously slow — give it more time
+    // CBE legacy PDF endpoint is slow, so give it more time
     const timeoutMs = this.bankId === "cbe" ? SLOW_BANK_TIMEOUT_MS : DEFAULT_TIMEOUT_MS;
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {

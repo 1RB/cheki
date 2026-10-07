@@ -29,7 +29,7 @@ import { createPortal } from "react-dom";
 import { EASE_OUT } from "@/lib/ease";
 
 /* ──────────────────────────────────────────────────────────────
-   Toast stack — adapted from beUI source, rewritten to use
+   Toast stack, adapted from beUI source, rewritten to use
    cheki's CSS variables and inline styles (no tailwind utilities).
    Animation logic preserved: spring entrance, drag-to-dismiss,
    AnimatePresence, status morph.

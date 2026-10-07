@@ -142,7 +142,7 @@ export function CommandPalette({
         <AnimatePresence>
           {open ? (
             <>
-              {/* Backdrop — ⌘K is a keyboard action, so it opens and closes
+              {/* Backdrop. ⌘K is a keyboard action, so it opens and closes
                   on a hard cut: no transition, no backdrop blur ramp. */}
               <motion.div
                 initial={false}

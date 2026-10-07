@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Verify guides | cheki",
     description:
-      "Every cheki verify guide in one place — bank checks, fraud red flags, receipt formats, and the free API.",
+      "Every cheki verify guide in one place: bank checks, fraud red flags, receipt formats, and the free API.",
     type: "website",
     url: "https://cheki.et/verify",
   },
@@ -71,7 +71,7 @@ export default function VerifyIndex() {
             Verify guides
           </h1>
           <p style={{ color: "var(--ink-2)", fontSize: "17px", maxWidth: "60ch", lineHeight: 1.5 }}>
-            How to check any Ethiopian payment, in depth — one page per bank, per fraud pattern,
+            How to check any Ethiopian payment, in depth: one page per bank, per fraud pattern,
             and per API surface. All of it free, none of it gated.
           </p>
         </div>

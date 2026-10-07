@@ -56,7 +56,7 @@ export async function GET() {
           .replace("{ref}", "test")
           .replace("{account}", "00000000")
           .replace("{phone}", "0000000000");
-        // CBE legacy PDF endpoint is slow — give it 15s in health checks
+        // CBE legacy PDF endpoint is slow, so give it 15s in health checks
         const healthTimeout = b.id === "cbe" ? 15000 : 5000;
         await checkEndpoint(url, b.sslVerify, healthTimeout);
         return {

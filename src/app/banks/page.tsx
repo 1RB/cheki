@@ -40,7 +40,7 @@ export default function BanksPage() {
         {b.description.slice(0, 120)}...
       </p>
       {/* "Account required" decides whether the reader can act at all, so it
-          outranks the description above it — not the other way round. */}
+          outranks the description above it, not the other way round. */}
       <div className="bank-meta">
         {b.requiresAccount && <span className="bank-meta__chip">{t("banks.accountRequired")}</span>}
         {b.geoBlocked && <span className="bank-meta__chip">{t("banks.ethiopiaOnly")}</span>}

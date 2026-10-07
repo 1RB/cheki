@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
       if (result.error.kind === "ENDPOINT_ERROR" && "fallbackUrl" in result.error) {
         response.fallbackUrl = (result.error as { fallbackUrl?: string }).fallbackUrl;
       }
-      // Failures are never cached — a timeout or geo-block must retry live.
+      // Failures are never cached. A timeout or geo-block must retry live.
       return NextResponse.json(response, { status });
     }
 

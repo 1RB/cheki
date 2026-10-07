@@ -1,7 +1,7 @@
 /**
  * The code block is forced dark in both themes, so it inherits GitHub Dark's
  * token colours verbatim. Comment grey `#6A737D` measures 3.04:1 on that
- * surface — axe flagged it in the light theme too, because the surface never
+ * surface, and axe flagged it in the light theme too, because the surface never
  * changes. Every emitted foreground must clear 4.5:1.
  */
 import { describe, expect, it } from "vitest";

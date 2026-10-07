@@ -167,7 +167,7 @@ Self-hosting on an Ethiopian IP bypasses Telebirr/M-Pesa geo-blocks.
 - **Web UI**: receipt aesthetic, auto-detect bank from reference format, dark mode
 - **REST API**: free, no API key, no rate limit, batch verification up to 50 receipts
 - **CLI**: verify receipts from the terminal (`npx cheki verify`)
-- **5 SDKs**: TypeScript, Python, Go, Dart, PHP — all with typed errors and retry
+- **5 SDKs**: TypeScript, Python, Go, Dart, PHP with typed errors and retry
 - **10 live banks**: CBE, Telebirr, BOA, M-Pesa, Dashen, Awash, Zemen, CBE Birr, Siinqee, eBirr
 - **Docker**: self-hosting with docker-compose
 - **SEO**: bank-specific pages, guides, sitemap, structured data
@@ -474,7 +474,7 @@ Include the reference number you tested with (or note that you tested from an Et
 Version bumps are automated. All package versions (web, TypeScript SDK, Python SDK, Dart SDK, PHP SDK) stay in sync.
 
 ```bash
-# Bump to a new version — updates all packages, commits, tags, and pushes
+# Bump to a new version: updates all packages, commits, tags, and pushes
 ./scripts/bump-version.sh 1.4.2
 ```
 

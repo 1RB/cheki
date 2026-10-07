@@ -195,7 +195,7 @@ export class Verifier {
           }
         }
 
-        // Not a URL — treat qrData as a plain reference for this bank
+        // Not a URL, so treat qrData as a plain reference for this bank
         reference = qrData;
         // Fall through to normal verification below
       } else {

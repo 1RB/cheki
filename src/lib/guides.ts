@@ -96,17 +96,17 @@ export const articles: Article[] = [
       { type: "callout", variant: "warning", title: "X-App-ID headers", text: "The new CBE API requires hardcoded X-App-ID and X-App-Version headers. These are embedded in the mbreciept.cbe.com.et JavaScript bundle. If CBE rotates these headers, cheki will need to update them. The old PDF endpoint has no such requirement." },
 
       { type: "heading", text: "Inside the short ID: what we found" },
-      { type: "text", text: "We reverse-engineered the token format. The short ID in a v1 mbreciept URL (like fHCxyV4mg5pRIwEkJO) is standard base64url encoding of 13 bytes. The first 3 bytes are a fixed header (7c70b1 — which is why all v1 tokens start with \"fHCx\"). The remaining 10 bytes are an encrypted payload containing the transaction's FT reference." },
+      { type: "text", text: "We reverse-engineered the token format. The short ID in a v1 mbreciept URL (like fHCxyV4mg5pRIwEkJO) is standard base64url encoding of 13 bytes. The first 3 bytes are a fixed header (7c70b1, which is why all v1 tokens start with \"fHCx\"). The remaining 10 bytes are an encrypted payload containing the transaction's FT reference." },
       { type: "text", text: "The encryption uses a keyed cipher with per-token seeding. We verified this by comparing multiple tokens: the same plaintext byte at the same position produces different ciphertext bytes across receipts. This rules out simple encoding schemes (XOR, base-N packing, substitution) and confirms the payload is cryptographically protected." },
-      { type: "text", text: "CBE's server validates tokens cryptographically. If you submit an old FT reference to the new API, it rejects it with \"Security Alert: Invalid or tampered legacy token!\" This is intentional — the new system prevents receipt enumeration. With the old system, anyone could guess FT references and pull receipts. With tokens, you can only verify receipts that were explicitly shared with you." },
-      { type: "text", text: "CBE has already shipped a v2 token format. Newer receipts use URLs like https://mbreciept.cbe.com.et/v2-hfHCxFU3NsED8vFiF7hS — note the v2- prefix. The v2 payload is 15 bytes (vs v1's 13) and uses a different layout. Both v1 and v2 tokens work on the same API endpoint. cheki passes the full token through unchanged, so both formats work automatically." },
+      { type: "text", text: "CBE's server validates tokens cryptographically. If you submit an old FT reference to the new API, it rejects it with \"Security Alert: Invalid or tampered legacy token!\" This is intentional. The new system prevents receipt enumeration. With the old system, anyone could guess FT references and pull receipts. With tokens, you can only verify receipts that were explicitly shared with you." },
+      { type: "text", text: "CBE has already shipped a v2 token format. Newer receipts use URLs like https://mbreciept.cbe.com.et/v2-hfHCxFU3NsED8vFiF7hS, which carry the v2- prefix. The v2 payload is 15 bytes (vs v1's 13) and uses a different layout. Both v1 and v2 tokens work on the same API endpoint. cheki passes the full token through unchanged, so both formats work automatically." },
       { type: "callout", variant: "info", title: "Can you generate a token from an FT reference?", text: "No. The payload is encrypted with a server-side secret. There is no public endpoint to convert FT references to tokens, and the CBE mobile app generates tokens server-side at share-time. If you only have an FT reference, you cannot construct a valid mbreciept URL." },
       { type: "callout", variant: "warning", title: "Legacy endpoint status", text: "The old CBE receipt endpoint (apps.cbe.com.et:100) is decommissioned. It no longer accepts connections. If you have an old FT reference and account suffix, there is no way to verify it through cheki or any other public tool. Ask the sender for the new mbreciept.cbe.com.et link instead." },
     ],
     faq: [
-      { q: "Can I still use the old CBE receipt system with FT reference and account number?", a: "No. CBE decommissioned the old endpoint (apps.cbe.com.et:100) in mid-2026. FT references alone cannot be verified anymore. Ask the sender to share the mbreciept.cbe.com.et link from the CBE app instead — it works with a single tap in cheki." },
+      { q: "Can I still use the old CBE receipt system with FT reference and account number?", a: "No. CBE decommissioned the old endpoint (apps.cbe.com.et:100) in mid-2026. FT references alone cannot be verified anymore. Ask the sender to share the mbreciept.cbe.com.et link from the CBE app instead. It works with a single tap in cheki." },
       { q: "Do I need the CBE app to scan QR codes?", a: "No. cheki has a built-in QR scanner that uses your phone's camera. Open cheki.et, tap the camera icon, and point at the QR code on the receipt." },
-      { q: "What if the CBE receipt link doesn't work?", a: "The mbreciept.cbe.com.et service may occasionally be down. If the link returns a 502 or timeout, try again later. There is no fallback for old FT references — the legacy endpoint has been permanently shut down." },
+      { q: "What if the CBE receipt link doesn't work?", a: "The mbreciept.cbe.com.et service may occasionally be down. If the link returns a 502 or timeout, try again later. There is no fallback for old FT references. The legacy endpoint has been permanently shut down." },
     ],
     related: ["free-receipt-verification-no-api-key", "ethiopian-bank-receipt-formats", "payment-fraud-ethiopia"],
     seo: {
@@ -126,7 +126,7 @@ export const articles: Article[] = [
     date: "2026-06-18",
     readTime: "5 min",
     content: [
-      { type: "text", text: "If you're an Ethiopian business owner, you've probably heard of check.et or verify.et. They verify bank receipts so you can confirm payments before releasing goods. The problem? They charge you for data that is already free." },
+      { type: "text", text: "If you're an Ethiopian business owner, you've probably heard of check.et or verify.et. They verify bank receipts so you can confirm payments before releasing goods. They charge you for data that is already free." },
       { type: "callout", variant: "warning", title: "The reality", text: "check.et and verify.et verify receipts by hitting the exact same public bank URLs that anyone can access for free. They add a pricing layer on top of public data. cheki removes that layer." },
 
       { type: "heading", text: "What check.et, verify.et, qbirr, tinaverify, and tally actually do" },
@@ -956,7 +956,7 @@ export const articles: Article[] = [
       "Why open source matters for Ethiopian financial technology, how cheki fits in, and what the future of community-built fintech looks like.",
     category: "open-source",
     excerpt:
-      "Ethiopian fintech is dominated by paid services wrapping public data. Open source changes the equation. Here's why community-built tools like cheki matter.",
+      "Ethiopian fintech is dominated by paid services wrapping public data. Open source changes the equation. This is what community-built tools like cheki do differently.",
     date: "2026-06-18",
     readTime: "5 min",
     content: [
@@ -1056,7 +1056,7 @@ export const articles: Article[] = [
       },
       { type: "callout", variant: "tip", title: "Easiest method", text: "The new system doesn't require an account number. Just paste the link or scan the QR code. The API returns masked account numbers for privacy." },
 
-      { type: "heading", text: "Method 2: Classic CBE receipt (FT reference + account) — no longer available" },
+      { type: "heading", text: "Method 2: Classic CBE receipt (FT reference + account), no longer available" },
       { type: "text", text: "CBE decommissioned the old PDF endpoint (apps.cbe.com.et:100) in mid-2026. The FT reference + account method no longer works. If a customer only has an FT reference and no receipt link, ask them to open their CBE app, find the transaction, and tap Share to get the mbreciept.cbe.com.et link." },
       { type: "callout", variant: "warning", title: "Legacy method unavailable", text: "The old apps.cbe.com.et:100 endpoint is permanently shut down. cheki shows a clear error message if you try to verify with an FT reference. The only working method is the mbreciept link." },
 
@@ -1066,7 +1066,7 @@ export const articles: Article[] = [
         headers: ["Method", "Required info", "Example"],
         rows: [
           ["New (URL/QR)", "Receipt link or QR scan", "https://mbreciept.cbe.com.et/fHCxyV4mg5pRIwEkJO"],
-          ["Classic (FT ref)", "No longer works — endpoint decommissioned", "N/A"],
+          ["Classic (FT ref)", "No longer works: endpoint decommissioned", "N/A"],
         ],
       },
 
@@ -1083,7 +1083,7 @@ export const articles: Article[] = [
       ]},
 
       { type: "heading", text: "Verifying CBE receipts via API" },
-      { type: "code", lang: "bash", code: `# New system (URL — the only working method):
+      { type: "code", lang: "bash", code: `# New system (URL, the only working method):
 curl -X POST https://cheki.et/api/verify \\
   -H "Content-Type: application/json" \\
   -d '{"reference":"https://mbreciept.cbe.com.et/fHCxyV4mg5pRIwEkJO"}'` },
@@ -1203,7 +1203,7 @@ curl -X POST https://cheki.et/api/verify \\
     category: "technical",
     bankCode: "boa",
     excerpt:
-      "BOA's receipt QR codes are AES-256-CBC encrypted payloads using CryptoJS format. The key is public in BOA's web app. Here's the full technical breakdown of how decryption works and why it matters for inter-bank transfers.",
+      "BOA's receipt QR codes are AES-256-CBC encrypted payloads using CryptoJS format. The key is public in BOA's web app. This guide covers how decryption works and why inter-bank transfers need it.",
     date: "2026-06-19",
     readTime: "6 min",
     content: [
@@ -1465,7 +1465,7 @@ curl -X POST https://cheki.et/api/verify \\
       { type: "heading", text: "Why community matters for Ethiopian fintech" },
       { type: "text", text: "Ethiopia has 30+ licensed banks, but most receipt verification services (check.et, verify.et, qbirr, tinaverify) only support 6-10. The long tail of smaller and newer banks gets ignored because it's not profitable enough for paid services." },
       { type: "text", text: "Open source changes this. Every contribution, whether it's a receipt screenshot or a full parser, helps cover a bank that paid services won't bother with. The community can move faster than any single company." },
-      { type: "callout", variant: "success", title: "Every receipt counts", text: "Even one receipt from a bank we don't support can unlock verification for every cheki user. You don't need to write code to make a difference." },
+      { type: "callout", variant: "success", title: "Every receipt counts", text: "One receipt from a bank we don't support is enough to start verifying it for every cheki user. You do not need to write code." },
     ],
     faq: [
       { q: "Do I need to know how to code to contribute?", a: "No. The most valuable contribution is a receipt from a bank we don't support yet. Send us a screenshot or URL and we'll handle the technical work." },
@@ -1491,7 +1491,7 @@ curl -X POST https://cheki.et/api/verify \\
     date: "2026-06-20",
     content: [
       { type: "text", text: "cheki is open source and free, but it's only useful if people can read it. Right now the interface is in English and Amharic. We want to add Oromiffa, Tigrinya, Somali, and any other language the community needs." },
-      { type: "text", text: "The good news: you don't need to be a developer. Translations live in a single JSON file per language. If you can edit text, you can translate cheki." },
+      { type: "text", text: "You do not need to be a developer to translate cheki. Translations live in a single JSON file per language. If you can edit text, you can translate it." },
 
       { type: "heading", text: "How translation works" },
       { type: "text", text: "Every piece of user-facing text in cheki has a key. For example, the hero title is stored as 'hero.title'. The English file says 'Verify Ethiopian receipts for free'. The Amharic file says 'የኢትዮጵያ ደረሰኞችን በነፃ ያረጋግጡ'." },

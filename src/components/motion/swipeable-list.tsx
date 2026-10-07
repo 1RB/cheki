@@ -17,7 +17,7 @@ import {
 } from "react";
 
 /* ──────────────────────────────────────────────────────────────
-   SwipeableList — adapted from beUI source, rewritten to use
+   SwipeableList, adapted from beUI source, rewritten to use
    cheki's CSS variables and inline styles (no tailwind utilities).
    Motion logic preserved: drag-x to reveal action buttons, spring
    snap-back, velocity + threshold-based open/close, fling support,
@@ -636,7 +636,7 @@ export interface SwipeableListItemProps {
   meta?: ReactNode;
   /** Leading avatar / icon. */
   leading?: ReactNode;
-  /** Fully custom content — overrides title/description/meta. */
+  /** Fully custom content; overrides title/description/meta. */
   content?: ReactNode;
   /** Actions revealed by swiping right (left side). */
   leftActions?: SwipeAction[];

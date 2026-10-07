@@ -8,7 +8,7 @@
  *
  * Deliberately pulls in no third-party dependency. cheki must stay runnable
  * with `docker-compose up` and free on a serverless host, so this is a plain
- * per-process Map — not Redis, not a database. It warms per instance and
+ * per-process Map, not Redis and not a database. It warms per instance and
  * resets on cold start, which is the right trade for an immutable-value cache:
  * losing it costs one extra bank fetch, never correctness.
  *
@@ -18,7 +18,7 @@
 
 import { detectBankFromUrl, isUrl } from "./adapters/url-detector";
 
-const DEFAULT_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours — covers a business day
+const DEFAULT_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours, one business day
 const DEFAULT_MAX_ENTRIES = 1000;
 
 interface CacheEntry {
