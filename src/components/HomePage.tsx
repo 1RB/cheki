@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
+import Link from "next/link";
 import { motion } from "motion/react";
 import jsQR from "jsqr";
 import { banks, detectBank, type BankCode, type VerifyResult } from "@/lib/banks";
@@ -84,6 +85,27 @@ export function HomePage() {
   // so the button waits instead.
   const missingAccountNumber =
     !showQrPaste && inputMode === "reference" && (needsAccount || needsPhone) && !accountNumber.trim();
+
+  // A grey primary button with no stated reason is indistinguishable from a
+  // broken one, and the default state of this page (CBE selected, no account
+  // digits yet) is exactly that grey state. Name what the form is waiting for.
+  const waitingFor: string | null = loading
+    ? null
+    : isDisabled && inputMode === "reference"
+      ? null
+      : missingAccountNumber
+        ? needsPhone
+          ? `Enter the payer phone number — ${selectedBank.shortName} matches the receipt on it.`
+          : `Enter your ${selectedBank.accountLabel ?? "account number"} — ${selectedBank.shortName} looks the receipt up on it.`
+        : showQrPaste
+          ? qrData.trim()
+            ? null
+            : "Paste the encrypted QR payload from the receipt."
+          : reference.trim()
+            ? null
+            : inputMode === "photo"
+              ? "Read a receipt first — its reference is filled in for you."
+              : "Paste a receipt link or reference number to start.";
 
   // What has been pasted: a receipt URL names its own bank, a bare reference
   // is matched against each bank's pattern, and anything else stays silent.
@@ -231,7 +253,9 @@ export function HomePage() {
       if (!data.success) {
         setError(data.error || "Verification failed.");
         setResult(data);
-        showToast({ title: "Verification failed", description: data.error || "Could not verify receipt", status: "error", duration: 5000 });
+        // The full message lives in the inline alert below the form; the toast
+        // carries only the status so one failure is not read out twice.
+        showToast({ title: "Verification failed", status: "error", duration: 5000 });
         // Trigger smart fallback for geo-blocked banks
         if (data.fallbackUrl || isGeoBlocked) {
           const fbUrl = data.fallbackUrl || buildFallbackUrl(bank, reference.trim());
@@ -262,7 +286,10 @@ export function HomePage() {
 
   useEffect(() => {
     if (result && result.success && resultRef.current) {
-      resultRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+      const prefersReduced =
+        typeof window !== "undefined" &&
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      resultRef.current.scrollIntoView({ behavior: prefersReduced ? "auto" : "smooth", block: "start" });
     }
   }, [result]);
 
@@ -594,6 +621,29 @@ export function HomePage() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  // The loop only closes if the peak moment has an exit. Without this the
+  // button keeps reading "Verified" and the previous reference and account
+  // digits stay in the fields, so checking the next receipt means selecting
+  // and deleting both by hand.
+  const resetVerification = useCallback(() => {
+    setReference("");
+    setAccountNumber("");
+    setQrData("");
+    setResult(null);
+    setError(null);
+    setCopied(false);
+    setShowQrPaste(false);
+    setPhotoExtracted(null);
+    setInputMode("reference");
+    setShowFallback(false);
+    setFallbackResult(null);
+    setFallbackError(null);
+    setFallbackLoading(false);
+    const input = document.getElementById("verify-reference") as HTMLInputElement | null;
+    input?.focus();
+    input?.select();
+  }, []);
+
   // ── Agent hand-off ─────────────────────────────────────────────────────
   // Same idea as clicking "verify" by hand, except the reader is Claude Code
   // or Cursor. Built at click time from window.location.origin so the copied
@@ -802,9 +852,11 @@ ${receipt}`;
             </div>
 
             {/* Right: Verify form */}
-            <div className="verify-card" style={{
+            <div id="verify" className="verify-card" style={{
               background: "var(--surface)", borderRadius: "14px", padding: "20px",
               boxShadow: "0 1px 3px rgba(0,0,0,0.04), 0 0 0 1px var(--border)",
+              // /#verify is linked from all 31 bank pages; clear the sticky nav.
+              scrollMarginTop: "calc(var(--nav-h) + 24px)",
             }}
             onPaste={(e) => {
               const items = e.clipboardData?.items;
@@ -930,28 +982,41 @@ ${receipt}`;
 
                 {needsAccount && inputMode === "reference" && (
                   <div className="fade-in">
-                    <label style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink-2)", marginBottom: "6px", display: "block" }}>{selectedBank.accountLabel || t("hero.accountLabel")}</label>
-                    <input type="text" value={accountNumber} onChange={(e) => setAccountNumber(e.target.value)} onKeyDown={(e) => e.key === "Enter" && !loading && handleVerify()} placeholder={`Last ${selectedBank.accountDigits} digits minimum`} style={{ width: "100%", padding: "12px 16px", fontSize: "15px", border: "1px solid var(--border)", borderRadius: "8px", background: "var(--surface)", color: "var(--ink)", fontFamily: "var(--mono)" }} spellCheck={false} />
+                    <label htmlFor="verify-account" style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink-2)", marginBottom: "6px", display: "block" }}>
+                      {selectedBank.accountLabel || t("hero.accountLabel")}
+                      <span className="req-tag">Required</span>
+                    </label>
+                    <input id="verify-account" type="text" value={accountNumber} onChange={(e) => setAccountNumber(e.target.value)} onKeyDown={(e) => e.key === "Enter" && !loading && handleVerify()} placeholder={`Last ${selectedBank.accountDigits} digits minimum`} aria-describedby="verify-account-hint" style={{ width: "100%", padding: "12px 16px", fontSize: "15px", border: "1px solid var(--border)", borderRadius: "8px", background: "var(--surface)", color: "var(--ink)", fontFamily: "var(--mono)" }} spellCheck={false} inputMode="numeric" autoComplete="off" />
+                    <p id="verify-account-hint" className="form-hint">
+                      Last digits only. Sent to {selectedBank.shortName}&apos;s public receipt endpoint over HTTPS to look up this receipt — cheki has no signup, so nothing here is tied to an account.
+                    </p>
                   </div>
                 )}
 
                 {needsPhone && inputMode === "reference" && (
                   <div className="fade-in">
-                    <label style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink-2)", marginBottom: "6px", display: "block" }}>Payer phone number</label>
-                    <input type="text" value={accountNumber} onChange={(e) => setAccountNumber(e.target.value)} placeholder="2519XXXXXXXXX" style={{ width: "100%", padding: "12px 16px", fontSize: "15px", border: "1px solid var(--border)", borderRadius: "8px", background: "var(--surface)", color: "var(--ink)", fontFamily: "var(--mono)" }} spellCheck={false} />
+                    <label htmlFor="verify-phone" style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink-2)", marginBottom: "6px", display: "block" }}>
+                      Payer phone number
+                      <span className="req-tag">Required</span>
+                    </label>
+                    <input id="verify-phone" type="text" value={accountNumber} onChange={(e) => setAccountNumber(e.target.value)} onKeyDown={(e) => e.key === "Enter" && !loading && handleVerify()} placeholder="2519XXXXXXXXX" aria-describedby="verify-phone-hint" style={{ width: "100%", padding: "12px 16px", fontSize: "15px", border: "1px solid var(--border)", borderRadius: "8px", background: "var(--surface)", color: "var(--ink)", fontFamily: "var(--mono)" }} spellCheck={false} inputMode="tel" autoComplete="tel" />
+                    <p id="verify-phone-hint" className="form-hint">
+                      Sent to {selectedBank.shortName}&apos;s public receipt endpoint over HTTPS to look up this receipt — cheki has no signup, so nothing here is tied to an account.
+                    </p>
                   </div>
                 )}
 
                 <div>
-                  <label style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink-2)", marginBottom: "6px", display: "block" }}>
+                  <label htmlFor="verify-reference" style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink-2)", marginBottom: "6px", display: "block" }}>
                     {t("hero.referenceLabel")}
                   </label>
                   <div className="verify-row">
                     <div className="verify-input-wrap">
-                      <input className="verify-input" type="text" value={reference} onChange={(e) => setReference(e.target.value)} onKeyDown={(e) => e.key === "Enter" && !loading && handleVerify()} placeholder="" aria-label={t("hero.referenceLabel")} onFocus={() => setPhStopped(true)} spellCheck={false} autoCapitalize="characters" />
+                      <input id="verify-reference" className="verify-input" type="text" value={reference} onChange={(e) => setReference(e.target.value)} onKeyDown={(e) => e.key === "Enter" && !loading && handleVerify()} placeholder="" aria-label={t("hero.referenceLabel")} onFocus={() => setPhStopped(true)} spellCheck={false} autoCapitalize="characters" />
                       {!reference && (
                         <span className="ph-overlay" aria-hidden="true">
                           <span key={phIndex} className="ph-pop">
+                            <span className="ph-eg">e.g.</span>
                             <span className="ph-name" style={{ color: `color-mix(in srgb, ${example.color} 62%, var(--ink))`, borderColor: `${example.color}40`, background: `${example.color}14` }}>{example.name}</span>
                             <span className="ph-url">
                               {example.url.split(/(\{[^}]*\})/).filter(Boolean).map((part, i) =>
@@ -972,11 +1037,15 @@ ${receipt}`;
                       onClick={handleVerify}
                       loadingLabel={`Contacting ${selectedBank.shortName}…`}
                       successLabel="Verified"
+                      aria-describedby={waitingFor ? "verify-waiting" : undefined}
                       style={{ width: "auto", flexShrink: 0, padding: "0 24px" }}
                     >
                       {(inputMode === "reference" && isDisabled) ? t("banks.inDevelopment") : t("hero.verifyButton")}
                     </StatefulButton>
                   </div>
+                  {waitingFor && (
+                    <p id="verify-waiting" className="form-hint form-hint--actionable">{waitingFor}</p>
+                  )}
                   {pasted && detectedBank && (
                     <p className="detected-chip">
                       <BankLogoByName code={detectedBank.code} size={18} />
@@ -1062,7 +1131,7 @@ ${receipt}`;
         {/* Result */}
         {result && result.success && (
           <section className="container-narrow" style={{ marginBottom: "32px", padding: "0 24px" }}>
-            <div className="rc-slot" ref={resultRef}><ReceiptCard result={result} copied={copied} onCopy={copyResult} /></div>
+            <div className="rc-slot" ref={resultRef}><ReceiptCard result={result} copied={copied} onCopy={copyResult} onReset={resetVerification} /></div>
           </section>
         )}
 
@@ -1095,10 +1164,10 @@ ${receipt}`;
                       </div>
                     )}
                     {r.status === "error" && r.error && (
-                      <p style={{ fontSize: "12px", color: "var(--red)", marginTop: "4px" }}>{r.error}</p>
+                      <p style={{ fontSize: "12px", color: "var(--red-text)", marginTop: "4px" }}>{r.error}</p>
                     )}
                     {r.status === "done" && !r.data?.success && r.data?.error && (
-                      <p style={{ fontSize: "12px", color: "var(--red)", marginTop: "4px" }}>{r.data.error}</p>
+                      <p style={{ fontSize: "12px", color: "var(--red-text)", marginTop: "4px" }}>{r.data.error}</p>
                     )}
                   </div>
                 ))}
@@ -1110,14 +1179,31 @@ ${receipt}`;
         {/* Error / Fallback */}
         {error && !showFallback && (
           <section className="container-narrow" style={{ marginBottom: "32px", padding: "0 24px" }}>
-            <div className="t-shake" style={{ padding: "16px 20px", borderRadius: "8px", background: "var(--red-light)", border: "1px solid #fecaca" }}>
-              <p style={{ color: "var(--red)", fontSize: "14px", fontWeight: 500 }}>{error}</p>
+            <div className="t-shake" role="alert" style={{ padding: "16px 20px", borderRadius: "8px", background: "var(--red-light)", border: "1px solid color-mix(in srgb, var(--red) 30%, transparent)" }}>
+              <p style={{ color: "var(--red-text)", fontSize: "14px", fontWeight: 500 }}>{error}</p>
               {result?.sourceUrl && (
                 <p style={{ fontSize: "13px", color: "var(--ink-2)", marginTop: "8px", lineHeight: 1.6 }}>
                   We asked {selectedBank.shortName} directly at{" "}
                   <a href={result.sourceUrl} target="_blank" rel="noopener noreferrer" style={{ color: "var(--ink)", fontWeight: 600, textDecoration: "underline", fontFamily: "var(--mono)", wordBreak: "break-all" }}>{result.sourceUrl}</a>
                   . Open it if you want to check the receipt yourself.
                 </p>
+              )}
+              {error && bank !== "boa" && /not found|invalid/i.test(error) && (
+                <div style={{ marginTop: "12px", padding: "12px 14px", borderRadius: "8px", background: "var(--surface)", border: "1px solid var(--border)" }}>
+                  <p style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink)", marginBottom: "6px" }}>
+                    Two reasons this comes back empty
+                  </p>
+                  <ol style={{ margin: 0, paddingLeft: 18, fontSize: "13px", color: "var(--ink-2)", lineHeight: 1.65 }}>
+                    <li>The reference was mistyped or truncated. Read the digits off the original receipt again.</li>
+                    <li>
+                      The receipt is not in {selectedBank.shortName}&apos;s published records. That is also what a
+                      fabricated screenshot looks like — here is how to tell the two apart.
+                    </li>
+                  </ol>
+                  <Link href="/guides/payment-fraud-ethiopia" style={{ display: "inline-block", marginTop: "8px", fontSize: "13px", fontWeight: 600, color: "var(--green-dark)", textDecoration: "underline" }}>
+                    How payment fraud works in Ethiopia →
+                  </Link>
+                </div>
               )}
               {error && bank === "boa" && (error.includes("Invalid reference") || error.includes("Receipt not found") || error.includes("not found or invalid")) && (
                 <div style={{ marginTop: "12px", padding: "12px 14px", borderRadius: "8px", background: "var(--surface)", border: "1px solid var(--border)" }}>
@@ -1162,11 +1248,11 @@ ${receipt}`;
               {/* Step 1: Open receipt */}
               <div style={{ padding: "14px 20px", borderBottom: "1px solid color-mix(in srgb, var(--amber) 30%, transparent)" }}>
                 <p style={{ fontSize: "12px", fontWeight: 600, color: "var(--amber-text)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "8px" }}>Step 1: Open your receipt</p>
-                <a href={fallbackBankUrl} target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", padding: "10px 16px", borderRadius: "8px", background: "var(--green)", color: "var(--bg)", fontSize: "14px", fontWeight: 600, textDecoration: "none", width: "fit-content" }}>
-                  <Icon icon={ArrowRight01Icon} size={16} color="var(--bg)" />
+                <a href={fallbackBankUrl} target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", padding: "10px 16px", borderRadius: "8px", background: "var(--green-cta)", color: "var(--green-cta-fg)", fontSize: "14px", fontWeight: 600, textDecoration: "none", width: "fit-content" }}>
+                  <Icon icon={ArrowRight01Icon} size={16} color="var(--green-cta-fg)" />
                   Open receipt page
                 </a>
-                <p style={{ fontSize: "11px", color: "var(--amber-text)", marginTop: "6px", fontFamily: "var(--mono)", wordBreak: "break-all", opacity: 0.7 }}>{fallbackBankUrl}</p>
+                <p style={{ fontSize: "11px", color: "var(--amber-text)", marginTop: "6px", fontFamily: "var(--mono)", wordBreak: "break-all", opacity: 0.85 }}>{fallbackBankUrl}</p>
               </div>
 
               {/* Step 2: Bring data back, tabs */}
@@ -1175,10 +1261,10 @@ ${receipt}`;
 
                 {/* Tab switcher */}
                 <div style={{ display: "flex", gap: "0", marginBottom: "14px", borderBottom: "1px solid color-mix(in srgb, var(--amber) 30%, transparent)" }}>
-                  <button onClick={() => setFallbackTab("paste")} style={{ padding: "8px 14px", fontSize: "13px", fontWeight: 600, border: "none", borderBottom: fallbackTab === "paste" ? "2px solid #92400e" : "2px solid transparent", background: "transparent", color: fallbackTab === "paste" ? "var(--amber-text)" : "var(--amber)", cursor: "pointer", marginBottom: "-1px" }}>
+                  <button onClick={() => setFallbackTab("paste")} style={{ padding: "8px 14px", fontSize: "13px", fontWeight: 600, border: "none", borderBottom: fallbackTab === "paste" ? "2px solid #92400e" : "2px solid transparent", background: "transparent", color: fallbackTab === "paste" ? "var(--amber-text)" : "var(--ink-2)", cursor: "pointer", marginBottom: "-1px" }}>
                     Copy and Paste {isMobile ? "(recommended)" : ""}
                   </button>
-                  <button onClick={() => setFallbackTab("bookmarklet")} style={{ padding: "8px 14px", fontSize: "13px", fontWeight: 600, border: "none", borderBottom: fallbackTab === "bookmarklet" ? "2px solid #92400e" : "2px solid transparent", background: "transparent", color: fallbackTab === "bookmarklet" ? "var(--amber-text)" : "var(--amber)", cursor: "pointer", marginBottom: "-1px" }}>
+                  <button onClick={() => setFallbackTab("bookmarklet")} style={{ padding: "8px 14px", fontSize: "13px", fontWeight: 600, border: "none", borderBottom: fallbackTab === "bookmarklet" ? "2px solid #92400e" : "2px solid transparent", background: "transparent", color: fallbackTab === "bookmarklet" ? "var(--amber-text)" : "var(--ink-2)", cursor: "pointer", marginBottom: "-1px" }}>
                     Bookmarklet {!isMobile ? "(recommended)" : ""}
                   </button>
                 </div>
@@ -1207,12 +1293,12 @@ ${receipt}`;
                     </button>
                     {fallbackError && (
                       <div className="t-shake" style={{ marginTop: "10px", padding: "10px 14px", borderRadius: "8px", background: "var(--red-light)", border: "1px solid #fecaca" }}>
-                        <p style={{ fontSize: "13px", color: "var(--red)" }}>{fallbackError}</p>
+                        <p style={{ fontSize: "13px", color: "var(--red-text)" }}>{fallbackError}</p>
                       </div>
                     )}
                     {fallbackResult && fallbackResult.success && (
                       <div className="fade-up" style={{ marginTop: "10px" }}>
-                        <ReceiptCard result={fallbackResult} copied={copied} onCopy={copyResult} />
+                        <ReceiptCard result={fallbackResult} copied={copied} onCopy={copyResult} onReset={resetVerification} />
                       </div>
                     )}
                   </div>
@@ -1236,17 +1322,17 @@ ${receipt}`;
                         style={{
                           display: "inline-flex", alignItems: "center", gap: "6px",
                           padding: "10px 18px", borderRadius: "8px",
-                          background: "var(--green)", color: "var(--bg)",
+                          background: "var(--green-cta)", color: "var(--green-cta-fg)",
                           fontSize: "14px", fontWeight: 600, textDecoration: "none",
                           cursor: "grab", userSelect: "none",
                           border: "2px dashed color-mix(in srgb, var(--bg) 40%, transparent)",
                         }}
                         title="Drag me to your bookmarks bar"
                       >
-                        <Icon icon={CheckmarkCircle01Icon} size={16} color="var(--bg)" />
+                        <Icon icon={CheckmarkCircle01Icon} size={16} color="var(--green-cta-fg)" />
                         Verify with cheki
                       </a>
-                      <span style={{ fontSize: "11px", color: "var(--amber-text)", opacity: 0.7 }}>
+                      <span style={{ fontSize: "11px", color: "var(--amber-text)" }}>
                         {isMobile ? "Long press, copy, then add as bookmark" : "Drag to bookmarks bar"}
                       </span>
                     </div>
@@ -1449,8 +1535,8 @@ ${receipt}`;
                   cheki is MIT licensed and lives on GitHub. No company owns it. No one can shut it down. If a bank changes their endpoint, anyone can submit a fix.
                 </p>
                 <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-                  <MagneticButton href="https://github.com/1RB/cheki" target="_blank" rel="noopener" style={{ padding: "12px 24px", borderRadius: "8px", background: "var(--green)", color: "var(--invert-bg)", fontSize: "14px", fontWeight: 600 }}>
-                    <Icon icon={StarIcon} size={16} color="var(--invert-bg)" /> Star on GitHub
+                  <MagneticButton href="https://github.com/1RB/cheki" target="_blank" rel="noopener" style={{ padding: "12px 24px", borderRadius: "8px", background: "var(--green-cta)", color: "var(--green-cta-fg)", fontSize: "14px", fontWeight: 600 }}>
+                    <Icon icon={StarIcon} size={16} color="var(--green-cta-fg)" /> Star on GitHub
                   </MagneticButton>
                   <MagneticButton href="https://github.com/1RB/cheki/blob/main/README.md#contributing" target="_blank" rel="noopener" style={{ padding: "12px 24px", borderRadius: "8px", border: "1px solid color-mix(in srgb, var(--invert-text) 20%, transparent)", color: "var(--invert-text)", fontSize: "14px", fontWeight: 600 }}>
                     <Icon icon={GithubIcon} size={16} color="var(--invert-text)" /> Contribute
@@ -1470,7 +1556,7 @@ ${receipt}`;
                   { label: "SDK", value: "TS, Python, Dart, PHP, Go" },
                 ].map((item) => (
                   <div key={item.label} style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid color-mix(in srgb, var(--invert-text) 10%, transparent)" }}>
-                    <span style={{ fontSize: "13px", color: "color-mix(in srgb, var(--invert-text) 50%, transparent)" }}>{item.label}</span>
+                    <span style={{ fontSize: "13px", color: "color-mix(in srgb, var(--invert-text) 60%, transparent)" }}>{item.label}</span>
                     <span style={{ fontSize: "13px", fontWeight: 600 }}>{item.value}</span>
                   </div>
                 ))}
@@ -1528,7 +1614,7 @@ function AnimatedAmount({ value, size = 15, weight = 500 }: { value: string; siz
  * paid, how much, when, why. Everything a machine wants sits underneath in
  * the details, the fee breakdown and the raw JSON.
  */
-function ReceiptCard({ result, copied, onCopy }: { result: VerifyResult; copied: boolean; onCopy: () => void }) {
+function ReceiptCard({ result, copied, onCopy, onReset }: { result: VerifyResult; copied: boolean; onCopy: () => void; onReset: () => void }) {
   // transitions.dev: panel reveal + success check animations
   const [revealed, setRevealed] = useState(false);
   const [summaryCopied, setSummaryCopied] = useState(false);
@@ -1707,6 +1793,17 @@ function ReceiptCard({ result, copied, onCopy }: { result: VerifyResult; copied:
             </button>
           </div>
         </details>
+      </div>
+
+      <div className="rc-foot" style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+        <button
+          type="button"
+          onClick={onReset}
+          style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "10px 16px", fontSize: "13px", fontWeight: 600, border: "1px solid var(--border)", borderRadius: "8px", background: "var(--surface)", color: "var(--ink)", cursor: "pointer" }}
+        >
+          <Icon icon={ArrowRight01Icon} size={14} color="var(--green-dark)" />
+          Verify another receipt
+        </button>
       </div>
     </section>
   );

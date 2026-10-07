@@ -5,6 +5,7 @@ import { banks } from "@/lib/banks";
 import { Nav, Footer } from "@/components/Chrome";
 import { useTranslation } from "@/lib/i18n/use-translation";
 import { Icon, ChevronDownIcon, ChevronUpIcon } from "@/components/Icon";
+import { brandTileBg } from "@/lib/utils";
 
 export default function BanksPage() {
   const { t } = useTranslation();
@@ -18,26 +19,32 @@ export default function BanksPage() {
       display: "flex", flexDirection: "column", gap: "12px",
     }}>
       <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-        <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: b.color, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700, fontSize: "15px" }}>
+        <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: brandTileBg(b.color), display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700, fontSize: "15px" }}>
           {b.shortName.slice(0, 3)}
         </div>
         <div>
           <p style={{ fontSize: "16px", fontWeight: 700 }}>{b.shortName}</p>
           <p style={{ fontSize: "12px", color: "var(--ink-3)" }}>{b.type === "mobile" ? "Mobile wallet" : b.type === "wallet" ? "Wallet" : "Bank"}</p>
         </div>
-        <span style={{
-          marginLeft: "auto", fontSize: "11px", fontWeight: 600, padding: "3px 10px", borderRadius: "4px",
-          background: b.status === "live" ? "var(--green-light)" : "var(--surface-alt)",
-          color: b.status === "live" ? "var(--green-dark)" : "var(--ink-3)",
-        }}>{b.status === "live" ? t("banks.live") : t("banks.inDevelopment")}</span>
+        {/* The grid already says which status it holds, so a "Live" pill on
+            every default card carried no information. Keep the pill for the
+            exceptional state only. */}
+        {b.status !== "live" && (
+          <span style={{
+            marginLeft: "auto", fontSize: "11px", fontWeight: 600, padding: "3px 10px", borderRadius: "4px",
+            background: "var(--surface-alt)", border: "1px solid var(--border)", color: "var(--ink-2)",
+          }}>{t("banks.inDevelopment")}</span>
+        )}
       </div>
-      <p style={{ fontSize: "13px", color: "var(--ink-2)", lineHeight: 1.5 }}>
+      <p style={{ fontSize: "13px", color: "var(--ink-3)", lineHeight: 1.5 }}>
         {b.description.slice(0, 120)}...
       </p>
-      <div style={{ display: "flex", gap: "12px", fontSize: "12px", color: "var(--ink-3)", marginTop: "auto" }}>
-        {b.requiresAccount && <span>{t("banks.accountRequired")}</span>}
-        {b.geoBlocked && <span>{t("banks.ethiopiaOnly")}</span>}
-        {!b.requiresAccount && !b.geoBlocked && <span>{t("banks.referenceOnly")}</span>}
+      {/* "Account required" decides whether the reader can act at all, so it
+          outranks the description above it — not the other way round. */}
+      <div className="bank-meta">
+        {b.requiresAccount && <span className="bank-meta__chip">{t("banks.accountRequired")}</span>}
+        {b.geoBlocked && <span className="bank-meta__chip">{t("banks.ethiopiaOnly")}</span>}
+        {!b.requiresAccount && !b.geoBlocked && <span className="bank-meta__chip">{t("banks.referenceOnly")}</span>}
       </div>
     </a>
   );
@@ -56,7 +63,7 @@ export default function BanksPage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
       <Nav />
       <main className="container" style={{ paddingTop: "48px", paddingBottom: "48px" }}>
-        <nav style={{ fontSize: "13px", color: "var(--ink-3)", marginBottom: "16px" }}>
+        <nav aria-label="Breadcrumb" style={{ fontSize: "13px", color: "var(--ink-3)", marginBottom: "16px" }}>
           <a href="/" style={{ color: "var(--ink-3)" }}>Home</a>
           <span style={{ margin: "0 6px"}}>/</span>
           <span style={{ color: "var(--ink)" }}>{t("nav.banks")}</span>
@@ -115,7 +122,7 @@ export default function BanksPage() {
           </p>
           <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
             <a href="https://github.com/1RB/cheki/issues/new?labels=new-bank&title=Add+support+for+%5Bbank+name%5D&body=Bank%3A%20%0AReceipt%20URL%20or%20QR%20screenshot%3A%20%0AReference%20number%3A%20" target="_blank" rel="noopener" style={{
-              padding: "12px 24px", borderRadius: "8px", background: "var(--green)", color: "var(--bg)",
+              padding: "12px 24px", borderRadius: "8px", background: "var(--green-cta)", color: "var(--green-cta-fg)",
               fontSize: "14px", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "8px",
             }}>
               Submit a bank on GitHub

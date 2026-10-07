@@ -35,20 +35,20 @@ export interface BouncyAccordionProps {
 
 const ROW_TRANSITION: Transition = {
   type: "spring",
-  duration: 0.55,
-  bounce: 0.38,
+  duration: 0.4,
+  bounce: 0,
 };
 
 const CONTENT_OPEN_TRANSITION: Transition = {
   type: "spring",
-  duration: 0.58,
-  bounce: 0.32,
+  duration: 0.32,
+  bounce: 0,
 };
 
 const CONTENT_CLOSE_TRANSITION: Transition = {
   type: "spring",
-  duration: 0.46,
-  bounce: 0.26,
+  duration: 0.26,
+  bounce: 0,
 };
 
 const DESCRIPTION_TRANSITION: Transition = {
@@ -58,8 +58,8 @@ const DESCRIPTION_TRANSITION: Transition = {
 
 const CHEVRON_TRANSITION: Transition = {
   type: "spring",
-  duration: 0.42,
-  bounce: 0.28,
+  duration: 0.3,
+  bounce: 0,
 };
 
 function useControllableAccordionValue({

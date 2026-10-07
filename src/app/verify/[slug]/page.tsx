@@ -68,7 +68,7 @@ export default function SeoPage({ params }: { params: Promise<{ slug: string }> 
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
 
         <main className="container" style={{ paddingTop: "40px", paddingBottom: "48px" }}>
-          <nav style={{ fontSize: "13px", color: "var(--ink-3)", marginBottom: "16px" }}>
+          <nav aria-label="Breadcrumb" style={{ fontSize: "13px", color: "var(--ink-3)", marginBottom: "16px" }}>
             <a href="/" style={{ color: "var(--ink-3)" }}>Home</a>
             <span style={{ margin: "0 6px" }}>/</span>
             <span style={{ color: "var(--ink)" }}>{page.h1.slice(0, 40)}{page.h1.length > 40 ? "..." : ""}</span>
@@ -92,10 +92,10 @@ export default function SeoPage({ params }: { params: Promise<{ slug: string }> 
                 <a href={page.cta.href} style={{
                   display: "inline-flex", alignItems: "center", gap: "8px",
                   padding: "12px 24px", borderRadius: "8px",
-                  background: "var(--green)", color: "#fff",
+                  background: "var(--green-cta)", color: "var(--green-cta-fg)",
                   fontSize: "15px", fontWeight: 600,
                 }}>
-                  {page.cta.text} <Icon icon={ArrowRight01Icon} size={16} color="#fff" />
+                  {page.cta.text} <Icon icon={ArrowRight01Icon} size={16} color="var(--green-cta-fg)" />
                 </a>
               </div>
 
@@ -116,7 +116,7 @@ export default function SeoPage({ params }: { params: Promise<{ slug: string }> 
               <div style={{ marginTop: "48px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "20px" }}>
                   <span style={{ width: "4px", height: "22px", background: "var(--green)", borderRadius: "2px" }} />
-                  <h2 style={{ fontSize: "20px", fontWeight: 800, margin: 0, letterSpacing: "-0.01em" }}>Frequently asked questions</h2>
+                  <h2 id="faq" style={{ fontSize: "20px", fontWeight: 800, margin: 0, letterSpacing: "-0.01em", scrollMarginTop: "calc(var(--nav-h) + 24px)" }}>Frequently asked questions</h2>
                 </div>
                 {page.faq.map((f, i) => (
                   <details key={i} style={{ marginBottom: "10px" }}>
@@ -136,10 +136,10 @@ export default function SeoPage({ params }: { params: Promise<{ slug: string }> 
                 <a href={page.cta.href} style={{
                   display: "inline-flex", alignItems: "center", gap: "8px",
                   padding: "12px 32px", borderRadius: "8px",
-                  background: "var(--green)", color: "#fff",
+                  background: "var(--green-cta)", color: "var(--green-cta-fg)",
                   fontSize: "15px", fontWeight: 600,
                 }}>
-                  Open cheki <Icon icon={ArrowRight01Icon} size={16} color="#fff" />
+                  Open cheki <Icon icon={ArrowRight01Icon} size={16} color="var(--green-cta-fg)" />
                 </a>
               </div>
 

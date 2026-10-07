@@ -58,9 +58,17 @@ export function ThemeToggle({ size = 36 }: { size?: number }) {
       });
       transition.finished.then(() => setAnimating(false));
     } else {
+      // No View Transitions (or reduced motion): suppress colour transitions
+      // for exactly one frame so the swap is a clean cut instead of every
+      // themed element smearing between palettes at its own duration.
+      const root = document.documentElement;
+      root.classList.add("theme-instant");
       setTheme(next);
       localStorage.setItem("cheki-theme", next);
-      document.documentElement.setAttribute("data-theme", next);
+      root.setAttribute("data-theme", next);
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => root.classList.remove("theme-instant"));
+      });
     }
   }, [theme, reduce, animating]);
 

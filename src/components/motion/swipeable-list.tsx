@@ -89,9 +89,9 @@ const RELEASE_VELOCITY_LIMIT = 1500;
 const ACTION_TONE_FG: Record<SwipeActionTone, string> = {
   neutral: "var(--ink-2)",
   primary: "var(--ink)",
-  success: "var(--green)",
-  warning: "var(--amber)",
-  danger: "var(--red)",
+  success: "var(--green-dark)",
+  warning: "var(--amber-text)",
+  danger: "var(--red-text)",
 };
 
 const ACTION_TONE_BG: Record<SwipeActionTone, string> = {
@@ -288,7 +288,7 @@ function SwipeActionButton({
     ...actionIconWrapBase,
     color: ACTION_TONE_FG[tone],
     background: hovered ? ACTION_TONE_BG[tone] : "transparent",
-    transform: pressed ? "scale(0.95)" : "scale(1)",
+    transform: pressed ? "scale(0.96)" : "scale(1)",
   };
 
   return (

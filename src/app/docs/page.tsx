@@ -493,6 +493,7 @@ docker-compose up -d
         >
           {/* Breadcrumb */}
           <nav
+            aria-label="Breadcrumb"
             style={{
               fontSize: "13px",
               color: "var(--ink-3)",
@@ -962,7 +963,7 @@ docker-compose up -d
                           background: i % 2 === 0 ? "transparent" : "var(--surface-alt)",
                         }}
                       >
-                        <td style={{ padding: "10px 14px", fontFamily: "var(--mono)", fontSize: "13px", fontWeight: 700, color: e.code.startsWith("4") ? "var(--amber)" : "var(--red)" }}>{e.code}</td>
+                        <td style={{ padding: "10px 14px", fontFamily: "var(--mono)", fontSize: "13px", fontWeight: 700, color: e.code.startsWith("4") ? "var(--amber-text)" : "var(--red-text)" }}>{e.code}</td>
                         <td style={{ padding: "10px 14px", fontSize: "13px", fontWeight: 600, color: "var(--ink)" }}>{e.name}</td>
                         <td style={{ padding: "10px 14px", fontSize: "13px", color: "var(--ink-2)" }}>{e.desc}</td>
                       </tr>
@@ -998,8 +999,8 @@ docker-compose up -d
                   style={{
                     padding: "12px 24px",
                     borderRadius: "8px",
-                    background: "var(--green)",
-                    color: "var(--bg)",
+                    background: "var(--green-cta)",
+                    color: "var(--green-cta-fg)",
                     fontSize: "14px",
                     fontWeight: 600,
                     display: "inline-flex",
@@ -1008,7 +1009,7 @@ docker-compose up -d
                   }}
                 >
                   Developer guide{" "}
-                  <Icon icon={ArrowRight01Icon} size={14} color="var(--bg)" />
+                  <Icon icon={ArrowRight01Icon} size={14} color="var(--green-cta-fg)" />
                 </a>
                 <a
                   href="https://github.com/1RB/cheki"

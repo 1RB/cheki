@@ -87,6 +87,78 @@ function escapeHtml(s: string): string {
 }
 
 /**
+ * Colour correction for the code block.
+ *
+ * The code block keeps a fixed dark surface in both themes (comments must not
+ * invert on a light page), but GitHub Dark ships comment grey `#6A737D` which
+ * is only 3.04:1 on that surface. Every emitted foreground is therefore lifted
+ * toward white until it clears 4.5:1 — colours that already pass are returned
+ * untouched, so token hues are preserved.
+ */
+const CODE_BG = "#24292e";
+const MIN_CODE_CONTRAST = 4.5;
+
+function toRgb(hex: string): [number, number, number] {
+  return [
+    parseInt(hex.slice(1, 3), 16),
+    parseInt(hex.slice(3, 5), 16),
+    parseInt(hex.slice(5, 7), 16),
+  ];
+}
+
+function toHex([r, g, b]: [number, number, number]): string {
+  const p = (n: number) => Math.round(Math.max(0, Math.min(255, n))).toString(16).padStart(2, "0");
+  return `#${p(r)}${p(g)}${p(b)}`.toUpperCase();
+}
+
+function lin(c: number): number {
+  const s = c / 255;
+  return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+}
+
+function lum(rgb: [number, number, number]): number {
+  return 0.2126 * lin(rgb[0]) + 0.7152 * lin(rgb[1]) + 0.0722 * lin(rgb[2]);
+}
+
+function contrastToCodeBg(hex: string): number {
+  const l1 = lum(toRgb(hex));
+  const l2 = lum(toRgb(CODE_BG));
+  const [hi, lo] = l1 >= l2 ? [l1, l2] : [l2, l1];
+  return (hi + 0.05) / (lo + 0.05);
+}
+
+/** Smallest mix with white that clears the threshold (1 = fully white). */
+function liftToCodeContrast(hex: string): string {
+  if (contrastToCodeBg(hex) >= MIN_CODE_CONTRAST) return hex;
+  const rgb = toRgb(hex);
+  let lo = 0;
+  let hi = 1;
+  for (let i = 0; i < 24; i++) {
+    const mid = (lo + hi) / 2;
+    const mixed = toHex([
+      rgb[0] * (1 - mid) + 255 * mid,
+      rgb[1] * (1 - mid) + 255 * mid,
+      rgb[2] * (1 - mid) + 255 * mid,
+    ]);
+    if (contrastToCodeBg(mixed) >= MIN_CODE_CONTRAST) hi = mid;
+    else lo = mid;
+  }
+  return toHex([
+    rgb[0] * (1 - hi) + 255 * hi,
+    rgb[1] * (1 - hi) + 255 * hi,
+    rgb[2] * (1 - hi) + 255 * hi,
+  ]);
+}
+
+/** Rewrites inline `color:#RRGGBB` declarations that fall under 4.5:1. */
+export function fitColorsToCodeBlock(html: string): string {
+  return html.replace(
+    /(["'])color:\s*#([0-9a-f]{6})\b/gi,
+    (_m, quote: string, hex: string) => `${quote}color:${liftToCodeContrast(`#${hex}`)}`,
+  );
+}
+
+/**
  * Highlight code and return an HTML string of <span> elements with inline
  * color styles (from Shiki's GitHub Dark theme).
  *
@@ -107,7 +179,7 @@ export async function highlightCode(
       lang: shikiLang,
       theme: THEME,
     });
-    return extractInnerCode(html);
+    return fitColorsToCodeBlock(extractInnerCode(html));
   } catch {
     // If the requested language fails, fall back to plaintext
     try {
@@ -115,7 +187,7 @@ export async function highlightCode(
         lang: "plaintext",
         theme: THEME,
       });
-      return extractInnerCode(html);
+      return fitColorsToCodeBlock(extractInnerCode(html));
     } catch {
       // Ultimate fallback — escaped raw text
       return escapeHtml(code);

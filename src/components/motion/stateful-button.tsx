@@ -26,8 +26,12 @@ export interface StatefulButtonProps {
   successLabel?: ReactNode;
   /** Error-state label; defaults to "Error". */
   errorLabel?: ReactNode;
-  /** Override the primary (idle) background color. Defaults to var(--green). */
+  /** Override the primary (idle) background color. Defaults to var(--green-cta). */
   color?: string;
+  /** Optional descriptive text id (e.g. why the button is disabled). */
+  "aria-describedby"?: string;
+  /** Whether the control is flagged invalid. */
+  "aria-invalid"?: boolean;
   /** Optional inline style overrides on the outer button. */
   style?: React.CSSProperties;
   /** Optional aria-label fallback. */
@@ -40,29 +44,33 @@ export interface StatefulButtonProps {
 /*  State visuals                                                      */
 /* ------------------------------------------------------------------ */
 
+/* Filled buttons are the site's only high-chroma surfaces, so they carry the
+   theme-aware tokens: white on --green is 3.29:1 in light mode and 1.83:1 in
+   dark mode, so neither theme can share a literal #fff. */
 const STATE_BG: Record<StatefulButtonState, string> = {
-  idle: "var(--green)",
-  loading: "var(--green)",
+  idle: "var(--green-cta)",
+  loading: "var(--green-cta)",
   success: "var(--green-dark)",
-  error: "var(--red)",
+  error: "var(--red-cta)",
 };
 
 const STATE_FG: Record<StatefulButtonState, string> = {
-  idle: "#fff",
-  loading: "#fff",
-  success: "#fff",
-  error: "#fff",
+  idle: "var(--green-cta-fg)",
+  loading: "var(--green-cta-fg)",
+  success: "var(--green-cta-fg)",
+  error: "var(--red-cta-fg)",
 };
 
 /** A small inline spinner used for the loading state. */
-function Spinner({ color = "#fff" }: { color?: string }) {
+function Spinner({ color = "currentColor" }: { color?: string }) {
   return (
     <span
       aria-hidden
       style={{
         width: 16,
         height: 16,
-        border: "2px solid rgba(255,255,255,0.35)",
+        border: "2px solid",
+        borderColor: "color-mix(in srgb, currentColor 35%, transparent)",
         borderTopColor: color,
         borderRadius: "50%",
         display: "inline-block",
@@ -75,7 +83,7 @@ function Spinner({ color = "#fff" }: { color?: string }) {
 }
 
 /** A simple SVG check used for the success state. */
-function Check({ color = "#fff" }: { color?: string }) {
+function Check({ color = "currentColor" }: { color?: string }) {
   return (
     <svg
       aria-hidden
@@ -100,7 +108,7 @@ function Check({ color = "#fff" }: { color?: string }) {
 }
 
 /** A simple SVG cross used for the error state. */
-function Cross({ color = "#fff" }: { color?: string }) {
+function Cross({ color = "currentColor" }: { color?: string }) {
   return (
     <svg
       aria-hidden
@@ -183,7 +191,7 @@ export const StatefulButton = forwardRef<
   })();
 
   const bg = isDisabled ? "var(--border)" : (color ?? STATE_BG[state]);
-  const fg = isDisabled ? "var(--ink-3)" : STATE_FG[state];
+  const fg = isDisabled ? "var(--ink-2)" : STATE_FG[state];
   const cursor = isDisabled ? "not-allowed" : "pointer";
 
   return (
@@ -192,9 +200,11 @@ export const StatefulButton = forwardRef<
       type={type}
       disabled={isDisabled}
       onClick={() => isInteractive && onClick?.()}
-      whileTap={isInteractive && !reduce ? { scale: 0.97 } : undefined}
+      whileTap={isInteractive && !reduce ? { scale: 0.96 } : undefined}
       transition={pressTransition}
       aria-label={rest["aria-label"]}
+      aria-describedby={rest["aria-describedby"]}
+      aria-invalid={rest["aria-invalid"]}
       style={{
         width: "100%",
         padding: "14px 24px",

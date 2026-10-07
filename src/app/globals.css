@@ -21,9 +21,21 @@
   --green-light: #dcfce7;
   --red: #dc2626;
   --red-light: #fef2f2;
+  /* Text-safe red: --red is a border/indicator red and fails 4.5:1 on light
+     backgrounds (#dc2626 on #ffffff = 4.44). Anything rendered as type uses
+     --red-text. */
+  --red-text: #b91c1c;
   --amber: #f59e0b;
   --amber-text: #92400e;
   --amber-light: #fffbeb;
+  /* CTA surfaces: white on --green is 3.29:1 in light mode, so the button
+     background darkens to --green-dark. The dark scheme flips it back to
+     --green with --bg text (9.28:1). Text on a filled CTA is always
+     --*-cta-fg, never a literal #fff. */
+  --green-cta: var(--green-dark);
+  --green-cta-fg: #ffffff;
+  --red-cta: var(--red-text);
+  --red-cta-fg: #ffffff;
   --border: #e5e2dc;
   --dotted: #d4d0c8;
   --mono: "JetBrains Mono", "IBM Plex Mono", "Roboto Mono", ui-monospace, monospace;
@@ -43,15 +55,20 @@
     --receipt-bg: #131519;
     --ink: #e8e6e3;
     --ink-2: #9a9a9a;
-    --ink-3: #7a7d85;
+    --ink-3: #8b8f98;
     --green: #2ddb6a;
     --green-dark: #20b854;
     --green-light: rgba(45, 219, 106, 0.1);
     --red: #f0556a;
     --red-light: rgba(240, 85, 106, 0.08);
+    --red-text: var(--red);
     --amber: #f5b049;
     --amber-text: #f5b049;
     --amber-light: rgba(245, 176, 73, 0.08);
+    --green-cta: var(--green);
+    --green-cta-fg: var(--bg);
+    --red-cta: var(--red);
+    --red-cta-fg: var(--bg);
     --border: #262932;
     --dotted: #2a2e38;
     --code-bg: #0a0c10;
@@ -68,15 +85,20 @@
   --receipt-bg: #131519;
   --ink: #e8e6e3;
   --ink-2: #9a9a9a;
-  --ink-3: #65686f;
+  --ink-3: #8b8f98;
   --green: #2ddb6a;
   --green-dark: #20b854;
   --green-light: rgba(45, 219, 106, 0.1);
   --red: #f0556a;
   --red-light: rgba(240, 85, 106, 0.08);
+  --red-text: var(--red);
   --amber: #f5b049;
   --amber-text: #f5b049;
   --amber-light: rgba(245, 176, 73, 0.08);
+  --green-cta: var(--green);
+  --green-cta-fg: var(--bg);
+  --red-cta: var(--red);
+  --red-cta-fg: var(--bg);
   --border: #262932;
   --dotted: #2a2e38;
   --code-bg: #0a0c10;
@@ -103,6 +125,18 @@ html, body {
 
 input, select, button, textarea { font-family: inherit; }
 input:focus, select:focus, textarea:focus { outline: none; border-color: var(--green) !important; }
+/* Keyboard users still need a ring — border-color alone is a 1px indicator. */
+input:focus-visible, select:focus-visible, textarea:focus-visible,
+button:focus-visible, a:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 2px;
+}
+/* Theme swaps must not be smeared by per-property colour transitions.
+   Set on <html> for exactly one frame by theme-toggle (the View Transitions
+   path handles this itself; this covers the fallback / reduced-motion path). */
+.theme-instant *, .theme-instant *::before, .theme-instant *::after {
+  transition: none !important;
+}
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 ::-webkit-scrollbar-track { background: transparent; }
@@ -325,13 +359,32 @@ a { color: inherit; text-decoration: none; }
 }
 
 /* animations */
-@keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes spin { to { transform: rotate(360deg); } }
 @keyframes bankSelectorSlideIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
-.fade-up { animation: fadeUp 0.3s ease-out both; }
-.fade-in { animation: fadeIn 0.2s ease-out both; }
+/* State-swap entrances. These classes are applied to conditionally rendered
+   blocks (account field, geo warning, photo banner), so they replay on every
+   bank switch. A one-shot keyframe animation cannot retarget mid-flight and
+   leaves content parked at opacity:0 if it is interrupted; a transition with
+   @starting-style can, and degrades to "no animation, content visible" on
+   engines without @starting-style. */
+.fade-up {
+  opacity: 1;
+  transform: none;
+  transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+}
+.fade-in {
+  opacity: 1;
+  transition: opacity 0.2s ease-out;
+}
+@starting-style {
+  .fade-up { opacity: 0; transform: translateY(12px); }
+  .fade-in { opacity: 0; }
+}
 .spin { animation: spin 0.8s linear infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .fade-up, .fade-in { transition: none; opacity: 1; transform: none; }
+}
 
 /* receipt dotted line */
 .dotted-line { border: none; border-top: 2px dotted var(--dotted); margin: 0; }
@@ -380,17 +433,19 @@ a { color: inherit; text-decoration: none; }
 /* Shiki token colors are applied via inline styles on <span> elements. */
 /* The .ch-* classes below were used by the old custom highlighter and are removed. */
 
-/* code block header bar */
+/* code block header bar — sits directly on top of the dark <pre>, so it must
+   be dark too. On a light page background the old transparent strip gave
+   #7f848e on #faf9f6 = 3.56:1. */
 .code-block-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 8px 16px;
-  background: rgba(255,255,255,0.04);
+  background: color-mix(in srgb, var(--code-bg) 94%, #ffffff);
   border-bottom: 1px solid rgba(255,255,255,0.08);
   border-radius: 10px 10px 0 0;
   font-size: 12px;
-  color: #7f848e;
+  color: #9aa0a8;
   font-family: var(--mono);
 }
 .code-block-header + pre {
@@ -409,28 +464,30 @@ a { color: inherit; text-decoration: none; }
 }
 .code-copy-btn {
   background: none;
-  border: 1px solid rgba(255,255,255,0.12);
-  color: #7f848e;
-  padding: 3px 10px;
+  border: 1px solid rgba(255,255,255,0.16);
+  color: #9aa0a8;
+  padding: 3px 8px;
   border-radius: 5px;
   cursor: pointer;
   font-size: 11px;
   font-family: var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
   transition: background-color 0.15s, color 0.15s, border-color 0.15s;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
 }@media (hover: hover) {
 
 .code-copy-btn:hover {
-  background: rgba(255,255,255,0.08);
-  color: #abb2bf;
-  border-color: rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.1);
+  color: #d0d6dd;
+  border-color: rgba(255,255,255,0.28);
 }
 }
 .code-copy-btn.copied {
   color: #98c379;
-  border-color: rgba(152,195,121,0.3);
+  border-color: rgba(152,195,121,0.4);
 }
 
 /* inline code - light, not the dark block */
@@ -445,16 +502,25 @@ a { color: inherit; text-decoration: none; }
   word-break: break-all;
 }
 
-/* tables - mobile scroll, no overflow */
+/* tables - mobile scroll. The scrollbar is the ONLY affordance that says
+   "this table continues past the edge", so it is kept visible (thin) and
+   given a thumb that reads against the surface instead of being hidden. */
 .prose .table-wrap, .table-wrap {
   overflow-x: auto;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
+  scrollbar-width: thin;
+  scrollbar-color: var(--ink-3) transparent;
+  -ms-overflow-style: thin;
   margin: 14px 0;
   border-radius: 8px;
   max-width: 100%;
+  overscroll-behavior-x: contain;
 }
-.prose .table-wrap::-webkit-scrollbar, .table-wrap::-webkit-scrollbar { display: none; }
+.prose .table-wrap::-webkit-scrollbar, .table-wrap::-webkit-scrollbar { display: block; height: 6px; }
+.prose .table-wrap::-webkit-scrollbar-thumb, .table-wrap::-webkit-scrollbar-thumb {
+  background: var(--ink-3);
+  border-radius: 3px;
+}
+.prose .table-wrap::-webkit-scrollbar-track, .table-wrap::-webkit-scrollbar-track { background: transparent; }
 .prose .table-wrap table, .table-wrap table {
   width: auto;
   min-width: 100%;
@@ -616,6 +682,15 @@ details > p, details > div {
   min-width: 0;
   animation: ph-pop 0.4s cubic-bezier(0.2, 0.8, 0.3, 1) both;
 }
+/* Prefixes the rolling example so a chip naming a different bank reads as
+   "for example", not as the bank currently selected above. */
+.ph-eg {
+  flex-shrink: 0;
+  font-family: var(--sans);
+  font-size: 11px;
+  font-style: italic;
+  color: var(--ink-3);
+}
 .ph-name {
   flex-shrink: 0;
   font-family: var(--sans);
@@ -648,6 +723,28 @@ details > p, details > div {
   font-size: 12px;
   line-height: 1.5;
   color: var(--ink-3);
+}
+/* Why the primary button is grey. A disabled control that gives no reason is
+   indistinguishable from a broken one. */
+.form-hint--actionable {
+  color: var(--ink-2);
+  font-weight: 500;
+}
+/* Required marker next to a field label — the label alone doesn't say the
+   bank will reject an empty value. */
+.req-tag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  color: var(--ink-3);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  vertical-align: middle;
 }
 .detected-chip {
   display: flex;
@@ -1365,4 +1462,44 @@ button, [role="button"], a.button, .btn {
     padding: 0 16px 16px !important;
     font-size: 13px !important;
   }
+}
+
+/* ── Wide-table scroll affordance ───────────────────────────────────── */
+/* Hiding the scrollbar on a 7-column comparison table removes the only
+   signal that more columns exist. The scrollbar is restored by the table
+   rule above; this is the written nudge for the first paint on touch. */
+.table-scroll-hint { display: none; }
+@media (max-width: 900px) {
+  .table-scroll-hint {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: -4px 0 4px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink-3);
+  }
+}
+
+/* ── Bank card requirement chips ────────────────────────────────────── */
+/* "Account required" was 12px grey at the card's foot while a generic
+   marketing line got body weight — the decision datum lost. Chips in
+   --ink-2 on --surface-alt make it scannable at card level. */
+.bank-meta {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: auto;
+}
+.bank-meta__chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface-alt);
+  color: var(--ink-2);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
 }

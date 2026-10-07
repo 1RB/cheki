@@ -212,8 +212,8 @@ docker-compose up -d
         </div>
 
         <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-          <a href="/docs" style={{ padding: "12px 24px", borderRadius: "8px", background: "var(--green)", color: "#fff", fontSize: "14px", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "6px" }}>
-            Full API docs <Icon icon={ArrowRight01Icon} size={14} color="#fff" />
+          <a href="/docs" style={{ padding: "12px 24px", borderRadius: "8px", background: "var(--green-cta)", color: "var(--green-cta-fg)", fontSize: "14px", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "6px" }}>
+            Full API docs <Icon icon={ArrowRight01Icon} size={14} color="var(--green-cta-fg)" />
           </a>
           <a href="https://github.com/1RB/cheki" target="_blank" rel="noopener" style={{ padding: "12px 24px", borderRadius: "8px", border: "1px solid var(--border)", color: "var(--ink)", fontSize: "14px", fontWeight: 600, background: "var(--surface)" }}>GitHub repo</a>
           <a href="https://github.com/1RB/cheki/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener" style={{ padding: "12px 24px", borderRadius: "8px", border: "1px solid var(--border)", color: "var(--ink)", fontSize: "14px", fontWeight: 600, background: "var(--surface)" }}>Contributing guide</a>

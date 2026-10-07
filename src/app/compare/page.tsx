@@ -159,7 +159,7 @@ export default function ComparePage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
       <Nav />
       <main className="container" style={{ paddingTop: "48px", paddingBottom: "48px" }}>
-        <nav style={{ fontSize: "13px", color: "var(--ink-3)", marginBottom: "16px" }}>
+        <nav aria-label="Breadcrumb" style={{ fontSize: "13px", color: "var(--ink-3)", marginBottom: "16px" }}>
           <a href="/" style={{ color: "var(--ink-3)" }}>Home</a>
           <span style={{ margin: "0 6px"}}>/</span>
           <span style={{ color: "var(--ink)" }}>{t("nav.compare")}</span>
@@ -178,12 +178,16 @@ export default function ComparePage() {
             {t("compare.verdict")}
           </p>
           <a href="/" style={{
-            display: "inline-flex", alignItems: "center", gap: "6px", padding: "10px 20px", borderRadius: "8px", background: "var(--green)", color: "var(--bg)", fontSize: "14px", fontWeight: 600,
+            display: "inline-flex", alignItems: "center", gap: "6px", padding: "10px 20px", borderRadius: "8px", background: "var(--green-cta)", color: "var(--green-cta-fg)", fontSize: "14px", fontWeight: 600,
           }}>
             {t("compare.cta")}
-            <Icon icon={ArrowRight01Icon} size={14} color="var(--bg)" />
+            <Icon icon={ArrowRight01Icon} size={14} color="var(--green-cta-fg)" />
           </a>
         </div>
+
+        {/* The table scrolls sideways on narrow screens and its scrollbar is
+            the only in-flow signal that more columns exist past the edge. */}
+        <p className="table-scroll-hint">Swipe the table sideways to compare every service →</p>
 
         {/* Pricing */}
         <h2 style={{ fontSize: "20px", fontWeight: 800, marginBottom: "16px" }}>{t("compare.pricing")}</h2>
@@ -238,11 +242,11 @@ export default function ComparePage() {
                   </ul>
                 </div>
                 <div>
-                  <p style={{ fontSize: "12px", fontWeight: 700, color: "var(--red)", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.04em" }}>Limitations</p>
+                  <p style={{ fontSize: "12px", fontWeight: 700, color: "var(--red-text)", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.04em" }}>Limitations</p>
                   <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
                     {c.limitations.map((w) => (
                       <li key={w} style={{ fontSize: "13px", color: "var(--ink-2)", lineHeight: 1.5, marginBottom: "4px", paddingLeft: "14px", position: "relative" }}>
-                        <span style={{ position: "absolute", left: 0, color: "var(--red)" }}>-</span>{w}
+                        <span style={{ position: "absolute", left: 0, color: "var(--red-text)" }}>-</span>{w}
                       </li>
                     ))}
                   </ul>

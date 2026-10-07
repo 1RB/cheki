@@ -39,10 +39,10 @@ export function generateMetadata({ params }: { params: Promise<{ slug: string }>
 
 const calloutStyles: Record<string, { bg: string; border: string; text: string; icon: string }> = {
   info: { bg: "color-mix(in srgb, var(--green) 6%, var(--surface))", border: "color-mix(in srgb, var(--green) 20%, transparent)", text: "var(--green-dark)", icon: "ℹ" },
-  warning: { bg: "var(--amber-light)", border: "color-mix(in srgb, var(--amber) 25%, transparent)", text: "var(--amber)", icon: "⚠" },
+  warning: { bg: "var(--amber-light)", border: "color-mix(in srgb, var(--amber) 25%, transparent)", text: "var(--amber-text)", icon: "⚠" },
   tip: { bg: "var(--green-light)", border: "color-mix(in srgb, var(--green) 20%, transparent)", text: "var(--green-dark)", icon: "💡" },
   success: { bg: "var(--green-light)", border: "color-mix(in srgb, var(--green) 20%, transparent)", text: "var(--green-dark)", icon: "✓" },
-  danger: { bg: "var(--red-light)", border: "color-mix(in srgb, var(--red) 20%, transparent)", text: "var(--red)", icon: "✕" },
+  danger: { bg: "var(--red-light)", border: "color-mix(in srgb, var(--red) 20%, transparent)", text: "var(--red-text)", icon: "✕" },
   quote: { bg: "var(--surface-alt)", border: "var(--border)", text: "var(--ink-2)", icon: "❝" },
 };
 
@@ -268,7 +268,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
       {faqJsonLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
       <main className="container" style={{ paddingTop: "40px", paddingBottom: "48px" }}>
-        <nav style={{ fontSize: "13px", color: "var(--ink-3)", marginBottom: "16px" }}>
+        <nav aria-label="Breadcrumb" style={{ fontSize: "13px", color: "var(--ink-3)", marginBottom: "16px" }}>
           <a href="/" style={{ color: "var(--ink-3)" }}>Home</a>
           <span style={{ margin: "0 6px"}}>/</span>
           <a href="/guides" style={{ color: "var(--ink-3)" }}>Guides</a>

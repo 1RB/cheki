@@ -1,10 +1,6 @@
 "use client";
 
-import {
-  motion,
-  AnimatePresence,
-  useReducedMotion,
-} from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
 import { Search, X, ArrowRight } from "lucide-react";
 import {
   useCallback,
@@ -15,7 +11,6 @@ import {
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
-import { EASE_OUT, SPRING_PANEL } from "@/lib/ease";
 
 export type CommandItem = {
   id: string;
@@ -42,7 +37,6 @@ export function CommandPalette({
   const [activeIndex, setActiveIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
-  const reduce = useReducedMotion();
 
   // ⌘K / Ctrl+K to open
   useEffect(() => {
@@ -148,12 +142,13 @@ export function CommandPalette({
         <AnimatePresence>
           {open ? (
             <>
-              {/* Backdrop */}
+              {/* Backdrop — ⌘K is a keyboard action, so it opens and closes
+                  on a hard cut: no transition, no backdrop blur ramp. */}
               <motion.div
-                initial={reduce ? { opacity: 0 } : { opacity: 0 }}
+                initial={false}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                transition={{ duration: 0.15 }}
+                transition={{ duration: 0 }}
                 style={{
                   position: "fixed",
                   inset: 0,
@@ -165,10 +160,10 @@ export function CommandPalette({
               />
               {/* Panel */}
               <motion.div
-                initial={reduce ? { opacity: 0 } : { opacity: 0, y: -8, scale: 0.98, x: "-50%" }}
-                animate={reduce ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1, x: "-50%" }}
-                exit={reduce ? { opacity: 0 } : { opacity: 0, y: -8, scale: 0.98, x: "-50%" }}
-                transition={{ type: "spring", stiffness: 600, damping: 35, mass: 0.4 }}
+                initial={false}
+                animate={{ x: "-50%" }}
+                exit={{ x: "-50%", opacity: 0 }}
+                transition={{ duration: 0 }}
                 style={{
                   position: "fixed",
                   top: "15vh",

@@ -63,7 +63,7 @@ export function Nav() {
   ];
   return (
     <>
-      <nav style={{
+      <nav aria-label="Main" style={{
         position: "sticky", top: 0, zIndex: 100,
         background: "color-mix(in srgb, var(--bg) 92%, transparent)", backdropFilter: "blur(12px)",
         borderBottom: "1px solid var(--border)", height: "var(--nav-h)",

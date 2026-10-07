@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import { banks, type Bank } from "@/lib/banks";
 import { SPRING_PANEL } from "@/lib/ease";
+import { brandTileBg } from "@/lib/utils";
 
 interface BankSelectorProps {
   value: string;
@@ -349,7 +350,7 @@ export function BankSelector({ value, onChange }: BankSelectorProps) {
                               width: "24px",
                               height: "24px",
                               borderRadius: "5px",
-                              background: b.color,
+                              background: brandTileBg(b.color),
                               display: "flex",
                               alignItems: "center",
                               justifyContent: "center",

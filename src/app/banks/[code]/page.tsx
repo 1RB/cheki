@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { banks, getBank } from "@/lib/banks";
 import { Nav, Footer } from "@/components/Chrome";
 import { BouncyAccordion } from "@/components/motion/bouncy-accordion";
+import { brandTileBg } from "@/lib/utils";
 
 export function generateStaticParams() {
   return banks.map((b) => ({ code: b.code }));
@@ -66,7 +67,7 @@ export default async function BankPage({ params }: { params: Promise<{ code: str
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
       <main className="container" style={{ paddingTop: "48px", paddingBottom: "48px" }}>
-        <nav style={{ fontSize: "13px", color: "var(--ink-3)", marginBottom: "16px" }}>
+        <nav aria-label="Breadcrumb" style={{ fontSize: "13px", color: "var(--ink-3)", marginBottom: "16px" }}>
           <a href="/" style={{ color: "var(--ink-3)" }}>Home</a>
           <span style={{ margin: "0 6px"}}>/</span>
           <a href="/banks" style={{ color: "var(--ink-3)" }}>Banks</a>
@@ -93,7 +94,7 @@ export default async function BankPage({ params }: { params: Promise<{ code: str
         </p>
 
         <div style={{ display: "flex", gap: "12px", marginBottom: "40px", flexWrap: "wrap" }}>
-          <a href={`/#verify`} style={{ padding: "12px 24px", borderRadius: "8px", background: "var(--green)", color: "var(--bg)", fontSize: "14px", fontWeight: 600 }}>
+          <a href={`/#verify`} style={{ padding: "12px 24px", borderRadius: "8px", background: "var(--green-cta)", color: "var(--green-cta-fg)", fontSize: "14px", fontWeight: 600 }}>
             Verify {bank.shortName} now
           </a>
           <span style={{
@@ -176,7 +177,7 @@ export default async function BankPage({ params }: { params: Promise<{ code: str
               <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                 {otherBanks.map((b) => (
                   <a key={b.code} href={`/banks/${b.code}`} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "8px 12px", borderRadius: "8px", transition: "background-color 0.15s, color 0.15s, border-color 0.15s, transform 0.15s" }}>
-                    <div style={{ width: "28px", height: "28px", borderRadius: "6px", background: b.color, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700, fontSize: "11px", flexShrink: 0 }}>
+                    <div style={{ width: "28px", height: "28px", borderRadius: "6px", background: brandTileBg(b.color), display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700, fontSize: "11px", flexShrink: 0 }}>
                       {b.shortName.slice(0, 3)}
                     </div>
                     <span style={{ fontSize: "14px", fontWeight: 500, color: "var(--ink-2)" }}>{b.shortName}</span>

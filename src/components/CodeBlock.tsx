@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Copy, Check } from "lucide-react";
 
 interface CodeBlockProps {
   code: string;
@@ -41,9 +42,11 @@ export function CodeBlock({ code, highlightedHtml, langLabel }: CodeBlockProps) 
           type="button"
           onClick={handleCopy}
           className={`code-copy-btn${copied ? " copied" : ""}`}
-          aria-label="Copy code"
+          aria-label={copied ? "Code copied" : "Copy code"}
+          title={copied ? "Copied" : "Copy to clipboard"}
         >
-          {copied ? "✓ copied" : "copy"}
+          {copied ? <Check size={12} aria-hidden /> : <Copy size={12} aria-hidden />}
+          <span>{copied ? "Copied" : "Copy"}</span>
         </button>
       </div>
       <pre className="code-block" style={{ margin: 0, borderRadius: langLabel ? "0 0 10px 10px" : "10px" }}>

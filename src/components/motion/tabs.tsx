@@ -144,7 +144,7 @@ export function TabsTrigger({
           style={{
             position: "absolute",
             inset: 0,
-            background: "var(--green)",
+            background: "var(--green-cta)",
             borderRadius: radius,
           }}
         />
@@ -167,7 +167,7 @@ export function TabsTrigger({
           fontWeight: 600,
           border: "none",
           borderRadius: radius,
-          color: active ? "var(--bg)" : "var(--ink-3)",
+          color: active ? "var(--green-cta-fg)" : "var(--ink-3)",
           cursor: "pointer",
           transition: "color 0.15s",
           ...style,

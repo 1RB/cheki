@@ -67,7 +67,7 @@ export default function GuidesPage() {
       <main style={{ paddingTop: "40px", paddingBottom: "48px" }}>
         {/* Header */}
         <div className="container" style={{ marginBottom: "32px" }}>
-          <nav style={{ fontSize: "13px", color: "var(--ink-3)", marginBottom: "16px" }}>
+          <nav aria-label="Breadcrumb" style={{ fontSize: "13px", color: "var(--ink-3)", marginBottom: "16px" }}>
             <a href="/" style={{ color: "var(--ink-3)" }}>Home</a>
             <span style={{ margin: "0 6px"}}>/</span>
             <span style={{ color: "var(--ink)" }}>Guides</span>
@@ -262,7 +262,7 @@ export default function GuidesPage() {
                       </div>
 
                       {/* Title */}
-                      <h3 style={{
+                      <h2 style={{
                         fontSize: isFeatured ? "22px" : "16px",
                         fontWeight: 700,
                         lineHeight: 1.3,
@@ -270,7 +270,7 @@ export default function GuidesPage() {
                         margin: 0,
                       }}>
                         {a.title}
-                      </h3>
+                      </h2>
 
                       {/* Excerpt */}
                       <p style={{
