@@ -592,7 +592,7 @@ const fraudScenarioPages: SeoPage[] = [
           "Telebirr: alphanumeric string (e.g. DET8FJGUJ4)",
           "BOA: transaction reference + account suffix",
           "M-Pesa: transaction number (trxNo)",
-          "Dashen: receipt ID at receipt.dashensuperapp.com",
+          "Dashen: FT Ref at receipts.dashenbanksc.com",
         ],
       },
       {

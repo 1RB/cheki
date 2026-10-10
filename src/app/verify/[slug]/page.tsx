@@ -1,34 +1,36 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
-import { seoPages, allSeoPages, getSeoPage, getRelatedSeoPages } from "@/lib/seo-pages";
+import { notFound, permanentRedirect } from "next/navigation";
+import { indexableSeoPages, getSeoPage, getRelatedSeoPages, isMergedIntoBankPage, stripBrandSuffix } from "@/lib/seo-pages";
+import { getBank } from "@/lib/banks";
 import { Nav, Footer } from "@/components/Chrome";
 import { BankLogoByName } from "@/components/BankLogo";
 import { Icon, ArrowRight01Icon, CheckmarkCircle01Icon, Alert01Icon } from "@/components/Icon";
 
 export function generateStaticParams() {
-  return allSeoPages.map((p) => ({ slug: p.slug }));
+  return indexableSeoPages.map((p) => ({ slug: p.slug }));
 }
 
 export function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   return params.then((p) => {
     const page = getSeoPage(p.slug);
     if (!page) return { title: "Page not found" };
+    const title = stripBrandSuffix(page.title);
     return {
-      title: page.title,
+      title,
       description: page.metaDescription,
       keywords: page.keywords,
       alternates: {
         canonical: `/verify/${page.slug}`,
       },
       openGraph: {
-        title: page.title,
+        title,
         description: page.metaDescription,
         type: "article",
         url: `https://cheki.et/verify/${page.slug}`,
       },
       twitter: {
         card: "summary_large_image",
-        title: page.title,
+        title,
         description: page.metaDescription,
       },
     };
@@ -39,6 +41,12 @@ export default function SeoPage({ params }: { params: Promise<{ slug: string }> 
   return params.then((p) => {
     const page = getSeoPage(p.slug);
     if (!page) notFound();
+    // Merged into /banks/[code]; next.config.ts already 301s these, this is a
+    // fallback for hosts that skip config redirects.
+    if (isMergedIntoBankPage(page)) {
+      const bank = page.bankCode ? getBank(page.bankCode) : undefined;
+      permanentRedirect(bank?.status === "live" ? `/banks/${bank.code}` : "/banks");
+    }
 
     const related = getRelatedSeoPages(p.slug);
 

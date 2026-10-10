@@ -57,9 +57,10 @@
       }
     ],
     "seo": {
-      "title": "Verify CBE Transactions Online",
-      "description": "Verify Commercial Bank of Ethiopia (CBE) transactions for free. Check FT reference numbers against official CBE receipt endpoints. No signup, no API key.",
+      "title": "CBE Receipt Check: Verify FT Reference Online Free",
+      "description": "Check a Commercial Bank of Ethiopia receipt by FT reference or mbreciept link. Confirm sender, receiver, amount and date against CBE's own record. Free, no signup.",
       "keywords": [
+        "cbe receipt check",
         "CBE receipt verification",
         "verify CBE transaction",
         "FT reference number",
@@ -131,9 +132,10 @@
       }
     ],
     "seo": {
-      "title": "Verify Telebirr Transactions Online",
-      "description": "Verify Telebirr (Ethio Telecom) transactions for free. Check transaction references against official Telebirr receipt endpoints. No signup, no API key.",
+      "title": "Telebirr Receipt Check Online: Free, Instant",
+      "description": "Paste a Telebirr transaction number to confirm amount, sender and date against Ethio telecom's receipt record. Spot fake screenshots. Free, no account needed.",
       "keywords": [
+        "telebirr receipt check",
         "telebirr receipt verification",
         "verify telebirr transaction",
         "telebirr transaction ID",
@@ -210,9 +212,10 @@
       }
     ],
     "seo": {
-      "title": "Verify Bank of Abyssinia Transactions Online | BOA QR Code Verification",
-      "description": "Verify Bank of Abyssinia (BOA) transactions for free. JSON API for BOA-to-BOA transfers, AES-256-CBC QR decryption for inter-bank transfers. No Selenium, no signup, no API key.",
+      "title": "BOA Receipt Check: Verify Bank of Abyssinia Payments",
+      "description": "Check a Bank of Abyssinia receipt by reference and account digits against BOA's own record, or decode the data in a BOA receipt QR code. Free, no signup.",
       "keywords": [
+        "boa receipt check",
         "BOA receipt verification",
         "verify Bank of Abyssinia transaction",
         "BOA payment check",
@@ -277,9 +280,10 @@
       }
     ],
     "seo": {
-      "title": "Verify M-Pesa Ethiopia Transactions Online",
-      "description": "Verify M-Pesa Ethiopia (Safaricom) transactions for free. Check transaction references against official M-Pesa receipt API. No signup, no API key.",
+      "title": "M-Pesa Ethiopia Receipt Check Online: Free",
+      "description": "Verify a Safaricom M-Pesa Ethiopia receipt by transaction ID. Confirm the amount, sender and date against M-Pesa's record. Free, no signup.",
       "keywords": [
+        "m-pesa receipt check",
         "M-Pesa receipt verification",
         "verify M-Pesa Ethiopia transaction",
         "Safaricom Ethiopia receipt",
@@ -296,21 +300,21 @@
     "type": "bank",
     "status": "live",
     "parser": "dashen",
-    "responseType": "pdf",
+    "responseType": "html",
     "requiresAccount": false,
-    "endpoint": "https://receipt.dashensuperapp.com/receipt/{ref}",
-    "endpointFormat": "https://receipt.dashensuperapp.com/receipt/{REFERENCE}",
+    "endpoint": "https://receipts.dashenbanksc.com/receipt/{ref}",
+    "endpointFormat": "https://receipts.dashenbanksc.com/receipt/{REFERENCE}",
     "sslVerify": true,
     "color": "#0066B3",
     "initials": "DB",
-    "notes": "Verified working. Use the Dashen Transaction Reference (e.g. D31OBTI251720001). Works for both within-Dashen and Other Bank Transfer receipts.",
-    "description": "Dashen Bank publishes transaction receipts as public PDF documents. The URL works for both within-Dashen and Other Bank Transfer (inter-bank) receipts. Only the FT Ref / Transaction Reference is needed.",
-    "referenceFormat": "Alphanumeric Dashen transaction reference (FT Ref / Transaction Reference on the receipt). Do not use the Transfer Reference.",
-    "referenceExample": "B22WDTI261620001 or D31OBTI251720001",
+    "notes": "Verified 2026-10-10 on receipts.dashenbanksc.com (HTML; unknown refs return HTTP 400 JSON 'Transaction not found'). Use the FT Ref (e.g. B22WDTI2619100WH). The long app 'Transaction Ref' (WDTI.../OBTI...) is rejected. The old receipt.dashensuperapp.com PDF host returns 502.",
+    "description": "Dashen Bank publishes every transfer receipt as a public web page. cheki reads it with only the FT Ref, for both within-Dashen and other-bank transfers.",
+    "referenceFormat": "16-character FT Ref shown in the Dashen app (also labelled Transaction Reference on the web receipt), e.g. B22WDTI2619100WH. Do not use the longer Transaction Ref / Transfer Reference.",
+    "referenceExample": "B22WDTI2619100WH",
     "howToVerify": [
-      "Get the FT Ref / Transaction Reference from the customer's Dashen receipt",
-      "cheki fetches the official PDF from receipt.dashensuperapp.com",
-      "Payment data is extracted from the PDF and returned as structured JSON"
+      "Get the FT Ref from the Dashen receipt or app screen (e.g. B22WDTI2619100WH)",
+      "cheki fetches the official receipt page from receipts.dashenbanksc.com",
+      "Sender, receiver, amount, date and reference are read from Dashen's own record and returned as structured JSON"
     ],
     "useCases": [
       "Merchants verifying Dashen transfers",
@@ -324,7 +328,7 @@
       },
       {
         "q": "What is the difference between FT Ref and Transaction Ref?",
-        "a": "Use the FT Ref (also labeled Transaction Reference). It looks like B22WDTI... or D31OBTI... The Transfer Reference is an external network tracking number and does not fetch a PDF from Dashen's API."
+        "a": "Use the FT Ref (labelled Transaction Reference on the web receipt). It looks like B22WDTI... or D31OBTI... The app's longer Transaction Ref / Transfer Reference (e.g. WDTI5186...) is an internal tracking number, and Dashen's receipt page returns 'Transaction not found' for it."
       },
       {
         "q": "Does Dashen verification work for inter-bank transfers?",
@@ -332,9 +336,10 @@
       }
     ],
     "seo": {
-      "title": "Verify Dashen Bank Transactions Online",
-      "description": "Verify Dashen Bank transactions for free. Check transaction references against official Dashen receipt endpoints. Works for within-Dashen and inter-bank transfers. No signup, no API key.",
+      "title": "Dashen Bank Receipt Check Online: Free Verifier",
+      "description": "Verify a Dashen Bank transfer receipt by reference. Confirm amount, sender and date against Dashen's own record before you hand over goods. Free.",
       "keywords": [
+        "dashen receipt check",
         "Dashen Bank receipt verification",
         "verify Dashen transaction",
         "Dashen payment check",
@@ -399,9 +404,10 @@
       }
     ],
     "seo": {
-      "title": "Verify Awash Bank Transactions Online",
-      "description": "Verify Awash Bank transactions for free. Paste an Awash share link and cheki fetches the official receipt. Reverse-engineered URL structure. No signup, no API key.",
+      "title": "Awash Bank Receipt Check Online: Free Verifier",
+      "description": "Check an Awash Bank receipt by pasting the share link from the Awash SMS and confirm it against Awash's own record. Spot fake or edited receipts. Free, no signup.",
       "keywords": [
+        "awash receipt check",
         "Awash Bank receipt verification",
         "verify Awash transaction",
         "Awash payment check",
@@ -417,7 +423,7 @@
     "shortName": "Zemen",
     "swift": "ZEMEETAA",
     "type": "bank",
-    "status": "live",
+    "status": "in-development",
     "parser": "zemen",
     "responseType": "pdf",
     "requiresAccount": false,
@@ -447,9 +453,10 @@
       }
     ],
     "seo": {
-      "title": "Verify Zemen Bank Transactions Online",
-      "description": "Verify Zemen Bank transactions for free. Check transaction references against official Zemen receipt endpoints. No signup, no API key.",
+      "title": "Zemen Bank Receipt Check Online: Free Verifier",
+      "description": "Verify a Zemen Bank transfer receipt instantly. Paste the reference to confirm amount, sender and date against Zemen's own record. Free, no signup.",
       "keywords": [
+        "zemen receipt check",
         "Zemen Bank receipt verification",
         "verify Zemen transaction",
         "Zemen payment check",
@@ -462,7 +469,7 @@
     "name": "CBE Birr",
     "shortName": "CBE Birr",
     "type": "wallet",
-    "status": "live",
+    "status": "in-development",
     "parser": "cbebirr",
     "responseType": "html",
     "requiresAccount": false,
@@ -497,9 +504,10 @@
       }
     ],
     "seo": {
-      "title": "Verify CBE Birr Transactions Online",
-      "description": "Verify CBE Birr transactions for free. Check transaction references against official CBE Birr receipt endpoints. No signup, no API key.",
+      "title": "CBE Birr Receipt Check: Verify CBE Birr Payments",
+      "description": "Check a CBE Birr payment by transaction ID and payer phone. Confirm it against CBE Birr's own record and spot fake screenshots. Free, no signup.",
       "keywords": [
+        "cbe birr receipt check",
         "CBE Birr receipt verification",
         "verify CBE Birr transaction",
         "CBE Birr payment check",
@@ -541,9 +549,10 @@
       }
     ],
     "seo": {
-      "title": "Verify Siinqee Bank Transactions Online",
-      "description": "Verify Siinqee Bank transactions for free. No signup, no API key.",
+      "title": "Siinqee Bank Receipt Check Online: Free Verifier",
+      "description": "Verify a Siinqee Bank receipt by reference and confirm amount, sender and date against the bank's record. Free, no signup, results in seconds.",
       "keywords": [
+        "siinqee receipt check",
         "Siinqee Bank receipt verification",
         "verify Siinqee transaction",
         "ethiopian bank receipt verify"
@@ -599,9 +608,10 @@
       }
     ],
     "seo": {
-      "title": "Verify eBirr Receipts Online | Nib, Wegagen, Ahadu, KAAFI",
-      "description": "Verify eBirr mobile money receipts for free. Covers Nib International Bank, Wegagen Bank, Ahadu Bank, and KAAFI Microfinance. No signup, no API key.",
+      "title": "eBirr Receipt Check: Verify eBirr Payments Online",
+      "description": "Check an eBirr payment by pasting the eBirr receipt link or its tenant/token and confirm it against the eBirr record. Free, no signup. Works for eBirr partner banks.",
       "keywords": [
+        "ebirr receipt check",
         "eBirr receipt verification",
         "verify eBirr transaction",
         "Nib International Bank receipt",

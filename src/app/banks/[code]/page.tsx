@@ -3,6 +3,8 @@ import { banks, getBank } from "@/lib/banks";
 import { Nav, Footer } from "@/components/Chrome";
 import { BouncyAccordion } from "@/components/motion/bouncy-accordion";
 import { brandTileBg } from "@/lib/utils";
+import { BankChecker } from "@/components/BankChecker";
+import { getMergedPagesForBank, getBankTopicPages, stripBrandSuffix } from "@/lib/seo-pages";
 
 export function generateStaticParams() {
   return banks.map((b) => ({ code: b.code }));
@@ -12,7 +14,12 @@ export function generateMetadata({ params }: { params: Promise<{ code: string }>
   return params.then((p) => {
     const bank = getBank(p.code);
     if (!bank) return { title: "Bank not found" };
+    const isLive = bank.status === "live";
     return {
+      // Providers still in development have no working checker yet. Keep them
+      // out of the index until they ship (spam policy: pages must do what they
+      // claim), but let crawlers follow their links.
+      ...(isLive ? {} : { robots: { index: false, follow: true } }),
       title: bank.seo.title,
       description: bank.seo.description,
       keywords: bank.seo.keywords,
@@ -38,11 +45,43 @@ export default async function BankPage({ params }: { params: Promise<{ code: str
   const { code } = await params;
   const bank = getBank(code);
   if (!bank) return <div>Bank not found</div>;
+  const isLive = bank.status === "live";
+
+  // Content from the per-bank /verify pages that now 301 here. Sections whose
+  // heading this page already covers are skipped; FAQs are de-duplicated by
+  // question so the visible list and the FAQPage JSON-LD stay identical.
+  const merged = isLive ? getMergedPagesForBank(bank.code) : [];
+  const seenHeadings = new Set<string>(
+    [
+      "Required information",
+      "Reference number format",
+      `How to verify ${bank.shortName} with cheki`,
+      `How ${bank.shortName} receipt verification works`,
+      `Who uses ${bank.shortName} verification`,
+      `Verifying ${bank.shortName} via API`,
+    ].map((h) => h.toLowerCase()),
+  );
+  const mergedSections = merged
+    .flatMap((p) => p.sections)
+    .filter((sec) => {
+      const key = sec.heading.toLowerCase();
+      if (seenHeadings.has(key)) return false;
+      seenHeadings.add(key);
+      return true;
+    });
+  const seenQ = new Set<string>();
+  const allFaq = [...bank.faq, ...merged.flatMap((p) => p.faq)].filter((f) => {
+    const key = f.q.toLowerCase().replace(/[^a-z0-9]/g, "");
+    if (seenQ.has(key)) return false;
+    seenQ.add(key);
+    return true;
+  });
+  const topicPages = isLive ? getBankTopicPages(bank.code) : [];
 
   const faqJsonLd = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
-    mainEntity: bank.faq.map((f) => ({
+    mainEntity: allFaq.map((f) => ({
       "@type": "Question",
       name: f.q,
       acceptedAnswer: { "@type": "Answer", text: f.a },
@@ -59,7 +98,7 @@ export default async function BankPage({ params }: { params: Promise<{ code: str
     ],
   };
 
-  const otherBanks = banks.filter((b) => b.code !== bank.code);
+  const otherBanks = banks.filter((b) => b.code !== bank.code && b.status === "live");
 
   return (
     <>
@@ -84,7 +123,7 @@ export default async function BankPage({ params }: { params: Promise<{ code: str
               {bank.type === "mobile" ? "Mobile wallet" : bank.type === "wallet" ? "Wallet" : "Bank verification"}
             </p>
             <h1 style={{ fontSize: "clamp(24px, 4vw, 32px)", fontWeight: 800, letterSpacing: "-0.02em" }}>
-              Verify {bank.name} Transactions
+              {bank.shortName} Receipt Check
             </h1>
           </div>
         </div>
@@ -93,10 +132,19 @@ export default async function BankPage({ params }: { params: Promise<{ code: str
           {bank.description}
         </p>
 
+        {isLive && (
+          <BankChecker
+            code={bank.code}
+            shortName={bank.shortName}
+            referenceExample={bank.referenceExample}
+            requiresAccount={bank.requiresAccount}
+            accountLabel={bank.accountLabel}
+            accountDigits={bank.accountDigits}
+            requiresPhone={bank.requiresPhone}
+          />
+        )}
+
         <div style={{ display: "flex", gap: "12px", marginBottom: "40px", flexWrap: "wrap" }}>
-          <a href={`/#verify`} style={{ padding: "12px 24px", borderRadius: "8px", background: "var(--green-cta)", color: "var(--green-cta-fg)", fontSize: "14px", fontWeight: 600 }}>
-            Verify {bank.shortName} now
-          </a>
           <span style={{
             padding: "12px 16px", borderRadius: "8px", border: "1px solid var(--border)", fontSize: "14px", fontWeight: 500,
             color: bank.status === "live" ? "var(--green-dark)" : "var(--ink-3)", background: "var(--surface)",
@@ -158,9 +206,32 @@ export default async function BankPage({ params }: { params: Promise<{ code: str
             <p>Request body: <code>{`{ "bank": "${bank.code}", "reference": "${bank.referenceExample}"${bank.requiresAccount ? `, "accountNumber": "1000XXXXXXX"` : ""} }`}</code></p>
             <p>See the <a href="/docs">API documentation</a> for full details.</p>
 
+            {mergedSections.map((sec, i) => (
+              <div key={`merged-${i}`}>
+                <h2>{sec.heading}</h2>
+                {sec.body && <p>{sec.body}</p>}
+                {sec.bullets && (
+                  <ul>
+                    {sec.bullets.map((b, j) => <li key={j}>{b}</li>)}
+                  </ul>
+                )}
+              </div>
+            ))}
+
+            {topicPages.length > 0 && (
+              <>
+                <h2>More about {bank.shortName} receipts</h2>
+                <ul>
+                  {topicPages.map((tp) => (
+                    <li key={tp.slug}><a href={`/verify/${tp.slug}`}>{stripBrandSuffix(tp.h1)}</a></li>
+                  ))}
+                </ul>
+              </>
+            )}
+
             <h2>Frequently asked questions</h2>
             <BouncyAccordion
-              items={bank.faq.map((f, i) => ({
+              items={allFaq.map((f, i) => ({
                 id: `faq-${i}`,
                 title: f.q,
                 description: f.a,

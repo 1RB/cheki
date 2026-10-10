@@ -1,9 +1,18 @@
 /**
  * Dashen Bank parser.
  *
- * Endpoint: https://receipt.dashensuperapp.com/receipt/{ref}
- * Response: PDF with structured text
- * Requires: only the transaction reference number (no account needed)
+ * Endpoint: https://receipts.dashenbanksc.com/receipt/{ref}
+ * Response: HTML receipt page (the "Download Receipt" button renders a PDF
+ *           client-side with html2pdf; the server only returns HTML).
+ *           Unknown references return HTTP 400 with a JSON body
+ *           ("Transaction not found").
+ * Requires: only the FT Ref / Transaction Reference (e.g. B22WDTI2619100WH).
+ *           The app's long "Transaction Ref" / Transfer Reference
+ *           (WDTI5186142501962751085) is NOT accepted by the endpoint.
+ *
+ * History: until mid-2026 receipts lived at receipt.dashensuperapp.com as
+ * PDFs. That host now returns 502, which is why Dashen checks broke.
+ * parsePdfText is kept for PDFs users upload or paste.
  */
 import { BaseParser } from "./base";
 import type { ParsedReceipt } from "../core/types";
@@ -11,22 +20,36 @@ import type { ParsedReceipt } from "../core/types";
 export class DashenParser extends BaseParser {
   readonly bankId = "dashen";
   readonly bankName = "Dashen Bank";
-  readonly responseType = "pdf" as const;
+  readonly responseType = "html" as const;
   readonly requiresAccount = false;
   readonly accountDigits?: number = undefined;
   readonly requiresPhone = false;
 
   buildUrl(ref: string): string {
-    return `https://receipt.dashensuperapp.com/receipt/${ref}`;
+    return `https://receipts.dashenbanksc.com/receipt/${encodeURIComponent(ref.trim())}`;
   }
 
   parse(data: string | Buffer, _contentType: string): ParsedReceipt {
-    const buf = Buffer.isBuffer(data) ? data : Buffer.from(data);
-    if (!buf.toString("ascii", 0, 4).includes("%PDF")) {
-      return { verified: false };
-    }
-    // PDF parsing is async; verifier calls extractPdfText + parseDashenPdfText separately.
-    return { verified: false };
+    const raw = Buffer.isBuffer(data) ? data.toString("utf8") : data;
+    // PDFs need async text extraction; the verifier handles that path.
+    if (raw.startsWith("%PDF")) return { verified: false };
+    return DashenParser.parsePdfText(DashenParser.htmlToText(raw));
+  }
+
+  /** Flatten the receipt HTML into the same single-line text the PDF yields. */
+  static htmlToText(html: string): string {
+    return html
+      .replace(/<script[\s\S]*?<\/script>/gi, " ")
+      .replace(/<style[\s\S]*?<\/style>/gi, " ")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/&nbsp;/g, " ")
+      .replace(/&amp;/g, "&")
+      .replace(/&#39;|&apos;/g, "'")
+      .replace(/&quot;/g, '"')
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/\s+/g, " ")
+      .trim();
   }
 
   static parsePdfText(text: string): ParsedReceipt {
@@ -43,8 +66,10 @@ export class DashenParser extends BaseParser {
       "Service Type:",
       "Narrative:",
       "Receiver Name:",
-      "Receiver Account Number:",
+      "Beneficiary Bank Name:",
+      "Institution Name:",
       "Instituton Name:",
+      "Receiver Account Number:",
       "Transaction Reference:",
       "Transfer Reference:",
       "Transaction Date:",
@@ -62,17 +87,22 @@ export class DashenParser extends BaseParser {
       "Total",
     ];
 
+    // Each value runs from the end of its label to the start of the nearest
+    // label that follows it in the text, whatever order the receipt uses.
+    // (The HTML receipt puts Beneficiary Bank / Institution between Receiver
+    // Name and Receiver Account, unlike the old PDF.)
+    const found = labels
+      .map((label) => ({ label, idx: text.indexOf(label) }))
+      .filter((f) => f.idx !== -1)
+      .sort((a, b) => a.idx - b.idx);
     const values: Record<string, string> = {};
-    for (let i = 0; i < labels.length; i++) {
-      const label = labels[i];
-      const startIdx = text.indexOf(label);
-      if (startIdx === -1) continue;
-      const valueStart = startIdx + label.length;
+    for (let i = 0; i < found.length; i++) {
+      const { label, idx } = found[i];
+      const valueStart = idx + label.length;
       let valueEnd = text.length;
-      for (let j = i + 1; j < labels.length; j++) {
-        const nextIdx = text.indexOf(labels[j], valueStart);
-        if (nextIdx !== -1) {
-          valueEnd = nextIdx;
+      for (let j = i + 1; j < found.length; j++) {
+        if (found[j].idx >= valueStart) {
+          valueEnd = found[j].idx;
           break;
         }
       }

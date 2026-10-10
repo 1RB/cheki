@@ -8,11 +8,11 @@ const SITE_URL = "https://cheki.et";
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "cheki - verify ethiopian receipts for free",
+    default: "Check Ethiopian Bank Receipts Free: CBE, Telebirr & More | cheki",
     template: "%s | cheki",
   },
   description:
-    "Free, open-source Ethiopian bank receipt verification. Verify CBE, Telebirr, BOA, M-Pesa, and more. No signup, no API key, no scam. The bank receipt endpoints are public. We just parse them.",
+    "Check CBE, Telebirr, BOA, Dashen, Awash, M-Pesa, Zemen and eBirr receipts in seconds against each bank's own record. Free, no signup, open-source API.",
   applicationName: "cheki",
   category: "finance",
   creator: "cheki open source",
@@ -35,9 +35,9 @@ export const metadata: Metadata = {
     canonical: "/",
   },
   openGraph: {
-    title: "cheki - verify ethiopian receipts for free",
+    title: "Check Ethiopian Bank Receipts Free | cheki",
     description:
-      "No signup. No API key. No scam. The bank receipt endpoints are public. We just parse them.",
+      "Check CBE, Telebirr and 8 more Ethiopian bank and wallet receipts in seconds. Free, no signup, open source.",
     type: "website",
     siteName: "cheki",
     locale: "en_US",
@@ -45,9 +45,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "cheki - verify ethiopian receipts for free",
+    title: "Check Ethiopian Bank Receipts Free | cheki",
     description:
-      "No signup. No API key. No scam. The bank receipt endpoints are public. We just parse them.",
+      "Check CBE, Telebirr and 8 more Ethiopian bank and wallet receipts in seconds. Free, no signup, open source.",
   },
   robots: {
     index: true,
@@ -68,45 +68,58 @@ export const metadata: Metadata = {
   verification: {
     google: "5PHbiqRW6j2_qQfFDxJObwOBQjKDeHOA8JG2FbzOvWI",
   },
-  other: {
-    // JSON-LD structured data - Organization
-    "script:ld+json:organization": JSON.stringify({
-      "@context": "https://schema.org",
-      "@type": "Organization",
-      name: "cheki",
-      url: SITE_URL,
-      logo: `${SITE_URL}/favicon.ico`,
-      description:
-        "Free, open-source Ethiopian bank receipt verification service.",
-      sameAs: ["https://github.com/1RB/cheki"],
-      foundingDate: "2025",
-    }),
-    // JSON-LD structured data - WebApplication
-    "script:ld+json:webapp": JSON.stringify({
-      "@context": "https://schema.org",
-      "@type": "WebApplication",
-      name: "cheki",
-      url: SITE_URL,
-      applicationCategory: "FinanceApplication",
-      operatingSystem: "Web",
-      offers: {
-        "@type": "Offer",
-        price: "0",
-        priceCurrency: "ETB",
-      },
-      description:
-        "Free, open-source Ethiopian bank receipt verification. Verify CBE, Telebirr, BOA, M-Pesa, and more. No signup, no API key required.",
-      featureList: [
-        "Real-time receipt verification",
-        "QR code scanning",
-        "Batch verification up to 50 receipts",
-        "REST API with no authentication",
-        "TypeScript, Python, Dart, PHP, and Go SDKs",
-        "Self-hosting with Docker",
-        "Bank receipt endpoint health monitoring",
-      ],
-    }),
+};
+
+// Structured data. Rendered as real <script type="application/ld+json"> tags
+// in <head>: the previous `metadata.other` entries were emitted as <meta>
+// tags, which Google does not read as structured data.
+const ldOrganization = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: "cheki",
+  url: SITE_URL,
+  logo: `${SITE_URL}/favicon.ico`,
+  description:
+    "Free, open-source Ethiopian bank receipt verification service.",
+  sameAs: [
+    "https://github.com/1RB/cheki",
+    "https://www.npmjs.com/package/cheki-verify",
+    "https://pypi.org/project/cheki/",
+  ],
+  foundingDate: "2026",
+};
+
+const ldWebsite = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: "cheki",
+  alternateName: ["cheki.et", "Cheki"],
+  url: `${SITE_URL}/`,
+};
+
+const ldWebapp = {
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  name: "cheki",
+  url: SITE_URL,
+  applicationCategory: "FinanceApplication",
+  operatingSystem: "Web",
+  offers: {
+    "@type": "Offer",
+    price: "0",
+    priceCurrency: "ETB",
   },
+  description:
+    "Free, open-source Ethiopian bank receipt verification. Verify CBE, Telebirr, BOA, M-Pesa, and more. No signup, no API key required.",
+  featureList: [
+    "Real-time receipt verification",
+    "QR code scanning",
+    "Batch verification up to 50 receipts",
+    "REST API with no authentication",
+    "TypeScript, Python, Dart, PHP, and Go SDKs",
+    "Self-hosting with Docker",
+    "Bank receipt endpoint health monitoring",
+  ],
 };
 
 export const viewport: Viewport = {
@@ -128,6 +141,9 @@ export default function RootLayout({
             before the first paint. Preloaded because a swap-phase font is a
             guaranteed flash of fallback text. */}
         <link rel="preload" href="/fonts/InterVariable.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ldOrganization) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ldWebsite) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ldWebapp) }} />
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/favicon.ico" />
         <link rel="manifest" href="/manifest.webmanifest" />

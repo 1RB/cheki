@@ -177,7 +177,9 @@ describe("cross-page anchors", () => {
   it("gives every linked id a real target", () => {
     expect(read("src/components/HomePage.tsx")).toContain('id="verify"');
     expect(read("src/app/verify/[slug]/page.tsx")).toContain('id="faq"');
-    expect(read("src/app/banks/[code]/page.tsx")).toContain("/#verify");
+    // The bank page's link to the full checker lives in its inline BankChecker.
+    expect(read("src/app/banks/[code]/page.tsx")).toContain("<BankChecker");
+    expect(read("src/components/BankChecker.tsx")).toContain("/#verify");
   });
 });
 

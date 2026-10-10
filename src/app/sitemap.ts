@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 import { banks } from "@/lib/banks";
 import { guides } from "@/lib/guides";
-import { allSeoPages } from "@/lib/seo-pages";
+import { indexableSeoPages } from "@/lib/seo-pages";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const base = "https://cheki.et";
@@ -17,7 +17,9 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${base}/verify`, lastModified: now, changeFrequency: "weekly", priority: 0.9 },
   ];
 
-  const bankPages: MetadataRoute.Sitemap = banks.map((b) => ({
+  // Only live providers: pages for banks still in development are noindexed
+  // until their integration ships, so they stay out of the sitemap too.
+  const bankPages: MetadataRoute.Sitemap = banks.filter((b) => b.status === "live").map((b) => ({
     url: `${base}/banks/${b.code}`,
     lastModified: now,
     changeFrequency: "weekly" as const,
@@ -31,7 +33,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.85,
   }));
 
-  const seoPagesSitemap: MetadataRoute.Sitemap = allSeoPages.map((p) => ({
+  const seoPagesSitemap: MetadataRoute.Sitemap = indexableSeoPages.map((p) => ({
     url: `${base}/verify/${p.slug}`,
     lastModified: now,
     changeFrequency: "weekly" as const,

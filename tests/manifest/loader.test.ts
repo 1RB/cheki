@@ -12,7 +12,7 @@ describe("manifest loader", () => {
   it("returns live banks only", () => {
     const live = getLiveBanks();
     expect(live.every((b) => b.status === "live")).toBe(true);
-    expect(live.length).toBe(11);
+    expect(live.length).toBe(9); // zemen + cbebirr moved to in-development until tested on real receipts
   });
 
   it("finds bank by id (case insensitive)", () => {
