@@ -269,23 +269,23 @@ export class Verifier {
       });
     }
 
-    // Dashen PDF: special handling (extract text first)
+    // Dashen: the live endpoint returns an HTML receipt; a PDF (legacy host or
+    // a pasted file URL) still goes through text extraction.
     if (bank.toLowerCase() === "dashen") {
       const buf = Buffer.isBuffer(data) ? data : Buffer.from(data);
-      if (!buf.toString("ascii", 0, 4).includes("%PDF")) {
-        return err({
-          kind: "EXTRACTION_ERROR",
-          bank: manifestEntry.name,
-          message: "The bank did not return a valid receipt PDF. Check the reference number.",
-        });
-      }
-      const text = await DashenParser.extractPdfText(buf);
+      const isPdf = buf.toString("ascii", 0, 4).includes("%PDF");
+      const text = isPdf
+        ? await DashenParser.extractPdfText(buf)
+        : DashenParser.htmlToText(buf.toString("utf8"));
       const parsed = DashenParser.parsePdfText(text);
       if (!parsed.verified) {
+        const notFound = /transaction not found/i.test(text);
         return err({
           kind: "EXTRACTION_ERROR",
           bank: manifestEntry.name,
-          message: "Could not parse the Dashen receipt PDF. Check the reference number.",
+          message: notFound
+            ? "Dashen has no receipt for this reference. Use the FT Ref (e.g. B22WDTI2619100WH), not the longer Transaction Ref."
+            : "Could not read the Dashen receipt. Check the FT Ref.",
         });
       }
       return ok({
