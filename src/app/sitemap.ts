@@ -14,6 +14,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${base}/developers`, lastModified: now, changeFrequency: "monthly", priority: 0.85 },
     { url: `${base}/compare`, lastModified: now, changeFrequency: "monthly", priority: 0.85 },
     { url: `${base}/docs`, lastModified: now, changeFrequency: "monthly", priority: 0.8 },
+    { url: `${base}/endpoints`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
+    { url: `${base}/status`, lastModified: now, changeFrequency: "daily", priority: 0.5 },
     { url: `${base}/verify`, lastModified: now, changeFrequency: "weekly", priority: 0.9 },
   ];
 
