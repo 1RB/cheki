@@ -20,6 +20,7 @@ import { CBEParser } from "../parsers/cbe";
 import { DashenParser } from "../parsers/dashen";
 import { BOAParser } from "../parsers/boa";
 import { ZemenParser } from "../parsers/zemen";
+import { CBEBirrParser } from "../parsers/cbebirr";
 
 export class Verifier {
   /**
@@ -315,6 +316,34 @@ export class Verifier {
           kind: "EXTRACTION_ERROR",
           bank: manifestEntry.name,
           message: "Could not parse the Zemen receipt PDF. Check the reference number.",
+        });
+      }
+      return ok({
+        ...parsed,
+        bank: manifestEntry.name,
+        bankCode: manifestEntry.id,
+        reference: parsed.reference || ref,
+        sourceUrl: fallbackUrl,
+        durationMs,
+      });
+    }
+
+    // CBE Birr: a real receipt may come back as a PDF (as another open-source
+    // verifier reads it) or as HTML; an unknown TID/PH is an empty Telerik shell.
+    if (bank.toLowerCase() === "cbebirr") {
+      const buf = Buffer.isBuffer(data) ? data : Buffer.from(data);
+      const html = CBEBirrParser.isPdf(buf) ? "" : buf.toString("utf8");
+      const text = CBEBirrParser.isPdf(buf)
+        ? await CBEBirrParser.extractPdfText(buf)
+        : CBEBirrParser.htmlToText(html);
+      const parsed = CBEBirrParser.parseText(text);
+      if (!parsed.verified) {
+        return err({
+          kind: "EXTRACTION_ERROR",
+          bank: manifestEntry.name,
+          message: html && CBEBirrParser.isEmptyShell(html)
+            ? "CBE Birr returned an empty receipt. Check the receipt number and the payer phone number."
+            : "Could not read the CBE Birr receipt. Check the receipt number and the payer phone number.",
         });
       }
       return ok({
