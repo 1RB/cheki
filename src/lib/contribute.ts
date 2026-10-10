@@ -1,11 +1,11 @@
 /**
  * Private receipt contributions for banks that are still in development.
  *
- * A contributor pastes a receipt share link (or a reference plus phone or
- * account) on the bank's page. POST /api/contribute validates it here and
- * forwards it to a private Telegram chat via the Bot API. Nothing is stored
- * or logged: the message is the only copy, and it is deleted once the parser
- * is built.
+ * A contributor pastes a receipt share link, uploads a screenshot, or enters a
+ * reference plus phone or account on the bank's page. POST /api/contribute
+ * validates it here and forwards it to a private Telegram chat via the Bot
+ * API. Nothing is stored or logged: the message is the only copy, and it is
+ * deleted once the parser is built.
  */
 import { getBank } from "./manifest/loader";
 
@@ -16,13 +16,65 @@ export interface Contribution {
   reference?: string;
   phoneOrAccount?: string;
   credit?: string;
+  /** A screenshot travels with the submission (sent as a Telegram photo). */
+  image?: ImageMeta;
+}
+
+export interface ImageMeta {
+  type: string;
+  size: number;
 }
 
 export type ContributionResult =
   | { ok: true; value: Contribution }
   | { ok: false; error: string };
 
+/** JSON bodies (text-only submissions). */
 export const MAX_BODY_BYTES = 4096;
+/** The client re-encodes screenshots to JPEG and keeps them under this. */
+export const MAX_IMAGE_BYTES = 3 * 1024 * 1024;
+/** Multipart bodies, under Vercel's 4.5 MB request limit. */
+export const MAX_MULTIPART_BYTES = 4_400_000;
+export const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
+export type AllowedImageType = (typeof ALLOWED_IMAGE_TYPES)[number];
+
+/** Shown to visitors when the server is missing its Telegram settings. */
+export const PAUSED_MESSAGE = "Submissions are paused right now. Try again later.";
+
+export type LeadMode = "screenshot" | "link";
+
+/**
+ * Whether the contribute box leads with the share link or with a screenshot.
+ * Banks with a known receipt URL template lead with the link; banks whose
+ * endpoint is still unknown lead with a screenshot, since a link may not exist.
+ */
+export function contributeLeadMode(bankId: string): LeadMode {
+  const endpoint = getBank(bankId)?.endpoint?.trim() ?? "";
+  return endpoint && endpoint.toLowerCase() !== "unknown" ? "link" : "screenshot";
+}
+
+/** Checks the declared type and size of an uploaded screenshot. */
+export function validateImageMeta(image: ImageMeta): string | null {
+  if (!(ALLOWED_IMAGE_TYPES as readonly string[]).includes(image.type)) {
+    return "Upload the screenshot as a JPEG, PNG or WebP image.";
+  }
+  if (!(image.size > 0)) return "That screenshot looks empty. Try another one.";
+  if (image.size > MAX_IMAGE_BYTES) return "That screenshot is too large. Crop it and try again.";
+  return null;
+}
+
+/** Reads the real image type from the first bytes, so a renamed file cannot slip through. */
+export function sniffImageType(bytes: Uint8Array): AllowedImageType | null {
+  if (bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return "image/jpeg";
+  const png = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
+  if (bytes.length >= 8 && png.every((b, i) => bytes[i] === b)) return "image/png";
+  if (
+    bytes.length >= 12 &&
+    String.fromCharCode(bytes[0], bytes[1], bytes[2], bytes[3]) === "RIFF" &&
+    String.fromCharCode(bytes[8], bytes[9], bytes[10], bytes[11]) === "WEBP"
+  ) return "image/webp";
+  return null;
+}
 const MAX_LINK = 600;
 const MAX_REF = 64;
 const MAX_CREDIT = 60;
@@ -36,7 +88,7 @@ function tidy(v: string): string {
   return v.replace(/[\u0000-\u001f\u007f]/g, " ").replace(/\s+/g, " ").trim();
 }
 
-export function validateContribution(input: unknown): ContributionResult {
+export function validateContribution(input: unknown, image?: ImageMeta): ContributionResult {
   if (!input || typeof input !== "object") return { ok: false, error: "Send a JSON body." };
   const body = input as Record<string, unknown>;
 
@@ -59,6 +111,11 @@ export function validateContribution(input: unknown): ContributionResult {
   const phoneOrAccount = tidy(str(body.phoneOrAccount));
   const credit = tidy(str(body.credit));
 
+  if (image) {
+    const imageError = validateImageMeta(image);
+    if (imageError) return { ok: false, error: imageError };
+  }
+
   if (link) {
     if (link.length > MAX_LINK) return { ok: false, error: "That link is too long." };
     let url: URL;
@@ -70,12 +127,14 @@ export function validateContribution(input: unknown): ContributionResult {
     if (url.protocol !== "https:" && url.protocol !== "http:") {
       return { ok: false, error: "Paste the full receipt link, starting with https://." };
     }
-  } else {
-    if (!reference) return { ok: false, error: "Paste the receipt link, or enter the reference." };
+  } else if (reference || !image) {
+    if (!reference) return { ok: false, error: "Add a screenshot, paste the receipt link, or enter the reference." };
     if (reference.length > MAX_REF || !/^[A-Za-z0-9/_.-]+$/.test(reference)) {
       return { ok: false, error: "The reference should be letters and digits only." };
     }
-    const needsSecond = bank.requiresAccount || bank.requiresPhone;
+    // A screenshot shows the rest of the receipt, so the second field is only
+    // required for a bare reference.
+    const needsSecond = (bank.requiresAccount || bank.requiresPhone) && !image;
     if (needsSecond && !phoneOrAccount) {
       return {
         ok: false,
@@ -96,9 +155,10 @@ export function validateContribution(input: unknown): ContributionResult {
     value: {
       bank: bank.id,
       bankName: bank.name,
-      ...(link ? { link } : { reference }),
+      ...(link ? { link } : reference ? { reference } : {}),
       ...(phoneOrAccount ? { phoneOrAccount } : {}),
       ...(credit ? { credit } : {}),
+      ...(image ? { image: { type: image.type, size: image.size } } : {}),
     },
   };
 }
@@ -107,7 +167,8 @@ export function validateContribution(input: unknown): ContributionResult {
 export function formatTelegramMessage(c: Contribution, receivedAt: string): string {
   const lines = [
     `New receipt for ${c.bankName} (${c.bank})`,
-    c.link ? `Link: ${c.link}` : `Reference: ${c.reference}`,
+    c.link ? `Link: ${c.link}` : c.reference ? `Reference: ${c.reference}` : null,
+    c.image ? `Screenshot: attached (${c.image.type}, ${Math.max(1, Math.round(c.image.size / 1024))} KB)` : null,
     c.phoneOrAccount ? `Phone/account: ${c.phoneOrAccount}` : null,
     `Credit: ${c.credit || "anonymous"}`,
     `Received: ${receivedAt}`,
@@ -132,6 +193,42 @@ export async function sendTelegramMessage(
   if (!resp.ok) return false;
   const data = (await resp.json().catch(() => null)) as { ok?: boolean } | null;
   return data?.ok === true;
+}
+
+/** Telegram caps photo captions at 1024 characters. */
+export const MAX_CAPTION = 1024;
+
+/**
+ * Sends the screenshot with the submission text as its caption. Tries
+ * sendPhoto, then sendDocument, which accepts sizes and aspect ratios
+ * sendPhoto refuses (very tall screenshots). The bytes are only held in memory.
+ */
+export async function sendTelegramPhoto(
+  token: string,
+  chatId: string,
+  caption: string,
+  bytes: Uint8Array,
+  type: string,
+  fetchImpl: typeof fetch = fetch,
+): Promise<boolean> {
+  const ext = type === "image/png" ? "png" : type === "image/webp" ? "webp" : "jpg";
+  const text = caption.length > MAX_CAPTION ? caption.slice(0, MAX_CAPTION - 3) + "..." : caption;
+  for (const [method, field] of [["sendPhoto", "photo"], ["sendDocument", "document"]] as const) {
+    const form = new FormData();
+    form.append("chat_id", chatId);
+    form.append("caption", text);
+    form.append(field, new Blob([bytes as BlobPart], { type }), `receipt.${ext}`);
+    const resp = await fetchImpl(`https://api.telegram.org/bot${token}/${method}`, {
+      method: "POST",
+      body: form,
+      signal: AbortSignal.timeout(20000),
+    });
+    if (resp.ok) {
+      const data = (await resp.json().catch(() => null)) as { ok?: boolean } | null;
+      if (data?.ok === true) return true;
+    }
+  }
+  return false;
 }
 
 /**
