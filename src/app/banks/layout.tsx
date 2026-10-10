@@ -1,7 +1,12 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Supported Banks and Wallets - CBE, Telebirr, BOA, M-Pesa & More",
+  // An object title keeps the " | cheki" suffix on /banks/[code] pages; a plain
+  // string here dropped the root template for every child segment.
+  title: {
+    default: "Supported Banks and Wallets - CBE, Telebirr, BOA, M-Pesa & More",
+    template: "%s | cheki",
+  },
   description:
     "All Ethiopian banks and mobile wallets supported by cheki for free receipt verification. CBE, Telebirr, BOA, M-Pesa, Dashen, Awash, Zemen, CBE Birr, Siinqee.",
   alternates: {
