@@ -57,9 +57,10 @@
       }
     ],
     "seo": {
-      "title": "Verify CBE Transactions Online",
-      "description": "Verify Commercial Bank of Ethiopia (CBE) transactions for free. Check FT reference numbers against official CBE receipt endpoints. No signup, no API key.",
+      "title": "CBE Receipt Check: Verify FT Reference Online Free",
+      "description": "Check a Commercial Bank of Ethiopia receipt by FT reference or mbreciept link. Confirm sender, receiver, amount and date against CBE's own record. Free, no signup.",
       "keywords": [
+        "cbe receipt check",
         "CBE receipt verification",
         "verify CBE transaction",
         "FT reference number",
@@ -131,9 +132,10 @@
       }
     ],
     "seo": {
-      "title": "Verify Telebirr Transactions Online",
-      "description": "Verify Telebirr (Ethio Telecom) transactions for free. Check transaction references against official Telebirr receipt endpoints. No signup, no API key.",
+      "title": "Telebirr Receipt Check Online: Free, Instant",
+      "description": "Paste a Telebirr transaction number to confirm amount, sender and date against Ethio telecom's receipt record. Spot fake screenshots. Free, no account needed.",
       "keywords": [
+        "telebirr receipt check",
         "telebirr receipt verification",
         "verify telebirr transaction",
         "telebirr transaction ID",
@@ -210,9 +212,10 @@
       }
     ],
     "seo": {
-      "title": "Verify Bank of Abyssinia Transactions Online | BOA QR Code Verification",
-      "description": "Verify Bank of Abyssinia (BOA) transactions for free. JSON API for BOA-to-BOA transfers, AES-256-CBC QR decryption for inter-bank transfers. No Selenium, no signup, no API key.",
+      "title": "BOA Receipt Check: Verify Bank of Abyssinia Payments",
+      "description": "Check a Bank of Abyssinia receipt by reference or QR code and confirm it against BOA's own record. Free, no signup, results in seconds.",
       "keywords": [
+        "boa receipt check",
         "BOA receipt verification",
         "verify Bank of Abyssinia transaction",
         "BOA payment check",
@@ -277,9 +280,10 @@
       }
     ],
     "seo": {
-      "title": "Verify M-Pesa Ethiopia Transactions Online",
-      "description": "Verify M-Pesa Ethiopia (Safaricom) transactions for free. Check transaction references against official M-Pesa receipt API. No signup, no API key.",
+      "title": "M-Pesa Ethiopia Receipt Check Online: Free",
+      "description": "Verify a Safaricom M-Pesa Ethiopia receipt by transaction ID. Confirm the amount, sender and date against M-Pesa's record. Free, no signup.",
       "keywords": [
+        "m-pesa receipt check",
         "M-Pesa receipt verification",
         "verify M-Pesa Ethiopia transaction",
         "Safaricom Ethiopia receipt",
@@ -332,9 +336,10 @@
       }
     ],
     "seo": {
-      "title": "Verify Dashen Bank Transactions Online",
-      "description": "Verify Dashen Bank transactions for free. Check transaction references against official Dashen receipt endpoints. Works for within-Dashen and inter-bank transfers. No signup, no API key.",
+      "title": "Dashen Bank Receipt Check Online: Free Verifier",
+      "description": "Verify a Dashen Bank transfer receipt by reference. Confirm amount, sender and date against Dashen's own record before you hand over goods. Free.",
       "keywords": [
+        "dashen receipt check",
         "Dashen Bank receipt verification",
         "verify Dashen transaction",
         "Dashen payment check",
@@ -399,9 +404,10 @@
       }
     ],
     "seo": {
-      "title": "Verify Awash Bank Transactions Online",
-      "description": "Verify Awash Bank transactions for free. Paste an Awash share link and cheki fetches the official receipt. Reverse-engineered URL structure. No signup, no API key.",
+      "title": "Awash Bank Receipt Check Online: Free Verifier",
+      "description": "Check an Awash Bank receipt by transaction reference and confirm it against Awash's record. Spot fake or edited receipts in seconds. Free, no signup.",
       "keywords": [
+        "awash receipt check",
         "Awash Bank receipt verification",
         "verify Awash transaction",
         "Awash payment check",
@@ -447,9 +453,10 @@
       }
     ],
     "seo": {
-      "title": "Verify Zemen Bank Transactions Online",
-      "description": "Verify Zemen Bank transactions for free. Check transaction references against official Zemen receipt endpoints. No signup, no API key.",
+      "title": "Zemen Bank Receipt Check Online: Free Verifier",
+      "description": "Verify a Zemen Bank transfer receipt instantly. Paste the reference to confirm amount, sender and date against Zemen's own record. Free, no signup.",
       "keywords": [
+        "zemen receipt check",
         "Zemen Bank receipt verification",
         "verify Zemen transaction",
         "Zemen payment check",
@@ -497,9 +504,10 @@
       }
     ],
     "seo": {
-      "title": "Verify CBE Birr Transactions Online",
-      "description": "Verify CBE Birr transactions for free. Check transaction references against official CBE Birr receipt endpoints. No signup, no API key.",
+      "title": "CBE Birr Receipt Check: Verify CBE Birr Payments",
+      "description": "Check a CBE Birr payment by transaction ID and payer phone. Confirm it against CBE Birr's own record and spot fake screenshots. Free, no signup.",
       "keywords": [
+        "cbe birr receipt check",
         "CBE Birr receipt verification",
         "verify CBE Birr transaction",
         "CBE Birr payment check",
@@ -541,9 +549,10 @@
       }
     ],
     "seo": {
-      "title": "Verify Siinqee Bank Transactions Online",
-      "description": "Verify Siinqee Bank transactions for free. No signup, no API key.",
+      "title": "Siinqee Bank Receipt Check Online: Free Verifier",
+      "description": "Verify a Siinqee Bank receipt by reference and confirm amount, sender and date against the bank's record. Free, no signup, results in seconds.",
       "keywords": [
+        "siinqee receipt check",
         "Siinqee Bank receipt verification",
         "verify Siinqee transaction",
         "ethiopian bank receipt verify"
@@ -599,9 +608,10 @@
       }
     ],
     "seo": {
-      "title": "Verify eBirr Receipts Online | Nib, Wegagen, Ahadu, KAAFI",
-      "description": "Verify eBirr mobile money receipts for free. Covers Nib International Bank, Wegagen Bank, Ahadu Bank, and KAAFI Microfinance. No signup, no API key.",
+      "title": "eBirr Receipt Check: Verify eBirr Payments Online",
+      "description": "Check an eBirr payment by transaction ID and confirm it against the eBirr record. Free, no signup. Works for eBirr wallets at partner banks.",
       "keywords": [
+        "ebirr receipt check",
         "eBirr receipt verification",
         "verify eBirr transaction",
         "Nib International Bank receipt",
