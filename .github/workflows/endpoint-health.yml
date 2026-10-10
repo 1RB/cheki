@@ -1,0 +1,52 @@
+name: Endpoint health
+
+# Daily check that every bank receipt endpoint still answers a known-fake
+# reference in the expected shape. Results go to public/status.json, which
+# the /status and /endpoints pages read and https://cheki.et/status.json serves.
+#
+# GitHub runners are outside Ethiopia, so geo-restricted endpoints (Telebirr,
+# M-Pesa) are recorded as "not-checked". A self-hosted runner on an Ethiopian
+# network can set CHEKI_CHECK_GEO=1 to check them too.
+
+on:
+  schedule:
+    - cron: "17 4 * * *" # 07:17 Addis Ababa time
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: endpoint-health
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci --ignore-scripts
+
+      - name: Probe bank endpoints
+        env:
+          CHEKI_RUNNER: GitHub Actions (ubuntu-latest)
+        run: npx tsx scripts/health-check.ts
+
+      - name: Commit status.json
+        run: |
+          if git diff --quiet -- public/status.json; then
+            echo "No changes."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/status.json
+          git commit -m "chore(status): endpoint health $(date -u +%Y-%m-%d)"
+          git push
