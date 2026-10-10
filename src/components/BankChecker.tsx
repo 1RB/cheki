@@ -39,6 +39,10 @@ export function BankChecker({
   const [error, setError] = useState<string | null>(null);
 
   const needsExtra = requiresAccount || requiresPhone;
+  // A full receipt link already identifies the receipt (account suffix or
+  // token included), so the second field is only required for bare references.
+  const isLink = /^https?:\/\//i.test(reference.trim());
+  const extraRequired = Boolean(needsExtra) && !isLink;
   const extraLabel = requiresPhone
     ? "Payer phone number"
     : accountLabel || `Receiving account (last ${accountDigits ?? 8} digits)`;
@@ -47,6 +51,19 @@ export function BankChecker({
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!reference.trim()) return;
+    if (extraRequired) {
+      const digits = extra.replace(/\D/g, "");
+      if (requiresPhone && !/^(251|0)?9\d{8}$/.test(digits)) {
+        setResult(null);
+        setError(`Enter the payer's phone number (2519XXXXXXXX). ${shortName} needs it to find the receipt.`);
+        return;
+      }
+      if (!requiresPhone && digits.length < (accountDigits ?? 5)) {
+        setResult(null);
+        setError(`Enter at least the last ${accountDigits ?? 5} digits of the receiving account. ${shortName} needs them to find the receipt.`);
+        return;
+      }
+    }
     setLoading(true);
     setError(null);
     setResult(null);
@@ -107,7 +124,9 @@ export function BankChecker({
         </div>
         {needsExtra && (
           <div style={{ marginBottom: "14px" }}>
-            <label htmlFor="cheki-extra" style={label}>{extraLabel}</label>
+            <label htmlFor="cheki-extra" style={label}>
+              {extraLabel}{!extraRequired && isLink ? " (optional with a receipt link)" : ""}
+            </label>
             <input
               id="cheki-extra"
               name={requiresPhone ? "phone" : "account"}
@@ -117,6 +136,7 @@ export function BankChecker({
               placeholder={extraPlaceholder}
               inputMode="numeric"
               autoComplete="off"
+              required={extraRequired}
             />
           </div>
         )}
@@ -146,7 +166,13 @@ export function BankChecker({
         </p>
       )}
 
-      {result?.success && (
+      {result?.success && result.verified === false && (
+        <p role="alert" style={{ marginTop: "16px", padding: "12px 14px", borderRadius: "8px", background: "var(--amber-light)", color: "var(--amber-text)", fontSize: "14px" }}>
+          <strong>Not verified.</strong> {shortName} returned a response, but it did not confirm this receipt. Do not release goods on this receipt yet.
+        </p>
+      )}
+
+      {result?.success && result.verified !== false && (
         <dl
           aria-live="polite"
           style={{
