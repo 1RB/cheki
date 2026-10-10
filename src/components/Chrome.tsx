@@ -35,6 +35,7 @@ export function Nav() {
     { href: "/banks", label: t("nav.banks") },
     { href: "/guides", label: t("nav.guides") },
     { href: "/developers", label: t("nav.developers") },
+    { href: "/endpoints", label: t("nav.endpoints") },
     { href: "/compare", label: t("nav.compare") },
   ];
 
@@ -46,6 +47,8 @@ export function Nav() {
     { id: "page-compare", href: "/compare", label: "Compare services", group: "Pages" },
     { id: "page-developers", href: "/developers", label: "Developers", group: "Pages" },
     { id: "page-verify-index", href: "/verify", label: "Verify guides", group: "Pages" },
+    { id: "page-endpoints", href: "/endpoints", label: "Bank endpoint reference", group: "Pages" },
+    { id: "page-status", href: "/status", label: "Endpoint status", group: "Pages" },
     ...banks.map((b) => ({
       id: `bank-${b.code}`,
       label: b.name,
@@ -217,6 +220,8 @@ export function Footer() {
   const resourceLinks = [
     { href: "/developers", label: "API" },
     { href: "/docs", label: t("footer.apiDocs") },
+    { href: "/endpoints", label: "Endpoints" },
+    { href: "/status", label: "Status" },
     { href: "/verify", label: "Verify guides" },
     { href: "https://github.com/1RB/cheki", label: t("footer.github") },
     { href: "https://github.com/1RB/cheki/tree/main/python", label: t("footer.python") },
