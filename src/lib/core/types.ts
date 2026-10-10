@@ -104,6 +104,7 @@ export interface Receipt {
   paymentChannel?: string;
   bankAccountNumber?: string;
   bankAccountName?: string;
+  orderId?: string;
 }
 
 // ─── Verify Request (input) ─────────────────────────────────────────
@@ -158,6 +159,7 @@ export interface ParsedReceipt {
   paymentChannel?: string;
   bankAccountNumber?: string;
   bankAccountName?: string;
+  orderId?: string;
 }
 
 // ─── HTTP Port (interface for fetching from banks) ──────────────────
