@@ -6,6 +6,7 @@ import { brandTileBg } from "@/lib/utils";
 import { BankChecker } from "@/components/BankChecker";
 import { ContributeBox } from "@/components/ContributeBox";
 import { getEndpointDoc } from "@/lib/manifest/endpoints";
+import { contributeLeadMode } from "@/lib/contribute";
 import { getMergedPagesForBank, getBankTopicPages, stripBrandSuffix } from "@/lib/seo-pages";
 
 export function generateStaticParams() {
@@ -156,6 +157,7 @@ export default async function BankPage({ params }: { params: Promise<{ code: str
             accountLabel={bank.accountLabel}
             preferLink={endpointDoc?.preferLink}
             linkExample={endpointDoc?.redactedExample}
+            lead={contributeLeadMode(bank.code)}
           />
         )}
 
