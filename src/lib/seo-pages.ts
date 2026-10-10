@@ -380,9 +380,10 @@ export function getSeoPage(slug: string): SeoPage | undefined {
 
 export function getRelatedSeoPages(slug: string, limit = 3): SeoPage[] {
   const current = getSeoPage(slug);
-  if (!current) return allSeoPages.slice(0, limit);
-  // Return pages with the same bankCode or same intent, excluding current
-  return allSeoPages
+  if (!current) return indexableSeoPages.slice(0, limit);
+  // Return pages with the same bankCode or same intent, excluding current.
+  // Only indexable pages: never link internally to a URL that 301s.
+  return indexableSeoPages
     .filter((p) => p.slug !== slug)
     .sort((a, b) => {
       const aScore = (a.bankCode === current.bankCode ? 2 : 0) + (a.intent === current.intent ? 1 : 0);
@@ -396,3 +397,37 @@ export function getRelatedSeoPages(slug: string, limit = 3): SeoPage[] {
 import { generatedSeoPages } from "./seo-pages-generated";
 
 export const allSeoPages: SeoPage[] = [...seoPages, ...generatedSeoPages];
+
+/**
+ * Per-bank transactional pages ("verify-X-receipt-online", "check-X-payment-online")
+ * targeted the same searches as /banks/X and split ranking signals between
+ * them. They are now merged into /banks/X (their sections and FAQs render
+ * there) and permanently redirected. The redirect list itself lives in
+ * next.config.ts, built from the same slug pattern.
+ */
+export const MERGED_INTO_BANK_PAGE = /^(verify-[a-z0-9]+-receipt-online|check-[a-z0-9]+-payment-online)$/;
+
+export function isMergedIntoBankPage(p: SeoPage): boolean {
+  return Boolean(p.bankCode) && MERGED_INTO_BANK_PAGE.test(p.slug);
+}
+
+/** Pages that still live at /verify/[slug]. */
+export const indexableSeoPages: SeoPage[] = allSeoPages.filter((p) => !isMergedIntoBankPage(p));
+
+/** The merged pages for one bank, in source order. */
+export function getMergedPagesForBank(code: string): SeoPage[] {
+  return allSeoPages.filter((p) => p.bankCode === code && isMergedIntoBankPage(p));
+}
+
+/** Other /verify pages about this bank (fraud, receipt format), for internal links. */
+export function getBankTopicPages(code: string): SeoPage[] {
+  return indexableSeoPages.filter((p) => p.bankCode === code);
+}
+
+/**
+ * The root layout's title template already appends " | cheki". Page titles
+ * written with the brand baked in rendered as "... | cheki | cheki".
+ */
+export function stripBrandSuffix(title: string): string {
+  return title.replace(/\s*[|\-]\s*cheki\s*$/i, "").trim();
+}
