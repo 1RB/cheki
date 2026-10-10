@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { allSeoPages, type SeoPage } from "@/lib/seo-pages";
+import { indexableSeoPages, type SeoPage } from "@/lib/seo-pages";
 import Link from "next/link";
 import { Nav, Footer } from "@/components/Chrome";
 
@@ -53,7 +53,7 @@ const groups: { intent: SeoPage["intent"]; label: string; blurb: string }[] = [
 
 export default function VerifyIndex() {
   const grouped = groups
-    .map((g) => ({ ...g, pages: allSeoPages.filter((p) => p.intent === g.intent) }))
+    .map((g) => ({ ...g, pages: indexableSeoPages.filter((p) => p.intent === g.intent) }))
     .filter((g) => g.pages.length > 0);
 
   return (
