@@ -1,12 +1,12 @@
 import { ImageResponse } from "next/og";
-import { allSeoPages, getSeoPage } from "@/lib/seo-pages";
+import { indexableSeoPages, getSeoPage } from "@/lib/seo-pages";
 
 export const alt = "cheki - Ethiopian Receipt Verification";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
 export function generateStaticParams() {
-  return allSeoPages.map((p) => ({ slug: p.slug }));
+  return indexableSeoPages.map((p) => ({ slug: p.slug }));
 }
 
 export default async function OgImage({
