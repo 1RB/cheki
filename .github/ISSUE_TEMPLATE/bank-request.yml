@@ -1,0 +1,78 @@
+name: Bank request or endpoint change
+description: Ask for a new bank, or report that a bank's receipt endpoint changed.
+title: "<Bank>: "
+labels: ["bank-wanted"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Do not paste full receipt links, QR codes, names, phone numbers or account numbers here.** GitHub issues are public, and a receipt link shows the payment to anyone who opens it.
+
+        To share a real receipt privately, use the "Help us add" box on the bank's page at https://cheki.et/banks. Links sent there go only to the maintainers, are used only to build the parser, and are deleted afterwards.
+
+        To test your own receipt without sharing it, run `npm run probe -- <your link>` locally (see CONTRIBUTING.md, "Adding or fixing a bank").
+  - type: input
+    id: bank
+    attributes:
+      label: Bank or wallet
+      description: Full name, e.g. Zemen Bank, CBE Birr, Abay Bank.
+    validations:
+      required: true
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What is this about?
+      options:
+        - A bank cheki does not support yet
+        - A bank marked "in development"
+        - A live bank whose endpoint changed or broke
+    validations:
+      required: true
+  - type: input
+    id: host
+    attributes:
+      label: URL host
+      description: Only the host name, e.g. share.zemenbank.com
+      placeholder: receipts.examplebank.com
+    validations:
+      required: true
+  - type: textarea
+    id: pattern
+    attributes:
+      label: URL pattern (redacted)
+      description: |
+        Replace every reference, token, phone and account with X, keeping the length and the fixed parts.
+        Example: https://share.zemenbank.com/rt/XXXXXXXXXXXXXXXXXXXXXXXX/pdf
+      render: text
+    validations:
+      required: true
+  - type: dropdown
+    id: response
+    attributes:
+      label: Response type
+      description: What opens when you follow the link?
+      options:
+        - PDF
+        - HTML page
+        - JSON
+        - Image
+        - Not sure
+    validations:
+      required: true
+  - type: textarea
+    id: unknown
+    attributes:
+      label: What a wrong or fake reference returns (optional)
+      description: Status code and the error text, e.g. "404 JSON Transaction not found." This is what the daily health check watches.
+  - type: textarea
+    id: notes
+    attributes:
+      label: Anything else
+      description: Where you found the reference in the app, whether it works outside Ethiopia, what changed and when.
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacy
+      options:
+        - label: I have not pasted a full receipt link, QR content, name, phone number or account number in this issue.
+          required: true
