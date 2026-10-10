@@ -6,7 +6,8 @@
  *   - apps.cbe.com.et:100/?id={ref}{acct}  → CBE legacy
  *   - transactioninfo.ethiotelecom.et/...  → Telebirr
  *   - cs.bankofabyssinia.com/...            → BOA
- *   - receipt.dashensuperapp.com/...        → Dashen
+ *   - receipts.dashenbanksc.com/receipt/... → Dashen
+ *   - receipt.dashensuperapp.com/...        → Dashen (legacy)
  *   - awashpay.awashbank.com:8225/-{ref}   → Awash
  *   - share.zemenbank.com/rt/{ref}/pdf      → Zemen
  *   - m-pesabusiness.safaricom.et/...       → M-Pesa
@@ -82,7 +83,7 @@ export function detectBankFromUrl(input: string): DetectedReceipt | null {
 
     // Dashen: https://api.dashensuperapp.com/receipts/Within-Dashen-Transfer-{REF}.pdf
     //          https://receipt.dashensuperapp.com/receipt/{REFERENCE}
-    if (host.includes("dashensuperapp.com")) {
+    if (host.includes("dashensuperapp.com") || host.includes("dashenbanksc.com")) {
       const parts = url.pathname.split("/").filter(Boolean);
       const last = parts[parts.length - 1] || "";
       // PDF filename: Within-Dashen-Transfer-{REF}.pdf
