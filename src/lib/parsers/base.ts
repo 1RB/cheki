@@ -37,6 +37,8 @@ export abstract class BaseParser {
   abstract readonly requiresPhone: boolean;
   readonly sslVerify: boolean = true;
   readonly geoBlocked: boolean = false;
+  /** Read the body as bytes even when responseType is not "pdf" (e.g. a bank that may return PDF or HTML). */
+  readonly binaryResponse: boolean = false;
 
   abstract buildUrl(ref: string, account?: string, phone?: string): string;
   abstract parse(data: string | Buffer, contentType: string): ParsedReceipt;
@@ -132,7 +134,7 @@ export abstract class BaseParser {
       }
 
       const contentType = resp.headers.get("content-type") || "";
-      const data = this.responseType === "pdf"
+      const data = this.responseType === "pdf" || this.binaryResponse
         ? Buffer.from(await resp.arrayBuffer())
         : await resp.text();
 

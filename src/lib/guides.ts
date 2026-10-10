@@ -1419,7 +1419,7 @@ curl -X POST https://cheki.et/api/verify \\
           "The bank name",
         ],
       },
-      { type: "text", text: "Send it via GitHub (open an issue with the 'new-bank' label) or via Telegram. We'll reverse-engineer the endpoint and add the bank to cheki, usually within a day." },
+      { type: "text", text: "Send the link through the private 'Help us add' box on the bank's page on cheki.et. It goes only to the maintainers, is used only to build the parser, and is deleted afterwards. Do not paste receipt links in public GitHub issues; for those, use the bank request form with a redacted pattern. Every endpoint we know is documented on the endpoints reference page (cheki.et/endpoints)." },
       { type: "callout", variant: "warning", title: "Privacy", text: "Redact or blur sensitive information like full account numbers before sharing. We only need the receipt structure, the reference number, and the QR code payload, not your full account details." },
 
       { type: "heading", text: "Option 2: Write a parser (for developers)" },

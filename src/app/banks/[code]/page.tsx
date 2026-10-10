@@ -4,6 +4,9 @@ import { Nav, Footer } from "@/components/Chrome";
 import { BouncyAccordion } from "@/components/motion/bouncy-accordion";
 import { brandTileBg } from "@/lib/utils";
 import { BankChecker } from "@/components/BankChecker";
+import { ContributeBox } from "@/components/ContributeBox";
+import { getEndpointDoc } from "@/lib/manifest/endpoints";
+import { contributeLeadMode } from "@/lib/contribute";
 import { getMergedPagesForBank, getBankTopicPages, stripBrandSuffix } from "@/lib/seo-pages";
 
 export function generateStaticParams() {
@@ -46,6 +49,7 @@ export default async function BankPage({ params }: { params: Promise<{ code: str
   const bank = getBank(code);
   if (!bank) return <div>Bank not found</div>;
   const isLive = bank.status === "live";
+  const endpointDoc = getEndpointDoc(bank.code);
 
   // Content from the per-bank /verify pages that now 301 here. Sections whose
   // heading this page already covers are skipped; FAQs are de-duplicated by
@@ -144,6 +148,19 @@ export default async function BankPage({ params }: { params: Promise<{ code: str
           />
         )}
 
+        {!isLive && (
+          <ContributeBox
+            code={bank.code}
+            shortName={bank.shortName}
+            requiresAccount={bank.requiresAccount}
+            requiresPhone={bank.requiresPhone}
+            accountLabel={bank.accountLabel}
+            preferLink={endpointDoc?.preferLink}
+            linkExample={endpointDoc?.redactedExample}
+            lead={contributeLeadMode(bank.code)}
+          />
+        )}
+
         <div style={{ display: "flex", gap: "12px", marginBottom: "40px", flexWrap: "wrap" }}>
           <span style={{
             padding: "12px 16px", borderRadius: "8px", border: "1px solid var(--border)", fontSize: "14px", fontWeight: 500,
@@ -188,6 +205,7 @@ export default async function BankPage({ params }: { params: Promise<{ code: str
 
             <h2>How {bank.shortName} receipt verification works</h2>
             <p>The {bank.shortName} receipt endpoint is: <code>{bank.endpointFormat}</code></p>
+            <p>Placeholders, error shapes and gotchas are in the <a href={`/endpoints#${bank.code}`}>{bank.shortName} endpoint reference</a>.</p>
             <p>This is a public URL that returns a {bank.responseType === "pdf" ? "PDF document" : bank.responseType === "json" ? "JSON response" : "HTML page"} containing the official transaction data. No authentication is required.</p>
             {bank.geoBlocked && (
               <p><strong>Note:</strong> This endpoint is geo-blocked to Ethiopian IP addresses. If cheki&apos;s server cannot reach it, use the fallback URL or self-host on an Ethiopian network.</p>
