@@ -8,9 +8,26 @@ import type { QRCode } from "jsqr";
  * the share URL or a reference number. Decoding it is faster and more accurate
  * than OCR and avoids ambiguous characters (0 vs O).
  */
+/**
+ * Largest image (in pixels) sharp will decode. sharp's default is about 268 MP,
+ * so a small "pixel bomb" PNG could need around 1 GB of RAM to decode. 40 MP
+ * covers any phone camera.
+ */
+export const MAX_INPUT_PIXELS = 40_000_000;
+
+/** JPEG, PNG or WebP by magic bytes. Other formats never reach libvips. */
+export function isSupportedImage(buffer: Buffer): boolean {
+  if (buffer.length < 12) return false;
+  if (buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) return true; // JPEG
+  if (buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) return true; // PNG
+  if (buffer.toString("ascii", 0, 4) === "RIFF" && buffer.toString("ascii", 8, 12) === "WEBP") return true; // WebP
+  return false;
+}
+
 export async function decodeQrFromImage(buffer: Buffer): Promise<QRCode | null> {
   const { default: jsQR } = await import("jsqr");
-  const img = sharp(buffer)
+  if (!isSupportedImage(buffer)) return null;
+  const img = sharp(buffer, { limitInputPixels: MAX_INPUT_PIXELS })
     .resize(1200, 1200, { fit: "inside" })
     .toColorspace("srgb")
     .ensureAlpha();
