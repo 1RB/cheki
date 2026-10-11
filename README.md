@@ -504,6 +504,8 @@ Include the reference number you tested with (or note that you tested from an Et
 
 ## Releasing
 
+Deploying the site is separate from versioning: only `main` deploys to cheki.et. The deploy checklist, the smoke test (`npm run smoke -- <base-url>`) and rollback steps are in [docs/RELEASING.md](docs/RELEASING.md).
+
 Version bumps are automated. All package versions (web, TypeScript SDK, Python SDK, Dart SDK, PHP SDK) stay in sync.
 
 ```bash

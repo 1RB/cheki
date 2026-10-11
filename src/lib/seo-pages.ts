@@ -162,7 +162,7 @@ export const seoPages: SeoPage[] = [
     bankCode: "mpesa",
     faq: [
       { q: "How do I verify an M-Pesa Ethiopia receipt?", a: "Select M-Pesa Ethiopia, paste your transaction number, and click Verify. cheki fetches the receipt from Safaricom's API and returns the result." },
-      { q: "Why does M-Pesa verification sometimes fail?", a: "M-Pesa's endpoint (m-pesabusiness.safaricom.et) blocks requests from non-Kenyan/Ethiopian IPs. cheki attempts to bypass this with direct IP connections, but if it fails, we provide a fallback link." },
+      { q: "Why does M-Pesa verification sometimes fail?", a: "M-Pesa's endpoint (m-pesabusiness.safaricom.et) blocks requests from non-Kenyan/Ethiopian IPs. When our server can't reach it, cheki gives you the receipt link to open on your own phone instead." },
       { q: "Do I need an account number for M-Pesa?", a: "No. M-Pesa only requires the transaction number (trxNo). The API returns the receipt as a PDF (inside a JSON response) with the payer, receiver, amount and date. M-Pesa support is in beta until a real receipt confirms cheki's parser." },
     ],
     sections: [
@@ -172,7 +172,7 @@ export const seoPages: SeoPage[] = [
       },
       {
         heading: "M-Pesa geo-blocking",
-        body: "Like Telebirr, M-Pesa's endpoint restricts access to Ethiopian and Kenyan IP addresses. cheki uses direct IP connections and X-Forwarded-For headers as a workaround. For reliable verification, self-host cheki on an Ethiopian server.",
+        body: "Like Telebirr, M-Pesa's endpoint restricts access to Ethiopian and Kenyan IP addresses. cheki does not try to get around the block: when the endpoint won't answer, it hands you the receipt link to open yourself. For reliable verification, self-host cheki on an Ethiopian server.",
       },
     ],
     cta: { text: "Verify an M-Pesa receipt now", href: "/?bank=mpesa" },

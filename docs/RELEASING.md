@@ -1,0 +1,74 @@
+# Deploying cheki.et
+
+cheki.et runs on Vercel from the `main` branch. `vercel.json` turns off
+automatic deployments for every other branch (`git.deploymentEnabled`), so a
+push to a feature branch costs nothing and only a commit on `main` reaches
+production. Run checks locally or in CI before merging.
+
+Publishing SDKs and tagging versions is a separate step (see "Releasing" in
+the README). Deploying the site never needs a tag.
+
+## Before merging to main
+
+```bash
+npm ci
+npx vitest run
+npx tsc --noEmit
+npm run lint
+npx next build
+(cd python && pip install -e ".[dev]" && pytest)
+
+# Smoke-test the production build locally
+npx next start -p 3000 &
+npm run smoke                       # defaults to http://localhost:3000
+```
+
+## Smoke test
+
+`scripts/smoke.ts` takes a base URL (argument or `SMOKE_BASE_URL`) and exits 1
+if any check fails:
+
+```bash
+npm run smoke -- https://cheki.et
+npm run smoke -- https://<deployment>.vercel.app
+```
+
+It checks:
+
+- `/`, `/banks/cbe`, `/status` and `/endpoints` answer 200 with HTML
+- `/api/health` answers 200 with `status: "ok"` and a bank list
+- a bad `/api/verify` request (an unsafe reference, and a non-object body) gets
+  a clean 4xx and never `success: true` or `verified: true`
+- an old URL (`/verify/verify-cbe-receipt-online`) answers 301 to `/banks/cbe`
+
+It sends no real receipt references, so it is safe against production.
+
+## Shipping several dependent PRs at once
+
+When PRs only work together (a stack), production must never build an
+intermediate `main`:
+
+1. Note the current production deployment id (Vercel dashboard, or
+   `GET /v6/deployments?projectId=…&target=production&limit=1`). That is the
+   rollback target.
+2. Pause builds: set the project's Ignored Build Step to `exit 0`
+   (Settings → Git, or `PATCH /v9/projects/{id}` with
+   `{"commandForIgnoringBuildStep": "exit 0"}`). Every push, including the
+   daily `status.json` commit, is then skipped.
+3. Merge the PRs in order with merge commits, and wait for CI on `main`.
+4. Restore the Ignored Build Step to its previous value (unset by default).
+5. Redeploy `main` once and wait until it is Ready.
+6. Run `npm run smoke -- https://cheki.et`.
+
+## Rolling back
+
+If the smoke test fails on anything that touches verification or pages:
+
+1. **Instant Rollback** to the recorded deployment: Vercel dashboard →
+   Deployments → that deployment → Instant Rollback, or
+   `POST /v10/projects/{projectId}/promote/{deploymentId}`. This takes seconds
+   and needs no build.
+2. Revert the merge commit(s) on `main` (`git revert -m 1 <sha>`) in a PR, so
+   the next build matches what is live.
+3. Note that after an Instant Rollback, Vercel stops auto-assigning new
+   production deployments to the domain until one is promoted again.
