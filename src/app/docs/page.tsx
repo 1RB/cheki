@@ -162,24 +162,28 @@ const verifyParams = [
   { name: "reference", type: "string", required: "Yes", desc: "Transaction reference number (e.g. FT26140P01YB) or receipt URL" },
   { name: "accountNumber", type: "string", required: "CBE, BOA", desc: "Last 8 digits for CBE, last 5 for BOA" },
   { name: "qrData", type: "string", required: "BOA QR", desc: "Raw QR payload for BOA inter-bank transfers" },
-  { name: "phone", type: "string", required: "CBE Birr", desc: "Payer phone number, format: 2519XXXXXXXXX" },
+  { name: "phoneNumber", type: "string", required: "CBE Birr", desc: "Payer phone number, format: 2519XXXXXXXXX" },
 ];
 
 const batchParams = [
-  { name: "receipts", type: "array", required: "Yes", desc: "Array of receipt objects (same fields as verify). Max 50." },
+  { name: "receipts", type: "array", required: "Yes", desc: "Array of receipt objects (same fields as verify). Max 20." },
 ];
 
 const errorCodes = [
   { code: "400", name: "Bad Request", desc: "Missing required fields or malformed reference number" },
   { code: "404", name: "Not Found", desc: "Bank code not recognized or receipt not found at the bank endpoint" },
   { code: "422", name: "Unprocessable", desc: "Bank endpoint returned data but it could not be parsed" },
+  { code: "413", name: "Payload Too Large", desc: "Request body is over the limit (16 KB verify, 64 KB batch, 256 KB parse, 10 MB ocr)" },
+  { code: "429", name: "Too Many Requests", desc: "Per-IP rate limit reached. Wait the number of seconds in the Retry-After header, then retry." },
   { code: "502", name: "Bad Gateway", desc: "Bank endpoint is unreachable, geo-blocked, or timed out" },
   { code: "500", name: "Server Error", desc: "Internal server error. Check /api/health for endpoint status." },
 ];
 
 const responseFields = [
   { name: "success", type: "boolean", desc: "Whether the request succeeded (not whether the receipt is real)" },
-  { name: "verified", type: "boolean", desc: "Whether the receipt was found and matches the bank's records" },
+  { name: "verified", type: "boolean", desc: "Whether the receipt was found and matches the bank's records. The only field that means the payment is confirmed." },
+  { name: "decodedOnly", type: "boolean", desc: "BOA QR only: decoded from the QR but the bank could not be reached. Always paired with verified: false. Not proof of payment." },
+  { name: "parsed", type: "boolean", desc: "/api/parse only: read from content you supplied, never checked with the bank. Always paired with verified: false." },
   { name: "bank", type: "string", desc: "Full bank name" },
   { name: "reference", type: "string", desc: "Transaction reference number" },
   { name: "senderName", type: "string", desc: "Name of the account that sent the payment" },
@@ -549,7 +553,7 @@ docker-compose up -d
                   marginBottom: "32px",
                 }}
               >
-                {["No API key", "No signup", "No rate limit", "MIT licensed"].map(
+                {["No API key", "No signup", "MIT licensed"].map(
                   (tag) => (
                     <span
                       key={tag}
@@ -581,7 +585,9 @@ docker-compose up -d
               >
                 The cheki API verifies Ethiopian bank and mobile money receipts by
                 fetching public bank endpoints. No authentication is required. No
-                API key. No rate limit. Just POST to{" "}
+                API key. Requests are rate limited per IP: verify 30 per minute, batch
+                5 per minute, parse and ocr 20 per minute each, counted per server
+                instance. Over the limit you get a 429 with a Retry-After header. Just POST to{" "}
                 <code
                   style={{
                     fontFamily: "var(--mono)",
