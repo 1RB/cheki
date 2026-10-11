@@ -12,36 +12,42 @@ const codeExamples: Record<string, string> = {
     "reference": "FT26140P01YB",
     "accountNumber": "1000560536171"
   }'`,
-  JavaScript: `import { Cheki } from "cheki";
+  JavaScript: `import { Cheki, isVerified } from "cheki-verify";
 
 const cheki = new Cheki("https://cheki.et");
 const result = await cheki.verify("cbe", "FT26140P01YB", {
   accountNumber: "1000560536171"
 });
-console.log(result.amount, result.senderName);`,
-  Python: `from cheki import verify
+// verified is the only success signal
+if (isVerified(result)) console.log(result.amount, result.senderName);`,
+  Python: `from cheki import ChekiClient
 
-result = verify("cbe", "FT26140P01YB",
+result = ChekiClient().verify("cbe", "FT26140P01YB",
   account_number="1000560536171")
-print(result.to_dict())`,
+if result.is_verified:  # the only success signal
+    print(result.amount, result.sender_name)`,
 };
 
 const sdkCode: Record<string, string> = {
   TypeScript: `npm install cheki-verify
 
-import { Cheki } from "cheki";
+import { Cheki, isVerified } from "cheki-verify";
 const cheki = new Cheki();
 const result = await cheki.verify("cbe", "FT...", {
   accountNumber: "1000560536171"
-});`,
+});
+isVerified(result); // true only when the bank confirmed it`,
   Python: `pip install cheki
 
-from cheki import verify
-result = verify("cbe", "FT...",
-  account_number="1000560536171")`,
-  CLI: `npx cheki verify cbe FT26140P01YB -a 1000560536171
-npx cheki info
-npx cheki health`,
+from cheki import ChekiClient
+result = ChekiClient().verify("cbe", "FT...",
+  account_number="1000560536171")
+result.is_verified  # True only when the bank confirmed it`,
+  CLI: `# From a clone of the repo ("npx cheki" is an unrelated npm package)
+git clone https://github.com/1RB/cheki.git && cd cheki && npm install
+npm run cli -- verify cbe FT26140P01YB -a 1000560536171
+npm run cli -- info
+npm run cli -- health`,
 };
 
 export default function DevelopersPage() {
@@ -53,7 +59,7 @@ export default function DevelopersPage() {
     { method: "POST", path: "/api/verify/batch", desc: "Verify up to 20 receipts at once. Send an array of receipt objects." },
     { method: "GET", path: "/api/banks", desc: "List all supported banks and their verification status." },
     { method: "GET", path: "/api/health", desc: "Check API health and per-bank endpoint latency." },
-    { method: "GET", path: "/api/receipt", desc: "Download the raw receipt file (PDF/HTML) from the bank endpoint." },
+    { method: "GET", path: "/api/receipt", desc: "Download the bank's receipt file. CBE (with account), Zemen and Dashen only." },
   ];
 
   const breadcrumbJsonLd = {
