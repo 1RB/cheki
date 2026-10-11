@@ -1,3 +1,4 @@
+import { IN_DEVELOPMENT_BANK_COUNT, LIVE_BANK_COUNT, TOTAL_BANK_COUNT, liveBankList } from "./bank-counts";
 // Block-based content system for guides and blog posts
 // Supports rich formatting: text, lists, code, callouts, tables, quotes, steps
 
@@ -119,7 +120,7 @@ export const articles: Article[] = [
     slug: "free-receipt-verification-no-api-key",
     title: "Free Ethiopian Receipt Verification Without API Keys or Signup",
     description:
-      "Stop paying check.et 499 ETB/month. Verify CBE, Telebirr, BOA, and M-Pesa receipts for free with no signup, no API key, and no limits. Here's how.",
+      "Stop paying check.et 499 ETB/month. Verify CBE, Telebirr, BOA, and M-Pesa receipts for free with no signup, no API key, and no quota. Here's how.",
     category: "comparison",
     excerpt:
       "check.et charges 499 ETB/month after 200 free verifications. verify.et charges $20+/month. Both use the same public bank endpoints cheki uses for free. Here's the complete guide to free verification.",
@@ -139,7 +140,7 @@ export const articles: Article[] = [
           ["CBE (old)", "apps.cbe.com.et:100/?id={ref}{account}", "PDF", "Free"],
           ["Telebirr", "transactioninfo.ethiotelecom.et/receipt/{ref}", "HTML", "Free"],
           ["BOA", "cs.bankofabyssinia.com/api/onlineSlip/getDetails/?id={ref}{acct}", "JSON", "Free"],
-          ["Dashen", "receipt.dashensuperapp.com/receipt/{ref}", "PDF", "Free"],
+          ["Dashen", "receipts.dashenbanksc.com/receipt/{ref}", "HTML", "Free"],
           ["M-Pesa", "m-pesabusiness.safaricom.et/api/receipt/getReceipt?trxNo={ref}", "JSON", "Free"],
         ],
       },
@@ -174,7 +175,7 @@ export const articles: Article[] = [
       { type: "heading", text: "Using the free API" },
       { type: "text", text: "If you're a developer, cheki provides a free REST API with no authentication:" },
       { type: "code", lang: "bash", code: 'curl -X POST https://cheki.et/api/verify \\\n  -H "Content-Type: application/json" \\\n  -d \'{"bank":"cbe","reference":"FT26140P01YB","accountNumber":"1000560536171"}\'' },
-      { type: "text", text: "No API key header. No Bearer token. No rate limit. Just POST and get JSON back." },
+      { type: "text", text: "No API key header. No Bearer token. Just POST and get JSON back. Requests are rate limited per IP: verify 30 per minute, batch 5 per minute, parse and OCR 20 per minute each. Over the limit you get a 429 with a Retry-After header." },
       { type: "text", text: "Compare this to check.et, which requires a business account, an API key generation step, and Authorization headers:" },
       { type: "code", lang: "bash", code: '# check.et requires all this:\nexport CHECK_ET_API_KEY=chk_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\ncurl -X POST https://api.check.et/api/v1/verify \\\n  -H "Authorization: Bearer $CHECK_ET_API_KEY" \\\n  -H "Content-Type: application/json" \\\n  -d \'{"bank":"cbe","transaction_number":"FT26140P01YB","account_number":"1000560536171"}\'' },
 
@@ -191,14 +192,14 @@ export const articles: Article[] = [
       { type: "text", text: "Self-hosting on an Ethiopian IP also bypasses Telebirr and M-Pesa geo-blocking, which affects both cheki's hosted version and check.et's servers." },
     ],
     faq: [
-      { q: "Is cheki really free forever?", a: "Yes. cheki is MIT licensed open source. The hosted version at cheki.et is free with no limits. You can also self-host with Docker at zero cost. There is no premium tier, no credit system, and no plan to add one." },
+      { q: "Is cheki really free forever?", a: "Yes. cheki is MIT licensed open source. The hosted version at cheki.et is free with no quota. You can also self-host with Docker at zero cost. There is no premium tier, no credit system, and no plan to add one." },
       { q: "How is cheki different from check.et?", a: "cheki uses the same public bank endpoints as check.et. The difference is that cheki is free, open source, requires no signup or API key, and allows you to self-host. check.et charges 499 ETB/month after 200 one-time free verifications." },
-      { q: "Can I use cheki for my business?", a: "Yes. cheki has no per-business or per-user restrictions. Use the web interface, the API, or self-host with Docker. The API has no rate limits (though the underlying bank endpoints may have their own limits)." },
+      { q: "Can I use cheki for my business?", a: "Yes. cheki has no per-business or per-user restrictions. Use the web interface, the API, or self-host with Docker. The hosted API is rate limited per IP (verify 30 per minute, batch 5 per minute); self-host with Docker if you need more." },
     ],
     related: ["check-et-vs-verify-et-vs-cheki", "self-hosting-docker-guide", "payment-verification-api-guide"],
     seo: {
       title: "Free Ethiopian Receipt Verification Without API Keys",
-      description: "Stop paying check.et 499 ETB/month. Verify CBE, Telebirr, BOA, and M-Pesa receipts for free with no signup, no API key, and no limits.",
+      description: "Stop paying check.et 499 ETB/month. Verify CBE, Telebirr, BOA, and M-Pesa receipts for free with no signup, no API key, and no quota.",
       keywords: ["free receipt verification ethiopia", "check.et alternative free", "verify.et alternative", "free CBE verification", "no API key receipt verify", "free ethiopian bank verification"],
     },
   },
@@ -256,7 +257,7 @@ export const articles: Article[] = [
       { type: "text", text: "Manual verification is unreliable because it depends on human judgment under pressure. The solution is to automate verification so every transaction is checked, every time, with no exceptions." },
       { type: "text", text: "With cheki's API, you can integrate verification into your POS system, e-commerce checkout, or delivery app. Here's a simple integration pattern:" },
       { type: "code", lang: "javascript", code: "// Before releasing goods, verify the payment\nconst response = await fetch('https://cheki.et/api/verify', {\n  method: 'POST',\n  headers: { 'Content-Type': 'application/json' },\n  body: JSON.stringify({\n    bank: 'cbe',\n    reference: customerReference,\n    accountNumber: myAccountNumber\n  })\n});\n\nconst result = await response.json();\n\n// Check 1: Does the receipt exist?\nif (!result.verified) return reject('Receipt not found');\n\n// Check 2: Does the amount match?\nif (result.amount !== expectedAmount) return reject('Amount mismatch');\n\n// Check 3: Is the receiver our account?\nif (result.receiverAccount !== myAccount) return reject('Wrong account');\n\n// Check 4: Is this a duplicate?\nif (await isDuplicate(result.reference)) return reject('Duplicate receipt');\n\n// Check 5: Is the payment recent?\nif (isOlderThan(result.date, 1, 'hour')) return reject('Stale payment');\n\n// All checks passed\nreturn approve();" },
-      { type: "callout", variant: "tip", title: "Use batch verification for reconciliation", text: "At the end of each day, use cheki's batch endpoint to verify all receipts at once. POST to /api/verify/batch with up to 50 receipts. This catches any fraud that slipped through during the day." },
+      { type: "callout", variant: "tip", title: "Use batch verification for reconciliation", text: "At the end of each day, use cheki's batch endpoint to verify all receipts at once. POST to /api/verify/batch with up to 20 receipts per request. This catches any fraud that slipped through during the day." },
     ],
     faq: [
       { q: "How common is payment fraud in Ethiopia?", a: "While exact statistics are not publicly available, payment fraud is widely reported across Ethiopian retail, delivery, and e-commerce. Fake screenshots are the most common tactic, followed by duplicate receipts." },
@@ -379,8 +380,8 @@ export const articles: Article[] = [
         type: "table",
         headers: ["Field", "Value"],
         rows: [
-          ["URL format", "https://receipt.dashensuperapp.com/receipt/{REFERENCE}"],
-          ["Response format", "PDF"],
+          ["URL format", "https://receipts.dashenbanksc.com/receipt/{REFERENCE}"],
+          ["Response format", "HTML"],
           ["Input needed", "Transaction reference only"],
           ["Account number required", "No"],
           ["Geo-blocked", "No"],
@@ -646,7 +647,7 @@ export const articles: Article[] = [
         headers: ["Endpoint", "Method", "Description"],
         rows: [
           ["/api/verify", "POST", "Verify a single receipt"],
-          ["/api/verify/batch", "POST", "Verify up to 50 receipts at once"],
+          ["/api/verify/batch", "POST", "Verify up to 20 receipts at once"],
           ["/api/banks", "GET", "List supported banks and status"],
           ["/api/health", "GET", "Check API and per-bank endpoint health"],
           ["/api/receipt", "GET", "Download raw receipt file from bank"],
@@ -756,7 +757,7 @@ export const articles: Article[] = [
           ["REST API", "Yes (free)", "Yes (paid)", "Yes (paid)", "Yes (paid)", "No", "No"],
           ["QR scanning", "Yes", "Yes", "Yes", "No", "Yes (camera)", "No"],
           ["BOA QR decryption", "Yes", "No", "No", "No", "No", "No"],
-          ["Batch verification", "Yes (50)", "No", "No", "No", "No", "No"],
+          ["Batch verification", "Yes (20)", "No", "No", "No", "No", "No"],
           ["Mobile app", "PWA", "PWA", "Android", "No", "iOS+Android", "Unreleased"],
           ["Geo-block bypass", "No", "No", "No", "Yes (relay)", "No", "Yes (ET IP)"],
           ["Duplicate detection", "No", "Per-branch", "History", "Per-merchant", "Audit trail", "No"],
@@ -819,8 +820,8 @@ export const articles: Article[] = [
       { type: "text", text: "Weaknesses: only 4 banks, no web app, no API, no docs, mobile app claimed but store links are dead, SSL certificate expired April 2026 (unrenewed for 2+ months), no pricing transparency, made by a dev shop not a dedicated fintech." },
 
       { type: "heading", text: "cheki: the details" },
-      { type: "text", text: "cheki is MIT licensed open source built with Next.js. It requires no signup, no API key, and has no limits. The hosted version is at cheki.et, and the full source code is on GitHub." },
-      { type: "text", text: "cheki supports 31 banks with 10 live (CBE, Telebirr, BOA, M-Pesa, Dashen, Awash, Zemen, CBE Birr, Siinqee, eBirr) and 21 in development. eBirr alone covers 4 additional banks through a single integration (Nib International, Wegagen, Ahadu, KAAFI Microfinance). It supports both the old and new CBE receipt systems, BOA QR code decryption, and unified QR scanning with multi-scale auto-detection." },
+      { type: "text", text: "cheki is MIT licensed open source built with Next.js. It requires no signup, no API key, and has no quota. The hosted version is at cheki.et, and the full source code is on GitHub." },
+      { type: "text", text: `cheki supports ${TOTAL_BANK_COUNT} banks with ${LIVE_BANK_COUNT} live (${liveBankList("short")}) and ${IN_DEVELOPMENT_BANK_COUNT} in development.` + " eBirr alone covers 4 additional banks through a single integration (Nib International, Wegagen, Ahadu, KAAFI Microfinance). It supports both the old and new CBE receipt systems, BOA QR code decryption, and unified QR scanning with multi-scale auto-detection." },
       { type: "text", text: "Recent updates: cheki now parses mobile 'Select All' receipt text. This matters because Telebirr and M-Pesa block cloud servers from reaching their endpoints. If you copy the receipt text from the Telebirr app and paste it into cheki, the parser extracts the full transaction details locally without ever calling the geo-blocked endpoint." },
       { type: "text", text: "Strengths: free, open source, no signup, self-hosting, batch verification, Python library, TypeScript SDK, Docker, QR code scanning with BOA AES decryption, URL auto-detection, allows AI crawlers, shows receipt source URLs, and now parses pasted receipt text." },
       { type: "text", text: "Weaknesses: no mobile app (web only, but PWA-installable), no employee management, no dashboard for businesses, no duplicate detection built-in, no geo-block bypass relay, fewer live banks than check.et/verify.et/qbirr/tinaverify." },
@@ -871,7 +872,7 @@ export const articles: Article[] = [
     date: "2026-06-18",
     readTime: "8 min",
     content: [
-      { type: "text", text: "This guide walks through integrating cheki's free REST API into a real application. No API key, no signup, no rate limits. We'll cover single verification, batch verification, error handling, and fraud prevention patterns." },
+      { type: "text", text: "This guide walks through integrating cheki's free REST API into a real application. No API key, no signup; requests are rate limited per IP. We'll cover single verification, batch verification, error handling, and fraud prevention patterns." },
 
       { type: "heading", text: "API overview" },
       {
@@ -879,7 +880,7 @@ export const articles: Article[] = [
         headers: ["Endpoint", "Method", "Purpose"],
         rows: [
           ["/api/verify", "POST", "Verify a single receipt"],
-          ["/api/verify/batch", "POST", "Verify up to 50 receipts at once"],
+          ["/api/verify/batch", "POST", "Verify up to 20 receipts at once"],
           ["/api/banks", "GET", "List supported banks and status"],
           ["/api/health", "GET", "Check API and per-bank endpoint latency"],
         ],
@@ -898,7 +899,7 @@ export const articles: Article[] = [
       { type: "code", lang: "bash", code: 'curl -X POST https://cheki.et/api/verify \\\n  -H "Content-Type: application/json" \\\n  -d \'{\n    "reference": "https://mbreciept.cbe.com.et/fHCxyV4mg5pRIwEkJO"\n  }\'' },
 
       { type: "heading", text: "Batch verification" },
-      { type: "text", text: "For end-of-day reconciliation, verify up to 50 receipts in a single request:" },
+      { type: "text", text: "For end-of-day reconciliation, verify up to 20 receipts in a single request (5 are checked at a time, and each one counts against the per-IP verify limit):" },
       { type: "code", lang: "bash", code: 'curl -X POST https://cheki.et/api/verify/batch \\\n  -H "Content-Type: application/json" \\\n  -d \'{\n    "receipts": [\n      {"bank": "cbe", "reference": "FT26140P01YB", "accountNumber": "1000560536171"},\n      {"bank": "telebirr", "reference": "DET8FJGUJ4"},\n      {"bank": "boa", "reference": "AB12345678", "accountNumber": "12345"}\n    ]\n  }\'' },
 
       { type: "heading", text: "JavaScript integration" },
@@ -914,10 +915,12 @@ export const articles: Article[] = [
         headers: ["HTTP Status", "Error", "Action"],
         rows: [
           ["200", "success: true, verified: true", "Payment confirmed"],
-          ["200", "success: false, fallbackUrl present", "Geo-blocked, redirect user to fallbackUrl"],
-          ["404", "Receipt not found", "Reference is invalid or fake"],
-          ["400", "Missing fields", "Check request body"],
-          ["502", "Bank endpoint unreachable", "Bank server is down, retry later"],
+          ["200", "success: true, verified: false, decodedOnly: true", "BOA QR decoded but not confirmed by the bank. Not proof of payment"],
+          ["400", "Missing fields or malformed reference", "Check request body"],
+          ["404", "Bank not supported (unknown id or still in development)", "Check the bank id against /api/banks"],
+          ["422", "Receipt not found, or the bank's response failed verification", "Treat as unverified; ask the customer to check the reference"],
+          ["429", "Per-IP rate limit (Retry-After header)", "Wait Retry-After seconds, then retry once"],
+          ["502", "Bank unreachable or geo-blocked (fallbackUrl for geo-blocked banks)", "Retry later, or open fallbackUrl in a browser"],
         ],
       },
 
@@ -926,19 +929,19 @@ export const articles: Article[] = [
       {
         type: "steps",
         items: [
-          { title: "Verify existence", text: "Check result.verified is true. If false, the receipt doesn't exist on the bank system." },
+          { title: "Check verified", text: "Accept only result.verified === true. verified: false does not always mean the receipt is fake: it can mean the bank has no such receipt, the bank's answer failed cheki's verification gate (no amount, wrong reference, failed or pending status), a BOA QR code was only decoded (decodedOnly), or the content was only parsed from what you sent (parsed, /api/parse). None of these is proof of payment." },
           { title: "Check amount", text: "Compare result.amount with the expected payment amount. Reject if different." },
           { title: "Check receiver", text: "Compare result.receiverAccount with your account number. Reject if different." },
           { title: "Check freshness", text: "Parse result.date and reject if the payment is older than your acceptable window (e.g. 1 hour)." },
           { title: "Check duplicates", text: "Store result.reference in your database. Before accepting, check if it already exists." },
         ],
       },
-      { type: "code", lang: "javascript", code: "async function verifyPayment(customerRef, expectedAmount, myAccount) {\n  const result = await cheki.verify('cbe', customerRef, myAccount);\n\n  if (!result.success || !result.verified)\n    return { ok: false, reason: 'Receipt not found' };\n\n  if (result.amount !== expectedAmount)\n    return { ok: false, reason: `Amount mismatch: ${result.amount} vs ${expectedAmount}` };\n\n  if (result.receiverAccount && !result.receiverAccount.endsWith(myAccount.slice(-5)))\n    return { ok: false, reason: 'Wrong receiving account' };\n\n  const paymentDate = new Date(result.date);\n  const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);\n  if (paymentDate < oneHourAgo)\n    return { ok: false, reason: 'Payment is too old' };\n\n  if (await isDuplicate(result.reference))\n    return { ok: false, reason: 'Duplicate receipt' };\n\n  return { ok: true, data: result };\n}" },
+      { type: "code", lang: "javascript", code: "async function verifyPayment(customerRef, expectedAmount, myAccount) {\n  const result = await cheki.verify('cbe', customerRef, myAccount);\n\n  if (!result.success || !result.verified)\n    return { ok: false, reason: result.error || 'Not verified by the bank' };\n\n  if (result.amount !== expectedAmount)\n    return { ok: false, reason: `Amount mismatch: ${result.amount} vs ${expectedAmount}` };\n\n  if (result.receiverAccount && !result.receiverAccount.endsWith(myAccount.slice(-5)))\n    return { ok: false, reason: 'Wrong receiving account' };\n\n  const paymentDate = new Date(result.date);\n  const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);\n  if (paymentDate < oneHourAgo)\n    return { ok: false, reason: 'Payment is too old' };\n\n  if (await isDuplicate(result.reference))\n    return { ok: false, reason: 'Duplicate receipt' };\n\n  return { ok: true, data: result };\n}" },
 
       { type: "callout", variant: "tip", title: "Self-host for production", text: "For production use, self-host cheki with Docker. This gives you full control, eliminates dependency on cheki.et, and allows you to add authentication, rate limiting, and logging." },
     ],
     faq: [
-      { q: "Is the API really free with no limits?", a: "Yes. cheki's API has no rate limits and no authentication. However, the underlying bank endpoints may have their own rate limits. If you make too many requests too quickly, the bank may temporarily block your IP." },
+      { q: "Is the API really free? Are there limits?", a: "It is free and needs no authentication. The hosted API is rate limited per IP: verify 30 per minute, batch 5 per minute (up to 20 receipts each), parse and OCR 20 per minute each. Over the limit you get a 429 with a Retry-After header. For higher volume, self-host cheki with Docker." },
       { q: "What happens when a bank is geo-blocked?", a: "For Telebirr and M-Pesa, if cheki's server cannot reach the bank, the API returns success: false with a fallbackUrl field. You can redirect the user's browser to this URL, which works because the user's Ethiopian IP is not blocked." },
       { q: "Can I use the API commercially?", a: "Yes. cheki is MIT licensed. Use it in commercial products, SaaS, internal tools, or anything else. No attribution required (though appreciated)." },
     ],
@@ -1397,14 +1400,14 @@ curl -X POST https://cheki.et/api/verify \\
     slug: "contribute-new-bank",
     title: "How to Add a New Bank to cheki (Community Guide)",
     description:
-      "cheki supports 31 Ethiopian banks but only 9 are live. Here's how you can help add the rest. No coding required, just share a receipt. For developers: how to write a parser and submit a PR.",
+      `cheki supports ${TOTAL_BANK_COUNT} Ethiopian banks but only ${LIVE_BANK_COUNT} are live. Here's how you can help add the rest. No coding required, just share a receipt. For developers: how to write a parser and submit a PR.`,
     category: "open-source",
     excerpt:
       "18 Ethiopian banks still need receipt endpoints. You can help by sharing a receipt, writing a parser, or reporting broken endpoints. Here's the complete community contribution guide.",
     date: "2026-06-19",
     readTime: "5 min",
     content: [
-      { type: "text", text: "cheki lists 31 Ethiopian banks and wallets, but only 9 are live. The remaining 22 are listed as 'in development' because we haven't confirmed their public receipt endpoints yet. This is where the community comes in." },
+      { type: "text", text: `cheki lists ${TOTAL_BANK_COUNT} Ethiopian banks and wallets, but only ${LIVE_BANK_COUNT} are live. The remaining ${IN_DEVELOPMENT_BANK_COUNT} are listed as 'in development' because we haven't confirmed their public receipt endpoints yet. This is where the community comes in.` },
 
       { type: "callout", variant: "tip", title: "No coding required", text: "The most valuable contribution is a receipt. If you use a bank we don't support yet, share a receipt screenshot or URL and we'll do the technical work." },
 
@@ -1419,7 +1422,7 @@ curl -X POST https://cheki.et/api/verify \\
           "The bank name",
         ],
       },
-      { type: "text", text: "Send it via GitHub (open an issue with the 'new-bank' label) or via Telegram. We'll reverse-engineer the endpoint and add the bank to cheki, usually within a day." },
+      { type: "text", text: "Send the link through the private 'Help us add' box on the bank's page on cheki.et. It goes only to the maintainers, is used only to build the parser, and is deleted afterwards. Do not paste receipt links in public GitHub issues; for those, use the bank request form with a redacted pattern. Every endpoint we know is documented on the endpoints reference page (cheki.et/endpoints)." },
       { type: "callout", variant: "warning", title: "Privacy", text: "Redact or blur sensitive information like full account numbers before sharing. We only need the receipt structure, the reference number, and the QR code payload, not your full account details." },
 
       { type: "heading", text: "Option 2: Write a parser (for developers)" },
@@ -1456,9 +1459,8 @@ curl -X POST https://cheki.et/api/verify \\
         type: "table",
         headers: ["Status", "Count", "Banks"],
         rows: [
-          ["Live", "9", "CBE, Telebirr, BOA, M-Pesa, Dashen, Zemen, CBE Birr, Siinqee, eBirr"],
-          ["Via eBirr (ready)", "4", "Nib International, Wegagen, Ahadu, KAAFI"],
-          ["Researching", "18", "Abay, Addis, Amhara, Berhan, Bunna, Enat, Global, Lion, Oromia Int'l, Hibret, ZamZam, Hijra, Shabelle, Goh Betoch, Tsedey, Gadaa, Rammis, DBE"],
+          ["Live", String(LIVE_BANK_COUNT), liveBankList()],
+          ["In development", String(IN_DEVELOPMENT_BANK_COUNT), "Every other bank on the banks page, including Zemen, CBE Birr and the eBirr tenants (Nib, Wegagen, Ahadu, KAAFI). Each goes live once a real receipt confirms its parser."],
         ],
       },
 
