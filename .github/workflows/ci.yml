@@ -40,6 +40,14 @@ jobs:
 
       - run: npm run build
 
+      # The same smoke test that runs against production after a deploy
+      # (scripts/smoke.ts, docs/RELEASING.md), here against the build above.
+      - name: Smoke test (next start)
+        run: |
+          npx next start -p 3000 > next-start.log 2>&1 &
+          for i in $(seq 1 30); do curl -fsS -o /dev/null http://localhost:3000/ && break; sleep 1; done
+          npm run smoke -- http://localhost:3000 || { cat next-start.log; exit 1; }
+
   sdk-typescript:
     name: TypeScript SDK
     runs-on: ubuntu-latest

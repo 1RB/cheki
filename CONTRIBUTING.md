@@ -302,6 +302,16 @@ Tests are in `tests/` and cover:
 - Security hardening (`tests/security`)
 - The SDK contract (`tests/contract`): `sdks/fixtures/api-contract.json` must match what the route handlers send
 
+### Smoke test and deploys
+
+`npm run smoke` checks a running site: the main pages, `/api/health`, that a bad `/api/verify` request gets a clean 4xx (never "verified"), and that an old `/verify` URL 301s. It defaults to `http://localhost:3000` (`npx next build && npx next start`); pass another base URL to check a deployment:
+
+```bash
+npm run smoke -- https://cheki.et
+```
+
+Only `main` deploys (see `vercel.json`). How to ship a stack of PRs in one deploy, and how to roll back, is in [docs/RELEASING.md](docs/RELEASING.md).
+
 ### Changing an API response
 
 Every SDK decodes `sdks/fixtures/api-contract.json` in its tests. If you change what a route returns, update that file in the same PR; `tests/contract/sdk-fixtures.test.ts` fails until you do. Then run each SDK's tests:

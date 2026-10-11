@@ -659,10 +659,7 @@ export const articles: Article[] = [
       { type: "text", text: "If you self-host cheki on a server with an Ethiopian IP address, Telebirr and M-Pesa verification will work without any workarounds. This is the cleanest solution." },
       { type: "callout", variant: "tip", title: "Ethiopian hosting options", text: "Ethio Telecom and various local ISPs offer fixed IP addresses. A small VPS or dedicated server in Ethiopia can run cheki for a few hundred birr per month, with unlimited verification." },
 
-      { type: "heading", text: "X-Forwarded-For bypass (non-Ethiopian servers)" },
-      { type: "text", text: "If you can't host in Ethiopia but have a server with a non-blocked IP (some residential or less-known hosting ranges work), you can try the X-Forwarded-For header bypass:" },
-      { type: "code", lang: "bash", code: "# cheki already sends these headers for geo-blocked banks:\n# X-Forwarded-For: 197.156.96.83 (Ethiopian IP)\n# X-Real-IP: 197.156.96.83\n\n# This works with some proxies and residential connections\n# but NOT with cloud datacenter IPs (AWS, GCP, Azure, Vercel)" },
-      { type: "callout", variant: "warning", title: "Not reliable on cloud", text: "Ethiopian banks actively block cloud provider IP ranges. The X-Forwarded-For header is ignored when the TCP connection itself is blocked. This bypass only works from IPs that aren't already blocked." },
+      { type: "callout", variant: "warning", title: "No header tricks", text: "The block is on the real network address, so headers like X-Forwarded-For change nothing and cheki does not send them. From a server outside Ethiopia, cheki makes one quick attempt and then gives the user the bank's own receipt link to open." },
 
       { type: "heading", text: "Customizing cheki" },
       { type: "text", text: "Since cheki is open source, you can modify it for your needs:" },

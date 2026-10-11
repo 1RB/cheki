@@ -11,19 +11,18 @@ const mergedBankRedirects = (manifest as { id: string; status: string }[])
   .flatMap((b) => {
     const destination = b.status === "live" ? `/banks/${b.id}` : "/banks";
     return [
-      { source: `/verify/verify-${b.id}-receipt-online`, destination, permanent: true },
-      { source: `/verify/check-${b.id}-payment-online`, destination, permanent: true },
+      // statusCode 301 rather than permanent: true (which Next sends as 308):
+      // these are old indexed URLs, and 301 is the code crawlers and link
+      // checkers expect for a page that moved for good.
+      { source: `/verify/verify-${b.id}-receipt-online`, destination, statusCode: 301 as const },
+      { source: `/verify/check-${b.id}-payment-online`, destination, statusCode: 301 as const },
     ];
   });
 
 const nextConfig: NextConfig = {
-  // OCR image uploads can be large; Vercel's serverless limit is 4.5MB,
-  // so we rely on the client to resize. The API route validates size.
-  experimental: {
-    serverActions: {
-      bodySizeLimit: "5mb",
-    },
-  },
+  // OCR image uploads go to /api/ocr (a route handler, not a server action):
+  // Vercel's body limit is 4.5MB, the client resizes first and the route
+  // validates the size. There are no server actions, so no serverActions config.
   // Keep native/self-contained packages external so QR decoding and sharp work.
   serverExternalPackages: ["sharp", "jsqr"],
   async redirects() {

@@ -10,7 +10,9 @@
  *     redirects, a total deadline and a response size cap
  *   - Retries for network errors and 5xx only (at most 2 attempts in total);
  *     a 4xx, including 404, is a definite answer and is never retried
- *   - Geo-block workaround (X-Forwarded-For, direct IP with full TLS checks)
+ *   - Geo-blocked banks (Telebirr, M-Pesa): one plain attempt with a short
+ *     timeout. They only answer Ethiopian IPs, and no header trick changes
+ *     that, so we fail fast and hand the user the receipt link instead.
  */
 import type { ParsedReceipt, HttpResult, Result, ChekiError } from "../core/types";
 import { ok, err } from "../core/types";
@@ -33,13 +35,6 @@ export const RETRY_BACKOFF_MS = 500;
 export const DEFAULT_TIMEOUT_MS = 15000;
 export const SLOW_BANK_TIMEOUT_MS = 30000; // CBE legacy PDF endpoint is slow
 export const GEO_TIMEOUT_MS = 8000;
-export const ETHIOPIAN_IP = "197.156.96.83";
-
-// Direct IPs for geo-blocked services
-const GEO_DIRECT_IPS: Record<string, { ip: string; host: string }> = {
-  telebirr: { ip: "196.188.116.120", host: "transactioninfo.ethiotelecom.et" },
-  mpesa: { ip: "102.218.49.92", host: "m-pesabusiness.safaricom.et" },
-};
 
 export const BROWSER_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36";
 
@@ -119,7 +114,8 @@ export abstract class BaseParser {
     let last: Attempt | undefined;
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
       last = this.geoBlocked ? await this.fetchGeoBlocked(url) : await this.doFetch(url);
-      if (last.result.ok || !last.retryable) break;
+      // A geo-block does not lift on a retry: one attempt, then the fallback link.
+      if (last.result.ok || !last.retryable || this.geoBlocked) break;
       if (attempt < MAX_ATTEMPTS) await sleep(RETRY_BACKOFF_MS);
     }
     const result = last!.result;
@@ -196,50 +192,18 @@ export abstract class BaseParser {
   }
 
   /**
-   * Geo-blocked fetch: tries the direct IP with X-Forwarded-For, then falls
-   * back to a standard fetch with the same headers.
+   * Geo-blocked fetch: one plain request with a short timeout. No spoofed
+   * X-Forwarded-For and no pinned bank IPs: the banks block by the real TCP
+   * source address, so those never got past the block, only slowed the
+   * failure down (Telebirr took about 33 seconds to give up).
    */
   private async fetchGeoBlocked(url: string): Promise<Attempt> {
-    const geoHeaders = {
-      "User-Agent": BROWSER_UA,
-      "X-Forwarded-For": ETHIOPIAN_IP,
-      "X-Real-IP": ETHIOPIAN_IP,
-      ...this.requestHeaders(),
-    };
-    const geoInfo = GEO_DIRECT_IPS[this.bankId];
-
-    if (geoInfo) {
-      // Try 1: direct IP with node:https. TLS is fully verified: `servername`
-      // makes Node check the certificate against the real host name.
-      try {
-        const parsedUrl = new URL(url);
-        if (parsedUrl.hostname.toLowerCase() === geoInfo.host && parsedUrl.protocol === "https:") {
-          const resp = await directHttpsGet({
-            ip: geoInfo.ip,
-            host: geoInfo.host,
-            path: parsedUrl.pathname + parsedUrl.search,
-            headers: {
-              Accept: "text/html,application/json,*/*",
-              ...geoHeaders,
-            },
-            timeoutMs: GEO_TIMEOUT_MS,
-            maxBytes: this.maxBytes,
-          });
-          if (resp.status >= 200 && resp.status < 300 && resp.body.length >= 10) {
-            const contentType = this.responseType === "json" ? "application/json" : "text/html";
-            return this.toAttempt({ ...resp, contentType });
-          }
-          if (this.notFoundStatuses.includes(resp.status)) return this.toAttempt({ ...resp, contentType: "" });
-          // Any other status: fall through to the standard fetch.
-        }
-      } catch {
-        // Fall through to the standard fetch.
-      }
-    }
-
-    // Try 2: standard fetch with X-Forwarded-For
     try {
-      const resp: SafeResponse = await safeFetch(url, { headers: geoHeaders, timeoutMs: GEO_TIMEOUT_MS, maxBytes: this.maxBytes });
+      const resp: SafeResponse = await safeFetch(url, {
+        headers: { "User-Agent": BROWSER_UA, ...this.requestHeaders() },
+        timeoutMs: GEO_TIMEOUT_MS,
+        maxBytes: this.maxBytes,
+      });
       return this.toAttempt(resp);
     } catch (e) {
       return this.networkFailure(e, url);
@@ -249,61 +213,4 @@ export abstract class BaseParser {
 
 function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
-}
-
-/**
- * GET over HTTPS to a fixed IP with SNI and Host set to the real host name.
- * Certificate verification stays on. One total deadline covers connect and
- * body; the body is capped; response stream errors reject instead of hanging.
- */
-export async function directHttpsGet(opts: {
-  ip: string;
-  host: string;
-  path: string;
-  headers: Record<string, string>;
-  timeoutMs: number;
-  maxBytes: number;
-}): Promise<{ status: number; body: Buffer }> {
-  const https = await import("node:https");
-  return new Promise((resolve, reject) => {
-    let settled = false;
-    const finish = (fn: () => void) => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(deadline);
-      fn();
-    };
-    const req = https.request(
-      {
-        hostname: opts.ip,
-        port: 443,
-        path: opts.path,
-        method: "GET",
-        headers: { ...opts.headers, Host: opts.host },
-        servername: opts.host,
-      },
-      (res) => {
-        const chunks: Buffer[] = [];
-        let total = 0;
-        res.on("data", (c: Buffer) => {
-          total += c.length;
-          if (total > opts.maxBytes) {
-            req.destroy();
-            finish(() => reject(new ResponseTooLargeError()));
-            return;
-          }
-          chunks.push(c);
-        });
-        res.on("end", () => finish(() => resolve({ status: res.statusCode ?? 0, body: Buffer.concat(chunks) })));
-        res.on("error", (e) => finish(() => reject(e)));
-        res.on("aborted", () => finish(() => reject(new Error("aborted"))));
-      }
-    );
-    const deadline = setTimeout(() => {
-      req.destroy();
-      finish(() => reject(new Error("timeout")));
-    }, opts.timeoutMs);
-    req.on("error", (e) => finish(() => reject(e)));
-    req.end();
-  });
 }
