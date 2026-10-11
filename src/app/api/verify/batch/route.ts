@@ -104,11 +104,16 @@ export async function POST(request: NextRequest) {
       return { ...payload, cached: false };
     });
 
+    // The SDKs read `verified` and `failed` counts. Only verified:true counts
+    // as verified; a decoded-only BOA QR or an error counts as failed.
+    const verifiedCount = results.filter((r) => r.verified === true).length;
     return NextResponse.json({
       success: true,
       results,
       cached: results.filter((r) => r.cached === true).length,
       total: results.length,
+      verified: verifiedCount,
+      failed: results.length - verifiedCount,
     });
   } catch {
     return NextResponse.json(
