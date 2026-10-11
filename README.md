@@ -31,7 +31,7 @@ check.et charges 499 ETB/month. verify.et charges $20-40/month. Both verify rece
 | Commercial Bank of Ethiopia | `cbe` | Bank | ✅ Live | Receipt ID or mbreciept.cbe.com.et link (older FT receipts: + last 8 account digits) | No |
 | Telebirr (Ethio Telecom) | `telebirr` | Mobile money | ✅ Live | Transaction number | Yes (Ethiopia only) |
 | Bank of Abyssinia | `boa` | Bank | ✅ Live | Reference + last 5 account digits, or the receipt QR | No |
-| M-Pesa Ethiopia | `mpesa` | Mobile money | ✅ Live | Transaction number | Yes (Ethiopia only) |
+| M-Pesa Ethiopia | `mpesa` | Mobile money | ✅ Live (beta) | Transaction number | Yes (Ethiopia only) |
 | Dashen Bank | `dashen` | Bank | ✅ Live | FT Ref (16 characters) | No |
 | Awash Bank | `awash` | Bank | ✅ Live | Share link from the SMS | No |
 | Siinqee Bank | `siinqee` | Bank | ✅ Live | eBirr receipt link | No |
@@ -203,7 +203,7 @@ Each Ethiopian bank publishes transaction receipts at public URLs:
 1. **CBE**: Receipt ID from `https://mbreciept.cbe.com.et/{RECEIPT_ID}`, read through `https://mb.cbe.com.et/api/v1/transactions/public/transaction-detail/{RECEIPT_ID}` → JSON. Legacy: `https://apps.cbe.com.et:100/?id={FT_REFERENCE}{LAST_8_DIGITS}` → PDF (older receipts, host often unreachable)
 2. **Telebirr**: `https://transactioninfo.ethiotelecom.et/receipt/{REFERENCE}` → HTML
 3. **BOA**: `https://cs.bankofabyssinia.com/api/onlineSlip/getDetails/?id={REFERENCE}{LAST_5_DIGITS}` → JSON
-4. **M-Pesa**: `https://m-pesabusiness.safaricom.et/api/receipt/getReceipt?trxNo={REFERENCE}` → JSON (geo-blocked, not probed; other projects read it as a JSON envelope carrying a base64 PDF, which is inferred and not yet confirmed against cheki's parser)
+4. **M-Pesa**: `https://m-pesabusiness.safaricom.et/api/receipt/getReceipt?trxNo={REFERENCE}` → JSON envelope `{responseCode, responseDescription, base64Data}` whose `base64Data` is the receipt PDF (`pdf-in-json`). Geo-blocked and not probed: the shape is inferred from five other open-source verifiers, cheki's tests use a synthetic receipt, and M-Pesa is **beta** until a real receipt verifies
 5. **Awash**: share link from Awash mobile app → HTML
 6. **Dashen**: `https://receipts.dashenbanksc.com/receipt/{FT_REF}` → HTML (unknown refs: HTTP 400)
 7. **Zemen** (in development): PDF receipt URL → PDF
@@ -481,7 +481,8 @@ Include the reference number you tested with (or note that you tested from an Et
 
 ### Response type notes
 
-- **JSON** banks (BOA, M-Pesa): parse the JSON body in `parse()`, extract fields with standard property access
+- **JSON** banks (BOA): parse the JSON body in `parse()`, extract fields with standard property access
+- **PDF-in-JSON** (M-Pesa): the JSON body is an envelope whose field holds a base64 PDF. Validate the base64, cap the decoded size at `MAX_PDF_BYTES`, then extract text like a PDF bank (see `MpesaParser.parseEnvelope`)
 - **HTML** banks (Telebirr, Awash, Dashen, CBE Birr, Siinqee, eBirr): fetch returns HTML, extract fields with regex or string slicing. Use `cheerio` if needed
 - **PDF** banks (CBE, Zemen; Dashen for legacy PDFs only): `parse()` should return `{ verified: false }` since PDF text extraction is async. Implement a `static parsePdfText(text: string): ParsedReceipt` method instead. The verifier calls `unpdf` to extract text, then calls your parser's `parsePdfText`
 
