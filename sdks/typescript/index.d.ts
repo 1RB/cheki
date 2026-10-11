@@ -15,9 +15,7 @@
  * import { Cheki, isVerified } from "cheki-verify";
  *
  * const cheki = new Cheki();
- * const result = await cheki.verify("cbe", "FT26140P01YB", {
- *   accountNumber: "1000560536171",
- * });
+ * const result = await cheki.verify("cbe", "https://mbreciept.cbe.com.et/fHCxExampleRcpt01");
  * if (isVerified(result)) console.log(result.amount, result.senderName);
  * ```
  *
@@ -38,12 +36,19 @@ export declare const MAX_RETRIES = 1;
 /** Maximum receipts per batch request, enforced client-side. */
 export declare const MAX_BATCH_SIZE = 20;
 /** Banks `/api/receipt` can download, and the account digits each needs. */
+/**
+ * Banks `GET /api/receipt` serves. `legacyReference` and `accountDigits` mark
+ * a legacy format that needs the receiving account: CBE's older FT reference.
+ * The current CBE format (a Receipt ID from a mbreciept.cbe.com.et link)
+ * needs no account.
+ */
 export declare const RECEIPT_DOWNLOAD_BANKS: Readonly<Record<string, {
     accountDigits?: number;
+    legacyReference?: RegExp;
 }>>;
 /** Optional fields for a single verification, the third argument to {@link Cheki.verify}. */
 export interface VerifyOptions {
-    /** Receiving account number (required by CBE and BOA). */
+    /** Receiving account number. Needed by BOA, and by an older CBE receipt that shows only an FT reference (legacy format); a CBE Receipt ID or link needs none. */
     accountNumber?: string;
     /** Payer phone number (required by CBE Birr). */
     phoneNumber?: string;
@@ -161,10 +166,28 @@ export interface BankInfo {
     accountDigits?: number;
     /** Whether a payer phone number is required (defaults to false). */
     requiresPhone: boolean;
-    /** Endpoint template (informational). */
+    /** Endpoint template of the bank's current format (informational). */
     endpoint: string;
     color: string;
     initials: string;
+    /** Receipt formats, current first. Lead with the first `supported` one; the rest are older receipts. Empty when the server is older than this SDK. */
+    formats: ReceiptFormatInfo[];
+}
+/** One receipt format of a bank, from `GET /api/banks`. */
+export interface ReceiptFormatInfo {
+    id: string;
+    /** "current" formats come first; "legacy" still works; "deprecated" links are only read for their reference. */
+    status: "current" | "legacy" | "deprecated" | (string & {});
+    label: string;
+    /** What the format needs: "reference", "receiptId", "link", "account", "phone". */
+    inputs: string[];
+    /** Trailing account digits, when the format needs an account. */
+    accountDigits?: number;
+    responseType: "pdf" | "html" | "json" | (string & {});
+    /** False when cheki documents the format but cannot check it yet. */
+    supported: boolean;
+    /** "verified" (observed by cheki) or "inferred" (from another source). */
+    confidence: "verified" | "inferred" | (string & {});
 }
 /** Response from `GET /api/banks`. */
 export interface BankListResponse {
@@ -294,11 +317,15 @@ export declare class Cheki {
     /** Per-bank reachability. The server caches this for up to 5 minutes. */
     getHealth(requestOptions?: RequestOptions): Promise<HealthStatus>;
     /**
-     * URL of `GET /api/receipt`, which downloads the bank's receipt file.
-     * Only CBE (needs the account number, at least its last 8 digits), Zemen
-     * and Dashen are supported. Pure helper, no request is made.
+     * URL of `GET /api/receipt`, which opens the bank's own copy of a receipt.
+     * Supported: CBE, Dashen and Zemen. Lead with the current format: a CBE
+     * Receipt ID (from the mbreciept.cbe.com.et link) or a Dashen FT Ref, which
+     * the server answers with a redirect to the bank's own receipt page. An
+     * older CBE FT reference (legacy) also needs the receiving account (at least
+     * its last 8 digits) and comes back as the bank's PDF. Pure helper, no
+     * request is made.
      *
-     * @throws {ChekiValidationError} For an unsupported bank, a bad reference or a missing CBE account.
+     * @throws {ChekiValidationError} For an unsupported bank, a bad reference, or a legacy CBE FT reference without the account.
      */
     getReceiptUrl(bank: string, reference: string, accountNumber?: string): string;
     private buildHeaders;
