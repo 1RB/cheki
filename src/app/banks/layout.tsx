@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { LIVE_BANK_COUNT, liveBankList } from "@/lib/bank-counts";
 
 export const metadata: Metadata = {
   // An object title keeps the " | cheki" suffix on /banks/[code] pages; a plain
@@ -8,7 +9,7 @@ export const metadata: Metadata = {
     template: "%s | cheki",
   },
   description:
-    "All Ethiopian banks and mobile wallets supported by cheki for free receipt verification. CBE, Telebirr, BOA, M-Pesa, Dashen, Awash, Zemen, CBE Birr, Siinqee.",
+    `All Ethiopian banks and mobile wallets supported by cheki for free receipt verification. Live now: ${liveBankList("short")}.`,
   alternates: {
     canonical: "/banks",
   },
@@ -16,7 +17,7 @@ export const metadata: Metadata = {
     images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "cheki - verify Ethiopian receipts for free" }],
     title: "cheki - Supported Ethiopian Banks and Wallets",
     description:
-      "10 live banks and wallets supported for free receipt verification. CBE, Telebirr, BOA, M-Pesa, and more.",
+      `${LIVE_BANK_COUNT} live banks and wallets supported for free receipt verification. CBE, Telebirr, BOA, M-Pesa, and more.`,
     type: "website",
     url: "https://cheki.et/banks",
   },
@@ -24,7 +25,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "cheki - Supported Ethiopian Banks and Wallets",
     description:
-      "10 live banks and wallets supported for free receipt verification.",
+      `${LIVE_BANK_COUNT} live banks and wallets supported for free receipt verification.`,
   },
 };
 
