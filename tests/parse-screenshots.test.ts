@@ -264,11 +264,11 @@ describe("screenshot OCR parser cases", () => {
     expect(result?.message).toContain("share link or QR code");
   });
 
-  it("parses Dashen app receipt (prefers Transaction Ref over FT Ref)", () => {
+  it("parses Dashen app receipt (prefers FT Ref, which the receipt endpoint accepts)", () => {
     const result = parseReceiptText(dashenText);
     expect(result).toBeTruthy();
     expect(result?.bank).toBe("dashen");
-    expect(result?.reference).toBe("OBTI28455679126320660525");
+    expect(result?.reference).toBe("D3I0BTI251720001");
     expect(result?.confidence).toBe("high");
   });
 
