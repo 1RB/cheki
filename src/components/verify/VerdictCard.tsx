@@ -134,7 +134,7 @@ export function VerdictCard({ verdict, result, checkedAt, t, onAnother, onRetry 
           <Icon icon={icon} size={22} strokeWidth={2} />
         </span>
         <div className="vc-headtext">
-          <h2 id="vc-title" className="vc-title">{v.title}</h2>
+          <h2 id="vc-title" className="vc-title" tabIndex={-1}>{v.title}</h2>
           <p className="vc-sub">{v.subtitle}</p>
         </div>
       </header>

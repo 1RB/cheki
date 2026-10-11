@@ -10,7 +10,7 @@ export function VerdictSkeleton({ label }: { label: string }) {
       <div className="vc-head">
         <span className="vc-icon sk sk-circle" aria-hidden="true" />
         <div className="vc-headtext">
-          <p className="vc-title vc-skel-label">{label}</p>
+          <p className="vc-title vc-skel-label" role="status">{label}</p>
           <span className="sk sk-line" style={{ width: "62%" }} aria-hidden="true" />
         </div>
       </div>

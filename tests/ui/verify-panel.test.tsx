@@ -6,7 +6,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, cleanup, fireEvent, waitFor, act } from "@testing-library/react";
 import { I18nProvider } from "@/lib/i18n/context";
-import { VerifyPanel } from "@/components/verify/VerifyPanel";
+import { VerifyPanel, verdictNeedsScroll } from "@/components/verify/VerifyPanel";
 import { HISTORY_KEY } from "@/lib/verify/history";
 
 vi.mock("next/link", () => ({ default: ({ href, children, prefetch: _p, ...rest }: { href: string; children: React.ReactNode; prefetch?: boolean }) => <a href={href} {...rest}>{children}</a> }));
@@ -156,5 +156,24 @@ describe("VerifyPanel", () => {
     await submit(input, CBE);
     expect(fetchMock).not.toHaveBeenCalled();
     expect(screen.getByRole("link", { name: "Check it on the full checker" }).getAttribute("href")).toBe("/#verify");
+  });
+  it("a verdict below the fold scrolls into view (instant under reduced motion) and its heading takes focus", async () => {
+    fetchMock.mockResolvedValue(json({ success: true, verified: true, bankCode: "cbe", amount: 1, senderName: "A" }));
+    const scroll = vi.fn();
+    Element.prototype.scrollIntoView = scroll;
+    const rect = vi.spyOn(Element.prototype, "getBoundingClientRect").mockReturnValue({ top: 900, height: 500, bottom: 1400, left: 0, right: 390, width: 390, x: 0, y: 900, toJSON: () => ({}) } as DOMRect);
+    Object.defineProperty(window, "innerHeight", { value: 844, configurable: true });
+    const input = setup();
+    await submit(input, CBE);
+    const heading = await waitFor(() => screen.getByRole("heading", { name: "Verified with CBE" }));
+    await waitFor(() => expect(scroll).toHaveBeenCalledWith({ behavior: "auto", block: "start" }));
+    expect(document.activeElement).toBe(heading);
+    rect.mockRestore();
+  });
+
+  it("a verdict already on screen is not scrolled", () => {
+    expect(verdictNeedsScroll({ top: 300, height: 500 }, 844, 56)).toBe(false);
+    expect(verdictNeedsScroll({ top: 700, height: 500 }, 844, 56)).toBe(true);
+    expect(verdictNeedsScroll({ top: 20, height: 500 }, 844, 56)).toBe(true);
   });
 });

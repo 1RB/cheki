@@ -60,6 +60,15 @@ function isEditable(el: EventTarget | null): boolean {
   return el.isContentEditable || el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.tagName === "SELECT";
 }
 
+/**
+ * True when the top of the verdict (title + amount, about 220px) is not on
+ * screen below the sticky header. Exported for tests.
+ */
+export function verdictNeedsScroll(rect: { top: number; height: number }, viewportHeight: number, topInset = 0): boolean {
+  const visiblePart = Math.min(rect.height, 220, viewportHeight - topInset);
+  return rect.top < topInset || rect.top + visiblePart > viewportHeight;
+}
+
 function reduceMotion(): boolean {
   return typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 }
@@ -107,13 +116,18 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
     [outcome, t]
   );
 
-  // Bring a verdict that landed below the fold into view.
+  // Bring a verdict that landed below the fold into view (mobile: the card
+  // renders under the input), then hand focus to its heading so screen
+  // readers start there. Scrolling never shifts layout, so no CLS.
   useEffect(() => {
-    if (phase !== "done" || !resultRef.current) return;
-    const rect = resultRef.current.getBoundingClientRect();
-    if (rect.top > window.innerHeight - 160 || rect.top < 0) {
-      resultRef.current.scrollIntoView({ behavior: reduceMotion() ? "auto" : "smooth", block: "start" });
+    if (phase !== "done" || !outcome || !resultRef.current) return;
+    const el = resultRef.current;
+    const heading = el.querySelector<HTMLElement>("#vc-title");
+    const navH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--nav-h")) || 0;
+    if (verdictNeedsScroll(el.getBoundingClientRect(), window.innerHeight, navH)) {
+      el.scrollIntoView({ behavior: reduceMotion() ? "auto" : "smooth", block: "start" });
     }
+    heading?.focus({ preventScroll: true });
   }, [phase, outcome]);
 
   const focusInput = useCallback(() => {
@@ -440,7 +454,7 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
         )}
       </form>
 
-      <div ref={resultRef} className="vp-result" aria-live="polite">
+      <div ref={resultRef} className="vp-result">
         {busy && <VerdictSkeleton label={phase === "reading" ? t("verify.reading") : t("verify.checking", { bank: checkingBank })} />}
         {phase === "done" && verdict && outcome && (
           <VerdictCard

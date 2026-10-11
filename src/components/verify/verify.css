@@ -180,6 +180,11 @@
 
 /* ── Verdict card ───────────────────────────────────────────────────── */
 .vp-result:empty { display: none; }
+/* scrollIntoView clears the sticky header */
+.vp-result { scroll-margin-top: calc(var(--nav-h, 56px) + 12px); }
+/* Focus lands on the heading programmatically; outline never shifts layout. */
+.vc-title:focus { outline: none; }
+.vc-title:focus-visible { outline: 2px solid var(--vc-accent); outline-offset: 4px; border-radius: 4px; }
 .vc {
   --vc-accent: var(--ink-3);
   --vc-tint: var(--surface-alt);
