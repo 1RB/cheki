@@ -55,6 +55,21 @@ export abstract class BaseParser {
   abstract readonly requiresPhone: boolean;
   readonly sslVerify: boolean = true;
   readonly geoBlocked: boolean = false;
+  /**
+   * Read the body as bytes even when responseType is not "pdf" (a bank that
+   * may answer with a PDF or with HTML, like CBE Birr). Such a bank gets the
+   * PDF size cap.
+   */
+  readonly binaryResponse: boolean = false;
+  /**
+   * HTTP statuses that mean "this bank has no receipt for that reference".
+   * They become a not-found EXTRACTION_ERROR and are never retried. Most banks
+   * use 404; a bank that answers an unknown reference differently (Dashen: 400)
+   * overrides this.
+   */
+  protected readonly notFoundStatuses: readonly number[] = [404];
+  /** Message for a not-found status; a generic one is used when unset. */
+  protected readonly notFoundMessage?: string;
 
   abstract buildUrl(ref: string, account?: string, phone?: string): string;
   abstract parse(data: string | Buffer, contentType: string): ParsedReceipt;
@@ -69,7 +84,7 @@ export abstract class BaseParser {
   }
 
   protected get maxBytes(): number {
-    return this.responseType === "pdf" ? MAX_PDF_BYTES : MAX_TEXT_BYTES;
+    return this.responseType === "pdf" || this.binaryResponse ? MAX_PDF_BYTES : MAX_TEXT_BYTES;
   }
 
   protected get timeoutMs(): number {
@@ -114,12 +129,12 @@ export abstract class BaseParser {
 
   /** Map an HTTP response to a Result, with the retry decision. */
   protected toAttempt(resp: { status: number; body: Buffer; contentType: string }, notFoundMessage?: string): Attempt {
-    if (resp.status === 404) {
+    if (this.notFoundStatuses.includes(resp.status)) {
       return {
         result: err({
           kind: "EXTRACTION_ERROR" as const,
           bank: this.bankName,
-          message: notFoundMessage ?? "Receipt not found. Check the reference number.",
+          message: notFoundMessage ?? this.notFoundMessage ?? "Receipt not found. Check the reference number.",
         }),
         retryable: false,
       };
@@ -144,7 +159,7 @@ export abstract class BaseParser {
         retryable: false,
       };
     }
-    const data = this.responseType === "pdf" ? resp.body : resp.body.toString("utf8");
+    const data = this.responseType === "pdf" || this.binaryResponse ? resp.body : resp.body.toString("utf8");
     return { result: ok({ status: resp.status, data, contentType: resp.contentType }), retryable: false };
   }
 
@@ -202,7 +217,7 @@ export abstract class BaseParser {
             const contentType = this.responseType === "json" ? "application/json" : "text/html";
             return this.toAttempt({ ...resp, contentType });
           }
-          if (resp.status === 404) return this.toAttempt({ ...resp, contentType: "" });
+          if (this.notFoundStatuses.includes(resp.status)) return this.toAttempt({ ...resp, contentType: "" });
           // Any other status: fall through to the standard fetch.
         }
       } catch {
