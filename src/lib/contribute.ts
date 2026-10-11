@@ -83,9 +83,14 @@ function str(v: unknown): string {
   return typeof v === "string" ? v.trim() : "";
 }
 
-/** Strip control characters so a value cannot break the message layout. */
-function tidy(v: string): string {
-  return v.replace(/[\u0000-\u001f\u007f]/g, " ").replace(/\s+/g, " ").trim();
+/**
+ * Strip control characters (C0, DEL, C1) and invisible formatting characters
+ * (zero-width, bidi overrides and isolates, BOM) so a value cannot break the
+ * message layout or make a link read differently from where it points.
+ */
+const INVISIBLE_RE = /[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u202a-\u202e\u2060-\u2069\ufeff]/g;
+export function tidy(v: string): string {
+  return v.replace(INVISIBLE_RE, " ").replace(/\s+/g, " ").trim();
 }
 
 export function validateContribution(input: unknown, image?: ImageMeta): ContributionResult {
@@ -130,7 +135,7 @@ export function validateContribution(input: unknown, image?: ImageMeta): Contrib
   } else if (reference || !image) {
     if (!reference) return { ok: false, error: "Add a screenshot, paste the receipt link, or enter the reference." };
     if (reference.length > MAX_REF || !/^[A-Za-z0-9/_.-]+$/.test(reference)) {
-      return { ok: false, error: "The reference should be letters and digits only." };
+      return { ok: false, error: "The reference should be letters and digits (with - _ . or /), up to 64 characters." };
     }
     // A screenshot shows the rest of the receipt, so the second field is only
     // required for a bare reference.
@@ -232,43 +237,8 @@ export async function sendTelegramPhoto(
 }
 
 /**
- * Fixed-window rate limiter kept in memory. Per instance, so on serverless it
- * limits bursts rather than guaranteeing a global cap; that is enough for a
- * low-volume contribution form.
+ * The contribute route uses the shared per-IP limiter and client key logic
+ * (x-real-ip, then x-vercel-forwarded-for, then the rightmost X-Forwarded-For
+ * entry; IPv6 keyed by /64). Re-exported so existing imports keep working.
  */
-export class RateLimiter {
-  private hits = new Map<string, number[]>();
-
-  constructor(
-    private readonly limit = 5,
-    private readonly windowMs = 10 * 60 * 1000,
-    private readonly maxKeys = 5000,
-  ) {}
-
-  /** Returns 0 when allowed, otherwise the seconds until the next slot. */
-  check(key: string, now: number = Date.now()): number {
-    const recent = (this.hits.get(key) ?? []).filter((t) => now - t < this.windowMs);
-    if (recent.length >= this.limit) {
-      this.hits.set(key, recent);
-      return Math.max(1, Math.ceil((recent[0] + this.windowMs - now) / 1000));
-    }
-    recent.push(now);
-    this.hits.set(key, recent);
-    if (this.hits.size > this.maxKeys) {
-      for (const [k, times] of this.hits) {
-        if (times.every((t) => now - t >= this.windowMs)) this.hits.delete(k);
-      }
-      if (this.hits.size > this.maxKeys) {
-        const oldest = this.hits.keys().next().value;
-        if (oldest !== undefined) this.hits.delete(oldest);
-      }
-    }
-    return 0;
-  }
-}
-
-export function clientIp(headers: Headers): string {
-  const fwd = headers.get("x-forwarded-for");
-  if (fwd) return fwd.split(",")[0].trim();
-  return headers.get("x-real-ip")?.trim() || "unknown";
-}
+export { RateLimiter, clientIp } from "./rate-limit";
