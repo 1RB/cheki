@@ -186,7 +186,7 @@ Self-hosting on an Ethiopian IP bypasses Telebirr/M-Pesa geo-blocks.
 
 ## Features
 
-- **Web UI**: receipt aesthetic, auto-detect bank from reference format, dark mode
+- **Web UI**: receipt aesthetic, auto-detect bank from reference format, Light / Dark / System theme
 - **REST API**: free, no API key, per-IP rate limits (verify 30/min, batch 5/min, parse and ocr 20/min each, per instance; 429 with Retry-After), batch verification up to 20 receipts
 - **CLI**: verify receipts from the terminal (`npm run cli -- verify ...` in a clone, or `cheki-verify` from `pip install cheki`)
 - **5 SDKs**: TypeScript, Python, Go, Dart, PHP with typed errors and retry
@@ -284,7 +284,9 @@ src/
     Icon.tsx                # Icon component
     StatusDot.tsx           # Bank status: an 8px dot and a word
     RelativeTime.tsx        # "11 Oct 2026, 14:32 · 3 hours ago" (shared minute clock)
-    language-switcher.tsx   # i18n language switcher
+    segmented-control.tsx   # Shared radiogroup segmented control (theme + language)
+    language-switcher.tsx   # English / አማርኛ (header + menu)
+    theme-control.tsx       # Light / Dark / System (header + menu)
     verify/
       VerifyPanel.tsx       # The receipt checker (homepage; locked to one bank on /banks/[code])
       VerifyInput.tsx       # One smart input with live bank detection
@@ -302,7 +304,6 @@ src/
       bouncy-accordion.tsx  # Accordion with spring physics
       command-palette.tsx   # Cmd+K command palette (lazy)
       glitch-404.tsx        # Glitch effect 404
-      theme-toggle.tsx      # Dark/light toggle (bare icon)
 sdks/
   fixtures/                 # Shared API contract fixtures every SDK test decodes
   typescript/               # TypeScript SDK (npm: cheki-verify, GH Packages: @1rb/cheki-verify)
