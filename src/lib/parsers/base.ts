@@ -56,6 +56,12 @@ export abstract class BaseParser {
   readonly sslVerify: boolean = true;
   readonly geoBlocked: boolean = false;
   /**
+   * Read the body as bytes even when responseType is not "pdf" (a bank that
+   * may answer with a PDF or with HTML, like CBE Birr). Such a bank gets the
+   * PDF size cap.
+   */
+  readonly binaryResponse: boolean = false;
+  /**
    * HTTP statuses that mean "this bank has no receipt for that reference".
    * They become a not-found EXTRACTION_ERROR and are never retried. Most banks
    * use 404; a bank that answers an unknown reference differently (Dashen: 400)
@@ -78,7 +84,7 @@ export abstract class BaseParser {
   }
 
   protected get maxBytes(): number {
-    return this.responseType === "pdf" ? MAX_PDF_BYTES : MAX_TEXT_BYTES;
+    return this.responseType === "pdf" || this.binaryResponse ? MAX_PDF_BYTES : MAX_TEXT_BYTES;
   }
 
   protected get timeoutMs(): number {
@@ -153,7 +159,7 @@ export abstract class BaseParser {
         retryable: false,
       };
     }
-    const data = this.responseType === "pdf" ? resp.body : resp.body.toString("utf8");
+    const data = this.responseType === "pdf" || this.binaryResponse ? resp.body : resp.body.toString("utf8");
     return { result: ok({ status: resp.status, data, contentType: resp.contentType }), retryable: false };
   }
 
