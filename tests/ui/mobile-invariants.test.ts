@@ -117,7 +117,7 @@ describe("mobile: touch targets and safe areas", () => {
 
   it("small buttons in the verdict and fallback are 44px", () => {
     const verify = read("src/components/verify/verify.css");
-    expect(verify).toMatch(/\.vc-btn--small \{[^}]*min-height: 44px/);
+    expect(verify).toMatch(/^\.vc-btn--small \{[^}]*min-height: 44px/m);
   });
 
   it("pinch zoom is never disabled", () => {
