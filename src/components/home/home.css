@@ -4,13 +4,17 @@
 
 .hp-hero { padding-top: 20px; padding-bottom: 8px; }
 .hp-hero-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; align-items: start; }
-/* Two-value headline: the claim in ink, its qualifier in the secondary grey.
-   Hierarchy by weight and value, not hue. */
+/* Two-voice headline: the claim in Inter bold, its qualifier set in a system
+   serif italic in the warm secondary ink. The contrast is type (roman vs
+   italic, sans vs serif), not hue and not a washed-out grey (~10:1). */
 .hp-title {
   font-size: clamp(30px, 7.6vw, 48px); line-height: 1.06; font-weight: 700; letter-spacing: -0.035em;
   color: var(--ink); max-width: 17ch; text-wrap: balance;
 }
-.hp-title-rest { color: var(--ink-3); }
+.hp-title-rest {
+  color: var(--ink-2); font-family: var(--serif); font-style: italic; font-weight: 400;
+  letter-spacing: -0.015em; font-size: 1.04em;
+}
 .hp-lede { margin-top: 12px; font-size: 16px; line-height: 1.55; color: var(--ink-2); max-width: 42ch; text-wrap: pretty; }
 .hp-trust { list-style: none; display: none; flex-wrap: wrap; gap: 4px 0; margin-top: 20px; font-size: 13px; color: var(--ink-3); }
 .hp-trust li { display: inline-flex; align-items: center; }
@@ -39,7 +43,7 @@
   transition: background-color var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
 }
 @media (hover: hover) { .hp-agent-btn:hover { background: var(--surface-alt); } }
-.hp-agent-hint { font-size: 12px; line-height: 1.5; color: var(--ink-3); max-width: 44ch; }
+.hp-agent-hint { font-size: 13px; line-height: 1.5; color: var(--ink-3); max-width: 44ch; }
 
 .hp-section { margin-top: 72px; }
 .hp-h2 { font-size: clamp(22px, 4.6vw, 30px); line-height: 1.15; font-weight: 700; letter-spacing: -0.025em; color: var(--ink); text-wrap: balance; }

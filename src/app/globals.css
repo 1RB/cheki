@@ -6,15 +6,22 @@
    hue. Colour is semantic and small (a status dot, a short word); the one
    brand accent is the green primary action. Surfaces are a 1px hairline at
    ~8% ink plus a very soft layered shadow, never a heavy border and a heavy
-   shadow together. Every text pair is AA (tests/ux-invariants.test.ts). */
+   shadow together.
+
+   Text: ink plus two warm tones, never a cool grey. The tones are a sepia
+   ink (a brown-grey with the canvas's own warmth) rather than a washed-out
+   neutral, so secondary copy reads as written, not disabled: --ink-2 (body
+   and sub-lines) is ~10:1 and --ink-3 (labels, meta) ~7:1 on the canvas,
+   well past AA. Hierarchy between them comes from size and weight.
+   Minimums are enforced in tests/ux-invariants.test.ts. */
 :root {
   --bg: #faf9f7;
   --surface: #ffffff;
   --surface-alt: #f3f1ee;
   --receipt-bg: #f8f6f2;
-  --ink: #1c1a17;
-  --ink-2: #56524d;
-  --ink-3: #6e6963;
+  --ink: #1c1814;
+  --ink-2: #463d34;
+  --ink-3: #5c5248;
   --green: #16a34a;
   --green-dark: #0a7b43;
   --green-light: #e7f6ec;
@@ -37,7 +44,7 @@
   --red-cta-fg: #ffffff;
   /* Neutral filled action (after a result the primary is "Verify another":
      an action, not a status, so it does not borrow the verdict's green). */
-  --ink-cta: #1c1a17;
+  --ink-cta: #1c1814;
   --ink-cta-fg: #faf9f7;
   --border: rgba(28, 25, 23, 0.09);
   --border-strong: rgba(28, 25, 23, 0.16);
@@ -47,6 +54,8 @@
   --shadow-md: 0 1px 2px rgba(28, 25, 23, 0.04), 0 8px 24px rgba(28, 25, 23, 0.05);
   --shadow-lg: 0 1px 2px rgba(28, 25, 23, 0.05), 0 24px 64px rgba(28, 25, 23, 0.14);
   --mono: "JetBrains Mono", "IBM Plex Mono", "Roboto Mono", ui-monospace, monospace;
+  /* System serif for the one italic accent in the hero: no font file. */
+  --serif: "Iowan Old Style", "Palatino Linotype", Georgia, "Noto Serif", serif;
   --sans: var(--font-inter, "Inter"), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --nav-h: 56px;
   --code-bg: #24292e;
@@ -74,9 +83,9 @@
     --surface: #1b1a18;
     --surface-alt: #24221f;
     --receipt-bg: #181715;
-    --ink: #edebe7;
-    --ink-2: #aca69f;
-    --ink-3: #958f88;
+    --ink: #efeae3;
+    --ink-2: #cfc6ba;
+    --ink-3: #ada395;
     --green: #3dd37a;
     --green-dark: #3dd37a;
     --green-light: rgba(61, 211, 122, 0.1);
@@ -90,7 +99,7 @@
     --green-cta-fg: #131211;
     --red-cta: #f0606f;
     --red-cta-fg: #131211;
-    --ink-cta: #edebe7;
+    --ink-cta: #efeae3;
     --ink-cta-fg: #131211;
     --border: rgba(255, 250, 240, 0.08);
     --border-strong: rgba(255, 250, 240, 0.15);
@@ -111,9 +120,9 @@
   --surface: #1b1a18;
   --surface-alt: #24221f;
   --receipt-bg: #181715;
-  --ink: #edebe7;
-  --ink-2: #aca69f;
-  --ink-3: #958f88;
+  --ink: #efeae3;
+  --ink-2: #cfc6ba;
+  --ink-3: #ada395;
   --green: #3dd37a;
   --green-dark: #3dd37a;
   --green-light: rgba(61, 211, 122, 0.1);
@@ -127,7 +136,7 @@
   --green-cta-fg: #131211;
   --red-cta: #f0606f;
   --red-cta-fg: #131211;
-  --ink-cta: #edebe7;
+  --ink-cta: #efeae3;
   --ink-cta-fg: #131211;
   --border: rgba(255, 250, 240, 0.08);
   --border-strong: rgba(255, 250, 240, 0.15);
@@ -164,6 +173,8 @@ html, body {
 }
 
 input, select, button, textarea { font-family: inherit; }
+/* RelativeTime: "3 hours ago" never breaks inside itself. */
+.rt-rel { white-space: nowrap; }
 input:focus, select:focus, textarea:focus { outline: none; }
 /* One focus ring everywhere: 2px, offset, in the accent at ~55%. Visible on
    both canvases, quieter than a solid green outline. */
@@ -189,7 +200,7 @@ input::placeholder { color: var(--ink-3); }
 
 select {
   appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23857a6d' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 16px center;
   padding-right: 40px;
@@ -518,10 +529,8 @@ a { color: inherit; text-decoration: none; }
   border-radius: 0 0 10px 10px;
 }
 .code-lang-label {
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  font-weight: 600;
-  font-size: 11px;
+  font-weight: 500;
+  font-size: 12px;
 }
 .code-copy-btn {
   background: none;
@@ -530,10 +539,10 @@ a { color: inherit; text-decoration: none; }
   padding: 3px 8px;
   border-radius: 5px;
   cursor: pointer;
-  font-size: 11px;
-  font-family: var(--mono);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  font-size: 12px;
+  font-family: var(--sans);
+  font-weight: 500;
+  min-height: 28px;
   transition: background-color 0.15s, color 0.15s, border-color 0.15s;
   display: inline-flex;
   align-items: center;
@@ -657,14 +666,14 @@ details summary::after {
   height: 20px;
   flex-shrink: 0;
   margin-left: 12px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20' fill='none'%3E%3Cpath d='M5 8l5 5 5-5' stroke='%23888' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20' fill='none'%3E%3Cpath d='M5 8l5 5 5-5' stroke='%23857a6d' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: center;
   transition: transform 0.2s ease;
 }
 details[open] summary::after {
   transform: rotate(180deg);
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20' fill='none'%3E%3Cpath d='M5 8l5 5 5-5' stroke='%23888' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20' fill='none'%3E%3Cpath d='M5 8l5 5 5-5' stroke='%23857a6d' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
 }
 details[open] summary {
   border-bottom: 1px solid var(--border);

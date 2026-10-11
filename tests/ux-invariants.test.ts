@@ -137,6 +137,15 @@ const PAIRS: [string, string, number][] = [
   ["--ink-3", "--surface", 4.5],
   ["--ink-3", "--surface-alt", 4.5],
   ["--ink-2", "--surface-alt", 4.5],
+  // Readable, not just AA: body-secondary text near 7:1 or better, small
+  // labels and meta well past 4.5 (pass 3: "the gray text is not really
+  // readable").
+  ["--ink-2", "--bg", 7],
+  ["--ink-2", "--surface", 7],
+  ["--ink-2", "--receipt-bg", 7],
+  ["--ink-3", "--bg", 6],
+  ["--ink-3", "--surface", 6],
+  ["--ink-3", "--receipt-bg", 6],
   ["--green-dark", "--bg", 4.5],
   ["--green-dark", "--surface", 4.5],
   ["--code-text", "--code-bg", 4.5],
