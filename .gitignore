@@ -43,3 +43,19 @@ next-env.d.ts
 # tesseract.js downloaded trained data (large binary, fetched at build time)
 *.traineddata
 *.traineddata.gz
+
+# SDK toolchains
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+python/dist/
+*.egg-info/
+sdks/dart/.dart_tool/
+sdks/dart/pubspec.lock
+sdks/php/vendor/
+sdks/php/composer.lock
+sdks/php/.phpunit.result.cache
+sdks/typescript/node_modules/
