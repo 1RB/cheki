@@ -794,7 +794,7 @@ docker-compose up -d
               <EndpointHeader
                 method="POST"
                 path="/api/verify/batch"
-                desc="Verify up to 50 receipts in parallel. Send an array of receipt objects with the same fields as the single verify endpoint."
+                desc="Verify up to 20 receipts per call (5 at a time). Send an array of receipt objects with the same fields as the single verify endpoint."
               />
               <p
                 style={{
