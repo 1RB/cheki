@@ -136,15 +136,16 @@ describe("contributeLeadMode", () => {
 describe("RateLimiter", () => {
   it("allows the limit then blocks until the window passes", () => {
     const rl = new RateLimiter(2, 1000);
-    expect(rl.check("ip", 0)).toBe(0);
-    expect(rl.check("ip", 10)).toBe(0);
-    expect(rl.check("ip", 20)).toBeGreaterThan(0);
-    expect(rl.check("other", 20)).toBe(0);
-    expect(rl.check("ip", 1001)).toBe(0);
+    expect(rl.check("ip", 1, 0)).toBe(0);
+    expect(rl.check("ip", 1, 10)).toBe(0);
+    expect(rl.check("ip", 1, 20)).toBeGreaterThan(0);
+    expect(rl.check("other", 1, 20)).toBe(0);
+    expect(rl.check("ip", 1, 1001)).toBe(0);
   });
 
-  it("reads the first forwarded IP", () => {
-    expect(clientIp(new Headers({ "x-forwarded-for": "1.2.3.4, 10.0.0.1" }))).toBe("1.2.3.4");
+  it("uses the shared key logic: x-real-ip, then the rightmost forwarded IP", () => {
+    expect(clientIp(new Headers({ "x-forwarded-for": "6.6.6.6, 1.2.3.4" }))).toBe("1.2.3.4");
+    expect(clientIp(new Headers({ "x-real-ip": "9.8.7.6", "x-forwarded-for": "6.6.6.6" }))).toBe("9.8.7.6");
     expect(clientIp(new Headers())).toBe("unknown");
   });
 });
