@@ -24,8 +24,10 @@ import { classifyStatus } from "./status";
  *   - awash: the link carries a share token; the receipt prints a numeric
  *     Transaction ID.
  *   - ebirr / siinqee: the link carries an opaque token.
+ *   - cbe-new: the current CBE format is looked up by its Receipt ID (share
+ *     token); the receipt it returns carries the FT transaction id instead.
  */
-const REFERENCE_IS_OPAQUE_TOKEN = new Set(["awash", "ebirr", "siinqee"]);
+const REFERENCE_IS_OPAQUE_TOKEN = new Set(["awash", "ebirr", "siinqee", "cbe-new"]);
 
 export type GateFailure = "amount" | "reference" | "party" | "status";
 
