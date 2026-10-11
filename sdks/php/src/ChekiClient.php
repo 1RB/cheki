@@ -5,42 +5,52 @@ declare(strict_types=1);
 namespace Cheki;
 
 /**
- * Main client for the cheki receipt verification API.
- *
- * Usage:
+ * Client for the cheki receipt verification API.
  *
  *   $client = new ChekiClient();
- *   $result = $client->verify('cbe', 'RB1234567890', '1000123456789');
+ *   $result = $client->verify('cbe', 'FT26140P01YB', '1000560536171');
  *   if ($result->isVerified()) {
  *       echo $result->senderName . ' sent ' . $result->amount . ' ' . $result->currency;
  *   }
+ *
+ * isVerified() is the only success signal. verify() and verifyBatch() never
+ * throw for API answers; getBanks() and getHealth() throw ChekiException.
+ *
+ * Retries: at most one, on network errors, 5xx and 429 (waiting out a
+ * Retry-After of up to 60 s). Other 4xx and timeouts are never retried.
  */
 class ChekiClient
 {
-    /** Maximum number of retry attempts for transient failures. */
-    private const MAX_RETRIES = 3;
+    /** Maximum receipts per batch, enforced client-side. */
+    public const MAX_BATCH_SIZE = 20;
 
-    /** Base delay in milliseconds for exponential backoff. */
-    private const BASE_BACKOFF_MS = 200;
+    /** Banks /api/receipt can download => account digits needed (0 = none). */
+    public const RECEIPT_DOWNLOAD_BANKS = ['cbe' => 8, 'zemen' => 0, 'dashen' => 0];
+
+    /** A Retry-After longer than this (seconds) is not waited out. */
+    private const MAX_RETRY_AFTER = 60;
 
     private VerifyOptions $options;
 
-    public function __construct(?VerifyOptions $options = null)
-    {
-        $this->options = $options ?? new VerifyOptions();
-    }
+    /** @var callable(string, string, string[], ?string, VerifyOptions): array{status: int, headers: array<string, string>, body: string} */
+    private $transport;
 
     /**
-     * Create a client with a custom base URL.
+     * @param callable|null $transport Optional HTTP transport, mainly for tests:
+     *   fn(string $method, string $url, string[] $headers, ?string $body, VerifyOptions $o): array{status, headers, body}.
+     *   Header names must be lowercase. Throw TransportException when there is no response.
      */
+    public function __construct(?VerifyOptions $options = null, ?callable $transport = null)
+    {
+        $this->options   = $options ?? new VerifyOptions();
+        $this->transport = $transport ?? [self::class, 'curlTransport'];
+    }
+
     public static function withBaseUrl(string $baseUrl): self
     {
         return new self((new VerifyOptions())->withBaseUrl($baseUrl));
     }
 
-    /**
-     * Get the current options (immutable clone pattern).
-     */
     public function getOptions(): VerifyOptions
     {
         return $this->options;
@@ -51,11 +61,11 @@ class ChekiClient
     /**
      * Verify a single receipt.
      *
-     * @param string      $bank          Bank code (e.g. 'cbe', 'dashen', 'awash').
-     * @param string      $reference     Receipt reference number.
-     * @param string|null $accountNumber Optional account number.
-     * @param string|null $phoneNumber   Optional phone number.
-     * @param string|null $qrData        Optional raw QR data string.
+     * @param string      $bank          Bank id (e.g. 'cbe', 'telebirr', 'boa').
+     * @param string      $reference     Reference or receipt link. '' with $qrData for QR-only.
+     * @param string|null $accountNumber Receiving account (CBE, BOA).
+     * @param string|null $phoneNumber   Payer phone (CBE Birr).
+     * @param string|null $qrData        Raw QR payload (BOA QR codes).
      */
     public function verify(
         string $bank,
@@ -64,252 +74,266 @@ class ChekiClient
         ?string $phoneNumber = null,
         ?string $qrData = null
     ): VerifyResult {
-        $payload = [
-            'bank'      => $bank,
-            'reference' => $reference,
-        ];
+        $payload = self::cleanReceipt([
+            'bank'          => $bank,
+            'reference'     => $reference,
+            'accountNumber' => $accountNumber,
+            'phoneNumber'   => $phoneNumber,
+            'qrData'        => $qrData,
+        ]);
 
-        if ($accountNumber !== null && $accountNumber !== '') {
-            $payload['accountNumber'] = $accountNumber;
+        $response = $this->request('POST', '/api/verify', $payload);
+        if ($response['data'] === null) {
+            return VerifyResult::error($response['error'] ?? 'Request failed', $response['status'], $response['retryAfter']);
         }
-        if ($phoneNumber !== null && $phoneNumber !== '') {
-            $payload['phoneNumber'] = $phoneNumber;
-        }
-        if ($qrData !== null && $qrData !== '') {
-            $payload['qrData'] = $qrData;
-        }
-
-        $response = $this->post('/api/verify', $payload);
-
-        if ($response->error !== null) {
-            return VerifyResult::error($response->error, $response->httpStatus);
-        }
-
-        return VerifyResult::fromResponse($response->data, $response->httpStatus);
+        return VerifyResult::fromResponse($response['data'], $response['status'], $response['retryAfter']);
     }
 
     /**
-     * Verify a batch of receipts.
+     * Verify up to 20 receipts. Each item also counts against the per-IP
+     * verify limit (30 per minute).
      *
-     * @param array<int, array{bank: string, reference: string, accountNumber?: string, phoneNumber?: string}> $receipts
+     * @param array<int, array{bank: string, reference?: string, accountNumber?: string, phoneNumber?: string, qrData?: string}> $receipts
+     * @throws \InvalidArgumentException For an empty batch or more than 20 receipts (no request is made).
      */
     public function verifyBatch(array $receipts): BatchResult
     {
-        // Normalize: strip null/empty optional fields
+        if (count($receipts) === 0) {
+            throw new \InvalidArgumentException('verifyBatch needs at least one receipt.');
+        }
+        if (count($receipts) > self::MAX_BATCH_SIZE) {
+            throw new \InvalidArgumentException(sprintf(
+                'verifyBatch accepts at most %d receipts (got %d). Split the list into chunks of %d.',
+                self::MAX_BATCH_SIZE,
+                count($receipts),
+                self::MAX_BATCH_SIZE
+            ));
+        }
+
         $clean = [];
         foreach ($receipts as $receipt) {
-            $item = [
-                'bank'      => $receipt['bank'],
-                'reference' => $receipt['reference'],
-            ];
-            if (isset($receipt['accountNumber']) && $receipt['accountNumber'] !== '') {
-                $item['accountNumber'] = $receipt['accountNumber'];
-            }
-            if (isset($receipt['phoneNumber']) && $receipt['phoneNumber'] !== '') {
-                $item['phoneNumber'] = $receipt['phoneNumber'];
-            }
-            $clean[] = $item;
+            $clean[] = self::cleanReceipt([
+                'bank'          => $receipt['bank'] ?? '',
+                'reference'     => $receipt['reference'] ?? null,
+                'accountNumber' => $receipt['accountNumber'] ?? null,
+                'phoneNumber'   => $receipt['phoneNumber'] ?? null,
+                'qrData'        => $receipt['qrData'] ?? null,
+            ]);
         }
 
-        $response = $this->post('/api/verify/batch', ['receipts' => $clean]);
-
-        if ($response->error !== null) {
-            return BatchResult::error($response->error, $response->httpStatus);
+        $response = $this->request('POST', '/api/verify/batch', ['receipts' => $clean]);
+        if ($response['data'] === null || ($response['status'] ?? 0) >= 400) {
+            return BatchResult::error(
+                $response['error'] ?? (string) ($response['data']['error'] ?? 'Request failed'),
+                $response['status'],
+                $response['retryAfter']
+            );
         }
-
-        return BatchResult::fromResponse($response->data, $response->httpStatus);
+        return BatchResult::fromResponse($response['data'], $response['status'], $response['retryAfter']);
     }
 
     /**
-     * Get the list of supported banks.
+     * Supported banks. Bank::$id is the value to pass as $bank.
      *
      * @return Bank[]
+     * @throws ChekiException When the request fails (it used to return [] silently).
      */
     public function getBanks(): array
     {
-        $response = $this->get('/api/banks');
-
-        if ($response->error !== null) {
-            return [];
-        }
-
+        $data  = $this->requestOrThrow('/api/banks');
         $banks = [];
-        if (isset($response->data['banks']) && is_array($response->data['banks'])) {
-            foreach ($response->data['banks'] as $bankData) {
-                if (is_array($bankData)) {
-                    $banks[] = Bank::fromArray($bankData);
-                }
+        foreach (is_array($data['banks'] ?? null) ? $data['banks'] : [] as $bankData) {
+            if (is_array($bankData)) {
+                $banks[] = Bank::fromArray($bankData);
             }
         }
-
         return $banks;
     }
 
     /**
-     * Check the health of the cheki API.
+     * Per-bank reachability (cached up to 5 minutes server-side).
+     *
+     * @throws ChekiException When the request fails.
      */
     public function getHealth(): HealthStatus
     {
-        $response = $this->get('/api/health');
+        return HealthStatus::fromResponse($this->requestOrThrow('/api/health'), 200);
+    }
 
-        if ($response->error !== null) {
-            return new HealthStatus(
-                success: false,
-                status: 'unreachable',
-                httpStatus: $response->httpStatus,
-                raw: ['error' => $response->error]
-            );
+    /**
+     * URL of GET /api/receipt, which downloads the bank's receipt file. Only
+     * CBE (needs the account number, at least its last 8 digits), Zemen and
+     * Dashen are supported. No request is made.
+     *
+     * @throws \InvalidArgumentException For an unsupported bank, a bad reference or a missing CBE account.
+     */
+    public function getReceiptUrl(string $bank, string $reference, ?string $accountNumber = null): string
+    {
+        $id = strtolower(trim($bank));
+        if (!array_key_exists($id, self::RECEIPT_DOWNLOAD_BANKS)) {
+            throw new \InvalidArgumentException('Receipt download is only supported for: cbe, zemen, dashen.');
         }
-
-        return HealthStatus::fromResponse($response->data, $response->httpStatus);
+        $ref = trim($reference);
+        if (!preg_match('/^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$/', $ref) || str_contains($ref, '..')) {
+            throw new \InvalidArgumentException('reference must be 1-64 letters, digits, dots, dashes or underscores.');
+        }
+        $params = ['bank' => $id, 'reference' => $ref];
+        $digits = self::RECEIPT_DOWNLOAD_BANKS[$id];
+        if ($digits > 0) {
+            $acct = str_replace([' ', '-'], '', (string) $accountNumber);
+            if (!preg_match('/^\d+$/', $acct) || strlen($acct) < $digits) {
+                throw new \InvalidArgumentException("{$id} needs the receiving account number (at least the last {$digits} digits).");
+            }
+            $params['account'] = $acct;
+        }
+        return $this->options->baseUrl . '/api/receipt?' . http_build_query($params, '', '&', PHP_QUERY_RFC3986);
     }
 
     // ─── Internal HTTP layer ──────────────────────────────────────
 
     /**
-     * Perform a GET request and return decoded JSON.
-     *
-     * @return object{data: array<string, mixed>, error: ?string, httpStatus: ?int}
+     * @param array<string, string|null> $r
+     * @return array<string, string>
      */
-    private function get(string $path): object
+    private static function cleanReceipt(array $r): array
     {
-        return $this->request('GET', $path, null);
-    }
-
-    /**
-     * Perform a POST request with a JSON body and return decoded JSON.
-     *
-     * @param array<string, mixed> $payload
-     * @return object{data: array<string, mixed>, error: ?string, httpStatus: ?int}
-     */
-    private function post(string $path, array $payload): object
-    {
-        return $this->request('POST', $path, $payload);
-    }
-
-    /**
-     * Core cURL request handler with retry support.
-     *
-     * Retries up to MAX_RETRIES times on HTTP 429 (Too Many Requests) and
-     * 5xx (Server Error) responses using exponential backoff. Network-level
-     * cURL errors and non-retryable HTTP status codes are returned immediately.
-     *
-     * @param string               $method  HTTP method (GET or POST).
-     * @param string               $path    API path (e.g. '/api/verify').
-     * @param array<string, mixed>|null $payload JSON body for POST.
-     * @return object{data: array<string, mixed>, error: ?string, httpStatus: ?int}
-     */
-    private function request(string $method, string $path, ?array $payload): object
-    {
-        $url = $this->options->baseUrl . $path;
-
-        $ch = curl_init($url);
-
-        if ($ch === false) {
-            return (object) [
-                'data'       => [],
-                'error'      => 'Failed to initialize cURL',
-                'httpStatus' => null,
-            ];
+        $out = ['bank' => (string) $r['bank']];
+        foreach (['reference', 'accountNumber', 'phoneNumber', 'qrData'] as $k) {
+            if (isset($r[$k]) && $r[$k] !== '') {
+                $out[$k] = (string) $r[$k];
+            }
         }
+        return $out;
+    }
 
+    /** @return array<string, mixed> */
+    private function requestOrThrow(string $path): array
+    {
+        $response = $this->request('GET', $path, null);
+        $status   = $response['status'];
+        if ($response['data'] === null || $status === null || $status >= 400) {
+            $message = $response['error'] ?? (string) ($response['data']['error'] ?? "cheki API returned {$status} for GET {$path}");
+            throw new ChekiException($message, $status, $response['retryAfter']);
+        }
+        return $response['data'];
+    }
+
+    /**
+     * One request with at most one retry.
+     *
+     * @param array<string, mixed>|null $payload
+     * @return array{data: ?array<string, mixed>, error: ?string, status: ?int, retryAfter: ?int}
+     */
+    private function request(string $method, string $path, ?array $payload): array
+    {
+        $url     = $this->options->baseUrl . $path;
         $headers = array_merge([
             'Accept: application/json',
             'User-Agent: ' . $this->options->userAgent,
         ], $this->options->headers);
-
-        $opts = [
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_HEADER         => false,
-            CURLOPT_TIMEOUT        => $this->options->timeout,
-            CURLOPT_CONNECTTIMEOUT => $this->options->connectTimeout,
-            CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_MAXREDIRS      => 5,
-            CURLOPT_SSL_VERIFYPEER => true,
-            CURLOPT_SSL_VERIFYHOST => 2,
-        ];
-
         if ($this->options->apiKey !== null && $this->options->apiKey !== '') {
             $headers[] = 'Authorization: Bearer ' . $this->options->apiKey;
         }
 
-        if ($method === 'POST' && $payload !== null) {
-            $json = json_encode($payload, JSON_UNESCAPED_SLASHES);
-            if ($json === false) {
-                curl_close($ch);
-                return (object) [
-                    'data'       => [],
-                    'error'      => 'Failed to encode JSON payload: ' . json_last_error_msg(),
-                    'httpStatus' => null,
-                ];
+        $body = null;
+        if ($payload !== null) {
+            $body = json_encode($payload, JSON_UNESCAPED_SLASHES);
+            if ($body === false) {
+                return ['data' => null, 'error' => 'Failed to encode JSON payload: ' . json_last_error_msg(), 'status' => null, 'retryAfter' => null];
             }
-            $opts[CURLOPT_POST]       = true;
-            $opts[CURLOPT_POSTFIELDS] = $json;
             $headers[] = 'Content-Type: application/json';
-            $headers[] = 'Content-Length: ' . strlen($json);
         }
 
-        $opts[CURLOPT_HTTPHEADER] = $headers;
-        curl_setopt_array($ch, $opts);
-
-        // Retry loop with exponential backoff for 429 and 5xx responses.
-        $attempt = 0;
-        while (true) {
-            $attempt++;
-            $body     = curl_exec($ch);
-            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-
-            // Network-level failure - not retryable (no HTTP status available).
-            if ($body === false) {
-                $error = curl_error($ch);
-                $errno = curl_errno($ch);
-                curl_close($ch);
-                return (object) [
-                    'data'       => [],
-                    'error'      => 'cURL error (' . $errno . '): ' . $error,
-                    'httpStatus' => null,
-                ];
+        $maxRetries = max(0, min(VerifyOptions::MAX_RETRIES, $this->options->maxRetries));
+        for ($attempt = 0; ; $attempt++) {
+            $canRetry = $attempt < $maxRetries;
+            try {
+                $resp = ($this->transport)($method, $url, $headers, $body, $this->options);
+            } catch (TransportException $e) {
+                if ($canRetry && !$e->timedOut) {
+                    usleep(random_int(1000, 2000) * 1000);
+                    continue;
+                }
+                return ['data' => null, 'error' => $e->getMessage(), 'status' => null, 'retryAfter' => null];
             }
 
-            $decoded = json_decode((string) $body, true);
+            $status     = (int) $resp['status'];
+            $retryAfter = self::parseRetryAfter($resp['headers']['retry-after'] ?? null);
 
-            // Check if the HTTP status is retryable (429 or 5xx).
-            $isRetryable = $httpCode === 429 || $httpCode >= 500;
-
-            if ($isRetryable && $attempt <= self::MAX_RETRIES) {
-                $this->sleepBackoff($attempt);
+            if (($status === 429 || $status >= 500) && $canRetry && ($retryAfter === null || $retryAfter <= self::MAX_RETRY_AFTER)) {
+                usleep(($retryAfter !== null ? $retryAfter * 1000 : random_int(1000, 2000)) * 1000);
                 continue;
             }
 
-            curl_close($ch);
-
+            $decoded = json_decode($resp['body'], true);
             if (!is_array($decoded)) {
-                return (object) [
-                    'data'       => [],
-                    'error'      => 'Invalid JSON response (HTTP ' . $httpCode . ')',
-                    'httpStatus' => (int) $httpCode,
-                ];
+                return ['data' => null, 'error' => "Invalid JSON response (HTTP {$status})", 'status' => $status, 'retryAfter' => $retryAfter];
             }
-
-            return (object) [
-                'data'       => $decoded,
-                'error'      => null,
-                'httpStatus' => (int) $httpCode,
-            ];
+            return ['data' => $decoded, 'error' => null, 'status' => $status, 'retryAfter' => $retryAfter];
         }
     }
 
-    /**
-     * Sleep for an exponentially increasing duration before a retry attempt.
-     *
-     * Uses a base delay of BASE_BACKOFF_MS with exponential doubling:
-     * attempt 1 → 200ms, attempt 2 → 400ms, attempt 3 → 800ms.
-     *
-     * @param int $attempt The current attempt number (1-based).
-     */
-    private function sleepBackoff(int $attempt): void
+    /** Seconds from a Retry-After header (delta-seconds or HTTP-date), or null. */
+    public static function parseRetryAfter(?string $value, ?int $now = null): ?int
     {
-        $delayMs = self::BASE_BACKOFF_MS * (2 ** ($attempt - 1));
-        usleep($delayMs * 1000);
+        if ($value === null || trim($value) === '') {
+            return null;
+        }
+        $value = trim($value);
+        if (ctype_digit($value)) {
+            return (int) $value;
+        }
+        $ts = strtotime($value);
+        if ($ts === false) {
+            return null;
+        }
+        return max(0, $ts - ($now ?? time()));
+    }
+
+    /**
+     * Default transport: cURL, one handle per attempt, no redirects.
+     *
+     * @param string[] $headers
+     * @return array{status: int, headers: array<string, string>, body: string}
+     */
+    public static function curlTransport(string $method, string $url, array $headers, ?string $body, VerifyOptions $o): array
+    {
+        $ch = curl_init($url);
+        if ($ch === false) {
+            throw new TransportException('Failed to initialize cURL');
+        }
+        $responseHeaders = [];
+        $opts = [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_HEADER         => false,
+            CURLOPT_TIMEOUT        => $o->timeout,
+            CURLOPT_CONNECTTIMEOUT => $o->connectTimeout,
+            CURLOPT_FOLLOWLOCATION => false,
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_SSL_VERIFYHOST => 2,
+            CURLOPT_HTTPHEADER     => $headers,
+            CURLOPT_HEADERFUNCTION => static function ($ch, string $line) use (&$responseHeaders): int {
+                $parts = explode(':', $line, 2);
+                if (count($parts) === 2) {
+                    $responseHeaders[strtolower(trim($parts[0]))] = trim($parts[1]);
+                }
+                return strlen($line);
+            },
+        ];
+        if ($method === 'POST') {
+            $opts[CURLOPT_POST]       = true;
+            $opts[CURLOPT_POSTFIELDS] = $body ?? '';
+        }
+        curl_setopt_array($ch, $opts);
+        $result = curl_exec($ch);
+        if ($result === false) {
+            $errno = curl_errno($ch);
+            $error = curl_error($ch);
+            curl_close($ch);
+            throw new TransportException("cURL error ({$errno}): {$error}", $errno === CURLE_OPERATION_TIMEDOUT);
+        }
+        $status = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        return ['status' => $status, 'headers' => $responseHeaders, 'body' => (string) $result];
     }
 }
