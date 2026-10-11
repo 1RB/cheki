@@ -6,7 +6,7 @@ Use :class:`ChekiClient`, which wraps the hosted cheki REST API
     from cheki import ChekiClient
 
     with ChekiClient() as cheki:
-        result = cheki.verify("cbe", "FT26140P01YB", account_number="1000560536171")
+        result = cheki.verify("cbe", "https://mbreciept.cbe.com.et/fHCxExampleRcpt01")
         if result.is_verified:   # the ONLY success signal
             print(result.amount, result.sender_name)
 
@@ -30,6 +30,7 @@ from cheki.client_types import (
     ClientVerifyResult,
     ClientBatchResult,
     ClientBankInfo,
+    ClientReceiptFormat,
     ClientHealthCheck,
     ClientHealthStatus,
 )
@@ -49,6 +50,7 @@ __all__ = [
     "ClientVerifyResult",
     "ClientBatchResult",
     "ClientBankInfo",
+    "ClientReceiptFormat",
     "ClientHealthCheck",
     "ClientHealthStatus",
     # Direct verification (deprecated)
