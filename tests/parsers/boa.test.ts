@@ -59,10 +59,11 @@ describe("BOAParser", () => {
   });
 
   describe("decryptQr", () => {
-    it("decrypts a valid BOA QR payload and returns receipt data", () => {
+    it("decrypts a valid BOA QR payload but never marks it verified", () => {
       const qr = "3cHRaxVjn/pySpNXEHQE61JOQ2poZRMwnDHwMiX7YO9UVtJZT/ndmwHEzWkJoloEf4dIQIzJf5zmvbBo5qHTdm/23nc6NRzTSfxEjIHa7Ju4Ti+xydrVn8qF+9/OPAF5LIfMEvxFqZ6wlKMvSN/jrQ==";
       const result = parser.decryptQr(qr);
-      expect(result.verified).toBe(true);
+      // The key is public, so a decrypted QR proves nothing until BOA confirms it.
+      expect(result.verified).toBe(false);
       expect(result.senderName).toBe("HABIB DAOUD OMAR");
       expect(result.senderAccount).toBe("2****3957");
       expect(result.receiverName).toBe("ABADIR MESGID");
