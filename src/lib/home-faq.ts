@@ -5,6 +5,7 @@
  * FAQPage JSON-LD. Google requires the marked-up questions to appear in the
  * visible content, so they cannot drift apart.
  */
+import { LIVE_BANK_COUNT, liveBankList } from "./bank-counts";
 export interface FaqItem {
   q: string;
   a: string;
@@ -13,7 +14,7 @@ export interface FaqItem {
 export const homeFaqs: FaqItem[] = [
   {
     q: "Is cheki really free?",
-    a: "Yes. cheki is 100% free with no limits: no signup, no API key, no credit card, and no verification quota. check.et charges 499 ETB/month after 200 verifications and verify.et charges $20-40/month. cheki is MIT licensed, so you can also read the source and self-host it.",
+    a: "Yes. cheki is 100% free: no signup, no API key, no credit card, and no verification quota (only a per-IP rate limit against abuse). check.et charges 499 ETB/month after 200 verifications and verify.et charges $20-40/month. cheki is MIT licensed, so you can also read the source and self-host it.",
   },
   {
     q: "How does receipt verification work?",
@@ -21,7 +22,7 @@ export const homeFaqs: FaqItem[] = [
   },
   {
     q: "Which banks are supported?",
-    a: "cheki supports 10 live banks and wallets: CBE, Telebirr, Bank of Abyssinia, M-Pesa, Dashen Bank, Awash Bank, Zemen Bank, CBE Birr, Siinqee Bank, and eBirr. Others are in research and anyone can contribute one. The endpoint formats live in a single file in the repo.",
+    a: `cheki supports ${LIVE_BANK_COUNT} live banks and wallets: ${liveBankList()}. Others are in research and anyone can contribute one. The endpoint formats live in a single file in the repo.`,
   },
   {
     q: "Do I need an API key?",
