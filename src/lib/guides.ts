@@ -915,10 +915,12 @@ export const articles: Article[] = [
         headers: ["HTTP Status", "Error", "Action"],
         rows: [
           ["200", "success: true, verified: true", "Payment confirmed"],
-          ["200", "success: false, fallbackUrl present", "Geo-blocked, redirect user to fallbackUrl"],
-          ["404", "Receipt not found", "Reference is invalid or fake"],
-          ["400", "Missing fields", "Check request body"],
-          ["502", "Bank endpoint unreachable", "Bank server is down, retry later"],
+          ["200", "success: true, verified: false, decodedOnly: true", "BOA QR decoded but not confirmed by the bank. Not proof of payment"],
+          ["400", "Missing fields or malformed reference", "Check request body"],
+          ["404", "Bank not supported (unknown id or still in development)", "Check the bank id against /api/banks"],
+          ["422", "Receipt not found, or the bank's response failed verification", "Treat as unverified; ask the customer to check the reference"],
+          ["429", "Per-IP rate limit (Retry-After header)", "Wait Retry-After seconds, then retry once"],
+          ["502", "Bank unreachable or geo-blocked (fallbackUrl for geo-blocked banks)", "Retry later, or open fallbackUrl in a browser"],
         ],
       },
 
@@ -927,14 +929,14 @@ export const articles: Article[] = [
       {
         type: "steps",
         items: [
-          { title: "Verify existence", text: "Check result.verified is true. If false, the receipt doesn't exist on the bank system." },
+          { title: "Check verified", text: "Accept only result.verified === true. verified: false does not always mean the receipt is fake: it can mean the bank has no such receipt, the bank's answer failed cheki's verification gate (no amount, wrong reference, failed or pending status), a BOA QR code was only decoded (decodedOnly), or the content was only parsed from what you sent (parsed, /api/parse). None of these is proof of payment." },
           { title: "Check amount", text: "Compare result.amount with the expected payment amount. Reject if different." },
           { title: "Check receiver", text: "Compare result.receiverAccount with your account number. Reject if different." },
           { title: "Check freshness", text: "Parse result.date and reject if the payment is older than your acceptable window (e.g. 1 hour)." },
           { title: "Check duplicates", text: "Store result.reference in your database. Before accepting, check if it already exists." },
         ],
       },
-      { type: "code", lang: "javascript", code: "async function verifyPayment(customerRef, expectedAmount, myAccount) {\n  const result = await cheki.verify('cbe', customerRef, myAccount);\n\n  if (!result.success || !result.verified)\n    return { ok: false, reason: 'Receipt not found' };\n\n  if (result.amount !== expectedAmount)\n    return { ok: false, reason: `Amount mismatch: ${result.amount} vs ${expectedAmount}` };\n\n  if (result.receiverAccount && !result.receiverAccount.endsWith(myAccount.slice(-5)))\n    return { ok: false, reason: 'Wrong receiving account' };\n\n  const paymentDate = new Date(result.date);\n  const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);\n  if (paymentDate < oneHourAgo)\n    return { ok: false, reason: 'Payment is too old' };\n\n  if (await isDuplicate(result.reference))\n    return { ok: false, reason: 'Duplicate receipt' };\n\n  return { ok: true, data: result };\n}" },
+      { type: "code", lang: "javascript", code: "async function verifyPayment(customerRef, expectedAmount, myAccount) {\n  const result = await cheki.verify('cbe', customerRef, myAccount);\n\n  if (!result.success || !result.verified)\n    return { ok: false, reason: result.error || 'Not verified by the bank' };\n\n  if (result.amount !== expectedAmount)\n    return { ok: false, reason: `Amount mismatch: ${result.amount} vs ${expectedAmount}` };\n\n  if (result.receiverAccount && !result.receiverAccount.endsWith(myAccount.slice(-5)))\n    return { ok: false, reason: 'Wrong receiving account' };\n\n  const paymentDate = new Date(result.date);\n  const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);\n  if (paymentDate < oneHourAgo)\n    return { ok: false, reason: 'Payment is too old' };\n\n  if (await isDuplicate(result.reference))\n    return { ok: false, reason: 'Duplicate receipt' };\n\n  return { ok: true, data: result };\n}" },
 
       { type: "callout", variant: "tip", title: "Self-host for production", text: "For production use, self-host cheki with Docker. This gives you full control, eliminates dependency on cheki.et, and allows you to add authentication, rate limiting, and logging." },
     ],
@@ -1457,9 +1459,8 @@ curl -X POST https://cheki.et/api/verify \\
         type: "table",
         headers: ["Status", "Count", "Banks"],
         rows: [
-          ["Live", "9", "CBE, Telebirr, BOA, M-Pesa, Dashen, Zemen, CBE Birr, Siinqee, eBirr"],
-          ["Via eBirr (ready)", "4", "Nib International, Wegagen, Ahadu, KAAFI"],
-          ["Researching", "18", "Abay, Addis, Amhara, Berhan, Bunna, Enat, Global, Lion, Oromia Int'l, Hibret, ZamZam, Hijra, Shabelle, Goh Betoch, Tsedey, Gadaa, Rammis, DBE"],
+          ["Live", String(LIVE_BANK_COUNT), liveBankList()],
+          ["In development", String(IN_DEVELOPMENT_BANK_COUNT), "Every other bank on the banks page, including Zemen, CBE Birr and the eBirr tenants (Nib, Wegagen, Ahadu, KAAFI). Each goes live once a real receipt confirms its parser."],
         ],
       },
 

@@ -12,11 +12,21 @@ bank/wallet receipts:
    and bank-endpoint rotation for you. This is the simplest path and
    matches the behaviour of the TypeScript, Go, PHP and Dart SDKs.
 
-2. **Direct verification (advanced).** The :func:`cheki.verify`
-   function fetches bank endpoints *directly* from your machine. This
-   avoids the hosted API but requires network access to each bank and
-   will fail for geo-blocked banks (e.g. telebirr, M-Pesa) outside
-   Ethiopia.
+2. **Direct verification (deprecated).** The :func:`cheki.verify`
+   function fetches bank endpoints *directly* from your machine. It does
+   not have the server's verification gate, host allowlist and parser
+   fixes, emits a :class:`DeprecationWarning`, and will be removed in the
+   next major version. Self-host the cheki server (Docker) instead if you
+   cannot use the hosted API.
+
+``result.is_verified`` is the ONLY success signal: a decoded-only BOA QR
+result has ``success=True`` but ``verified=False``.
+
+Retries and timeouts: each attempt waits up to 65 s (the server may take up
+to 60 s). The client retries at most once, on network errors, 5xx and 429
+(honouring a Retry-After of up to 60 s). Other 4xx and timeouts are never
+retried. The server makes up to 2 attempts per bank fetch, so one call
+reaches a bank at most 2 x 2 = 4 times.
 
 Example::
 
@@ -33,7 +43,10 @@ from __future__ import annotations
 
 import logging
 import random
+import re
 import time
+from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
 from typing import Any, Mapping, Sequence
 from urllib.parse import urlencode
 
@@ -42,6 +55,8 @@ import requests
 from cheki.client_types import (
     ChekiAPIError,
     ChekiNetworkError,
+    ChekiPayloadTooLargeError,
+    ChekiRateLimitError,
     ChekiTimeoutError,
     ClientBankInfo,
     ClientBatchResult,
@@ -49,27 +64,34 @@ from cheki.client_types import (
     ClientVerifyResult,
 )
 
-__all__ = ["ChekiClient", "DEFAULT_BASE_URL"]
+__all__ = ["ChekiClient", "DEFAULT_BASE_URL", "MAX_BATCH_SIZE", "MAX_RETRIES", "DEFAULT_TIMEOUT"]
 
 logger = logging.getLogger("cheki.client")
 
 #: Default cheki API endpoint.
 DEFAULT_BASE_URL = "https://cheki.et"
 
-#: HTTP statuses that trigger an automatic retry.
-_RETRYABLE_STATUS = {408, 429, 500, 502, 503, 504}
+from cheki._version import __version__ as _VERSION
 
-#: Default per-request timeout in seconds.
-_DEFAULT_TIMEOUT = 30
+#: Per-attempt timeout in seconds (the server may take up to 60 s).
+DEFAULT_TIMEOUT = 65.0
 
-#: Default number of retries on top of the initial request.
-_DEFAULT_MAX_RETRIES = 3
+#: Most retries on top of the first attempt.
+MAX_RETRIES = 1
 
-#: Base delay (seconds) for exponential backoff.
-_DEFAULT_BACKOFF_BASE = 0.5
+#: Most receipts per batch request.
+MAX_BATCH_SIZE = 20
 
-#: Maximum backoff cap (seconds) between retries.
-_DEFAULT_BACKOFF_MAX = 20.0
+#: A Retry-After longer than this (seconds) is not waited out.
+_MAX_RETRY_AFTER = 60.0
+
+#: Base delay (seconds) before a retry when the server sends no Retry-After.
+_RETRY_BASE_DELAY = 1.0
+
+#: Banks ``/api/receipt`` can download -> account digits needed (0 = none).
+RECEIPT_DOWNLOAD_BANKS: dict[str, int] = {"cbe": 8, "zemen": 0, "dashen": 0}
+
+_SAFE_REFERENCE = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,63}")
 
 
 class ChekiClient:
@@ -81,10 +103,9 @@ class ChekiClient:
         api_key: Optional bearer token sent as ``Authorization``. The
             public cheki API does not require a key, but self-hosted or
             rate-limited deployments may use one.
-        timeout: Per-request timeout in seconds.
-        max_retries: Maximum number of retries on retryable failures
-            (HTTP 408/429/5xx). The initial attempt is not counted as a
-            retry, so ``max_retries=3`` yields up to 4 total attempts.
+        timeout: Per-attempt timeout in seconds (default 65).
+        max_retries: Retries on network errors, 5xx and 429. Clamped to
+            0..1 (default 1), so there are at most 2 attempts.
         session: Optional pre-configured :class:`requests.Session` to
             reuse connections. One is created if omitted.
         user_agent: Value for the ``User-Agent`` header.
@@ -94,18 +115,18 @@ class ChekiClient:
         self,
         base_url: str = DEFAULT_BASE_URL,
         api_key: str | None = None,
-        timeout: float = _DEFAULT_TIMEOUT,
-        max_retries: int = _DEFAULT_MAX_RETRIES,
+        timeout: float = DEFAULT_TIMEOUT,
+        max_retries: int = MAX_RETRIES,
         session: requests.Session | None = None,
         user_agent: str | None = None,
     ) -> None:
         self.base_url = base_url.rstrip("/")
         self.api_key = api_key
         self.timeout = timeout
-        self.max_retries = max(0, int(max_retries))
+        self.max_retries = max(0, min(MAX_RETRIES, int(max_retries)))
         self.session = session or requests.Session()
 
-        ua = user_agent or "ethio-receipt-verify/0.1.0 (cheki-python-client)"
+        ua = user_agent or f"cheki-python-sdk/{_VERSION}"
         self.session.headers.update({
             "Accept": "application/json",
             "User-Agent": ua,
@@ -135,10 +156,14 @@ class ChekiClient:
                 inter-bank transfers.
 
         Returns:
-            A :class:`ClientVerifyResult`. Check ``result.is_verified``
-            to determine success; on failure ``result.error`` is set.
+            A :class:`ClientVerifyResult`. ``result.is_verified`` is the
+            only success signal. On failure ``result.error`` and
+            ``result.http_status`` are set (``result.is_rate_limited`` /
+            ``result.retry_after`` for 429).
         """
-        payload: dict[str, Any] = {"bank": bank, "reference": reference}
+        payload: dict[str, Any] = {"bank": bank}
+        if reference:
+            payload["reference"] = reference
         if account_number:
             payload["accountNumber"] = account_number
         if phone_number:
@@ -151,19 +176,25 @@ class ChekiClient:
         # still carry a JSON body with {success: false, error, ...}.
         # We parse those into a ClientVerifyResult instead of raising, so
         # callers can inspect result.error / result.fallback_url.
-        data = self._request("POST", "/api/verify", json=payload, raise_on_error=False)
-        return ClientVerifyResult.from_dict(data)
+        data, status, retry_after = self._request("POST", "/api/verify", json=payload, raise_on_error=False)
+        return ClientVerifyResult.from_dict(data, http_status=status, retry_after=retry_after)
 
     def verify_batch(
         self,
         receipts: Sequence[Mapping[str, Any]],
     ) -> ClientBatchResult:
-        """Verify up to 50 receipts in a single request.
+        """Verify up to 20 receipts in a single request.
+
+        Each item also counts against the per-IP verify limit (30/min).
 
         Args:
-            receipts: Iterable of receipt dicts, each with ``bank`` and
-                ``reference`` plus optional ``accountNumber`` /
-                ``phoneNumber`` / ``qrData``.
+            receipts: Receipt dicts, each with ``bank`` plus ``reference``
+                and/or ``qrData``, and optional ``accountNumber`` /
+                ``phoneNumber`` (snake_case keys are accepted too).
+
+        Raises:
+            ValueError: For an empty batch or more than 20 receipts (no
+                request is made).
 
         Returns:
             A :class:`ClientBatchResult` with per-receipt ``results`` in
@@ -172,17 +203,18 @@ class ChekiClient:
         """
         if not receipts:
             raise ValueError("verify_batch requires at least one receipt.")
-        if len(receipts) > 50:
-            raise ValueError("verify_batch accepts a maximum of 50 receipts.")
+        if len(receipts) > MAX_BATCH_SIZE:
+            raise ValueError(
+                f"verify_batch accepts at most {MAX_BATCH_SIZE} receipts (got {len(receipts)}). "
+                f"Split the list into chunks of {MAX_BATCH_SIZE}."
+            )
 
         # Normalise optional fields so empty/None values are not sent.
         cleaned: list[dict[str, Any]] = []
         for receipt in receipts:
-            item: dict[str, Any] = {
-                "bank": receipt["bank"],
-                "reference": receipt["reference"],
-            }
+            item: dict[str, Any] = {"bank": receipt["bank"]}
             for src, dst in (
+                ("reference", "reference"),
                 ("accountNumber", "accountNumber"),
                 ("account_number", "accountNumber"),
                 ("phoneNumber", "phoneNumber"),
@@ -195,15 +227,15 @@ class ChekiClient:
                     item[dst] = value
             cleaned.append(item)
 
-        data = self._request(
+        data, status, retry_after = self._request(
             "POST", "/api/verify/batch",
             json={"receipts": cleaned}, raise_on_error=False,
         )
-        return ClientBatchResult.from_dict(data)
+        return ClientBatchResult.from_dict(data, http_status=status, retry_after=retry_after)
 
     def get_banks(self) -> list[ClientBankInfo]:
         """List the banks/wallets supported by the cheki service."""
-        data = self._request("GET", "/api/banks")
+        data, _, _ = self._request("GET", "/api/banks")
         banks_raw = data.get("banks")
         if not isinstance(banks_raw, Sequence):
             return []
@@ -214,8 +246,8 @@ class ChekiClient:
         ]
 
     def get_health(self) -> ClientHealthStatus:
-        """Check the health of the cheki service."""
-        data = self._request("GET", "/api/health")
+        """Per-bank reachability (cached up to 5 minutes server-side)."""
+        data, _, _ = self._request("GET", "/api/health")
         return ClientHealthStatus.from_dict(data)
 
     def get_receipt_url(
@@ -224,15 +256,30 @@ class ChekiClient:
         reference: str,
         account_number: str | None = None,
     ) -> str:
-        """Build a direct receipt URL for the cheki web app.
+        """URL of ``GET /api/receipt``, which downloads the bank's receipt file.
 
-        This does not make a network request. The returned URL points at
-        the cheki receipt viewer, which renders the bank receipt in a
-        browser.
+        Only CBE (needs the account number, at least its last 8 digits),
+        Zemen and Dashen are supported. No request is made.
+
+        Raises:
+            ValueError: For an unsupported bank, a bad reference or a
+                missing CBE account.
         """
-        params: dict[str, str] = {"bank": bank, "reference": reference}
-        if account_number:
-            params["account"] = account_number
+        bank_id = bank.strip().lower()
+        if bank_id not in RECEIPT_DOWNLOAD_BANKS:
+            raise ValueError("Receipt download is only supported for: cbe, zemen, dashen.")
+        ref = reference.strip()
+        if not _SAFE_REFERENCE.fullmatch(ref) or ".." in ref:
+            raise ValueError("reference must be 1-64 letters, digits, dots, dashes or underscores.")
+        params: dict[str, str] = {"bank": bank_id, "reference": ref}
+        digits = RECEIPT_DOWNLOAD_BANKS[bank_id]
+        if digits:
+            account = re.sub(r"[\s-]", "", account_number or "")
+            if not re.fullmatch(r"[0-9]+", account) or len(account) < digits:
+                raise ValueError(
+                    f"{bank_id} needs the receiving account number (at least the last {digits} digits)."
+                )
+            params["account"] = account
         return f"{self.base_url}/api/receipt?{urlencode(params)}"
 
     # Convenience: use the client as a context manager. ───────────────
@@ -256,129 +303,85 @@ class ChekiClient:
         *,
         json: dict[str, Any] | None = None,
         raise_on_error: bool = True,
-    ) -> dict[str, Any]:
-        """Perform an HTTP request with retries and return decoded JSON.
+    ) -> tuple[dict[str, Any], int, float | None]:
+        """Perform an HTTP request with at most one retry.
 
-        Args:
-            method: HTTP method (``"GET"`` / ``"POST"``).
-            path: API path beginning with ``/``.
-            json: Optional JSON body for POST requests.
-            raise_on_error: When ``True`` (default), non-2xx responses
-                raise :class:`ChekiAPIError`. When ``False``, a JSON error
-                body is returned to the caller (used by the verify
-                endpoints, which encode semantic failures in the body).
+        Retried: network errors, 5xx, and 429 when Retry-After is at most
+        60 s. Never retried: other 4xx and timeouts.
+
+        Returns:
+            ``(decoded_json, http_status, retry_after_seconds)``.
 
         Raises:
-            ChekiTimeoutError: If every attempt times out.
+            ChekiTimeoutError: If the attempt times out (not retried).
             ChekiNetworkError: If a network error occurs on every attempt.
-            ChekiAPIError: If the API returns a non-retryable error status
-                (when ``raise_on_error``) or an unparseable body.
+            ChekiRateLimitError / ChekiPayloadTooLargeError / ChekiAPIError:
+                For an error status when ``raise_on_error`` (or a non-JSON
+                error body).
         """
         url = f"{self.base_url}{path}"
-        last_exception: Exception | None = None
-
-        for attempt in range(self.max_retries + 1):
+        attempt = 0
+        while True:
+            can_retry = attempt < self.max_retries
+            attempt += 1
             try:
-                response = self.session.request(
-                    method,
-                    url,
-                    json=json,
-                    timeout=self.timeout,
-                )
+                response = self.session.request(method, url, json=json, timeout=self.timeout)
             except requests.Timeout as exc:
-                last_exception = ChekiTimeoutError(
-                    f"Request to {url} timed out after {self.timeout}s."
-                )
-                logger.debug("cheki: timeout (attempt %d/%d): %s",
-                             attempt + 1, self.max_retries + 1, exc)
-                if attempt < self.max_retries:
-                    self._sleep_backoff(attempt)
-                    continue
-                raise last_exception from exc
-            except requests.ConnectionError as exc:
-                last_exception = ChekiNetworkError(
-                    f"Network error connecting to {url}: {exc}"
-                )
-                logger.debug("cheki: connection error (attempt %d/%d): %s",
-                             attempt + 1, self.max_retries + 1, exc)
-                if attempt < self.max_retries:
-                    self._sleep_backoff(attempt)
-                    continue
-                raise last_exception from exc
+                # The server may still be working on it (and talking to the bank).
+                raise ChekiTimeoutError(f"Request to {url} timed out after {self.timeout}s.") from exc
             except requests.RequestException as exc:
-                last_exception = ChekiNetworkError(
-                    f"Request to {url} failed: {exc}"
-                )
-                if attempt < self.max_retries:
-                    self._sleep_backoff(attempt)
+                logger.debug("cheki: network error (attempt %d): %s", attempt, exc)
+                if can_retry:
+                    self._sleep(None)
                     continue
-                raise last_exception from exc
+                raise ChekiNetworkError(f"Network error calling {url}: {exc}") from exc
 
-            # Retryable status: back off and try again.
-            if response.status_code in _RETRYABLE_STATUS and attempt < self.max_retries:
-                retry_after = self._retry_after(response)
-                logger.debug(
-                    "cheki: retryable status %d (attempt %d/%d)%s",
-                    response.status_code, attempt + 1, self.max_retries + 1,
-                    f"; honoring Retry-After={retry_after}s" if retry_after else "",
-                )
-                self._sleep_backoff(attempt, override=retry_after)
+            status = response.status_code
+            retry_after = self._retry_after(response)
+            retryable = status == 429 or status >= 500
+            if retryable and can_retry and (retry_after is None or retry_after <= _MAX_RETRY_AFTER):
+                logger.debug("cheki: retrying after status %d (Retry-After=%s)", status, retry_after)
+                self._sleep(retry_after)
                 continue
 
-            # Non-retryable status or final attempt: decode and return/raise.
-            return self._handle_response(
-                response, url, raise_on_error=raise_on_error
-            )
-
-        # Exhausted retries on a retryable status without a successful decode.
-        if last_exception is not None:
-            raise last_exception
-        raise ChekiAPIError("cheki: request failed after exhausting retries.")
+            data = self._handle_response(response, raise_on_error=raise_on_error, retry_after=retry_after)
+            return data, status, retry_after
 
     def _handle_response(
         self,
         response: requests.Response,
-        url: str,
         *,
         raise_on_error: bool = True,
+        retry_after: float | None = None,
     ) -> dict[str, Any]:
         """Decode a response body, optionally raising on error status.
 
-        A non-JSON body on an error status always raises
-        :class:`ChekiAPIError` (there is nothing to parse). A JSON error
-        body raises only when ``raise_on_error`` is ``True``; otherwise it
-        is returned so callers can build a typed result.
+        A non-JSON body on an error status always raises. A JSON error body
+        raises only when ``raise_on_error`` is ``True``; otherwise it is
+        returned so callers can build a typed result.
         """
         text = response.text or ""
-
+        status = response.status_code
         try:
             payload = response.json()
         except ValueError as exc:
-            if response.status_code >= 400:
-                message = (
-                    text.strip()
-                    or f"cheki API returned status {response.status_code}"
-                )
-                raise ChekiAPIError(
-                    message, status_code=response.status_code, body=text
-                ) from exc
-            # 2xx with non-JSON body: wrap the raw text for callers.
-            return {"data": text}
+            if status >= 400:
+                raise self._error(status, text.strip() or f"cheki API returned status {status}", text, retry_after) from exc
+            raise ChekiAPIError(f"cheki API returned a non-JSON body (HTTP {status}).", status_code=status, body=text) from exc
 
-        if response.status_code >= 400:
-            if raise_on_error:
-                message = self._extract_error_message(payload, text)
-                raise ChekiAPIError(
-                    message, status_code=response.status_code, body=text
-                )
-            # Caller wants the body even on error (verify endpoints).
-            if not isinstance(payload, dict):
-                return {"data": payload}
-            return payload
-
+        if status >= 400 and raise_on_error:
+            raise self._error(status, self._extract_error_message(payload, text), text, retry_after)
         if not isinstance(payload, dict):
             return {"data": payload}
         return payload
+
+    @staticmethod
+    def _error(status: int, message: str, body: str, retry_after: float | None) -> ChekiAPIError:
+        if status == 429:
+            return ChekiRateLimitError(message, status_code=status, body=body, retry_after=retry_after)
+        if status == 413:
+            return ChekiPayloadTooLargeError(message, status_code=status, body=body)
+        return ChekiAPIError(message, status_code=status, body=body)
 
     @staticmethod
     def _extract_error_message(payload: Any, text: str) -> str:
@@ -389,28 +392,24 @@ class ChekiClient:
 
     @staticmethod
     def _retry_after(response: requests.Response) -> float | None:
-        """Parse a ``Retry-After`` header into seconds, if present."""
-        value = response.headers.get("Retry-After")
+        """Parse a ``Retry-After`` header (seconds or HTTP-date) into seconds."""
+        value = (response.headers.get("Retry-After") or "").strip()
         if not value:
             return None
-        try:
+        if value.isdigit():
             return float(value)
+        try:
+            when = parsedate_to_datetime(value)
         except (TypeError, ValueError):
             return None
+        if when.tzinfo is None:
+            when = when.replace(tzinfo=timezone.utc)
+        return max(0.0, (when - datetime.now(timezone.utc)).total_seconds())
 
-    def _sleep_backoff(self, attempt: int, override: float | None = None) -> None:
-        """Sleep for an exponentially increasing delay before the next retry.
-
-        Uses full jitter: a random fraction of the exponentially growing
-        cap, bounded by :data:`_DEFAULT_BACKOFF_MAX`. When ``override`` is
-        provided (e.g. from a ``Retry-After`` header) it is used directly.
-        """
-        if override is not None:
-            time.sleep(min(override, _DEFAULT_BACKOFF_MAX))
+    @staticmethod
+    def _sleep(retry_after: float | None) -> None:
+        """Wait before the retry: Retry-After when sent, otherwise 1-2 s."""
+        if retry_after is not None:
+            time.sleep(retry_after)
             return
-        cap = min(
-            _DEFAULT_BACKOFF_BASE * (2 ** attempt),
-            _DEFAULT_BACKOFF_MAX,
-        )
-        delay = random.uniform(0, cap)
-        time.sleep(delay)
+        time.sleep(_RETRY_BASE_DELAY + random.uniform(0, _RETRY_BASE_DELAY))

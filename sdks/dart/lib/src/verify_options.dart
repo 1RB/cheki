@@ -1,50 +1,40 @@
-/// Options for configuring a receipt verification request.
+/// Options for a receipt verification request (`POST /api/verify`).
 ///
-/// This class provides a typed way to specify the optional parameters
-/// supported by the cheki `POST /api/verify` endpoint. At minimum,
-/// [bank] and [reference] are required; the remaining fields are
-/// conditionally required depending on the bank.
+/// [bank] is required, plus [reference] or [qrData]. [accountNumber] is
+/// needed by CBE and BOA, [phoneNumber] by CBE Birr (see `BankInfo`).
 class VerifyOptions {
-  /// The bank code identifying which bank to verify against.
-  ///
-  /// Examples: `cbe` (Commercial Bank of Ethiopia), `dashen`,
-  /// `awash`, `abyssinia`.
+  /// Bank id (e.g. `cbe`, `telebirr`, `boa`).
   final String bank;
 
-  /// The transaction reference number on the receipt.
+  /// Transaction reference or receipt link. May be empty when [qrData] is set.
   final String reference;
 
-  /// The account number associated with the transfer.
-  ///
-  /// Required by some banks - check [BankInfo.requiresAccount].
+  /// Receiving account number (CBE, BOA).
   final String? accountNumber;
 
-  /// The phone number associated with the transfer.
+  /// Payer phone number (CBE Birr).
   final String? phoneNumber;
 
-  /// Raw QR data extracted from a receipt QR code, if available.
+  /// Raw QR payload (BOA QR codes, or a receipt link from a QR).
   final String? qrData;
 
   /// Constructs a [VerifyOptions] instance.
-  ///
-  /// [bank] and [reference] are required. Provide [accountNumber],
-  /// [phoneNumber], or [qrData] as needed by the specific bank.
   const VerifyOptions({
     required this.bank,
-    required this.reference,
+    this.reference = '',
     this.accountNumber,
     this.phoneNumber,
     this.qrData,
   });
 
-  /// Converts these options into the JSON map expected by `POST /api/verify`.
+  /// The JSON body for `POST /api/verify`. Empty optional fields are omitted.
   Map<String, dynamic> toJson() {
     return {
       'bank': bank,
-      'reference': reference,
-      if (accountNumber != null) 'accountNumber': accountNumber,
-      if (phoneNumber != null) 'phoneNumber': phoneNumber,
-      if (qrData != null) 'qrData': qrData,
+      if (reference.isNotEmpty) 'reference': reference,
+      if (accountNumber != null && accountNumber!.isNotEmpty) 'accountNumber': accountNumber,
+      if (phoneNumber != null && phoneNumber!.isNotEmpty) 'phoneNumber': phoneNumber,
+      if (qrData != null && qrData!.isNotEmpty) 'qrData': qrData,
     };
   }
 }

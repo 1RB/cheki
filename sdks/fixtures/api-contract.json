@@ -1,0 +1,285 @@
+{
+  "$comment": "Canonical cheki HTTP API contract fixtures. Every SDK test suite decodes these, and tests/contract/sdk-fixtures.test.ts checks that the real route handlers still produce the same shapes (same keys, same JSON types). Change a route and this file together, or CI fails. Values are illustrative; references and names are fake.",
+  "limits": {
+    "batchMaxReceipts": 20,
+    "verifyBodyBytes": 16384,
+    "batchBodyBytes": 65536,
+    "parseBodyBytes": 262144,
+    "ocrImageBytes": 10485760,
+    "rateLimitPerMinute": { "verify": 30, "batch": 5, "parse": 20, "ocr": 20 },
+    "serverAttemptsPerReceipt": 2,
+    "serverMaxDurationSeconds": 60,
+    "sdkTimeoutSeconds": 65,
+    "sdkMaxRetries": 1,
+    "receiptDownloadBanks": ["cbe", "zemen", "dashen"]
+  },
+  "cases": {
+    "verify_verified": {
+      "method": "POST",
+      "path": "/api/verify",
+      "status": 200,
+      "headers": { "x-cheki-cache": "miss" },
+      "body": {
+        "success": true,
+        "senderName": "ABEBE KEBEDE",
+        "senderAccount": "1****6171",
+        "receiverName": "TIGIST ALEMU",
+        "receiverAccount": "1****4321",
+        "amount": 1250.5,
+        "currency": "ETB",
+        "date": "2026-10-01",
+        "reference": "FT26140P01YB",
+        "reason": "Invoice 42",
+        "verified": true,
+        "bank": "Commercial Bank of Ethiopia",
+        "bankCode": "cbe",
+        "sourceUrl": "https://apps.cbe.com.et:100/?id=FT26140P01YB60536171",
+        "durationMs": 1830,
+        "cached": false
+      }
+    },
+    "verify_cached": {
+      "method": "POST",
+      "path": "/api/verify",
+      "status": 200,
+      "headers": { "x-cheki-cache": "hit" },
+      "body": {
+        "success": true,
+        "senderName": "ABEBE KEBEDE",
+        "receiverName": "TIGIST ALEMU",
+        "amount": 1250.5,
+        "currency": "ETB",
+        "reference": "FT26140P01YB",
+        "verified": true,
+        "bank": "Commercial Bank of Ethiopia",
+        "bankCode": "cbe",
+        "sourceUrl": "https://apps.cbe.com.et:100/?id=FT26140P01YB60536171",
+        "cached": true
+      }
+    },
+    "verify_decoded_only": {
+      "method": "POST",
+      "path": "/api/verify",
+      "status": 200,
+      "headers": { "x-cheki-cache": "miss" },
+      "body": {
+        "success": true,
+        "senderName": "SELAM TADESSE",
+        "receiverName": "MERON HAILE",
+        "receiverAccount": "123456789",
+        "amount": 500,
+        "currency": "ETB",
+        "reference": "FT2610ABCD12",
+        "verified": false,
+        "decodedOnly": true,
+        "bank": "Bank of Abyssinia",
+        "bankCode": "boa",
+        "sourceUrl": "qr://boa",
+        "durationMs": 15400,
+        "cached": false
+      }
+    },
+    "parse_client_supplied": {
+      "method": "POST",
+      "path": "/api/parse",
+      "status": 200,
+      "headers": {},
+      "body": {
+        "success": true,
+        "verified": false,
+        "parsed": true,
+        "source": "client-supplied",
+        "label": "Parsed from your text, not checked with the bank",
+        "bank": "Telebirr",
+        "bankCode": "telebirr",
+        "reference": "CHQ0FJ403O",
+        "senderName": "DAWIT GIRMA",
+        "receiverName": "HANA SHOP",
+        "amount": 320,
+        "currency": "ETB",
+        "date": "2026-10-02 14:11:05",
+        "sourceUrl": "(via paste/bookmarklet)",
+        "durationMs": 0,
+        "transactionStatus": "Completed"
+      }
+    },
+    "batch_mixed": {
+      "method": "POST",
+      "path": "/api/verify/batch",
+      "status": 200,
+      "headers": {},
+      "body": {
+        "success": true,
+        "results": [
+          {
+            "success": true,
+            "senderName": "ABEBE KEBEDE",
+            "receiverName": "TIGIST ALEMU",
+            "amount": 1250.5,
+            "currency": "ETB",
+            "reference": "FT26140P01YB",
+            "verified": true,
+            "bank": "Commercial Bank of Ethiopia",
+            "bankCode": "cbe",
+            "sourceUrl": "https://apps.cbe.com.et:100/?id=FT26140P01YB60536171",
+            "durationMs": 1830,
+            "cached": false
+          },
+          {
+            "success": true,
+            "senderName": "SELAM TADESSE",
+            "receiverName": "MERON HAILE",
+            "amount": 500,
+            "currency": "ETB",
+            "reference": "FT2610ABCD12",
+            "verified": false,
+            "decodedOnly": true,
+            "bank": "Bank of Abyssinia",
+            "bankCode": "boa",
+            "sourceUrl": "qr://boa",
+            "durationMs": 15400,
+            "cached": false
+          },
+          {
+            "success": false,
+            "error": "[Telebirr] Receipt not found. Check the reference number.",
+            "status": 422
+          }
+        ],
+        "cached": 0,
+        "total": 3,
+        "verified": 1,
+        "failed": 2
+      }
+    },
+    "banks": {
+      "method": "GET",
+      "path": "/api/banks",
+      "status": 200,
+      "headers": {},
+      "body": {
+        "banks": [
+          {
+            "id": "cbe",
+            "name": "Commercial Bank of Ethiopia",
+            "swift": "CBETETAA",
+            "type": "bank",
+            "status": "live",
+            "requiresAccount": true,
+            "accountDigits": 8,
+            "endpoint": "https://apps.cbe.com.et:100/?id={ref}{account}",
+            "color": "#502878",
+            "initials": "CBE"
+          },
+          {
+            "id": "telebirr",
+            "name": "Telebirr",
+            "type": "mobile",
+            "status": "live",
+            "requiresAccount": false,
+            "endpoint": "https://transactioninfo.ethiotelecom.et/receipt/{ref}",
+            "color": "#00A0DC",
+            "initials": "TB"
+          },
+          {
+            "id": "cbebirr",
+            "name": "CBE Birr",
+            "type": "wallet",
+            "status": "live",
+            "requiresAccount": false,
+            "requiresPhone": true,
+            "endpoint": "https://cbepay1.cbe.com.et/aureceipt?TID={ref}&PH={phone}",
+            "color": "#502878",
+            "initials": "CB"
+          },
+          {
+            "id": "nib",
+            "name": "Nib International Bank",
+            "type": "bank",
+            "status": "in-development",
+            "requiresAccount": false,
+            "endpoint": "receipt.ebirr.com/nib",
+            "color": "#1d4ed8",
+            "initials": "Nib Bank"
+          }
+        ]
+      }
+    },
+    "health": {
+      "method": "GET",
+      "path": "/api/health",
+      "status": 200,
+      "headers": { "cache-control": "public, max-age=60, s-maxage=300, stale-while-revalidate=600" },
+      "body": {
+        "status": "ok",
+        "checkedAt": "2026-10-11T09:00:00.000Z",
+        "banks": [
+          { "id": "cbe", "name": "Commercial Bank of Ethiopia", "status": "reachable", "latencyMs": 812 },
+          { "id": "telebirr", "name": "Telebirr", "status": "geo-blocked", "latencyMs": 5004 },
+          { "id": "nib", "name": "Nib International Bank", "status": "in-development", "latencyMs": 0 }
+        ],
+        "cached": false
+      }
+    },
+    "error_400_missing_input": {
+      "method": "POST",
+      "path": "/api/verify",
+      "status": 400,
+      "headers": {},
+      "body": { "success": false, "error": "Reference number, receipt URL, or QR data is required." }
+    },
+    "error_400_batch_too_large": {
+      "method": "POST",
+      "path": "/api/verify/batch",
+      "status": 400,
+      "headers": {},
+      "body": { "success": false, "error": "Maximum 20 receipts per batch." }
+    },
+    "error_404_unsupported_bank": {
+      "method": "POST",
+      "path": "/api/verify",
+      "status": 404,
+      "headers": {},
+      "body": { "success": false, "error": "Unsupported bank: cbx. Did you mean cbe?" }
+    },
+    "error_413_body_too_large": {
+      "method": "POST",
+      "path": "/api/verify",
+      "status": 413,
+      "headers": {},
+      "body": { "success": false, "error": "Request body is too large (limit 16 KB)." }
+    },
+    "error_422_not_found": {
+      "method": "POST",
+      "path": "/api/verify",
+      "status": 422,
+      "headers": {},
+      "body": { "success": false, "error": "[Telebirr] Receipt not found. Check the reference number." }
+    },
+    "error_429_rate_limited": {
+      "method": "POST",
+      "path": "/api/verify",
+      "status": 429,
+      "headers": { "retry-after": "17" },
+      "body": { "success": false, "error": "Too many requests from your network. Wait a minute and try again." }
+    },
+    "error_502_geo_blocked": {
+      "method": "POST",
+      "path": "/api/verify",
+      "status": 502,
+      "headers": {},
+      "body": {
+        "success": false,
+        "error": "[Telebirr] Our server can't reach this bank (it blocks cloud IPs). Open the receipt directly: Try the new receipt format: https://transactioninfo.ethiotelecom.et/receipt/CHQ0FJ403O",
+        "fallbackUrl": "https://transactioninfo.ethiotelecom.et/receipt/CHQ0FJ403O"
+      }
+    },
+    "error_500_internal": {
+      "method": "POST",
+      "path": "/api/verify",
+      "status": 500,
+      "headers": {},
+      "body": { "success": false, "error": "Internal server error." }
+    }
+  }
+}

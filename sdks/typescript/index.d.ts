@@ -2,505 +2,314 @@
  * cheki - TypeScript SDK for the cheki receipt verification API.
  *
  * Verify Ethiopian bank transfer receipts from CBE, Telebirr, BOA, Dashen,
- * M-Pesa, and more. Zero runtime dependencies - uses the global Fetch API
- * (Node.js >= 18 or any modern browser).
+ * M-Pesa, and more. Zero runtime dependencies: uses the global Fetch API
+ * (Node.js >= 18). The hosted API does not send CORS headers on the verify,
+ * batch, banks and health routes, so call it from a server, not a browser.
+ *
+ * `verified === true` is the ONLY success signal. A 200 response can still
+ * be unverified: a BOA QR code that could not be confirmed with the bank
+ * comes back as `verified: false, decodedOnly: true`. Use {@link isVerified}.
  *
  * @example
  * ```ts
- * import { Cheki } from "cheki-verify";
+ * import { Cheki, isVerified } from "cheki-verify";
  *
  * const cheki = new Cheki();
  * const result = await cheki.verify("cbe", "FT26140P01YB", {
  *   accountNumber: "1000560536171",
  * });
- * console.log(result.verified, result.amount, result.senderName);
+ * if (isVerified(result)) console.log(result.amount, result.senderName);
  * ```
  *
  * @module cheki
  */
 /**
- * Optional fields for a single receipt verification request.
- *
- * Passed as the third argument to {@link Cheki.verify}.
+ * Default per-attempt timeout (65 s). The server gives a verification up to
+ * 60 s (`maxDuration`), so a shorter client timeout would abandon requests
+ * the server is still working on.
  */
+export declare const DEFAULT_TIMEOUT_MS = 65000;
+/**
+ * SDK retries on top of the first attempt. The server already makes up to 2
+ * attempts per bank fetch, so the SDK retries at most once: one SDK call
+ * reaches a bank at most 2 x 2 = 4 times.
+ */
+export declare const MAX_RETRIES = 1;
+/** Maximum receipts per batch request, enforced client-side. */
+export declare const MAX_BATCH_SIZE = 20;
+/** Banks `/api/receipt` can download, and the account digits each needs. */
+export declare const RECEIPT_DOWNLOAD_BANKS: Readonly<Record<string, {
+    accountDigits?: number;
+}>>;
+/** Optional fields for a single verification, the third argument to {@link Cheki.verify}. */
 export interface VerifyOptions {
-    /** Bank account number (required by some banks, e.g. CBE). */
+    /** Receiving account number (required by CBE and BOA). */
     accountNumber?: string;
-    /** Phone number (required by some wallets, e.g. Telebirr). */
+    /** Payer phone number (required by CBE Birr). */
     phoneNumber?: string;
-    /** Raw QR code data string, if available. */
+    /** Raw QR code payload (BOA QR codes, or a receipt link from a QR). */
     qrData?: string;
 }
-/**
- * A receipt to verify - used as input to batch verification.
- *
- * Passed as elements of the array to {@link Cheki.verifyBatch}.
- */
+/** A receipt to verify, as sent to {@link Cheki.verifyBatch}. */
 export interface Receipt {
-    /** Bank code (e.g. `"cbe"`, `"telebirr"`, `"boa"`). */
+    /** Bank id (e.g. `"cbe"`, `"telebirr"`, `"boa"`). */
     bank: string;
-    /** Transaction reference number. */
-    reference: string;
-    /** Bank account number (required by some banks). */
+    /** Transaction reference or receipt link. Optional when `qrData` is given. */
+    reference?: string;
     accountNumber?: string;
-    /** Phone number (required by some wallets). */
     phoneNumber?: string;
-    /** Raw QR code data string, if available. */
     qrData?: string;
 }
 /**
- * Full result of a single receipt verification.
+ * A successful (HTTP 200) verification response.
  *
- * Returned by {@link Cheki.verify} and included (with an `index` field) in
- * {@link BatchResult.results}.
+ * `success: true` only means the request was processed. Check `verified`
+ * (or {@link isVerified}): only `verified === true` means the bank confirmed
+ * the receipt.
  */
 export interface VerifyResult {
-    /** Whether the request was processed successfully. */
-    success: boolean;
-    /** Whether the receipt was verified as legitimate. */
+    success: true;
+    /** True only when the bank itself confirmed the receipt. The only success signal. */
     verified: boolean;
+    /**
+     * BOA QR only: the QR was decrypted but BOA could not be reached, so the
+     * data is what the QR claims. Always paired with `verified: false`. A QR
+     * code can be forged; never treat this as proof of payment.
+     */
+    decodedOnly?: boolean;
+    /** `/api/parse` only: parsed from caller-supplied text, never checked with the bank. */
+    parsed?: boolean;
+    /** `/api/parse` only: `"client-supplied"`. */
+    source?: string;
+    /** `/api/parse` only: a human label for the unverified result. */
+    label?: string;
+    /** True when served from the server's receipt cache (only verified receipts are cached). */
+    cached?: boolean;
     /** Bank name (human-readable). */
     bank: string;
-    /** Bank code (machine-readable, e.g. `"cbe"`). */
+    /** Bank id (machine-readable, e.g. `"cbe"`). */
     bankCode: string;
-    /** Transaction reference number. */
+    /** Transaction reference as returned by the bank. */
     reference: string;
-    /** Source URL from which the receipt was fetched or verified. */
+    /** Where the receipt was fetched from (`"qr://boa"` for decoded-only QR results). */
     sourceUrl: string;
-    /** Sender's name, if available. */
     senderName?: string;
-    /** Sender's account number, if available. */
     senderAccount?: string;
-    /** Receiver's name, if available. */
     receiverName?: string;
-    /** Receiver's account number, if available. */
     receiverAccount?: string;
-    /** Transaction amount, if available. */
     amount?: number;
-    /** Currency code (e.g. `"ETB"`), if available. */
     currency?: string;
-    /** Transaction date (ISO 8601 string), if available. */
     date?: string;
-    /** Bank branch, if available. */
     branch?: string;
-    /** Reason for verification failure, if applicable. */
     reason?: string;
-    /** Server-side processing duration in milliseconds. */
+    transactionType?: string;
+    /** Server processing time. Absent on cache hits. */
     durationMs?: number;
-    /** Invoice number, if available. */
     invoiceNumber?: string;
-    /** Transaction status (e.g. `"completed"`, `"pending"`). */
     transactionStatus?: string;
-    /** Settled amount, if different from `amount`. */
     settledAmount?: number;
-    /** Stamp duty charged, if applicable. */
     stampDuty?: number;
-    /** Discount amount, if applicable. */
     discountAmount?: number;
-    /** Service fee charged, if applicable. */
     serviceFee?: number;
-    /** VAT on the service fee, if applicable. */
     serviceFeeVat?: number;
-    /** Total amount paid, if applicable. */
     totalPaid?: number;
-    /** Amount in words, if available. */
     amountInWords?: string;
-    /** Payment mode (e.g. `"account-transfer"`). */
     paymentMode?: string;
-    /** Payment channel, if available. */
     paymentChannel?: string;
-    /** Bank account number on file, if available. */
     bankAccountNumber?: string;
-    /** Bank account name on file, if available. */
     bankAccountName?: string;
-    /** Error message, if the verification failed. */
-    error?: string;
 }
-/**
- * Information about a supported bank or wallet.
- *
- * Returned by {@link Cheki.getBanks}.
- */
+/** A batch item that verified or decoded (the `index` is added by the SDK). */
+export type BatchItemResult = VerifyResult & {
+    index: number;
+};
+/** A batch item that failed. `status` is the HTTP status a single verify would have returned. */
+export interface BatchItemError {
+    success: false;
+    error: string;
+    status: number;
+    /** Position in the input array (added by the SDK). */
+    index: number;
+}
+export type BatchItem = BatchItemResult | BatchItemError;
+/** Response from `POST /api/verify/batch`. */
+export interface BatchResult {
+    success: boolean;
+    /** Per-receipt results in input order. */
+    results: BatchItem[];
+    /** Number of receipts in the batch. */
+    total: number;
+    /** Receipts with `verified: true`. */
+    verified: number;
+    /** Everything else: errors and decoded-only QR results. */
+    failed: number;
+    /** Receipts served from the server cache. */
+    cached: number;
+}
+/** A supported bank or wallet from `GET /api/banks`. */
 export interface BankInfo {
-    /** Bank code (e.g. `"cbe"`). */
+    /** Bank id, the value to pass as `bank` (e.g. `"cbe"`). */
+    id: string;
+    /** @deprecated Use `id`. Kept as an alias, filled in by the SDK. */
     code: string;
-    /** Human-readable bank name. */
     name: string;
-    /** Current integration status. */
+    swift?: string;
+    type: "bank" | "mobile" | "wallet";
     status: "live" | "in-development";
-    /** Institution type. */
-    type: "bank" | "wallet";
-    /** Whether an account number is required for verification. */
     requiresAccount: boolean;
-    /** Expected number of digits in the account number, if known. */
+    /** How many trailing account digits the bank needs, when it needs an account. */
     accountDigits?: number;
-    /** Whether a phone number is required for verification. */
+    /** Whether a payer phone number is required (defaults to false). */
     requiresPhone: boolean;
-    /** Response type expected from the bank's API. */
-    responseType: string;
-    /** Bank API endpoint URL. */
+    /** Endpoint template (informational). */
     endpoint: string;
-    /** Whether SSL certificate verification is enabled for this bank. */
-    sslVerify: boolean;
-    /** Additional notes about the bank integration. */
-    notes?: string;
-    /** Brand color (hex or CSS color string). */
     color: string;
-    /** Short bank initials / abbreviation. */
     initials: string;
 }
-/**
- * Response from `GET /api/banks`.
- *
- * Returned by {@link Cheki.getBanks}.
- */
+/** Response from `GET /api/banks`. */
 export interface BankListResponse {
-    /** Whether the request was successful. */
-    success: boolean;
-    /** Number of banks in the response. */
-    count: number;
-    /** Array of supported banks. */
     banks: BankInfo[];
 }
-/**
- * A single component health check within the overall health status.
- */
-export interface HealthCheck {
-    /** Name of the check (e.g. `"database"`, `"redis"`). */
+/** One bank's reachability in `GET /api/health`. */
+export interface BankHealth {
+    id: string;
     name: string;
-    /** Status of this individual check. */
-    status: string;
-    /** Latency of this check in milliseconds, if measured. */
-    latencyMs?: number;
+    status: "reachable" | "unreachable" | "geo-blocked" | "no-parser" | "in-development" | (string & {});
+    latencyMs: number;
 }
-/**
- * Response from `GET /api/health`.
- *
- * Returned by {@link Cheki.getHealth}.
- */
+/** Response from `GET /api/health` (cached up to 5 minutes server-side). */
 export interface HealthStatus {
-    /** Whether the health check was successful. */
-    success: boolean;
-    /** Overall service status. */
-    status: "ok" | "degraded" | "down";
-    /** API version string. */
-    version: string;
-    /** Timestamp of the health check (ISO 8601 string). */
-    timestamp: string;
-    /** Individual component checks. */
-    checks: HealthCheck[];
+    status: "ok" | (string & {});
+    /** When the probe ran (ISO 8601). */
+    checkedAt: string;
+    /** True when this response came from the server's 5-minute cache. */
+    cached: boolean;
+    banks: BankHealth[];
 }
-/**
- * Response from `POST /api/verify/batch`.
- *
- * Returned by {@link Cheki.verifyBatch}.
- */
-export interface BatchResult {
-    /** Whether the batch request was processed successfully. */
-    success: boolean;
-    /** Total number of receipts in the batch. */
-    total: number;
-    /** Number of receipts that were verified. */
-    verified: number;
-    /** Number of receipts that failed verification. */
-    failed: number;
-    /** Per-receipt results, each annotated with its index in the input array. */
-    results: (VerifyResult & {
-        index: number;
-    })[];
-}
-/**
- * Base error class for all cheki SDK errors.
- *
- * Every error thrown by the SDK extends this class, so callers can
- * distinguish SDK errors from other runtime errors with a single
- * `instanceof ChekiError` check.
- *
- * @example
- * ```ts
- * try {
- *   await cheki.verify("cbe", "FT26140P01YB");
- * } catch (err) {
- *   if (err instanceof ChekiError) {
- *     console.error("cheki error:", err.message);
- *   }
- * }
- * ```
- */
+/** True only when the bank confirmed the receipt. `success`, `decodedOnly` and `parsed` are not proof. */
+export declare function isVerified(result: unknown): result is VerifyResult & {
+    verified: true;
+};
+/** Base class for every error the SDK throws. */
 export declare class ChekiError extends Error {
     constructor(message: string);
 }
-/**
- * Error thrown when the cheki API returns a non-2xx HTTP status code.
- *
- * Includes the HTTP status code, the parsed (or raw) response body,
- * and the API endpoint path that was called.
- */
-export declare class ChekiAPIError extends ChekiError {
-    /** HTTP status code returned by the API. */
-    readonly statusCode: number;
-    /** Response body - parsed JSON if possible, otherwise the raw text. */
-    readonly body: unknown;
-    /** API endpoint path that was called (e.g. `"/api/verify"`). */
-    readonly endpoint: string;
-    constructor(message: string, statusCode: number, body: unknown, endpoint: string);
+/** Invalid input caught before any request was made (e.g. more than 20 receipts). */
+export declare class ChekiValidationError extends ChekiError {
+    constructor(message: string);
 }
 /**
- * Error thrown when a network-level failure occurs (e.g. DNS resolution
- * failure, connection refused, TLS handshake error, or caller-initiated
- * abort). The original underlying error is preserved in {@link cause}.
+ * The API answered with a non-2xx status. The server's own message is in
+ * `serverMessage` (and in `message`); geo-blocked banks add `fallbackUrl`.
+ *
+ * Status codes: 400 bad input, 404 unsupported bank, 413 body too large,
+ * 422 receipt not found / not a valid receipt, 429 rate limited, 502 bank
+ * unreachable, 500 internal error.
  */
+export declare class ChekiAPIError extends ChekiError {
+    readonly statusCode: number;
+    /** Parsed JSON body if possible, otherwise the raw text. */
+    readonly body: unknown;
+    /** API path that was called (e.g. `"/api/verify"`). */
+    readonly endpoint: string;
+    /** The server's `error` text, when it sent one. */
+    readonly serverMessage?: string;
+    /** For geo-blocked banks: open this link in a browser in Ethiopia instead. */
+    readonly fallbackUrl?: string;
+    constructor(message: string, statusCode: number, body: unknown, endpoint: string);
+}
+/** HTTP 429. `retryAfterSeconds` is the server's Retry-After, when sent. */
+export declare class ChekiRateLimitError extends ChekiAPIError {
+    readonly retryAfterSeconds?: number;
+    constructor(message: string, body: unknown, endpoint: string, retryAfterSeconds?: number);
+}
+/** HTTP 413: the request body is over the route's cap (verify 16 KB, batch 64 KB). */
+export declare class ChekiPayloadTooLargeError extends ChekiAPIError {
+    constructor(message: string, body: unknown, endpoint: string);
+}
+/** Network-level failure (DNS, connection refused, TLS) or a caller abort. */
 export declare class ChekiNetworkError extends ChekiError {
-    /** The original underlying error, if available. */
+    /** The original error, if available. */
     readonly cause?: Error;
     constructor(message: string, cause?: Error);
 }
 /**
- * Error thrown when a request exceeds the configured timeout and is
- * aborted. The timeout duration (in milliseconds) is included for
- * diagnostics.
+ * An attempt exceeded the timeout. Timeouts are not retried: the server may
+ * still be working on the request (and talking to the bank).
  */
 export declare class ChekiTimeoutError extends ChekiError {
-    /** The timeout duration in milliseconds that was exceeded. */
     readonly timeoutMs: number;
     constructor(message: string, timeoutMs: number);
 }
-/**
- * Configuration options for the {@link Cheki} client.
- *
- * Pass this object (or a base URL string) to the `Cheki` constructor.
- */
 export interface ChekiConfig {
-    /**
-     * Base URL of the cheki API.
-     * @default "https://cheki.et"
-     */
+    /** @default "https://cheki.et" */
     baseUrl?: string;
-    /**
-     * Default request timeout in milliseconds.
-     * @default 30000
-     */
+    /** Per-attempt timeout in ms. @default 65000 */
     timeoutMs?: number;
     /**
-     * Default maximum number of retry attempts for transient failures.
-     * @default 3
+     * Retries for network errors, 5xx and 429 (honouring Retry-After). 4xx
+     * other than 429 and timeouts are never retried. Capped at 1.
+     * @default 1
      */
     maxRetries?: number;
-    /**
-     * Optional API key sent as a `Bearer` token in the `Authorization`
-     * header on every request.
-     */
+    /** Optional API key sent as a Bearer token. The public API does not need one. */
     apiKey?: string;
-    /**
-     * Default headers to send with every request. These are merged with
-     * (and can override) the SDK's built-in headers such as
-     * `Content-Type` and `User-Agent`.
-     */
+    /** Extra headers for every request (can override the built-in ones). */
     defaultHeaders?: Record<string, string>;
-    /**
-     * `User-Agent` header value.
-     * @default "cheki-sdk-typescript/1.0.0"
-     */
+    /** @default "cheki-sdk-typescript/<version>" */
     userAgent?: string;
 }
-/**
- * Per-call request options that override the client's defaults.
- *
- * Every SDK method that performs a network request accepts this as an
- * optional last argument.
- */
 export interface RequestOptions {
-    /** Override the client's default timeout (ms) for this single call. */
+    /** Per-attempt timeout (ms) for this call. */
     timeoutMs?: number;
-    /** Override the client's default max retries for this single call. */
+    /** Retries for this call (0 or 1; larger values are capped at 1). */
     retries?: number;
-    /**
-     * External `AbortSignal` to cancel the request. If the signal is
-     * already aborted, the request fails immediately with a
-     * {@link ChekiNetworkError}.
-     */
+    /** Cancels the request and any pending retry wait. */
     signal?: AbortSignal;
 }
-/**
- * Client for the cheki receipt verification API.
- *
- * @example Basic usage
- * ```ts
- * const cheki = new Cheki();
- * const result = await cheki.verify("cbe", "FT26140P01YB", {
- *   accountNumber: "1000560536171",
- * });
- * ```
- *
- * @example With configuration
- * ```ts
- * const cheki = new Cheki({
- *   baseUrl: "https://cheki.et",
- *   timeoutMs: 10_000,
- *   maxRetries: 5,
- *   apiKey: "sk_live_...",
- * });
- * ```
- */
+/** Parse a Retry-After header (delta-seconds or HTTP-date) into seconds. */
+export declare function parseRetryAfter(value: string | null | undefined, now?: number): number | undefined;
 export declare class Cheki {
     private readonly config;
-    /**
-     * Create a new Cheki client.
-     *
-     * @param config - Base URL string, full configuration object, or
-     *   `undefined` to use all defaults (public cheki API).
-     */
     constructor(config?: string | ChekiConfig);
     /**
-     * Verify a single bank transfer receipt.
+     * Verify one receipt.
      *
-     * @param bank - Bank code (e.g. `"cbe"`, `"telebirr"`, `"boa"`).
-     * @param reference - Transaction reference number.
-     * @param options - Optional verification fields (`accountNumber`,
-     *   `phoneNumber`, `qrData`).
-     * @param requestOptions - Per-call overrides for timeout, retries,
-     *   and abort signal.
-     * @returns Verification result with full transaction details.
-     * @throws {ChekiAPIError} On non-2xx API responses (after retries).
-     * @throws {ChekiNetworkError} On network failures (after retries).
-     * @throws {ChekiTimeoutError} On request timeout.
+     * Resolves for HTTP 200, which includes unverified decoded-only BOA QR
+     * results: check {@link isVerified}. Throws {@link ChekiAPIError} for
+     * everything else (422 not found, 404 unsupported bank, ...).
      *
-     * @example
-     * ```ts
-     * const result = await cheki.verify("cbe", "FT26140P01YB", {
-     *   accountNumber: "1000560536171",
-     * });
-     * if (result.verified) {
-     *   console.log(`Verified: ${result.amount} ${result.currency}`);
-     * }
-     * ```
+     * @param reference - Reference or receipt link. Pass `""` with `options.qrData` for QR-only.
      */
     verify(bank: string, reference: string, options?: VerifyOptions, requestOptions?: RequestOptions): Promise<VerifyResult>;
     /**
-     * Verify multiple receipts in a single batch request.
+     * Verify up to {@link MAX_BATCH_SIZE} receipts in one request. Each item
+     * also counts against the per-IP verify limit (30/min).
      *
-     * @param receipts - Array of receipts to verify.
-     * @param requestOptions - Per-call overrides for timeout, retries,
-     *   and abort signal.
-     * @returns Batch result with per-receipt verification details.
-     * @throws {ChekiAPIError} On non-2xx API responses (after retries).
-     * @throws {ChekiNetworkError} On network failures (after retries).
-     * @throws {ChekiTimeoutError} On request timeout.
-     *
-     * @example
-     * ```ts
-     * const result = await cheki.verifyBatch([
-     *   { bank: "cbe", reference: "FT26140P01YB", accountNumber: "1000560536171" },
-     *   { bank: "telebirr", reference: "TELEBIRR123", phoneNumber: "0912345678" },
-     * ]);
-     * console.log(`Verified: ${result.verified}/${result.total}`);
-     * ```
+     * @throws {ChekiValidationError} For an empty batch or more than 20 receipts (no request is made).
      */
     verifyBatch(receipts: Receipt[], requestOptions?: RequestOptions): Promise<BatchResult>;
-    /**
-     * List all supported banks and wallets.
-     *
-     * @param requestOptions - Per-call overrides for timeout, retries,
-     *   and abort signal.
-     * @returns List of supported banks with integration metadata.
-     * @throws {ChekiAPIError} On non-2xx API responses (after retries).
-     * @throws {ChekiNetworkError} On network failures (after retries).
-     * @throws {ChekiTimeoutError} On request timeout.
-     *
-     * @example
-     * ```ts
-     * const { banks } = await cheki.getBanks();
-     * for (const bank of banks) {
-     *   console.log(`${bank.code}: ${bank.name} (${bank.status})`);
-     * }
-     * ```
-     */
+    /** List supported banks and wallets. `id` is the value to pass as `bank`. */
     getBanks(requestOptions?: RequestOptions): Promise<BankListResponse>;
-    /**
-     * Check the health of the cheki API service.
-     *
-     * @param requestOptions - Per-call overrides for timeout, retries,
-     *   and abort signal.
-     * @returns Service health status with version and component checks.
-     * @throws {ChekiAPIError} On non-2xx API responses (after retries).
-     * @throws {ChekiNetworkError} On network failures (after retries).
-     * @throws {ChekiTimeoutError} On request timeout.
-     *
-     * @example
-     * ```ts
-     * const health = await cheki.getHealth();
-     * console.log(health.status, health.version);
-     * ```
-     */
+    /** Per-bank reachability. The server caches this for up to 5 minutes. */
     getHealth(requestOptions?: RequestOptions): Promise<HealthStatus>;
     /**
-     * Build the URL for viewing a receipt in the cheki web interface.
+     * URL of `GET /api/receipt`, which downloads the bank's receipt file.
+     * Only CBE (needs the account number, at least its last 8 digits), Zemen
+     * and Dashen are supported. Pure helper, no request is made.
      *
-     * This is a pure helper - it does **not** make a network request.
-     *
-     * @param bank - Bank code.
-     * @param reference - Transaction reference number.
-     * @param accountNumber - Optional account number.
-     * @returns The full receipt URL.
-     *
-     * @example
-     * ```ts
-     * const url = cheki.getReceiptUrl("cbe", "FT26140P01YB", "1000560536171");
-     * // "https://cheki.et/api/receipt?bank=cbe&reference=FT26140P01YB&account=1000560536171"
-     * ```
+     * @throws {ChekiValidationError} For an unsupported bank, a bad reference or a missing CBE account.
      */
     getReceiptUrl(bank: string, reference: string, accountNumber?: string): string;
-    /**
-     * Build the full headers object for an API request.
-     * User-provided `defaultHeaders` can override built-in headers.
-     */
     private buildHeaders;
+    private sleep;
+    /** Delay before the retry: Retry-After when sent, otherwise 1-2 s. */
+    private retryDelayMs;
     /**
-     * Join the configured base URL with an API path.
-     */
-    private joinUrl;
-    /**
-     * Compute the backoff delay for a given retry attempt.
+     * One request with at most one retry.
      *
-     * Uses exponential backoff with **equal jitter**:
-     * ```
-     * capped   = min(initial * 2^attempt, maxDelay)
-     * delay    = capped / 2 + random(0, capped / 2)
-     * ```
-     *
-     * @param attempt - Zero-based retry attempt number.
-     * @returns Delay in milliseconds.
-     */
-    private computeBackoff;
-    /**
-     * Sleep for the computed backoff delay.
-     *
-     * If an external `AbortSignal` is provided and fires during the
-     * sleep, the promise rejects with a {@link ChekiNetworkError}.
-     *
-     * @param attempt - Zero-based retry attempt number.
-     * @param signal - Optional external `AbortSignal`.
-     */
-    private sleepWithBackoff;
-    /**
-     * Core HTTP request method with retry, timeout, and error handling.
-     *
-     * - **Timeout:** Each attempt is guarded by an `AbortController` with
-     *   the configured `timeoutMs`. On timeout, a {@link ChekiTimeoutError}
-     *   is thrown.
-     * - **Retry:** Transient failures (HTTP 429, 500, 502, 503, 504 and
-     *   network errors) are retried up to `maxRetries` times with
-     *   exponential backoff + jitter. Non-retryable 4xx errors are thrown
-     *   immediately.
-     * - **External signal:** If the caller provides an `AbortSignal`, it
-     *   is linked to the internal controller. Aborting the external signal
-     *   cancels the in-flight request and any pending backoff sleep.
-     *
-     * @param method - HTTP method (`"GET"` or `"POST"`).
-     * @param path - API path (e.g. `"/api/verify"`).
-     * @param body - Request body for POST, or `undefined` for GET.
-     * @param options - Per-call overrides.
-     * @returns Parsed JSON response typed as `T`.
+     * Retried: network errors, 5xx, and 429 when Retry-After is at most 60 s.
+     * Never retried: other 4xx, timeouts, caller aborts.
      */
     private request;
 }

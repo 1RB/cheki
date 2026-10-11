@@ -6,6 +6,3 @@ linter:
     - prefer_const_declarations
     - avoid_print
 
-analyzer:
-  exclude:
-    - example/**

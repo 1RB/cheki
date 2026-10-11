@@ -1,25 +1,30 @@
 """Free, open-source Ethiopian bank/wallet receipt verification.
 
-cheki offers two complementary verification modes:
+Use :class:`ChekiClient`, which wraps the hosted cheki REST API
+(https://cheki.et) and matches the other cheki SDKs::
 
-1. **API client** - :class:`ChekiClient` wraps the hosted cheki REST API
-   (https://cheki.et). This is the simplest path and matches
-   the other cheki SDKs.
+    from cheki import ChekiClient
 
-2. **Direct verification** - :func:`verify` fetches bank endpoints
-   directly from your machine (advanced; subject to geo-blocking).
+    with ChekiClient() as cheki:
+        result = cheki.verify("cbe", "FT26140P01YB", account_number="1000560536171")
+        if result.is_verified:   # the ONLY success signal
+            print(result.amount, result.sender_name)
 
-Both are importable from the top-level package::
-
-    from cheki import ChekiClient, verify, supported_banks
+:func:`verify` (direct verification from your own machine) is deprecated:
+its parsers lack the server's verification gate, host allowlist and parser
+fixes. It now emits a :class:`DeprecationWarning`, runs a fail-closed
+verification gate, and will be removed in the next major version.
 """
 
+from cheki._version import __version__
 from cheki.result import VerificationResult, VerificationStatus
 from cheki.registry import verify, supported_banks
-from cheki.client import ChekiClient, DEFAULT_BASE_URL
+from cheki.client import ChekiClient, DEFAULT_BASE_URL, MAX_BATCH_SIZE
 from cheki.client_types import (
     ChekiClientError,
     ChekiAPIError,
+    ChekiRateLimitError,
+    ChekiPayloadTooLargeError,
     ChekiNetworkError,
     ChekiTimeoutError,
     ClientVerifyResult,
@@ -29,19 +34,16 @@ from cheki.client_types import (
     ClientHealthStatus,
 )
 
-__version__ = "0.1.0"
-
 __all__ = [
-    # Direct verification (advanced)
-    "VerificationResult",
-    "VerificationStatus",
-    "verify",
-    "supported_banks",
+    "__version__",
     # API client
     "ChekiClient",
     "DEFAULT_BASE_URL",
+    "MAX_BATCH_SIZE",
     "ChekiClientError",
     "ChekiAPIError",
+    "ChekiRateLimitError",
+    "ChekiPayloadTooLargeError",
     "ChekiNetworkError",
     "ChekiTimeoutError",
     "ClientVerifyResult",
@@ -49,4 +51,9 @@ __all__ = [
     "ClientBankInfo",
     "ClientHealthCheck",
     "ClientHealthStatus",
+    # Direct verification (deprecated)
+    "VerificationResult",
+    "VerificationStatus",
+    "verify",
+    "supported_banks",
 ]

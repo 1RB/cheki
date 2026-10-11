@@ -1,331 +1,106 @@
 # cheki PHP SDK
 
-A PHP SDK for [cheki](https://cheki.et), the free Ethiopian receipt verification service.
-
-## Installation
-
-### Via Composer
+PHP client for the [cheki](https://cheki.et) receipt verification API: verify Ethiopian bank transfer receipts from CBE, Telebirr, BOA, Dashen, M-Pesa, Awash, Siinqee and eBirr (the live banks; `getBanks()` lists the current set). Needs PHP 8.0+ with `ext-curl` and `ext-json` (the tests run on 8.1 and 8.3).
 
 ```bash
 composer require cheki/cheki
 ```
 
-### Manual
-
-Clone or download this package and include the autoloader, or use Composer's autoloader:
-
-```bash
-git clone https://github.com/1RB/cheki.git
-cd cheki/sdks/php
-composer install  # optional - generates autoload, but not strictly required
-```
-
-If not using Composer, simply require the source files directly:
+## Quick start
 
 ```php
-require_once 'src/ChekiClient.php';
-require_once 'src/VerifyResult.php';
-require_once 'src/VerifyOptions.php';
-require_once 'src/Bank.php';
-require_once 'src/BatchResult.php';
-require_once 'src/HealthStatus.php';
-```
-
-## Requirements
-
-- PHP 8.0 or higher
-- `ext-curl` (cURL extension)
-- `ext-json` (JSON extension, included by default since PHP 8.0)
-
-## Quick Start
-
-```php
-<?php
-
-require_once 'vendor/autoload.php';
-
 use Cheki\ChekiClient;
 
-// Create a client - uses https://cheki.et by default
-$client = new ChekiClient();
+$client = new ChekiClient(); // 65 s per attempt, at most 1 retry
 
-// Verify a single receipt
-$result = $client->verify(
-    bank:          'cbe',
-    reference:     'RB1234567890',
-    accountNumber: '1000123456789'
-);
+$result = $client->verify('cbe', 'FT26140P01YB', '1000560536171');
 
 if ($result->isVerified()) {
-    echo "Verified: {$result->senderName} sent {$result->amount} {$result->currency}\n";
-    echo "Date: {$result->date}\n";
-    echo "Source: {$result->sourceUrl}\n";
+    echo "{$result->senderName} sent {$result->amount} {$result->currency}";
+} elseif ($result->decodedOnly) {
+    echo 'Decoded from a QR code, NOT confirmed with the bank';
+} elseif ($result->isRateLimited()) {
+    echo "Rate limited, retry in {$result->retryAfter} s";
 } else {
-    echo "Verification failed: {$result->error}\n";
+    echo "Not verified ({$result->httpStatus}): {$result->error}";
+    // $result->fallbackUrl is set for geo-blocked banks
 }
 ```
 
-## API Reference
+`verify()` and `verifyBatch()` never throw for API answers: errors come back on the result (`success` false, `error`, `httpStatus`, `retryAfter`, `fallbackUrl`). `getBanks()` and `getHealth()` throw `Cheki\ChekiException` when the request fails.
 
-### `ChekiClient`
+### `isVerified()` is the only success signal
 
-The main client class for interacting with the cheki API.
+`success` only means the request was processed. A BOA QR code that BOA could not confirm comes back with `success` true, `verified` false and `decodedOnly` true. A QR code can be forged.
 
-#### Constructor
+Signature: `verify(string $bank, string $reference, ?string $accountNumber = null, ?string $phoneNumber = null, ?string $qrData = null)`. QR-only: `$client->verify('boa', '', null, null, $qrPayload)`.
 
-```php
-$client = new ChekiClient(?VerifyOptions $options = null);
-```
-
-#### `verify()`
-
-Verify a single receipt.
-
-```php
-public function verify(
-    string $bank,
-    string $reference,
-    ?string $accountNumber = null,
-    ?string $phoneNumber = null,
-    ?string $qrData = null
-): VerifyResult
-```
-
-| Parameter        | Type   | Required | Description                          |
-|------------------|--------|----------|--------------------------------------|
-| `bank`           | string | Yes      | Bank code (e.g. `'cbe'`, `'dashen'`) |
-| `reference`      | string | Yes      | Receipt reference number             |
-| `accountNumber`  | string | No       | Account number (required by some banks) |
-| `phoneNumber`    | string | No       | Phone number (for mobile banking)    |
-| `qrData`         | string | No       | Raw QR code data string              |
-
-#### `verifyBatch()`
-
-Verify multiple receipts in a single request.
-
-```php
-public function verifyBatch(array $receipts): BatchResult
-```
+### Batch (max 20)
 
 ```php
 $batch = $client->verifyBatch([
-    ['bank' => 'cbe',    'reference' => 'RB1234567890', 'accountNumber' => '1000123456789'],
-    ['bank' => 'dashen', 'reference' => 'TR9876543210'],
-    ['bank' => 'awash',  'reference' => 'AW5555555555', 'phoneNumber' => '0911234567'],
+    ['bank' => 'cbe', 'reference' => 'FT26140P01YB', 'accountNumber' => '1000560536171'],
+    ['bank' => 'telebirr', 'reference' => 'CHQ0FJ403O'],
+    ['bank' => 'boa', 'qrData' => '3cHRaxVjn/pySp...'],
 ]);
 
-echo "Verified: {$batch->verified} / {$batch->total}\n";
-
-foreach ($batch->results as $result) {
-    if ($result->isVerified()) {
-        echo "✅ {$result->reference}: {$result->amount} {$result->currency}\n";
-    } else {
-        echo "❌ {$result->reference}: {$result->error}\n";
-    }
+echo "{$batch->verified}/{$batch->total} verified, {$batch->failed} not, {$batch->cached} from cache\n";
+foreach ($batch->results as $r) {
+    echo $r->index, ': ', $r->isVerified() ? 'verified' : "not verified ({$r->httpStatus}) {$r->error}", "\n";
 }
 ```
 
-#### `getBanks()`
+More than 20 receipts (or none) throws `InvalidArgumentException` without a request. Each receipt also counts against the per-IP verify limit (30 per minute).
 
-List all supported banks.
-
-```php
-/** @return Bank[] */
-public function getBanks(): array
-```
+### Banks and health
 
 ```php
-$banks = $client->getBanks();
-foreach ($banks as $bank) {
-    echo "{$bank->code} - {$bank->name}";
-    if ($bank->requiresAccount) {
-        echo " (requires account number)";
-    }
-    echo "\n";
+foreach ($client->getBanks() as $bank) {
+    echo "{$bank->id} {$bank->name} {$bank->type} {$bank->status}\n"; // $bank->code is a deprecated alias of $bank->id
+}
+
+$health = $client->getHealth(); // cached up to 5 minutes server-side
+foreach ($health->banks as $b) {
+    echo "{$b->id}: {$b->status} ({$b->latencyMs} ms)\n";
 }
 ```
 
-#### `getHealth()`
-
-Check API health status.
+### Receipt download links
 
 ```php
-public function getHealth(): HealthStatus
+$url = $client->getReceiptUrl('cbe', 'FT26140P01YB', '1000560536171');
 ```
 
-```php
-$health = $client->getHealth();
-if ($health->isHealthy()) {
-    echo "API is up (v{$health->version})\n";
-}
-```
+Only `cbe` (account required, at least the last 8 digits), `zemen` and `dashen`; anything else throws `InvalidArgumentException`.
 
-### `VerifyOptions`
+## Timeouts and retries
 
-Configure the client with custom options.
+- **65 s per attempt** (`VerifyOptions::DEFAULT_TIMEOUT`), 10 s to connect. The server may spend up to 60 s.
+- **No retries on 4xx** (except 429) and **none on timeouts**.
+- **At most one retry** on a network error, 5xx or 429, after `Retry-After` when sent (up to 60 s), otherwise 1-2 s. `withMaxRetries(0)` disables it.
+- The server tries each bank at most 2 times, so one call reaches the bank at most **4 times** (a batch: 4 per receipt).
+- Redirects are not followed.
 
 ```php
 use Cheki\VerifyOptions;
 
-$options = (new VerifyOptions())
-    ->withBaseUrl('https://cheki.et')
-    ->withTimeout(15)
-    ->withApiKey('your-api-key')           // optional
-    ->withHeaders(['X-Custom-Header' => 'value']);
-
-$client = new ChekiClient($options);
+$client = new ChekiClient(
+    (new VerifyOptions())->withBaseUrl('https://cheki.et')->withTimeout(65)->withMaxRetries(1)
+);
 ```
 
-| Option            | Type     | Default                        | Description                    |
-|-------------------|----------|--------------------------------|--------------------------------|
-| `baseUrl`         | string   | `https://cheki.et`  | API base URL                   |
-| `timeout`         | int      | `30`                           | Request timeout (seconds)      |
-| `connectTimeout`  | int      | `10`                           | Connection timeout (seconds)   |
-| `apiKey`          | ?string  | `null`                         | Bearer token for auth          |
-| `headers`         | array    | `[]`                           | Extra HTTP headers             |
-| `userAgent`       | string   | `cheki-php-sdk/1.0.0`          | User-Agent string              |
+## Breaking changes in this version
 
-### `VerifyResult`
+- `Bank::$id` is the bank id (`$code` kept as an alias); `responseType`, `sslVerify`, `notes` removed (the API never sent them).
+- `HealthStatus` has `status`, `checkedAt`, `cached` and `banks` (`BankHealth[]`); `success`, `version`, `timestamp`, `checks` removed.
+- Amounts and fees are `?float` (were strings).
+- `VerifyResult` gains `decodedOnly`, `parsed`, `cached`, `fallbackUrl`, `retryAfter`, `index`; its constructor is now `(success, verified, error, httpStatus)`.
+- `getBanks()` / `getHealth()` throw `ChekiException` instead of returning `[]` / an "unreachable" object.
+- `verifyBatch()` enforces 20 receipts and now sends `qrData`.
+- Timeout 30 → 65 s; retries 3 → 1.
 
-Returned by `verify()` and each item in `BatchResult::$results`.
-
-| Property             | Type     | Description                          |
-|----------------------|----------|--------------------------------------|
-| `success`            | bool     | Whether the API call succeeded       |
-| `verified`           | bool     | Whether the receipt was verified     |
-| `bank`               | ?string  | Bank code                            |
-| `bankCode`           | ?string  | Bank code (alternate field)          |
-| `reference`          | ?string  | Reference number                     |
-| `sourceUrl`          | ?string  | Source verification URL              |
-| `senderName`         | ?string  | Sender's name                        |
-| `senderAccount`      | ?string  | Sender's account number              |
-| `receiverName`       | ?string  | Receiver's name                      |
-| `receiverAccount`    | ?string  | Receiver's account number            |
-| `amount`             | ?string  | Transaction amount                   |
-| `currency`           | ?string  | Currency code (e.g. ETB)             |
-| `date`               | ?string  | Transaction date                     |
-| `branch`             | ?string  | Bank branch                          |
-| `reason`             | ?string  | Reason/failure description           |
-| `durationMs`         | ?int     | Verification duration in ms          |
-| `invoiceNumber`      | ?string  | Invoice number                       |
-| `transactionStatus`  | ?string  | Transaction status                   |
-| `settledAmount`      | ?string  | Settled amount                       |
-| `stampDuty`          | ?string  | Stamp duty                           |
-| `discountAmount`     | ?string  | Discount amount                      |
-| `serviceFee`         | ?string  | Service fee                          |
-| `serviceFeeVat`      | ?string  | Service fee VAT                      |
-| `totalPaid`          | ?string  | Total paid                           |
-| `amountInWords`      | ?string  | Amount in words                      |
-| `paymentMode`        | ?string  | Payment mode                         |
-| `paymentChannel`     | ?string  | Payment channel                      |
-| `bankAccountNumber`  | ?string  | Bank account number                  |
-| `bankAccountName`    | ?string  | Bank account name                    |
-| `error`              | ?string  | Error message if any                 |
-| `httpStatus`         | ?int     | HTTP status code                     |
-| `raw`                | ?array   | Raw decoded response                 |
-
-Methods:
-- `isVerified(): bool`: true if `success && verified`
-- `getRaw(): ?array`: raw response data
-
-### `BatchResult`
-
-Returned by `verifyBatch()`.
-
-| Property     | Type            | Description                  |
-|--------------|-----------------|------------------------------|
-| `success`    | bool            | Whether the API call succeeded |
-| `total`      | int             | Total receipts submitted     |
-| `verified`   | int             | Number verified              |
-| `failed`     | int             | Number failed                |
-| `results`    | VerifyResult[]  | Per-receipt results          |
-| `error`      | ?string         | Error message if any         |
-| `httpStatus` | ?int            | HTTP status code             |
-| `raw`        | ?array          | Raw decoded response         |
-
-Methods:
-- `getVerified(): VerifyResult[]`: only verified results
-- `getFailed(): VerifyResult[]`: only failed results
-
-### `Bank`
-
-Returned by `getBanks()`.
-
-| Property           | Type    | Description                              |
-|--------------------|---------|------------------------------------------|
-| `code`             | ?string | Bank code (e.g. `'cbe'`)                 |
-| `name`             | ?string | Bank name                                |
-| `status`           | ?string | Bank status (`live`, `in-development`)   |
-| `type`             | ?string | Bank type (`bank`, `wallet`)             |
-| `requiresAccount`  | bool    | Whether account number required          |
-| `accountDigits`    | ?int    | Expected account number digit count      |
-| `requiresPhone`    | bool    | Whether phone number required            |
-| `responseType`     | ?string | Response type                            |
-| `endpoint`         | ?string | Bank verification endpoint               |
-| `sslVerify`        | bool    | Whether SSL verification is used         |
-| `notes`            | ?string | Additional notes                         |
-| `color`            | ?string | Brand color                              |
-| `initials`         | ?string | Bank initials                            |
-| `raw`              | ?array  | Raw bank data                            |
-
-Methods:
-- `isLive(): bool`: whether bank status is `live`
-- `isActive(): bool`: whether bank is live/active/online
-- `isBank(): bool`: whether type is `bank`
-- `isWallet(): bool`: whether type is `wallet`
-
-### `HealthStatus`
-
-Returned by `getHealth()`.
-
-| Property     | Type     | Description              |
-|--------------|----------|--------------------------|
-| `success`    | bool     | API call succeeded       |
-| `status`     | ?string  | Health status string     |
-| `version`    | ?string  | API version              |
-| `timestamp`  | ?string  | Server timestamp         |
-| `checks`     | ?array   | Individual health checks |
-| `httpStatus` | ?int     | HTTP status code         |
-| `raw`        | ?array   | Raw response             |
-
-Methods:
-- `isHealthy(): bool`: whether the service is healthy
-
-## Error Handling
-
-All methods return result objects rather than throwing exceptions. Check the `error` property or use convenience methods:
-
-```php
-$result = $client->verify('cbe', 'RB1234567890');
-
-if ($result->error) {
-    // Network error, invalid JSON, or API error
-    echo "Error: {$result->error}\n";
-    echo "HTTP Status: " . ($result->httpStatus ?? 'N/A') . "\n";
-} elseif (!$result->isVerified()) {
-    // Receipt could not be verified
-    echo "Receipt not verified\n";
-} else {
-    // Success
-    echo "Verified: {$result->amount} {$result->currency}\n";
-}
-```
-
-## Retry Logic
-
-The client automatically retries failed requests on HTTP **429** (Too Many Requests)
-and **5xx** (Server Error) responses. Up to **3 retry attempts** are made with
-exponential backoff (200ms, 400ms, 800ms). Network-level errors (connection
-timeouts, DNS failures, etc.) are not retried.
-
-## Examples
-
-See [`examples/basic.php`](examples/basic.php) for a complete working example.
+## Tests
 
 ```bash
-php examples/basic.php
+phpunit        # decodes ../fixtures/api-contract.json, the shared API contract
 ```
-
-## License
-
-MIT
