@@ -5,6 +5,7 @@ import Link from "next/link";
 import { motion } from "motion/react";
 import jsQR from "jsqr";
 import { banks, detectBank, verificationState, type BankCode, type VerifyResult } from "@/lib/banks";
+import { readVerifyResponse } from "@/lib/verify-response";
 import { classifyStatus } from "@/lib/core/status";
 import { detectBankFromUrl, isUrl } from "@/lib/adapters/url-detector";
 import { articles } from "@/lib/guides";
@@ -205,7 +206,7 @@ export function HomePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ bank: "boa", qrData: payload.trim() }),
       });
-      const data: VerifyResult = await resp.json();
+      const data: VerifyResult = await readVerifyResponse(resp);
       if (!data.success) {
         setError(data.error || "QR decryption failed.");
         setResult(data);
@@ -271,7 +272,7 @@ export function HomePage() {
             : { accountNumber: accountNumber.trim() || undefined }),
         }),
       });
-      const data: VerifyResult = await resp.json();
+      const data: VerifyResult = await readVerifyResponse(resp);
       if (!data.success) {
         setError(data.error || "Verification failed.");
         setResult(data);
@@ -548,7 +549,7 @@ export function HomePage() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ bank: "boa", qrData: qrValue.trim() }),
           });
-          verifyResult = await resp.json();
+          verifyResult = await readVerifyResponse(resp);
         } else {
           const detected = detectBank(qrValue);
           const bankCode = detected || "cbe";
@@ -557,7 +558,7 @@ export function HomePage() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ bank: bankCode, reference: qrValue.trim() }),
           });
-          verifyResult = await resp.json();
+          verifyResult = await readVerifyResponse(resp);
         }
 
         batchResults[i] = { fileName: file.name, status: "done", data: verifyResult };
@@ -735,7 +736,7 @@ ${receipt}`;
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ bank, content: pasteContent.trim(), url: fallbackBankUrl }),
       });
-      const data: VerifyResult = await resp.json();
+      const data: VerifyResult = await readVerifyResponse(resp);
       if (!data.success) {
         setFallbackError(data.error || "Could not parse receipt.");
       } else {
