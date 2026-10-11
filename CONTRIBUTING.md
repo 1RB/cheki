@@ -301,6 +301,20 @@ Tests are in `tests/` and cover:
 - Parser registry
 - Security hardening (`tests/security`)
 - The SDK contract (`tests/contract`): `sdks/fixtures/api-contract.json` must match what the route handlers send
+- Mobile invariants (`tests/ui/mobile-invariants.test.ts`): source-level rules for phones, listed below
+
+### UI changes on phones
+
+Check new UI at 360, 390 and 430px wide, light and dark, with touch emulation. The rules below are enforced by `tests/ui/mobile-invariants.test.ts`; the rest is a checklist.
+
+- Form controls are 16px on touch screens (a single `@media (pointer: coarse)` rule in `globals.css`), otherwise iOS Safari zooms on focus. Never set a smaller inline `fontSize` on an input, select or textarea.
+- Grid tracks are `minmax(0, 1fr)`, never a bare `1fr`: a bare track grows to its widest nowrap child and pushes the card past its edge.
+- Touch targets are 44px. When a control should look smaller, keep the visual and grow the hit area with a centred `::after` (see breadcrumbs and the code Copy button).
+- Inline code wraps at normal break points (`overflow-wrap: anywhere`), never `word-break: break-all`.
+- Anchors clear the sticky nav through `html { scroll-padding-top }`; don't add per-element `scroll-margin-top`.
+- Text on `var(--ink)` uses `var(--bg)`, not `#fff`: ink is near-white in dark mode.
+- Fixed full-screen surfaces pad for `env(safe-area-inset-bottom)`.
+- No horizontal page scroll: `document.documentElement.scrollWidth` must equal `innerWidth`.
 
 ### Smoke test and deploys
 
