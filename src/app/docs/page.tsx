@@ -1,9 +1,11 @@
+import Link from "next/link";
 import { Nav, Footer } from "@/components/Chrome";
 import { CodeBlock } from "@/components/CodeBlock";
 import { DocsSidebar } from "@/components/docs/DocsSidebar";
 import { DocsTabs } from "@/components/docs/DocsTabs";
 import { highlightCode, getLangLabel } from "@/lib/highlight";
 import { Icon, ArrowRight01Icon } from "@/components/Icon";
+import { liveProviders } from "@/lib/bank-counts";
 
 const sections = [
   { id: "overview", label: "Overview", group: "Getting Started" },
@@ -15,6 +17,7 @@ const sections = [
   { id: "receipt", label: "GET /api/receipt", group: "Endpoints" },
   { id: "sdks", label: "SDKs", group: "SDKs" },
   { id: "errors", label: "Error Codes", group: "Reference" },
+  { id: "bank-endpoints", label: "Bank endpoints", group: "Reference" },
   { id: "self-host", label: "Self-hosting", group: "Reference" },
 ];
 
@@ -201,7 +204,7 @@ const BATCH_RESPONSE_EXAMPLE = {
 };
 
 const verifyParams = [
-  { name: "bank", type: "string", required: "Yes (unless URL)", desc: "Bank code: cbe, telebirr, boa, mpesa, dashen, zemen, cbebirr, siinqee" },
+  { name: "bank", type: "string", required: "Yes (unless URL)", desc: `Bank id (the id field from GET /api/banks). Live: ${liveProviders.map((b) => b.id).join(", ")}` },
   { name: "reference", type: "string", required: "Yes (unless qrData)", desc: "Transaction reference number (e.g. FT26140P01YB) or receipt URL" },
   { name: "accountNumber", type: "string", required: "CBE, BOA", desc: "Last 8 digits for CBE, last 5 for BOA" },
   { name: "qrData", type: "string", required: "BOA QR", desc: "Raw QR payload for BOA inter-bank transfers" },
@@ -1065,6 +1068,12 @@ docker-compose up -d
                   </tbody>
                 </table>
               </div>
+
+              {/* Bank endpoints */}
+              <SectionTitle id="bank-endpoints">Bank endpoints</SectionTitle>
+              <p style={{ fontSize: "15px", color: "var(--ink-2)", lineHeight: 1.7, marginBottom: "12px" }}>
+                The <Link href="/endpoints" style={{ color: "var(--green-dark)", fontWeight: 600 }}>endpoint reference</Link> lists every bank receipt URL cheki reads, with placeholders, unknown-reference error shapes and a dated changelog. It is generated from the manifest. Daily health checks are on the <Link href="/status" style={{ color: "var(--green-dark)", fontWeight: 600 }}>status page</Link>.
+              </p>
 
               {/* Self-hosting */}
               <SectionTitle id="self-host">Self-hosting with Docker</SectionTitle>
