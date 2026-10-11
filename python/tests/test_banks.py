@@ -216,6 +216,139 @@ def test_mpesa_verify_not_found():
         pass
 
 
+@responses.activate
+def test_cbe_receipt_id_is_the_current_format():
+    """A Receipt ID goes to the JSON API (no account); the receipt's FT id is not compared to it."""
+    token = "fHCxyV4mg5pRIwEkJO"
+    responses.add(
+        responses.GET,
+        f"https://mb.cbe.com.et/api/v1/transactions/public/transaction-detail/{token}",
+        json={
+            "id": "FT26140P01YB",
+            "debitAccountHolder": "Test Payer",
+            "creditAccountHolder": "Test Receiver",
+            "debitAccountNo": "1****1685",
+            "creditAccountNo": "1****6171",
+            "amountCredited": "20,000.00",
+            "creditCurrency": "ETB",
+            "dateTimes": ["2026-05-20T19:29:00"],
+        },
+        status=200,
+    )
+    result = verify("cbe", token)
+    assert result.status.value == "verified"
+    assert result.amount == 20000.0
+    assert result.receiver_name == "Test Receiver"
+    assert result.transaction_date == datetime(2026, 5, 20, 19, 29, 0)
+    assert result.source_url == f"https://mbreciept.cbe.com.et/{token}"
+    sent = responses.calls[0].request.headers
+    assert sent["X-App-ID"] and sent["X-App-Version"]
+
+
+@responses.activate
+def test_cbe_receipt_id_unknown_token_is_not_found():
+    token = "chekiprobe000"
+    responses.add(
+        responses.GET,
+        f"https://mb.cbe.com.et/api/v1/transactions/public/transaction-detail/{token}",
+        json={"detail": "Security Alert: Invalid or tampered legacy token!"},
+        status=500,
+    )
+    with pytest.raises(ReceiptNotFoundError):
+        verify("cbe", token)
+
+
+def test_cbe_ft_reference_without_account_points_at_the_receipt_id():
+    with pytest.raises(ValueError, match="Receipt ID"):
+        verify("cbe", "FT26140P01YB")
+
+
+@responses.activate
+def test_cbe_legacy_pdf_for_another_reference_fails_the_gate():
+    reference = "FT99999P01YB"
+    responses.add(
+        responses.GET,
+        f"https://apps.cbe.com.et:100/?id={reference}00006171",
+        body=_make_fake_pdf_bytes(SAMPLE_CBE_PDF_TEXT),  # prints FT12345P01YB
+        status=200,
+        content_type="application/pdf",
+    )
+    result = verify("cbe", reference, account_number="1000000006171")
+    assert result.status.value == "failed"
+    assert "different reference" in (result.message or "")
+
+
+DASHEN_HTML = """<!DOCTYPE html><html><head><script>var x = "<div>";</script></head><body>
+<h1>Dashen Bank Super App Electronic Receipt</h1>
+<div><span>Sender Name:</span><span>Test Sender</span></div>
+<div><span>Sender Account Number:</span><span>2912******911</span></div>
+<div><span>Receiver Name:</span><span>Test Receiver</span></div>
+<div><span>Receiver Account Number:</span><span>7938******911</span></div>
+<div><span>Transaction Reference:</span><span>{ref}</span></div>
+<div><span>Transaction Date:</span><span>Jul 9, 2026, 10:25:33 pm</span></div>
+<table><tr><td>Transaction Amount</td><td>ETB 12,600.00</td></tr></table></body></html>"""
+
+
+@responses.activate
+def test_dashen_current_host_html():
+    ref = "B22WDTI2619100WH"
+    responses.add(
+        responses.GET,
+        f"https://receipts.dashenbanksc.com/receipt/{ref}",
+        body=DASHEN_HTML.format(ref=ref),
+        status=200,
+        content_type="text/html",
+    )
+    result = verify("dashen", ref)
+    assert result.status.value == "verified"
+    assert result.amount == 12600.0
+    assert result.sender_name == "Test Sender"
+    assert result.receiver_account == "7938******911"
+    assert result.transaction_date == datetime(2026, 7, 9, 22, 25, 33)
+    assert len(responses.calls) == 1
+
+
+@responses.activate
+def test_dashen_400_is_not_found_and_mismatch_fails():
+    responses.add(
+        responses.GET,
+        "https://receipts.dashenbanksc.com/receipt/WDTI5186142501962",
+        json={"statusCode": 400, "message": "Transaction not found"},
+        status=400,
+    )
+    with pytest.raises(ReceiptNotFoundError):
+        verify("dashen", "WDTI5186142501962")
+    responses.add(
+        responses.GET,
+        "https://receipts.dashenbanksc.com/receipt/B22WDTI2619100WH",
+        body=DASHEN_HTML.format(ref="B22WDTI0000000XX"),
+        status=200,
+        content_type="text/html",
+    )
+    assert verify("dashen", "B22WDTI2619100WH").status.value == "failed"
+
+
+def test_gate_reference_parity_with_the_server():
+    from cheki.registry import gate
+    from cheki.result import VerificationResult, VerificationStatus
+
+    def make(bank: str, returned: str, gate_id: str | None = None) -> VerificationResult:
+        raw: dict[str, object] = {"bank_reference": returned}
+        if gate_id:
+            raw["gate_id"] = gate_id
+        return VerificationResult(
+            bank=bank, reference="x", status=VerificationStatus.VERIFIED, exists=True,
+            amount=10.0, sender_name="A", raw=raw,
+        )
+
+    # Opaque share tokens (server: REFERENCE_IS_OPAQUE_TOKEN) are exempt...
+    assert gate(make("cbe", "FT26140P01YB", "cbe-new"), "fHCxyV4mg5pRIwEkJO").status.value == "verified"
+    assert gate(make("awash", "123456"), "tok").status.value == "verified"
+    # ...every other bank must return the reference that was asked for.
+    assert gate(make("cbe", "FT00000XXXXX"), "FT26140P01YB").status.value == "failed"
+    assert gate(make("cbe", " ft26140p01yb "), "FT26140P01YB").status.value == "verified"
+
+
 def test_supported_banks():
     banks = supported_banks()
     assert "cbe" in banks
