@@ -4,7 +4,9 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import Link from "next/link";
 import { motion } from "motion/react";
 import jsQR from "jsqr";
-import { banks, detectBank, type BankCode, type VerifyResult } from "@/lib/banks";
+import { banks, detectBank, verificationState, type BankCode, type VerifyResult } from "@/lib/banks";
+import { readVerifyResponse } from "@/lib/verify-response";
+import { classifyStatus } from "@/lib/core/status";
 import { detectBankFromUrl, isUrl } from "@/lib/adapters/url-detector";
 import { articles } from "@/lib/guides";
 import { homeFaqs } from "@/lib/home-faq";
@@ -174,6 +176,26 @@ export function HomePage() {
     }
   };
 
+  /**
+   * Toast for a handled request. Only `verified` gets the success toast; a
+   * decoded-only BOA QR gets a warning; anything else the bank did not
+   * confirm is reported as not verified. Returns the state for the caller.
+   */
+  const announceResult = useCallback((data: VerifyResult) => {
+    const state = verificationState(data);
+    if (state === "verified") {
+      showToast({ title: "Receipt verified", description: `${data.amount != null ? data.amount.toLocaleString() + " ETB" : ""} · ${data.senderName || data.receiverName || data.reference || ""}`.trim(), status: "success", duration: 4000 });
+    } else if (state === "decodedOnly") {
+      showToast({ title: "Not confirmed", description: "Decoded from QR, not confirmed with the bank", status: "warning", duration: 6000 });
+    } else if (state === "parsed") {
+      showToast({ title: "Not checked", description: "Parsed from your text, not checked with the bank", status: "warning", duration: 6000 });
+    } else {
+      setError(data.error || "The bank did not confirm this receipt.");
+      showToast({ title: "Not verified", status: "error", duration: 5000 });
+    }
+    return state;
+  }, [showToast]);
+
   const verifyQr = useCallback(async (payload: string) => {
     setLoading(true);
     setError(null);
@@ -184,19 +206,20 @@ export function HomePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ bank: "boa", qrData: payload.trim() }),
       });
-      const data: VerifyResult = await resp.json();
+      const data: VerifyResult = await readVerifyResponse(resp);
       if (!data.success) {
         setError(data.error || "QR decryption failed.");
         setResult(data);
       } else {
         setResult(data);
+        announceResult(data);
       }
     } catch {
       setError("Network error. Try again.");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [announceResult]);
 
   const handleQrDetected = useCallback((rawValue: string) => {
     setShowScanner(false);
@@ -249,7 +272,7 @@ export function HomePage() {
             : { accountNumber: accountNumber.trim() || undefined }),
         }),
       });
-      const data: VerifyResult = await resp.json();
+      const data: VerifyResult = await readVerifyResponse(resp);
       if (!data.success) {
         setError(data.error || "Verification failed.");
         setResult(data);
@@ -271,21 +294,25 @@ export function HomePage() {
       } else {
         setResult(data);
         setShowFallback(false);
-        showToast({ title: "Receipt verified", description: `${data.amount != null ? data.amount.toLocaleString() + " ETB" : ""} · ${data.senderName || data.receiverName || data.reference || ""}`.trim(), status: "success", duration: 4000 });
-        const entry = { bank, ref: reference.trim(), date: new Date().toISOString(), amount: data.amount, currency: data.currency, senderName: data.senderName, receiverName: data.receiverName };
-        const newHistory = [entry, ...history.filter((h) => h.ref !== reference.trim())].slice(0, 5);
-        setHistory(newHistory);
-        try { localStorage.setItem("cheki_history", JSON.stringify(newHistory)); } catch {}
+        const state = announceResult(data);
+        // Only bank-confirmed receipts go into "Recent checks". An unconfirmed
+        // result saved there would read later as a past successful check.
+        if (state === "verified") {
+          const entry = { bank, ref: reference.trim(), date: new Date().toISOString(), amount: data.amount, currency: data.currency, senderName: data.senderName, receiverName: data.receiverName };
+          const newHistory = [entry, ...history.filter((h) => h.ref !== reference.trim())].slice(0, 5);
+          setHistory(newHistory);
+          try { localStorage.setItem("cheki_history", JSON.stringify(newHistory)); } catch {}
+        }
       }
     } catch {
       setError("Network error. Try again.");
     } finally {
       setLoading(false);
     }
-  }, [bank, reference, accountNumber, needsPhone, isDisabled, history, showQrPaste, qrData, verifyQr, isGeoBlocked, isMobile, buildFallbackUrl]);
+  }, [bank, reference, accountNumber, needsPhone, isDisabled, history, showQrPaste, qrData, verifyQr, isGeoBlocked, isMobile, buildFallbackUrl, announceResult]);
 
   useEffect(() => {
-    if (result && result.success && resultRef.current) {
+    if (verificationState(result) !== "none" && resultRef.current) {
       const prefersReduced =
         typeof window !== "undefined" &&
         window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -493,15 +520,18 @@ export function HomePage() {
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       try {
+        // A scan that throws must still settle, or the whole batch hangs on
+        // "Scanning..." with an unhandled rejection. The object URL is freed
+        // either way.
+        const objectUrl = URL.createObjectURL(file);
         const qrValue = await new Promise<string | null>((resolve) => {
           const img = new Image();
-          img.onload = async () => {
-            const result = await scanImageMultiScale(img);
-            resolve(result);
+          img.onload = () => {
+            scanImageMultiScale(img).then(resolve, () => resolve(null));
           };
           img.onerror = () => resolve(null);
-          img.src = URL.createObjectURL(file);
-        });
+          img.src = objectUrl;
+        }).finally(() => URL.revokeObjectURL(objectUrl));
 
         if (!qrValue) {
           batchResults[i] = { fileName: file.name, status: "error", error: "No QR found" };
@@ -519,7 +549,7 @@ export function HomePage() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ bank: "boa", qrData: qrValue.trim() }),
           });
-          verifyResult = await resp.json();
+          verifyResult = await readVerifyResponse(resp);
         } else {
           const detected = detectBank(qrValue);
           const bankCode = detected || "cbe";
@@ -528,7 +558,7 @@ export function HomePage() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ bank: bankCode, reference: qrValue.trim() }),
           });
-          verifyResult = await resp.json();
+          verifyResult = await readVerifyResponse(resp);
         }
 
         batchResults[i] = { fileName: file.name, status: "done", data: verifyResult };
@@ -676,7 +706,7 @@ export function HomePage() {
    A repeat check of the same receipt returns "cached": true instantly, so
    re-verifying before releasing goods costs nothing.
 4. To reconcile many receipts, POST ${origin}/api/verify/batch with
-   {"receipts": [{...}, ...]}, up to 50 per call.
+   {"receipts": [{...}, ...]}, up to 20 per call.
 5. GET ${origin}/api/health reports per-bank latency if a check is slow.
 
 Source: https://github.com/1RB/cheki
@@ -706,7 +736,7 @@ ${receipt}`;
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ bank, content: pasteContent.trim(), url: fallbackBankUrl }),
       });
-      const data: VerifyResult = await resp.json();
+      const data: VerifyResult = await readVerifyResponse(resp);
       if (!data.success) {
         setFallbackError(data.error || "Could not parse receipt.");
       } else {
@@ -744,7 +774,8 @@ ${receipt}`;
     fetch('https://cheki.et/api/parse',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({bank:bank,html:html,url:url})})
     .then(function(r){return r.json();})
     .then(function(d){
-      if(d.success){
+      var esc=function(v){return String(v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});};
+      if(d.success&&(d.verified||d.parsed)){
         var rows=[];
         if(d.senderName)rows.push(['From',d.senderName]);
         if(d.receiverName)rows.push(['To',d.receiverName]);
@@ -757,10 +788,10 @@ ${receipt}`;
         if(d.invoiceNumber&&d.invoiceNumber!==d.reference)rows.push(['Invoice',d.invoiceNumber]);
         if(d.transactionStatus)rows.push(['Status',d.transactionStatus]);
         if(d.paymentMode)rows.push(['Mode',d.paymentMode]);
-        var rh=rows.map(function(r){return '<div style="display:flex;justify-content:space-between;padding:7px 0;font-size:14px;border-bottom:1px solid #f0f0f0"><span style="color:#888;flex-shrink:0">'+r[0]+'</span><span style="color:#1a1a1a;font-weight:500;text-align:right;word-break:break-word">'+r[1]+'</span></div>';}).join('');
-        b.innerHTML='<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="11" fill="#16a34a"/><path d="M7 12.5l3 3 7-7" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg><span style="font-size:16px;font-weight:700;color:#1a1a1a">Receipt verified</span></div><div style="border-top:1px solid #eee;padding-top:8px">'+rh+'</div><div style="display:flex;gap:8px;margin-top:16px"><a href="https://cheki.et" target="_blank" style="flex:1;text-align:center;padding:10px;border:1px solid #16a34a;border-radius:8px;background:#fff;color:#16a34a;font-size:13px;font-weight:600;text-decoration:none">Open cheki</a><button onclick="document.getElementById(\\'cheki-overlay\\').remove()" style="flex:1;padding:10px;border:none;border-radius:8px;background:#16a34a;color:#fff;font-size:13px;font-weight:600;cursor:pointer">Done</button></div>';
+        var rh=rows.map(function(r){return '<div style="display:flex;justify-content:space-between;padding:7px 0;font-size:14px;border-bottom:1px solid #f0f0f0"><span style="color:#888;flex-shrink:0">'+esc(r[0])+'</span><span style="color:#1a1a1a;font-weight:500;text-align:right;word-break:break-word">'+esc(r[1])+'</span></div>';}).join('');
+        b.innerHTML='<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="11" fill="#d97706"/><path d="M12 7v6M12 16.5v.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" fill="none"/></svg><span style="font-size:16px;font-weight:700;color:#1a1a1a">Read from this page, not checked by cheki</span></div><div style="border-top:1px solid #eee;padding-top:8px">'+rh+'</div><div style="display:flex;gap:8px;margin-top:16px"><a href="https://cheki.et" target="_blank" style="flex:1;text-align:center;padding:10px;border:1px solid #16a34a;border-radius:8px;background:#fff;color:#16a34a;font-size:13px;font-weight:600;text-decoration:none">Open cheki</a><button onclick="document.getElementById(\\'cheki-overlay\\').remove()" style="flex:1;padding:10px;border:none;border-radius:8px;background:#16a34a;color:#fff;font-size:13px;font-weight:600;cursor:pointer">Done</button></div>';
       }else{
-        b.innerHTML='<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px"><svg width="20" height="20" viewBox="0 0 24 24" fill="#dc2626"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15h2v-2h-2v2zm0-4h2V7h-2v6z"/></svg><span style="font-size:15px;font-weight:600;color:#dc2626">Could not verify</span></div><p style="font-size:13px;color:#666;margin-bottom:16px;line-height:1.5">'+(d.error||'Make sure you are on the bank receipt page.')+'</p><button onclick="document.getElementById(\\'cheki-overlay\\').remove()" style="width:100%;padding:10px;border:none;border-radius:8px;background:#f3f4f6;color:#1a1a1a;font-size:14px;font-weight:600;cursor:pointer">Close</button>';
+        b.innerHTML='<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px"><svg width="20" height="20" viewBox="0 0 24 24" fill="#dc2626"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15h2v-2h-2v2zm0-4h2V7h-2v6z"/></svg><span style="font-size:15px;font-weight:600;color:#dc2626">Could not verify</span></div><p style="font-size:13px;color:#666;margin-bottom:16px;line-height:1.5">'+esc(d.error||'Make sure you are on the bank receipt page.')+'</p><button onclick="document.getElementById(\\'cheki-overlay\\').remove()" style="width:100%;padding:10px;border:none;border-radius:8px;background:#f3f4f6;color:#1a1a1a;font-size:14px;font-weight:600;cursor:pointer">Close</button>';
       }
     })
     .catch(function(){
@@ -794,7 +825,7 @@ ${receipt}`;
   const features = [
     { title: "1-3 second verification", body: "Fetch receipts from bank endpoints in real time. Fast enough for checkout counters." },
     { title: "No API key, no signup", body: "Start verifying immediately. No account, no business plan, no credit limit." },
-    { title: "Batch verification", body: "Verify up to 50 receipts in a single API call. Perfect for end-of-day reconciliation." },
+    { title: "Batch verification", body: "Verify up to 20 receipts in a single API call. Perfect for end-of-day reconciliation." },
     { title: "Python library", body: "pip install cheki. Server-side verification from Ethiopian networks. CLI included." },
     { title: "Self-host with Docker", body: "Run cheki on your own infrastructure. Bypass geo-blocks with an Ethiopian IP." },
     { title: "Structured JSON", body: "Every bank returns the same response shape. Write the integration once." },
@@ -1031,7 +1062,7 @@ ${receipt}`;
                       )}
                     </div>
                     <StatefulButton
-                      state={loading ? "loading" : result?.success ? "success" : "idle"}
+                      state={loading ? "loading" : verificationState(result) === "verified" ? "success" : "idle"}
                       disabled={loading || (inputMode === "reference" && isDisabled) || (!showQrPaste && !reference.trim()) || (showQrPaste && !qrData.trim()) || missingAccountNumber}
                       onClick={handleVerify}
                       loadingLabel={`Contacting ${selectedBank.shortName}…`}
@@ -1128,7 +1159,7 @@ ${receipt}`;
         </section>
 
         {/* Result */}
-        {result && result.success && (
+        {result && verificationState(result) !== "none" && (
           <section className="container-narrow" style={{ marginBottom: "32px", padding: "0 24px" }}>
             <div className="rc-slot" ref={resultRef}><ReceiptCard result={result} copied={copied} onCopy={copyResult} onReset={resetVerification} /></div>
           </section>
@@ -1143,19 +1174,28 @@ ${receipt}`;
                 <button onClick={() => setBatchResults([])} style={{ fontSize: "12px", color: "var(--ink-3)", background: "none", border: "none", cursor: "pointer" }}>Clear</button>
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                {batchResults.map((r, i) => (
-                  <div key={i} style={{ padding: "12px 14px", borderRadius: "8px", border: "1px solid var(--border)", background: r.status === "done" && r.data?.success ? "var(--green-light)" : r.status === "error" ? "var(--red-light)" : "var(--surface)" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: r.data?.success ? "8px" : 0 }}>
+                {batchResults.map((r, i) => {
+                  // Only `verified` is green. A decoded-only BOA QR is amber
+                  // "Not confirmed", pasted content "Not checked", the rest red.
+                  const state = r.status === "done" ? verificationState(r.data) : "none";
+                  const badgeStatus = r.status === "error" ? "danger" : r.status !== "done" ? "loading" : state === "verified" ? "success" : state === "none" ? "danger" : "warning";
+                  const badgeText = r.status === "scanning" ? "Scanning..." : r.status === "verifying" ? "Verifying..." : r.status === "error" ? "Failed" : state === "verified" ? "Verified" : state === "decodedOnly" ? "Not confirmed" : state === "parsed" ? "Not checked" : "Not found";
+                  const background = r.status === "error" || (r.status === "done" && state === "none") ? "var(--red-light)" : state === "verified" ? "var(--green-light)" : state === "none" ? "var(--surface)" : "var(--amber-light)";
+                  return (
+                  <div key={i} style={{ padding: "12px 14px", borderRadius: "8px", border: "1px solid var(--border)", background }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: state !== "none" ? "8px" : 0 }}>
                       <span style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink)", fontFamily: "var(--mono)", wordBreak: "break-all" }}>{r.fileName}</span>
                       <AnimatedBadge
-                        status={r.status === "done" && r.data?.success ? "success" : r.status === "error" ? "danger" : "loading"}
+                        status={badgeStatus}
                         size="sm"
                       >
-                        {r.status === "scanning" ? "Scanning..." : r.status === "verifying" ? "Verifying..." : r.status === "error" ? "Failed" : r.data?.success ? "Verified" : "Not found"}
+                        {badgeText}
                       </AnimatedBadge>
                     </div>
-                    {r.data?.success && (
+                    {state !== "none" && r.data && (
                       <div style={{ fontSize: "12px", color: "var(--ink-2)", display: "flex", flexWrap: "wrap", gap: "12px" }}>
+                        {state === "decodedOnly" && <span style={{ color: "var(--amber-text)", fontWeight: 600 }}>Decoded from QR, not confirmed with the bank</span>}
+                        {state === "parsed" && <span style={{ color: "var(--amber-text)", fontWeight: 600 }}>Parsed from your text, not checked with the bank</span>}
                         {r.data.senderName && <span>From: {r.data.senderName}</span>}
                         {r.data.receiverName && <span>To: {r.data.receiverName}</span>}
                         {r.data.amount != null && <span style={{ fontWeight: 600 }}>{r.data.amount} {r.data.currency || "ETB"}</span>}
@@ -1165,11 +1205,12 @@ ${receipt}`;
                     {r.status === "error" && r.error && (
                       <p style={{ fontSize: "12px", color: "var(--red-text)", marginTop: "4px" }}>{r.error}</p>
                     )}
-                    {r.status === "done" && !r.data?.success && r.data?.error && (
+                    {r.status === "done" && state === "none" && r.data?.error && (
                       <p style={{ fontSize: "12px", color: "var(--red-text)", marginTop: "4px" }}>{r.data.error}</p>
                     )}
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </section>
@@ -1288,14 +1329,14 @@ ${receipt}`;
                       disabled={fallbackLoading || !pasteContent.trim()}
                       style={{ width: "100%", marginTop: "10px", padding: "12px 20px", fontSize: "14px", fontWeight: 600, border: "none", borderRadius: "8px", background: fallbackLoading || !pasteContent.trim() ? "var(--border)" : "var(--green)", color: fallbackLoading || !pasteContent.trim() ? "var(--ink-3)" : "var(--bg)", cursor: fallbackLoading || !pasteContent.trim() ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", minHeight: "44px" }}
                     >
-                      {fallbackLoading ? (<><span className="spin" style={{ width: "16px", height: "16px", border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "#fff", borderRadius: "50%", display: "inline-block" }} /> Parsing...</>) : "Verify pasted content"}
+                      {fallbackLoading ? (<><span className="spin" style={{ width: "16px", height: "16px", border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "#fff", borderRadius: "50%", display: "inline-block" }} /> Parsing...</>) : "Read pasted content"}
                     </button>
                     {fallbackError && (
                       <div className="t-shake" style={{ marginTop: "10px", padding: "10px 14px", borderRadius: "8px", background: "var(--red-light)", border: "1px solid #fecaca" }}>
                         <p style={{ fontSize: "13px", color: "var(--red-text)" }}>{fallbackError}</p>
                       </div>
                     )}
-                    {fallbackResult && fallbackResult.success && (
+                    {fallbackResult && verificationState(fallbackResult) !== "none" && (
                       <div className="fade-up" style={{ marginTop: "10px" }}>
                         <ReceiptCard result={fallbackResult} copied={copied} onCopy={copyResult} onReset={resetVerification} />
                       </div>
@@ -1346,7 +1387,7 @@ ${receipt}`;
 
                     <div style={{ padding: "12px 14px", borderRadius: "8px", background: "var(--surface)", border: "1px solid color-mix(in srgb, var(--amber) 30%, transparent)" }}>
                       <p style={{ fontSize: "12px", color: "var(--amber-text)", lineHeight: 1.5 }}>
-                        After installing, the bookmarklet reads the receipt page and sends it to cheki for parsing. An overlay appears on the page showing the verified result. No data is stored.
+                        After installing, the bookmarklet reads the receipt page and sends it to cheki for parsing. An overlay appears on the page showing what it read. No data is stored.
                       </p>
                     </div>
                   </div>
@@ -1622,13 +1663,39 @@ function ReceiptCard({ result, copied, onCopy, onReset }: { result: VerifyResult
     return () => cancelAnimationFrame(raf);
   }, []);
 
-  if (!result.verified) return null;
+  // Three honest states: confirmed by the bank (verified), decoded from a
+  // BOA QR the bank could not confirm (decodedOnly), or read from text the
+  // user pasted (parsed). The last two are never shown as verified.
+  const vState = verificationState(result);
+  if (vState === "none") return null;
+  const unconfirmed = vState !== "verified";
 
   // cbe-new is a parser alias for the same institution as cbe.
   const bankCode = result.bank === "cbe-new" ? "cbe" : (result.bank ?? "");
   const bankInfo = banks.find((b) => b.code === bankCode);
   const bankName = bankInfo?.name ?? result.bank ?? "Bank";
-  const status = result.transactionStatus || "Verified";
+  const statusTone = classifyStatus(result.transactionStatus);
+  const unconfirmedLabel = vState === "decodedOnly"
+    ? "Decoded from QR, not confirmed with the bank"
+    : "Parsed from your text, not checked with the bank";
+  // A non-success status (Failed, Pending, Reversed, ...) is never green.
+  const tone: "green" | "amber" | "red" =
+    statusTone === "failure" ? "red" : unconfirmed ? "amber" : "green";
+  const status = unconfirmed
+    ? (vState === "decodedOnly" ? "Not confirmed" : "Not checked")
+    : result.transactionStatus || "Verified";
+  const pillStyle =
+    tone === "green"
+      ? undefined
+      : tone === "red"
+        ? { color: "var(--red-text)", background: "var(--red-light)", borderColor: "color-mix(in srgb, var(--red) 40%, transparent)" }
+        : { color: "var(--amber-text)", background: "var(--amber-light)", borderColor: "color-mix(in srgb, var(--amber) 50%, transparent)" };
+  const sourceIsLink = typeof result.sourceUrl === "string" && result.sourceUrl.startsWith("https://");
+  const bannerText = [
+    unconfirmed ? `${unconfirmedLabel}.` : "",
+    vState === "decodedOnly" ? "Anyone can create a QR code like this, so do not release goods on it alone." : "",
+    tone === "red" ? `The receipt lists the transaction as "${result.transactionStatus}". It is not a completed payment.` : "",
+  ].filter(Boolean).join(" ");
   const amount = result.amount != null ? `${result.amount.toLocaleString()} ${result.currency || "ETB"}` : null;
   const senderAccount = result.senderAccount || result.bankAccountNumber;
   const receiverAccount = result.receiverAccount;
@@ -1654,7 +1721,10 @@ function ReceiptCard({ result, copied, onCopy, onReset }: { result: VerifyResult
   // The header copies the receipt as readable text, the shape someone drops
   // into a message. The JSON stays behind the disclosure below, for machines.
   const copySummary = () => {
-    const lines = ["Receipt verified by cheki", `Bank: ${bankName} (${status})`];
+    const lines = [
+      unconfirmed ? `NOT VERIFIED: ${unconfirmedLabel}` : tone === "red" ? `Bank status: ${status}` : "Receipt verified by cheki",
+      `Bank: ${bankName} (${unconfirmed && result.transactionStatus ? result.transactionStatus : status})`,
+    ];
     if (amount) lines.push(`Amount: ${amount}`);
     if (result.date) lines.push(`Date: ${result.date}`);
     const from = [result.senderName, senderAccount].filter(Boolean).join(" · ");
@@ -1683,14 +1753,18 @@ function ReceiptCard({ result, copied, onCopy, onReset }: { result: VerifyResult
           </div>
         </div>
         <div className="rc-head-right">
-          <span className="rc-status">
+          <span className="rc-status" style={pillStyle} data-tone={tone}>
             <motion.span
               initial={{ opacity: 0, scale: 0.5, rotate: -45 }}
               animate={{ opacity: 1, scale: 1, rotate: 0 }}
               transition={{ type: "spring", stiffness: 260, damping: 18, mass: 0.8, delay: 0.12 }}
               style={{ display: "inline-flex" }}
             >
-              <Icon icon={CheckmarkCircle01Icon} size={15} color="var(--green)" />
+              {tone === "green" ? (
+                <Icon icon={CheckmarkCircle01Icon} size={15} color="var(--green)" />
+              ) : (
+                <Icon icon={Alert01Icon} size={15} color={tone === "red" ? "var(--red-text)" : "var(--amber-text)"} />
+              )}
             </motion.span>
             {status}
           </span>
@@ -1700,6 +1774,24 @@ function ReceiptCard({ result, copied, onCopy, onReset }: { result: VerifyResult
           </button>
         </div>
       </div>
+
+      {(unconfirmed || tone === "red") && (
+        <div
+          role="status"
+          style={{
+            margin: "0 14px 4px",
+            padding: "10px 12px",
+            borderRadius: "8px",
+            fontSize: "13px",
+            lineHeight: 1.5,
+            ...(tone === "red"
+              ? { background: "var(--red-light)", color: "var(--red-text)", border: "1px solid color-mix(in srgb, var(--red) 30%, transparent)" }
+              : { background: "var(--amber-light)", color: "var(--amber-text)", border: "1px solid color-mix(in srgb, var(--amber) 40%, transparent)" }),
+          }}
+        >
+          {bannerText}
+        </div>
+      )}
 
       {/* How much */}
       <div className="rc-amount">
@@ -1767,7 +1859,7 @@ function ReceiptCard({ result, copied, onCopy, onReset }: { result: VerifyResult
         </div>
       )}
 
-      {result.sourceUrl && (
+      {sourceIsLink && (
         <div className="rc-foot">
           <p className="rc-section-title">Source (public bank endpoint)</p>
           <a href={result.sourceUrl} target="_blank" rel="noopener noreferrer" className="rc-source">
