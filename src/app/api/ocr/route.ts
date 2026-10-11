@@ -2,9 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { decodeQrFromImage, parseQrReference } from "@/lib/server-ocr";
 import { detectBankFromUrl, isUrl } from "@/lib/adapters/url-detector";
 import { ambiguousReferenceCandidates } from "@/lib/ocr-parser";
+import { limiters, rateLimited } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -18,6 +21,18 @@ export async function OPTIONS() {
 
 export async function POST(request: NextRequest) {
   const start = Date.now();
+  const limited = rateLimited(limiters.ocr, request.headers, 1, CORS_HEADERS);
+  if (limited) return limited;
+
+  // Reject an oversized upload before formData() buffers it.
+  const declared = Number(request.headers.get("content-length"));
+  if (Number.isFinite(declared) && declared > MAX_IMAGE_BYTES + 64 * 1024) {
+    return NextResponse.json(
+      { success: false, error: "Image is too large. Maximum size is 10MB." },
+      { status: 413, headers: CORS_HEADERS }
+    );
+  }
+
   try {
     const formData = await request.formData();
     const image = formData.get("image");
@@ -32,7 +47,7 @@ export async function POST(request: NextRequest) {
     const bytes = await image.arrayBuffer();
     const inputBuffer = Buffer.from(bytes);
 
-    if (inputBuffer.length > 10 * 1024 * 1024) {
+    if (inputBuffer.length > MAX_IMAGE_BYTES) {
       return NextResponse.json(
         { success: false, error: "Image is too large. Maximum size is 10MB." },
         { status: 413, headers: CORS_HEADERS }
@@ -89,12 +104,10 @@ export async function POST(request: NextRequest) {
       },
       { headers: CORS_HEADERS }
     );
-  } catch (e) {
+  } catch {
+    // Fixed message: decoder internals stay on the server.
     return NextResponse.json(
-      {
-        success: false,
-        error: e instanceof Error ? e.message : "OCR failed.",
-      },
+      { success: false, error: "Could not read that image. Try a JPEG or PNG screenshot." },
       { status: 500, headers: CORS_HEADERS }
     );
   }
