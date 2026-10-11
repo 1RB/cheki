@@ -27,6 +27,7 @@ import { ZemenParser } from "../parsers/zemen";
 import { CBEBirrParser } from "../parsers/cbebirr";
 import { verificationGate, gateFailureMessage } from "./gate";
 import { checkAccountSuffix, checkPhone, checkReference } from "../security/reference";
+import { selectFormat, formatNeeds, formatAccountDigits, fillTemplate } from "../manifest/formats";
 
 /** Receipts verified at the same time in one batch. */
 export const BATCH_CONCURRENCY = 5;
@@ -183,7 +184,15 @@ export class Verifier {
       });
     }
 
-    const parser = getParser(manifestEntry.id.toLowerCase());
+    // Pick the receipt format from the input's shape (current formats first).
+    // This never costs a bank request: exactly one format is fetched.
+    const selection = selectFormat(manifestEntry, input);
+    if (!selection.ok) {
+      return err({ kind: "MISSING_INPUT", field: selection.field, message: selection.message });
+    }
+    const format = selection.format;
+
+    const parser = getParser((format?.parser ?? manifestEntry.id).toLowerCase());
     if (!parser) {
       return err({
         kind: "BANK_NOT_SUPPORTED",
@@ -192,9 +201,12 @@ export class Verifier {
       });
     }
 
+    const needsAccount = format ? formatNeeds(format, "account") : manifestEntry.requiresAccount;
+    const needsPhone = format ? formatNeeds(format, "phone") : Boolean(parser.requiresPhone || manifestEntry.requiresPhone);
+
     // Account number (only the suffix the bank needs, digits only)
     let account: string | undefined;
-    if (manifestEntry.requiresAccount) {
+    if (needsAccount) {
       if (!input.accountNumber) {
         return err({
           kind: "MISSING_INPUT",
@@ -202,7 +214,7 @@ export class Verifier {
           message: `${manifestEntry.name} requires the full receiving account number.`,
         });
       }
-      const digits = manifestEntry.accountDigits ?? parser.accountDigits ?? 1;
+      const digits = formatAccountDigits(format) ?? manifestEntry.accountDigits ?? parser.accountDigits ?? 1;
       const checked = checkAccountSuffix(input.accountNumber, digits);
       if (!checked.ok) return err({ kind: "MISSING_INPUT", field: "accountNumber", message: checked.message });
       account = checked.value;
@@ -210,7 +222,7 @@ export class Verifier {
 
     // Phone number (CBE Birr)
     let phone: string | undefined;
-    if (parser.requiresPhone || manifestEntry.requiresPhone) {
+    if (needsPhone) {
       if (!input.phoneNumber) {
         return err({
           kind: "MISSING_INPUT",
@@ -249,7 +261,8 @@ export class Verifier {
     if (!parsedResult.ok) return parsedResult;
     const parsed = parsedResult.value;
 
-    const gate = verificationGate(parsed, { bankId: manifestEntry.id, requestedReference: ref });
+    // The gate is keyed by the parser (format), e.g. cbe-new looks receipts up by an opaque Receipt ID.
+    const gate = verificationGate(parsed, { bankId: parser.bankId, requestedReference: ref });
     if (!gate.ok) {
       return err({ kind: "EXTRACTION_ERROR", bank: manifestEntry.name, message: gateFailureMessage(gate) });
     }
@@ -260,7 +273,9 @@ export class Verifier {
       bank: manifestEntry.name,
       bankCode: manifestEntry.id,
       reference: parsed.reference || ref,
-      sourceUrl: fallbackUrl,
+      // The bank's own receipt page when the format has one people can open
+      // (CBE's mbreciept link, Dashen's receipt page); otherwise the URL fetched.
+      sourceUrl: format?.receiptPage === "redirect" && format.link ? fillTemplate(format.link, { ref, account, phone }) : fallbackUrl,
       durationMs: Date.now() - startTime,
     });
   }
@@ -272,7 +287,9 @@ export class Verifier {
     data: string | Buffer,
     contentType: string
   ): Promise<Result<ParsedReceipt, ChekiError>> {
-    const id = manifestEntry.id.toLowerCase();
+    // Keyed by the parser, not the bank: one bank can have a PDF format
+    // (CBE legacy) and a JSON one (CBE current).
+    const id = parser.bankId.toLowerCase();
     // PDF banks. `htmlOk` banks (Dashen) normally answer with an HTML receipt
     // page that parser.parse() reads below; a PDF from them (legacy host) is
     // still text-extracted here. Either way the result goes through the gate.
