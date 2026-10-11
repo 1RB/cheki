@@ -2,89 +2,102 @@
 //
 // Run:
 //
-//	go run examples/basic/main.go
+//	go run ./examples/basic
 package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"time"
 
-	"github.com/1RB/cheki/sdks/go"
+	cheki "github.com/1RB/cheki/sdks/go"
 )
 
 func main() {
-	// Create a client with a 15-second timeout.
-	client := cheki.NewClient(cheki.WithTimeout(15 * time.Second))
+	// Defaults: 65 s per attempt (the server may take up to 60 s), at most one retry.
+	client := cheki.NewClient()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
-	// 1. Check service health.
+	// 1. Service health (cached up to 5 minutes server-side).
 	fmt.Println("=== Health ===")
 	health, err := client.GetHealth(ctx)
 	if err != nil {
 		log.Printf("health check failed: %v", err)
 	} else {
-		fmt.Printf("Status:    %s\n", health.Status)
-		fmt.Printf("Version:   %s\n", health.Version)
-		fmt.Printf("Timestamp: %s\n", health.Timestamp)
+		fmt.Printf("Status: %s (checked %s, cached %t)\n", health.Status, health.CheckedAt, health.Cached)
+		for _, b := range health.Banks {
+			fmt.Printf("  %-10s %-14s %dms\n", b.ID, b.Status, b.LatencyMs)
+		}
 	}
 
-	// 2. List supported banks.
+	// 2. Supported banks. ID is the value to pass as VerifyOptions.Bank.
 	fmt.Println("\n=== Banks ===")
 	banks, err := client.GetBanks(ctx)
 	if err != nil {
 		log.Printf("failed to list banks: %v", err)
 	} else {
-		fmt.Printf("Found %d banks:\n", len(banks))
 		for _, b := range banks {
-			fmt.Printf("  - %s (%s): %s (requires account: %t)\n",
-				b.Name, b.Code, b.Status, b.RequiresAccount)
+			fmt.Printf("  - %s (%s): %s (requires account: %t)\n", b.Name, b.ID, b.Status, b.RequiresAccount)
 		}
 	}
 
-	// 3. Verify a single receipt.
+	// 3. One receipt. Only IsVerified() means the bank confirmed it.
 	fmt.Println("\n=== Verify ===")
 	result, err := client.Verify(ctx, cheki.VerifyOptions{
-		Bank:      "cbe",
-		Reference: "123456789",
+		Bank:          "cbe",
+		Reference:     "FT26140P01YB",
+		AccountNumber: "1000560536171",
 	})
-	if err != nil {
-		log.Printf("verification failed: %v", err)
-	} else {
+	var apiErr *cheki.APIError
+	switch {
+	case errors.Is(err, cheki.ErrRateLimited) && errors.As(err, &apiErr):
+		log.Printf("rate limited, retry in %s", apiErr.RetryAfter)
+	case errors.As(err, &apiErr):
+		log.Printf("not verified (%d): %s %s", apiErr.StatusCode, apiErr.Message, apiErr.FallbackURL)
+	case err != nil:
+		log.Printf("request failed: %v", err)
+	default:
 		printResult(result)
 	}
 
-	// 4. Verify multiple receipts in batch.
+	// 4. Up to 20 receipts in one batch.
 	fmt.Println("\n=== Batch Verify ===")
-	batchResult, err := client.VerifyBatch(ctx, []cheki.VerifyOptions{
-		{Bank: "cbe", Reference: "123456789"},
-		{Bank: "dashen", Reference: "987654321", AccountNumber: "0123456789"},
+	batch, err := client.VerifyBatch(ctx, []cheki.VerifyOptions{
+		{Bank: "cbe", Reference: "FT26140P01YB", AccountNumber: "1000560536171"},
+		{Bank: "telebirr", Reference: "CHQ0FJ403O"},
 	})
 	if err != nil {
 		log.Printf("batch verification failed: %v", err)
-	} else {
-		fmt.Printf("Total: %d, Verified: %d, Failed: %d\n",
-			batchResult.Total, batchResult.Verified, batchResult.Failed)
-		for i, r := range batchResult.Results {
-			fmt.Printf("\n  Result %d:\n", i+1)
-			printResult(&r)
+		return
+	}
+	fmt.Printf("Total: %d, Verified: %d, Failed: %d\n", batch.Total, batch.Verified, batch.Failed)
+	for _, item := range batch.Results {
+		if !item.Success {
+			fmt.Printf("  [%d] error %d: %s\n", item.Index, item.Status, item.Error)
+			continue
 		}
+		fmt.Printf("  [%d]\n", item.Index)
+		printResult(&item.VerifyResult)
 	}
 }
 
 func printResult(r *cheki.VerifyResult) {
-	fmt.Printf("  Verified:      %t\n", r.Verified)
-	fmt.Printf("  Bank:          %s\n", r.Bank)
-	fmt.Printf("  Reference:     %s\n", r.Reference)
-	fmt.Printf("  Sender:        %s\n", r.SenderName)
-	fmt.Printf("  Receiver:      %s\n", r.ReceiverName)
-	fmt.Printf("  Amount:        %.2f %s\n", r.Amount, r.Currency)
-	fmt.Printf("  Date:          %s\n", r.Date)
-	fmt.Printf("  Source URL:    %s\n", r.SourceURL)
-	if r.Error != "" {
-		fmt.Printf("  Error:         %s\n", r.Error)
+	switch {
+	case r.IsVerified():
+		fmt.Println("  VERIFIED by the bank")
+	case r.DecodedOnly:
+		fmt.Println("  NOT VERIFIED: decoded from a QR code, the bank could not confirm it")
+	default:
+		fmt.Println("  NOT VERIFIED")
 	}
+	fmt.Printf("  Bank:      %s\n", r.Bank)
+	fmt.Printf("  Reference: %s\n", r.Reference)
+	fmt.Printf("  Sender:    %s\n", r.SenderName)
+	fmt.Printf("  Receiver:  %s\n", r.ReceiverName)
+	fmt.Printf("  Amount:    %.2f %s\n", r.Amount, r.Currency)
+	fmt.Printf("  Date:      %s\n", r.Date)
 }
