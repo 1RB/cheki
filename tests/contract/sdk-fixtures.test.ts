@@ -17,6 +17,7 @@ import { POST as batchPOST } from "@/app/api/verify/batch/route";
 import { POST as parsePOST } from "@/app/api/parse/route";
 import { GET as banksGET } from "@/app/api/banks/route";
 import { GET as healthGET } from "@/app/api/health/route";
+import { GET as receiptGET } from "@/app/api/receipt/route";
 import { Verifier } from "@/lib";
 import { ok, err } from "@/lib/core/types";
 import type { Receipt } from "@/lib/core/types";
@@ -62,6 +63,15 @@ function expectShape(actual: Record<string, unknown>, expected: Record<string, u
   }
 }
 
+/**
+ * Limiters that guard routes outside the SDK contract. /api/contribute is the
+ * website's private "help us add a bank" form: it forwards to Telegram, has no
+ * SDK method, is not in the API docs, and uses a 10-minute window, so it does
+ * not belong in rateLimitPerMinute. Any limiter not listed here is treated as
+ * public API and must appear in the fixture, so adding one forces a decision.
+ */
+const INTERNAL_LIMITERS = new Set(["contribute"]);
+
 let ip = 0;
 const freshIp = () => ({ "x-real-ip": `10.77.${Math.floor(++ip / 250)}.${ip % 250}` });
 const jsonReq = (url: string, body: unknown, headers: Record<string, string> = freshIp()) =>
@@ -92,10 +102,27 @@ describe("SDK contract fixtures match the route handlers", () => {
     expect(contract.limits.serverAttemptsPerReceipt).toBe(MAX_ATTEMPTS);
     expect(contract.limits.batchMaxReceipts).toBe(20);
     const perMinute = contract.limits.rateLimitPerMinute as Record<string, number>;
-    for (const [name, limiter] of Object.entries(limiters)) {
-      expect((limiter as unknown as { limit: number }).limit, `${name} limit`).toBe(perMinute[name]);
+    const publicLimiters = Object.entries(limiters).filter(([name]) => !INTERNAL_LIMITERS.has(name));
+    expect(publicLimiters.map(([name]) => name).sort()).toEqual(Object.keys(perMinute).sort());
+    for (const [name, limiter] of publicLimiters) {
+      const { limit, windowMs } = limiter as unknown as { limit: number; windowMs: number };
+      expect(limit, `${name} limit`).toBe(perMinute[name]);
+      expect(windowMs, `${name} window`).toBe(60_000);
     }
+    for (const name of INTERNAL_LIMITERS) expect(name in limiters, `internal limiter ${name} exists`).toBe(true);
     expect(contract.limits.sdkTimeoutSeconds as number).toBeGreaterThan(contract.limits.serverMaxDurationSeconds as number);
+  });
+
+  // A route file may only export handlers and route config, so the bank list
+  // is read from the route's own 400 message for an unsupported bank.
+  it("receiptDownloadBanks matches the banks /api/receipt serves", async () => {
+    const r = await receiptGET(
+      new NextRequest("https://cheki.et/api/receipt?bank=telebirr&reference=CHQ0FJ403O", { headers: freshIp() })
+    );
+    expect(r.status).toBe(400);
+    const { error } = await r.json();
+    const served = String(error).replace(/^.*supported for: /, "").replace(/\.$/, "").split(", ");
+    expect(served.sort()).toEqual([...(contract.limits.receiptDownloadBanks as string[])].sort());
   });
 
   it("verify_verified: envelope is success + receipt + cached", async () => {
@@ -206,6 +233,9 @@ describe("SDK contract fixtures match the route handlers", () => {
     const { banks, ...top } = body;
     const { banks: expBanks, ...expTop } = f.body;
     expectShape(top, expTop, new Set(), "health");
+    // checkedAt is an ISO 8601 timestamp, in the response and in the fixture.
+    expect(new Date(top.checkedAt).toISOString()).toBe(top.checkedAt);
+    expect(new Date(expTop.checkedAt as string).toISOString()).toBe(expTop.checkedAt);
     for (const b of banks) expectShape(b, (expBanks as Record<string, Json>[])[0], new Set(), `health ${b.id}`);
   });
 
