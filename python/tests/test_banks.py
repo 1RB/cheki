@@ -2,11 +2,15 @@ from datetime import datetime
 from io import BytesIO
 from unittest.mock import patch
 
+import pytest
 import responses
 
 from cheki import supported_banks, verify
 from cheki.banks.cbe import CBEVerifier
-from cheki.errors import ReceiptNotFoundError, UpstreamError
+from cheki.errors import ReceiptNotFoundError
+
+# Direct verification is deprecated; these tests cover it until it is removed.
+pytestmark = pytest.mark.filterwarnings("ignore::DeprecationWarning")
 
 SAMPLE_CBE_PDF_TEXT = """
 Commercial Bank of Ethiopia
