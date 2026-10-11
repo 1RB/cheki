@@ -10,7 +10,7 @@
  *   - filters out parser-only aliases (e.g. `cbe-new`) so they do not get pages
  */
 import manifestData from "./manifest/banks.json";
-import type { BankManifestEntry, BankRefPattern, ReceiptFormat } from "./core/types";
+import type { BankManifestEntry, BankRefPattern, ManifestResponseType, ReceiptFormat } from "./core/types";
 
 export interface Bank {
   code: string;
@@ -22,13 +22,16 @@ export interface Bank {
   accountDigits?: number;
   requiresPhone?: boolean;
   status: "live" | "soon";
+  /** Live, but not yet confirmed with a real receipt (see BankManifestEntry.beta). */
+  beta?: boolean;
+  betaNote?: string;
   refPattern?: RegExp;
   refPrefixes?: string[];
   color: string;
   geoBlocked?: boolean;
   endpoint: string;
   endpointFormat: string;
-  responseType: "pdf" | "html" | "json";
+  responseType: ManifestResponseType;
   description: string;
   referenceFormat: string;
   referenceExample: string;
@@ -69,6 +72,8 @@ function manifestToBank(entry: BankManifestEntry): Bank {
     accountDigits: entry.accountDigits,
     requiresPhone: entry.requiresPhone,
     status: entry.status === "live" ? "live" : "soon",
+    beta: entry.beta,
+    betaNote: entry.betaNote,
     refPattern: compileRefPattern(entry.refPattern),
     refPrefixes: entry.refPrefixes,
     color: entry.color,
