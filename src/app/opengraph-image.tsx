@@ -1,6 +1,7 @@
 import { ImageResponse } from "next/og";
 import { readFile } from "fs/promises";
 import { join } from "path";
+import { LIVE_BANK_COUNT } from "@/lib/bank-counts";
 
 export const runtime = "nodejs";
 export const alt = "cheki - verify Ethiopian receipts for free";
@@ -128,7 +129,7 @@ export default async function OpenGraphImage() {
               }}
             />
             <span style={{ fontSize: 18, fontWeight: 600, color: "#16a34a" }}>
-              10 live banks
+              {LIVE_BANK_COUNT} live banks
             </span>
           </div>
         </div>
