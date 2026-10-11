@@ -27,8 +27,14 @@ const liveBankIds = liveProviders.map((b) => b.id).join(", ");
 const top5Banks = ["cbe", "telebirr", "boa", "mpesa", "dashen"];
 const banksWithoutManualPage = ["dashen", "awash", "zemen", "cbebirr", "siinqee"];
 
+/** Short name of the response type for headings ("PDF", "JSON", "HTML", "PDF-in-JSON"). */
+function responseTypeName(b: Bank): string {
+  return b.responseType === "pdf-in-json" ? "PDF-in-JSON" : b.responseType.toUpperCase();
+}
+
 function receiptTypeLabel(b: Bank): string {
   if (b.responseType === "pdf") return "PDF document";
+  if (b.responseType === "pdf-in-json") return "PDF document inside a JSON response (base64)";
   if (b.responseType === "json") return "JSON API response";
   return "HTML page";
 }
@@ -104,7 +110,7 @@ const bankVerificationPages: SeoPage[] = banks
     sections: [
       {
         heading: `How ${b.shortName} receipt verification works`,
-        body: `${b.name} publishes transaction receipts at a public URL: ${b.endpointFormat}. No authentication is required. cheki fetches this URL, ${b.responseType === "pdf" ? "downloads the PDF, extracts the text" : b.responseType === "json" ? "parses the JSON response" : "parses the HTML receipt"}, and returns structured JSON with sender name, receiver name, amount, date, and reference number.`,
+        body: `${b.name} publishes transaction receipts at a public URL: ${b.endpointFormat}. No authentication is required. cheki fetches this URL, ${b.responseType === "pdf" ? "downloads the PDF, extracts the text" : b.responseType === "pdf-in-json" ? "decodes the PDF inside the JSON response, extracts the text" : b.responseType === "json" ? "parses the JSON response" : "parses the HTML receipt"}, and returns structured JSON with sender name, receiver name, amount, date, and reference number.`,
       },
       {
         heading: `What you need to verify a ${b.shortName} receipt`,
@@ -227,7 +233,7 @@ const fakeReceiptPages: SeoPage[] = banks
         body: `Fraudsters target ${b.shortName} users with several techniques:`,
         bullets: [
           `Edited screenshots: taking a real ${b.shortName} receipt and changing the amount or reference number`,
-          b.responseType === "pdf"
+          b.responseType === "pdf" || b.responseType === "pdf-in-json"
             ? `Forged PDFs: creating a PDF that looks like a ${b.shortName} receipt but has a fabricated reference number`
             : `Fabricated ${b.responseType.toUpperCase()} data: creating a fake receipt page that looks like ${b.shortName}'s format`,
           `Old receipts: reusing a genuine receipt from a past transaction and claiming it's new`,
@@ -263,12 +269,12 @@ const receiptFormatPages: SeoPage[] = banks
     slug: `${b.code}-receipt-format-explained`,
     title: `${b.name} Receipt Format Explained - Technical Reference | cheki`,
     h1: `${b.name} Receipt Format`,
-    metaDescription: `Complete technical reference for ${b.shortName} receipt format. Endpoint URL, ${b.responseType.toUpperCase()} response structure, field mappings, and parsing details.`,
+    metaDescription: `Complete technical reference for ${b.shortName} receipt format. Endpoint URL, ${responseTypeName(b)} response structure, field mappings, and parsing details.`,
     keywords: [
       `${b.shortName} receipt format`,
       `${b.shortName} receipt structure`,
       `${b.shortName} endpoint url`,
-      `${b.shortName} ${b.responseType} receipt`,
+      `${b.shortName} ${b.responseType === "pdf-in-json" ? "pdf" : b.responseType} receipt`,
       `${b.shortName} receipt fields`,
     ],
     intent: "informational",
@@ -276,7 +282,7 @@ const receiptFormatPages: SeoPage[] = banks
     faq: [
       {
         q: `What format does ${b.shortName} use for receipts?`,
-        a: `${b.name} publishes receipts as ${receiptTypeLabel(b)}. The endpoint is ${b.endpointFormat}. ${b.responseType === "pdf" ? "The PDF contains payer name, receiver name, accounts, amount, date, reference, and branch." : b.responseType === "json" ? "The JSON response contains structured fields including sender name, receiver name, amount, currency, and date." : "The HTML page contains payer name, receiver name, amount, and date in a bilingual (English/Amharic) format."}`,
+        a: `${b.name} publishes receipts as ${receiptTypeLabel(b)}. The endpoint is ${b.endpointFormat}. ${b.responseType === "pdf" ? "The PDF contains payer name, receiver name, accounts, amount, date, reference, and branch." : b.responseType === "pdf-in-json" ? "The JSON response carries the receipt as a base64 PDF with the transaction ID, payer, receiver, amount, fees and date." : b.responseType === "json" ? "The JSON response contains structured fields including sender name, receiver name, amount, currency, and date." : "The HTML page contains payer name, receiver name, amount, and date in a bilingual (English/Amharic) format."}`,
       },
       {
         q: `Do I need authentication to access ${b.shortName} receipts?`,
@@ -284,7 +290,9 @@ const receiptFormatPages: SeoPage[] = banks
       },
       {
         q: `What fields are in a ${b.shortName} receipt?`,
-        a: b.responseType === "pdf"
+        a: b.responseType === "pdf-in-json"
+          ? `${b.shortName} answers with JSON that carries the receipt as a PDF. The PDF contains: transaction ID, receipt number, payer name and number, receiver name and number, settled amount, service fee, VAT, total, and payment date.${b.beta ? " (Beta: inferred from other verifiers, not yet confirmed with a real receipt.)" : ""}`
+          : b.responseType === "pdf"
           ? `The ${b.shortName} PDF receipt contains: ${b.name} header, payer name, payer account, receiver name, receiver account, transferred amount (ETB), payment date and time, reference number, and branch name.`
           : b.responseType === "json"
           ? `The ${b.shortName} JSON response contains: sender name, receiver name, amount, currency, transaction date, and transaction reference${b.requiresAccount ? `, plus account details` : ``}.`
@@ -297,8 +305,10 @@ const receiptFormatPages: SeoPage[] = banks
         body: `The ${b.shortName} receipt endpoint is: ${b.endpointFormat}. ${b.requiresAccount ? `The URL combines the transaction reference and the last ${b.accountDigits} digits of the receiving account into a single id parameter.` : `The URL takes only the transaction reference as a path parameter.`} Example: ${b.referenceExample}.`,
       },
       {
-        heading: `${b.responseType.toUpperCase()} response structure`,
-        body: b.responseType === "pdf"
+        heading: `${responseTypeName(b)} response structure`,
+        body: b.responseType === "pdf-in-json"
+          ? `${b.shortName} returns a small JSON envelope, {responseCode, responseDescription, base64Data}, whose base64Data is the receipt PDF. cheki checks the base64, caps the decoded PDF at 5 MB, extracts its text, and maps the labelled fields.${b.beta ? " This shape is inferred from other open-source verifiers and is in beta until a real receipt confirms it." : ""}`
+          : b.responseType === "pdf"
           ? `${b.shortName} returns a PDF file. cheki downloads the PDF, extracts text using pdf parsing, and maps the extracted text to structured fields. The PDF contains a standard layout with the bank header, transaction details, and a QR code.`
           : b.responseType === "json"
           ? `${b.shortName} returns a JSON object. The response is structured and can be consumed directly without parsing. cheki passes the JSON through with normalized field names.`

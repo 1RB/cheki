@@ -27,7 +27,7 @@ src/lib/parsers/               ← one file per bank. each extends BaseParser
   cbe.ts                         CBE PDF + new JSON API
   telebirr.ts                    Telebirr HTML
   boa.ts                         BOA JSON
-  mpesa.ts                       M-Pesa JSON
+  mpesa.ts                       M-Pesa JSON envelope with a base64 PDF (pdf-in-json, beta)
   registry.ts                    plugin registry (register/get/isSupported)
   index.ts                       auto-registers all parsers
        ↓
@@ -165,6 +165,10 @@ A bank that has more than one way to look a receipt up also lists them in `forma
 `confidence` is `verified` only for what cheki itself observed (a real receipt, or a probe). Anything taken from another site (links.et, another app's source code) is `inferred`, says so in `evidence`, and is never described as live in copy.
 
 Keep `status` as `in-development` until the parser has passed against a real receipt. In-development banks are noindexed, and their page shows the private submission box instead of the checker.
+
+`responseType` is `pdf`, `html`, `json`, or `pdf-in-json` (a JSON envelope whose field holds the receipt as a base64 PDF, like M-Pesa's `{responseCode, responseDescription, base64Data}`). For `pdf-in-json`, validate the base64 strictly, check its length before decoding, keep the decoded PDF under `MAX_PDF_BYTES` (5 MB), check the `%PDF-` header, and only then extract text.
+
+A bank that is already `live` but whose parser was rebuilt from outside evidence (other verifiers' source code, never a real receipt) gets `"beta": true` and a `betaNote` in banks.json. Copy and `/api/banks` label it beta. Remove both, and set the format's `confidence` to `verified`, only after a real (redacted) receipt passes the parser. M-Pesa is in this state as of 2026-10-11.
 
 Then add the bank to `src/lib/manifest/endpoints.ts`: placeholders (what each is, where to find it, length and pattern, traps), a redacted example, the fields the parser returns, the unknown-reference error shape, gotchas, a dated changelog line, and a `probe` with a fake reference and the expected status, content type and body text. `tests/manifest/endpoints.test.ts` fails if a manifest bank has no entry there.
 

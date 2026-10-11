@@ -1,6 +1,6 @@
 # cheki Dart SDK
 
-Dart client for the [cheki](https://cheki.et) receipt verification API: verify Ethiopian bank transfer receipts from CBE, Telebirr, BOA, Dashen, M-Pesa, Awash, Siinqee and eBirr (the live banks; `getBanks()` lists the current set). No `dart:io` import, so it also builds for Flutter web (the hosted API sends no CORS headers on these routes, so browser calls still need your own backend).
+Dart client for the [cheki](https://cheki.et) receipt verification API: verify Ethiopian bank transfer receipts from CBE, Telebirr, BOA, Dashen, M-Pesa (beta: not yet confirmed with a real receipt), Awash, Siinqee and eBirr (the live banks; `getBanks()` lists the current set). No `dart:io` import, so it also builds for Flutter web (the hosted API sends no CORS headers on these routes, so browser calls still need your own backend).
 
 ## Install
 

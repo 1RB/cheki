@@ -87,6 +87,14 @@ export abstract class BaseParser {
     return this.responseType === "pdf" || this.binaryResponse ? MAX_PDF_BYTES : MAX_TEXT_BYTES;
   }
 
+  /**
+   * Extra request headers a bank's endpoint expects (M-Pesa: Accept and
+   * Referer). Merged into every fetch path, after the defaults.
+   */
+  protected requestHeaders(): Record<string, string> {
+    return {};
+  }
+
   protected get timeoutMs(): number {
     return this.bankId === "cbe" ? SLOW_BANK_TIMEOUT_MS : DEFAULT_TIMEOUT_MS;
   }
@@ -175,7 +183,10 @@ export abstract class BaseParser {
     return { result: err(error), retryable };
   }
 
-  protected async doFetch(url: string, headers: Record<string, string> = { "User-Agent": BROWSER_UA }): Promise<Attempt> {
+  protected async doFetch(
+    url: string,
+    headers: Record<string, string> = { "User-Agent": BROWSER_UA, ...this.requestHeaders() }
+  ): Promise<Attempt> {
     try {
       const resp = await safeFetch(url, { headers, timeoutMs: this.timeoutMs, maxBytes: this.maxBytes });
       return this.toAttempt(resp);
@@ -193,6 +204,7 @@ export abstract class BaseParser {
       "User-Agent": BROWSER_UA,
       "X-Forwarded-For": ETHIOPIAN_IP,
       "X-Real-IP": ETHIOPIAN_IP,
+      ...this.requestHeaders(),
     };
     const geoInfo = GEO_DIRECT_IPS[this.bankId];
 
@@ -207,8 +219,8 @@ export abstract class BaseParser {
             host: geoInfo.host,
             path: parsedUrl.pathname + parsedUrl.search,
             headers: {
-              ...geoHeaders,
               Accept: "text/html,application/json,*/*",
+              ...geoHeaders,
             },
             timeoutMs: GEO_TIMEOUT_MS,
             maxBytes: this.maxBytes,

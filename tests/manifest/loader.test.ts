@@ -64,7 +64,7 @@ describe("manifest loader", () => {
       expect(bank.endpoint).toBeTruthy();
       expect(bank.color).toBeTruthy();
       expect(bank.initials).toBeTruthy();
-      expect(bank.responseType).toMatch(/^(pdf|html|json)$/);
+      expect(bank.responseType).toMatch(/^(pdf|html|json|pdf-in-json)$/);
       expect(bank.type).toMatch(/^(bank|wallet|mobile)$/);
       expect(bank.status).toMatch(/^(live|in-development)$/);
     }

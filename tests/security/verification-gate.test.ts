@@ -77,26 +77,24 @@ describe("classifyStatus", () => {
 });
 
 describe("parser fixes", () => {
-  it("M-Pesa: {} and a 403 body are not verified", () => {
-    const m = new MpesaParser();
-    expect(m.parse("{}", "").verified).toBe(false);
-    expect(m.parse('{"message":"Forbidden","status":403}', "").verified).toBe(false);
-    expect(m.parse('{"responseCode":"1","transactionId":"AB123456","amount":"10"}', "").verified).toBe(false);
+  it("M-Pesa: {}, a 403 body and an error code are not receipts", () => {
+    expect(MpesaParser.decodeEnvelope("{}").ok).toBe(false);
+    expect(MpesaParser.decodeEnvelope('{"message":"Forbidden","status":403}').ok).toBe(false);
+    expect(MpesaParser.decodeEnvelope('{"responseCode":"1","transactionId":"AB123456","amount":"10"}').ok).toBe(false);
   });
 
-  it("M-Pesa: a junk amount is undefined, never NaN", () => {
-    const r = new MpesaParser().parse('{"amount":"KES abc","transactionId":"AB123456","senderName":"A"}', "");
-    expect(r.amount).toBeUndefined();
-    expect(r.verified).toBe(false);
-  });
-
-  it("M-Pesa: a complete body still verifies", () => {
+  it("M-Pesa: flat JSON fields (never observed) do not verify", () => {
     const r = new MpesaParser().parse(
       '{"responseCode":"0","transactionId":"AB123456","amount":"1,250.00","senderName":"A","receiverName":"B"}',
       ""
     );
-    expect(r.verified).toBe(true);
-    expect(r.amount).toBe(1250);
+    expect(r.verified).toBe(false);
+  });
+
+  it("M-Pesa: a junk amount in the PDF text is undefined, never NaN", () => {
+    const r = MpesaParser.parseLines(["TRANSACTION ID AB123456", "SENDER NAME A", "TOTAL KES abc"]);
+    expect(r.amount).toBeUndefined();
+    expect(r.verified).toBe(false);
   });
 
   it('CBE-new: "1,250.00" parses as 1250, not 1', () => {

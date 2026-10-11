@@ -141,7 +141,7 @@ export const articles: Article[] = [
           ["Telebirr", "transactioninfo.ethiotelecom.et/receipt/{ref}", "HTML", "Free"],
           ["BOA", "cs.bankofabyssinia.com/api/onlineSlip/getDetails/?id={ref}{acct}", "JSON", "Free"],
           ["Dashen", "receipts.dashenbanksc.com/receipt/{ref}", "HTML", "Free"],
-          ["M-Pesa", "m-pesabusiness.safaricom.et/api/receipt/getReceipt?trxNo={ref}", "JSON", "Free"],
+          ["M-Pesa (beta)", "m-pesabusiness.safaricom.et/api/receipt/getReceipt?trxNo={ref}", "PDF inside JSON", "Free"],
         ],
       },
       { type: "text", text: "check.et, verify.et, qbirr, tinaverify, and tally all fetch these URLs, parse the response, and return structured data. That's exactly what cheki does, except cheki is free and open source." },
