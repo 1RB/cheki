@@ -44,7 +44,7 @@ const RECEIPT_OPTIONAL = new Set([
   "settledAmount", "stampDuty", "discountAmount", "serviceFee", "serviceFeeVat", "totalPaid",
   "amountInWords", "paymentMode", "paymentChannel", "bankAccountNumber", "bankAccountName", "decodedOnly",
 ]);
-const BANK_OPTIONAL = new Set(["swift", "accountDigits", "requiresPhone"]);
+const BANK_OPTIONAL = new Set(["swift", "accountDigits", "requiresPhone", "beta"]);
 
 const kind = (v: unknown) => (Array.isArray(v) ? "array" : v === null ? "null" : typeof v);
 
