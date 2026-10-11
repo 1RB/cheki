@@ -3,64 +3,71 @@
  * cheki - TypeScript SDK for the cheki receipt verification API.
  *
  * Verify Ethiopian bank transfer receipts from CBE, Telebirr, BOA, Dashen,
- * M-Pesa, and more. Zero runtime dependencies - uses the global Fetch API
- * (Node.js >= 18 or any modern browser).
+ * M-Pesa, and more. Zero runtime dependencies: uses the global Fetch API
+ * (Node.js >= 18). The hosted API does not send CORS headers on the verify,
+ * batch, banks and health routes, so call it from a server, not a browser.
+ *
+ * `verified === true` is the ONLY success signal. A 200 response can still
+ * be unverified: a BOA QR code that could not be confirmed with the bank
+ * comes back as `verified: false, decodedOnly: true`. Use {@link isVerified}.
  *
  * @example
  * ```ts
- * import { Cheki } from "cheki-verify";
+ * import { Cheki, isVerified } from "cheki-verify";
  *
  * const cheki = new Cheki();
  * const result = await cheki.verify("cbe", "FT26140P01YB", {
  *   accountNumber: "1000560536171",
  * });
- * console.log(result.verified, result.amount, result.senderName);
+ * if (isVerified(result)) console.log(result.amount, result.senderName);
  * ```
  *
  * @module cheki
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Cheki = exports.ChekiTimeoutError = exports.ChekiNetworkError = exports.ChekiAPIError = exports.ChekiError = void 0;
+exports.Cheki = exports.ChekiTimeoutError = exports.ChekiNetworkError = exports.ChekiPayloadTooLargeError = exports.ChekiRateLimitError = exports.ChekiAPIError = exports.ChekiValidationError = exports.ChekiError = exports.RECEIPT_DOWNLOAD_BANKS = exports.MAX_BATCH_SIZE = exports.MAX_RETRIES = exports.DEFAULT_TIMEOUT_MS = void 0;
+exports.isVerified = isVerified;
+exports.parseRetryAfter = parseRetryAfter;
 // ============================================================================
 // Constants
 // ============================================================================
-/** SDK version - reflected in the default User-Agent header. */
-const VERSION = "1.0.0";
+/** SDK version, reflected in the default User-Agent header. */
+const VERSION = "1.4.1";
 /** Default API base URL. */
 const DEFAULT_BASE_URL = "https://cheki.et";
-/** Default request timeout in milliseconds (30 seconds). */
-const DEFAULT_TIMEOUT_MS = 30000;
-/** Default maximum number of retry attempts. */
-const DEFAULT_MAX_RETRIES = 3;
-/** Default User-Agent header value. */
-const DEFAULT_USER_AGENT = `cheki-sdk-typescript/${VERSION}`;
-/** Initial exponential backoff delay in milliseconds. */
-const INITIAL_BACKOFF_MS = 500;
-/** Maximum (capped) exponential backoff delay in milliseconds. */
-const MAX_BACKOFF_MS = 5000;
-/** HTTP status codes that are eligible for automatic retry. */
-const RETRYABLE_STATUS_CODES = new Set([429, 500, 502, 503, 504]);
+/**
+ * Default per-attempt timeout (65 s). The server gives a verification up to
+ * 60 s (`maxDuration`), so a shorter client timeout would abandon requests
+ * the server is still working on.
+ */
+exports.DEFAULT_TIMEOUT_MS = 65000;
+/**
+ * SDK retries on top of the first attempt. The server already makes up to 2
+ * attempts per bank fetch, so the SDK retries at most once: one SDK call
+ * reaches a bank at most 2 x 2 = 4 times.
+ */
+exports.MAX_RETRIES = 1;
+/** Maximum receipts per batch request, enforced client-side. */
+exports.MAX_BATCH_SIZE = 20;
+/** A Retry-After longer than this is not waited out; the 429 is thrown. */
+const MAX_RETRY_AFTER_MS = 60000;
+/** Base delay before a retry when the server sends no Retry-After. */
+const RETRY_BASE_DELAY_MS = 1000;
+/** Banks `/api/receipt` can download, and the account digits each needs. */
+exports.RECEIPT_DOWNLOAD_BANKS = Object.freeze({
+    cbe: { accountDigits: 8 },
+    zemen: {},
+    dashen: {},
+});
+const SAFE_REFERENCE_RE = /^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$/;
+/** True only when the bank confirmed the receipt. `success`, `decodedOnly` and `parsed` are not proof. */
+function isVerified(result) {
+    return typeof result === "object" && result !== null && result.verified === true;
+}
 // ============================================================================
 // Error Hierarchy
 // ============================================================================
-/**
- * Base error class for all cheki SDK errors.
- *
- * Every error thrown by the SDK extends this class, so callers can
- * distinguish SDK errors from other runtime errors with a single
- * `instanceof ChekiError` check.
- *
- * @example
- * ```ts
- * try {
- *   await cheki.verify("cbe", "FT26140P01YB");
- * } catch (err) {
- *   if (err instanceof ChekiError) {
- *     console.error("cheki error:", err.message);
- *   }
- * }
- * ```
- */
+/** Base class for every error the SDK throws. */
 class ChekiError extends Error {
     constructor(message) {
         super(message);
@@ -69,11 +76,22 @@ class ChekiError extends Error {
     }
 }
 exports.ChekiError = ChekiError;
+/** Invalid input caught before any request was made (e.g. more than 20 receipts). */
+class ChekiValidationError extends ChekiError {
+    constructor(message) {
+        super(message);
+        this.name = "ChekiValidationError";
+        Object.setPrototypeOf(this, ChekiValidationError.prototype);
+    }
+}
+exports.ChekiValidationError = ChekiValidationError;
 /**
- * Error thrown when the cheki API returns a non-2xx HTTP status code.
+ * The API answered with a non-2xx status. The server's own message is in
+ * `serverMessage` (and in `message`); geo-blocked banks add `fallbackUrl`.
  *
- * Includes the HTTP status code, the parsed (or raw) response body,
- * and the API endpoint path that was called.
+ * Status codes: 400 bad input, 404 unsupported bank, 413 body too large,
+ * 422 receipt not found / not a valid receipt, 429 rate limited, 502 bank
+ * unreachable, 500 internal error.
  */
 class ChekiAPIError extends ChekiError {
     constructor(message, statusCode, body, endpoint) {
@@ -82,15 +100,35 @@ class ChekiAPIError extends ChekiError {
         this.statusCode = statusCode;
         this.body = body;
         this.endpoint = endpoint;
+        const obj = body && typeof body === "object" ? body : undefined;
+        if (typeof obj?.error === "string")
+            this.serverMessage = obj.error;
+        if (typeof obj?.fallbackUrl === "string")
+            this.fallbackUrl = obj.fallbackUrl;
         Object.setPrototypeOf(this, ChekiAPIError.prototype);
     }
 }
 exports.ChekiAPIError = ChekiAPIError;
-/**
- * Error thrown when a network-level failure occurs (e.g. DNS resolution
- * failure, connection refused, TLS handshake error, or caller-initiated
- * abort). The original underlying error is preserved in {@link cause}.
- */
+/** HTTP 429. `retryAfterSeconds` is the server's Retry-After, when sent. */
+class ChekiRateLimitError extends ChekiAPIError {
+    constructor(message, body, endpoint, retryAfterSeconds) {
+        super(message, 429, body, endpoint);
+        this.name = "ChekiRateLimitError";
+        this.retryAfterSeconds = retryAfterSeconds;
+        Object.setPrototypeOf(this, ChekiRateLimitError.prototype);
+    }
+}
+exports.ChekiRateLimitError = ChekiRateLimitError;
+/** HTTP 413: the request body is over the route's cap (verify 16 KB, batch 64 KB). */
+class ChekiPayloadTooLargeError extends ChekiAPIError {
+    constructor(message, body, endpoint) {
+        super(message, 413, body, endpoint);
+        this.name = "ChekiPayloadTooLargeError";
+        Object.setPrototypeOf(this, ChekiPayloadTooLargeError.prototype);
+    }
+}
+exports.ChekiPayloadTooLargeError = ChekiPayloadTooLargeError;
+/** Network-level failure (DNS, connection refused, TLS) or a caller abort. */
 class ChekiNetworkError extends ChekiError {
     constructor(message, cause) {
         super(message);
@@ -101,9 +139,8 @@ class ChekiNetworkError extends ChekiError {
 }
 exports.ChekiNetworkError = ChekiNetworkError;
 /**
- * Error thrown when a request exceeds the configured timeout and is
- * aborted. The timeout duration (in milliseconds) is included for
- * diagnostics.
+ * An attempt exceeded the timeout. Timeouts are not retried: the server may
+ * still be working on the request (and talking to the bank).
  */
 class ChekiTimeoutError extends ChekiError {
     constructor(message, timeoutMs) {
@@ -114,227 +151,140 @@ class ChekiTimeoutError extends ChekiError {
     }
 }
 exports.ChekiTimeoutError = ChekiTimeoutError;
+const clampRetries = (n, fallback) => {
+    const v = n ?? fallback;
+    if (!Number.isFinite(v) || v <= 0)
+        return 0;
+    return Math.min(Math.floor(v), exports.MAX_RETRIES);
+};
+/** Parse a Retry-After header (delta-seconds or HTTP-date) into seconds. */
+function parseRetryAfter(value, now = Date.now()) {
+    if (!value)
+        return undefined;
+    const trimmed = value.trim();
+    if (/^\d+$/.test(trimmed))
+        return Number(trimmed);
+    const date = Date.parse(trimmed);
+    if (Number.isNaN(date))
+        return undefined;
+    return Math.max(0, Math.ceil((date - now) / 1000));
+}
 // ============================================================================
 // Cheki Client
 // ============================================================================
-/**
- * Client for the cheki receipt verification API.
- *
- * @example Basic usage
- * ```ts
- * const cheki = new Cheki();
- * const result = await cheki.verify("cbe", "FT26140P01YB", {
- *   accountNumber: "1000560536171",
- * });
- * ```
- *
- * @example With configuration
- * ```ts
- * const cheki = new Cheki({
- *   baseUrl: "https://cheki.et",
- *   timeoutMs: 10_000,
- *   maxRetries: 5,
- *   apiKey: "sk_live_...",
- * });
- * ```
- */
 class Cheki {
-    /**
-     * Create a new Cheki client.
-     *
-     * @param config - Base URL string, full configuration object, or
-     *   `undefined` to use all defaults (public cheki API).
-     */
     constructor(config) {
         const cfg = typeof config === "string" ? { baseUrl: config } : config ?? {};
         this.config = {
             baseUrl: (cfg.baseUrl ?? DEFAULT_BASE_URL).replace(/\/+$/, ""),
-            timeoutMs: cfg.timeoutMs ?? DEFAULT_TIMEOUT_MS,
-            maxRetries: cfg.maxRetries ?? DEFAULT_MAX_RETRIES,
+            timeoutMs: cfg.timeoutMs ?? exports.DEFAULT_TIMEOUT_MS,
+            maxRetries: clampRetries(cfg.maxRetries, exports.MAX_RETRIES),
             apiKey: cfg.apiKey,
             defaultHeaders: cfg.defaultHeaders ?? {},
-            userAgent: cfg.userAgent ?? DEFAULT_USER_AGENT,
+            userAgent: cfg.userAgent ?? `cheki-sdk-typescript/${VERSION}`,
         };
     }
-    // ───────────────────────────────────────────────────────────────────────
-    // Public API
-    // ───────────────────────────────────────────────────────────────────────
     /**
-     * Verify a single bank transfer receipt.
+     * Verify one receipt.
      *
-     * @param bank - Bank code (e.g. `"cbe"`, `"telebirr"`, `"boa"`).
-     * @param reference - Transaction reference number.
-     * @param options - Optional verification fields (`accountNumber`,
-     *   `phoneNumber`, `qrData`).
-     * @param requestOptions - Per-call overrides for timeout, retries,
-     *   and abort signal.
-     * @returns Verification result with full transaction details.
-     * @throws {ChekiAPIError} On non-2xx API responses (after retries).
-     * @throws {ChekiNetworkError} On network failures (after retries).
-     * @throws {ChekiTimeoutError} On request timeout.
+     * Resolves for HTTP 200, which includes unverified decoded-only BOA QR
+     * results: check {@link isVerified}. Throws {@link ChekiAPIError} for
+     * everything else (422 not found, 404 unsupported bank, ...).
      *
-     * @example
-     * ```ts
-     * const result = await cheki.verify("cbe", "FT26140P01YB", {
-     *   accountNumber: "1000560536171",
-     * });
-     * if (result.verified) {
-     *   console.log(`Verified: ${result.amount} ${result.currency}`);
-     * }
-     * ```
+     * @param reference - Reference or receipt link. Pass `""` with `options.qrData` for QR-only.
      */
     async verify(bank, reference, options, requestOptions) {
-        const body = { bank, reference, ...options };
-        return this.request("POST", "/api/verify", body, requestOptions);
+        return this.request("POST", "/api/verify", cleanReceipt({ bank, reference, ...options }), requestOptions);
     }
     /**
-     * Verify multiple receipts in a single batch request.
+     * Verify up to {@link MAX_BATCH_SIZE} receipts in one request. Each item
+     * also counts against the per-IP verify limit (30/min).
      *
-     * @param receipts - Array of receipts to verify.
-     * @param requestOptions - Per-call overrides for timeout, retries,
-     *   and abort signal.
-     * @returns Batch result with per-receipt verification details.
-     * @throws {ChekiAPIError} On non-2xx API responses (after retries).
-     * @throws {ChekiNetworkError} On network failures (after retries).
-     * @throws {ChekiTimeoutError} On request timeout.
-     *
-     * @example
-     * ```ts
-     * const result = await cheki.verifyBatch([
-     *   { bank: "cbe", reference: "FT26140P01YB", accountNumber: "1000560536171" },
-     *   { bank: "telebirr", reference: "TELEBIRR123", phoneNumber: "0912345678" },
-     * ]);
-     * console.log(`Verified: ${result.verified}/${result.total}`);
-     * ```
+     * @throws {ChekiValidationError} For an empty batch or more than 20 receipts (no request is made).
      */
     async verifyBatch(receipts, requestOptions) {
-        return this.request("POST", "/api/verify/batch", { receipts }, requestOptions);
+        if (!Array.isArray(receipts) || receipts.length === 0) {
+            throw new ChekiValidationError("verifyBatch needs at least one receipt.");
+        }
+        if (receipts.length > exports.MAX_BATCH_SIZE) {
+            throw new ChekiValidationError(`verifyBatch accepts at most ${exports.MAX_BATCH_SIZE} receipts (got ${receipts.length}). Split the list into chunks of ${exports.MAX_BATCH_SIZE}.`);
+        }
+        const raw = await this.request("POST", "/api/verify/batch", { receipts: receipts.map(cleanReceipt) }, requestOptions);
+        const results = (raw.results ?? []).map((r, index) => ({ ...r, index }));
+        const verified = results.filter(isVerified).length;
+        return {
+            success: raw.success,
+            results,
+            total: raw.total ?? results.length,
+            verified: raw.verified ?? verified,
+            failed: raw.failed ?? results.length - verified,
+            cached: raw.cached ?? 0,
+        };
     }
-    /**
-     * List all supported banks and wallets.
-     *
-     * @param requestOptions - Per-call overrides for timeout, retries,
-     *   and abort signal.
-     * @returns List of supported banks with integration metadata.
-     * @throws {ChekiAPIError} On non-2xx API responses (after retries).
-     * @throws {ChekiNetworkError} On network failures (after retries).
-     * @throws {ChekiTimeoutError} On request timeout.
-     *
-     * @example
-     * ```ts
-     * const { banks } = await cheki.getBanks();
-     * for (const bank of banks) {
-     *   console.log(`${bank.code}: ${bank.name} (${bank.status})`);
-     * }
-     * ```
-     */
+    /** List supported banks and wallets. `id` is the value to pass as `bank`. */
     async getBanks(requestOptions) {
-        return this.request("GET", "/api/banks", undefined, requestOptions);
+        const raw = await this.request("GET", "/api/banks", undefined, requestOptions);
+        const banks = (raw.banks ?? []).map((b) => {
+            const id = String(b.id ?? b.code ?? "");
+            return { ...b, id, code: id, requiresPhone: b.requiresPhone === true };
+        });
+        return { banks };
     }
-    /**
-     * Check the health of the cheki API service.
-     *
-     * @param requestOptions - Per-call overrides for timeout, retries,
-     *   and abort signal.
-     * @returns Service health status with version and component checks.
-     * @throws {ChekiAPIError} On non-2xx API responses (after retries).
-     * @throws {ChekiNetworkError} On network failures (after retries).
-     * @throws {ChekiTimeoutError} On request timeout.
-     *
-     * @example
-     * ```ts
-     * const health = await cheki.getHealth();
-     * console.log(health.status, health.version);
-     * ```
-     */
+    /** Per-bank reachability. The server caches this for up to 5 minutes. */
     async getHealth(requestOptions) {
-        return this.request("GET", "/api/health", undefined, requestOptions);
+        const raw = await this.request("GET", "/api/health", undefined, requestOptions);
+        return {
+            status: raw.status ?? "unknown",
+            checkedAt: raw.checkedAt ?? "",
+            cached: raw.cached === true,
+            banks: raw.banks ?? [],
+        };
     }
     /**
-     * Build the URL for viewing a receipt in the cheki web interface.
+     * URL of `GET /api/receipt`, which downloads the bank's receipt file.
+     * Only CBE (needs the account number, at least its last 8 digits), Zemen
+     * and Dashen are supported. Pure helper, no request is made.
      *
-     * This is a pure helper - it does **not** make a network request.
-     *
-     * @param bank - Bank code.
-     * @param reference - Transaction reference number.
-     * @param accountNumber - Optional account number.
-     * @returns The full receipt URL.
-     *
-     * @example
-     * ```ts
-     * const url = cheki.getReceiptUrl("cbe", "FT26140P01YB", "1000560536171");
-     * // "https://cheki.et/api/receipt?bank=cbe&reference=FT26140P01YB&account=1000560536171"
-     * ```
+     * @throws {ChekiValidationError} For an unsupported bank, a bad reference or a missing CBE account.
      */
     getReceiptUrl(bank, reference, accountNumber) {
-        const params = new URLSearchParams({ bank, reference });
-        if (accountNumber) {
-            params.set("account", accountNumber);
+        const id = String(bank ?? "").trim().toLowerCase();
+        const spec = Object.prototype.hasOwnProperty.call(exports.RECEIPT_DOWNLOAD_BANKS, id) ? exports.RECEIPT_DOWNLOAD_BANKS[id] : undefined;
+        if (!spec) {
+            throw new ChekiValidationError(`Receipt download is only supported for: ${Object.keys(exports.RECEIPT_DOWNLOAD_BANKS).join(", ")}.`);
+        }
+        const ref = String(reference ?? "").trim();
+        if (!SAFE_REFERENCE_RE.test(ref) || ref.includes("..")) {
+            throw new ChekiValidationError("reference must be 1-64 letters, digits, dots, dashes or underscores.");
+        }
+        const params = new URLSearchParams({ bank: id, reference: ref });
+        if (spec.accountDigits) {
+            const digits = String(accountNumber ?? "").replace(/[\s-]/g, "");
+            if (!/^\d+$/.test(digits) || digits.length < spec.accountDigits) {
+                throw new ChekiValidationError(`${id} needs the receiving account number (at least the last ${spec.accountDigits} digits).`);
+            }
+            params.set("account", digits);
         }
         return `${this.config.baseUrl}/api/receipt?${params.toString()}`;
     }
     // ───────────────────────────────────────────────────────────────────────
     // Internal helpers
     // ───────────────────────────────────────────────────────────────────────
-    /**
-     * Build the full headers object for an API request.
-     * User-provided `defaultHeaders` can override built-in headers.
-     */
-    buildHeaders() {
+    buildHeaders(hasBody) {
         const headers = {
-            "Content-Type": "application/json",
             Accept: "application/json",
             "User-Agent": this.config.userAgent,
         };
-        if (this.config.apiKey) {
+        // Only send Content-Type with a body, so GETs stay "simple" requests.
+        if (hasBody)
+            headers["Content-Type"] = "application/json";
+        if (this.config.apiKey)
             headers["Authorization"] = `Bearer ${this.config.apiKey}`;
-        }
-        for (const [key, value] of Object.entries(this.config.defaultHeaders)) {
-            headers[key] = value;
-        }
-        return headers;
+        return { ...headers, ...this.config.defaultHeaders };
     }
-    /**
-     * Join the configured base URL with an API path.
-     */
-    joinUrl(path) {
-        const p = path.startsWith("/") ? path : `/${path}`;
-        return `${this.config.baseUrl}${p}`;
-    }
-    /**
-     * Compute the backoff delay for a given retry attempt.
-     *
-     * Uses exponential backoff with **equal jitter**:
-     * ```
-     * capped   = min(initial * 2^attempt, maxDelay)
-     * delay    = capped / 2 + random(0, capped / 2)
-     * ```
-     *
-     * @param attempt - Zero-based retry attempt number.
-     * @returns Delay in milliseconds.
-     */
-    computeBackoff(attempt) {
-        const exponential = INITIAL_BACKOFF_MS * Math.pow(2, attempt);
-        const capped = Math.min(exponential, MAX_BACKOFF_MS);
-        return capped / 2 + Math.random() * (capped / 2);
-    }
-    /**
-     * Sleep for the computed backoff delay.
-     *
-     * If an external `AbortSignal` is provided and fires during the
-     * sleep, the promise rejects with a {@link ChekiNetworkError}.
-     *
-     * @param attempt - Zero-based retry attempt number.
-     * @param signal - Optional external `AbortSignal`.
-     */
-    async sleepWithBackoff(attempt, signal) {
-        const delay = this.computeBackoff(attempt);
-        await new Promise((resolve, reject) => {
-            const timer = setTimeout(resolve, delay);
-            if (!signal)
-                return;
-            if (signal.aborted) {
-                clearTimeout(timer);
+    sleep(ms, signal) {
+        return new Promise((resolve, reject) => {
+            if (signal?.aborted) {
                 reject(new ChekiNetworkError("Request aborted by caller signal"));
                 return;
             }
@@ -342,132 +292,125 @@ class Cheki {
                 clearTimeout(timer);
                 reject(new ChekiNetworkError("Request aborted by caller signal"));
             };
-            signal.addEventListener("abort", onAbort, { once: true });
+            const timer = setTimeout(() => {
+                signal?.removeEventListener("abort", onAbort);
+                resolve();
+            }, ms);
+            signal?.addEventListener("abort", onAbort, { once: true });
         });
     }
+    /** Delay before the retry: Retry-After when sent, otherwise 1-2 s. */
+    retryDelayMs(retryAfterSeconds) {
+        if (retryAfterSeconds !== undefined)
+            return retryAfterSeconds * 1000;
+        return RETRY_BASE_DELAY_MS + Math.random() * RETRY_BASE_DELAY_MS;
+    }
     /**
-     * Core HTTP request method with retry, timeout, and error handling.
+     * One request with at most one retry.
      *
-     * - **Timeout:** Each attempt is guarded by an `AbortController` with
-     *   the configured `timeoutMs`. On timeout, a {@link ChekiTimeoutError}
-     *   is thrown.
-     * - **Retry:** Transient failures (HTTP 429, 500, 502, 503, 504 and
-     *   network errors) are retried up to `maxRetries` times with
-     *   exponential backoff + jitter. Non-retryable 4xx errors are thrown
-     *   immediately.
-     * - **External signal:** If the caller provides an `AbortSignal`, it
-     *   is linked to the internal controller. Aborting the external signal
-     *   cancels the in-flight request and any pending backoff sleep.
-     *
-     * @param method - HTTP method (`"GET"` or `"POST"`).
-     * @param path - API path (e.g. `"/api/verify"`).
-     * @param body - Request body for POST, or `undefined` for GET.
-     * @param options - Per-call overrides.
-     * @returns Parsed JSON response typed as `T`.
+     * Retried: network errors, 5xx, and 429 when Retry-After is at most 60 s.
+     * Never retried: other 4xx, timeouts, caller aborts.
      */
     async request(method, path, body, options) {
-        const maxRetries = options?.retries ?? this.config.maxRetries;
+        const maxRetries = clampRetries(options?.retries, this.config.maxRetries);
         const timeoutMs = options?.timeoutMs ?? this.config.timeoutMs;
         const externalSignal = options?.signal;
-        const url = this.joinUrl(path);
-        const headers = this.buildHeaders();
-        for (let attempt = 0; attempt <= maxRetries; attempt++) {
-            // Bail out early if the caller has already aborted.
-            if (externalSignal?.aborted) {
+        const url = `${this.config.baseUrl}${path}`;
+        const headers = this.buildHeaders(body !== undefined);
+        for (let attempt = 0;; attempt++) {
+            const canRetry = attempt < maxRetries;
+            if (externalSignal?.aborted)
                 throw new ChekiNetworkError("Request aborted by caller signal");
-            }
-            // ── Set up AbortController for timeout ──────────────────────────
             const controller = new AbortController();
-            const timer = setTimeout(() => controller.abort(), timeoutMs);
-            // Wire up an external AbortSignal if one was provided.
-            let externalAborted = false;
-            const onExternalAbort = () => {
-                externalAborted = true;
+            let timedOut = false;
+            const timer = setTimeout(() => {
+                timedOut = true;
                 controller.abort();
-            };
-            if (externalSignal) {
-                if (externalSignal.aborted) {
-                    externalAborted = true;
-                    controller.abort();
-                }
-                else {
-                    externalSignal.addEventListener("abort", onExternalAbort, {
-                        once: true,
-                    });
-                }
-            }
+            }, timeoutMs);
+            const onExternalAbort = () => controller.abort();
+            externalSignal?.addEventListener("abort", onExternalAbort, { once: true });
             const cleanup = () => {
                 clearTimeout(timer);
-                if (externalSignal) {
-                    externalSignal.removeEventListener("abort", onExternalAbort);
-                }
+                externalSignal?.removeEventListener("abort", onExternalAbort);
             };
+            let response;
+            let text;
             try {
-                // ── Build fetch options ──────────────────────────────────────
-                const fetchInit = {
+                response = await fetch(url, {
                     method,
                     headers,
                     signal: controller.signal,
-                };
-                if (body !== undefined) {
-                    fetchInit.body = JSON.stringify(body);
-                }
-                const response = await fetch(url, fetchInit);
-                cleanup();
-                // ── Handle non-2xx responses ─────────────────────────────────
-                if (!response.ok) {
-                    const text = await response.text().catch(() => "");
-                    let errorBody = text;
-                    try {
-                        errorBody = JSON.parse(text);
-                    }
-                    catch {
-                        // Keep the raw text as the error body.
-                    }
-                    const apiError = new ChekiAPIError(`cheki API returned ${response.status} ${response.statusText} for ${method} ${path}`, response.status, errorBody, path);
-                    // Retry on specific status codes if attempts remain.
-                    if (RETRYABLE_STATUS_CODES.has(response.status) &&
-                        attempt < maxRetries) {
-                        await this.sleepWithBackoff(attempt, externalSignal);
-                        continue;
-                    }
-                    throw apiError;
-                }
-                // ── Parse and return the JSON response ───────────────────────
-                return (await response.json());
+                    ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+                });
+                text = await response.text();
             }
             catch (err) {
                 cleanup();
-                // Re-throw ChekiAPIError (non-retryable, thrown above).
-                if (err instanceof ChekiAPIError) {
-                    throw err;
-                }
-                // Re-throw ChekiNetworkError from sleepWithBackoff (caller abort
-                // during backoff - thrown from inside the try block).
-                if (err instanceof ChekiNetworkError) {
-                    throw err;
-                }
-                // ── Handle fetch-level abort (timeout or external signal) ─────
-                if (err instanceof Error && err.name === "AbortError") {
-                    if (externalAborted) {
-                        throw new ChekiNetworkError(`Request to ${path} aborted by caller signal`, err);
-                    }
+                if (timedOut) {
                     throw new ChekiTimeoutError(`Request to ${path} timed out after ${timeoutMs}ms`, timeoutMs);
                 }
-                // ── Handle generic network errors ─────────────────────────────
-                const message = err instanceof Error ? err.message : String(err);
-                const networkError = new ChekiNetworkError(`Network request to ${path} failed: ${message}`, err instanceof Error ? err : undefined);
-                // Retry network errors if attempts remain.
-                if (attempt < maxRetries) {
-                    await this.sleepWithBackoff(attempt, externalSignal);
+                if (externalSignal?.aborted) {
+                    throw new ChekiNetworkError(`Request to ${path} aborted by caller signal`, err instanceof Error ? err : undefined);
+                }
+                const networkError = new ChekiNetworkError(`Network request to ${path} failed: ${err instanceof Error ? err.message : String(err)}`, err instanceof Error ? err : undefined);
+                if (canRetry) {
+                    await this.sleep(this.retryDelayMs(), externalSignal);
                     continue;
                 }
                 throw networkError;
             }
+            cleanup();
+            let parsed = text;
+            try {
+                parsed = text ? JSON.parse(text) : undefined;
+            }
+            catch {
+                // Keep the raw text.
+            }
+            if (response.ok) {
+                if (parsed === undefined || typeof parsed !== "object") {
+                    throw new ChekiAPIError(`cheki API returned a non-JSON body for ${method} ${path}`, response.status, parsed, path);
+                }
+                return parsed;
+            }
+            const status = response.status;
+            const serverMessage = parsed && typeof parsed === "object" && typeof parsed.error === "string"
+                ? parsed.error
+                : undefined;
+            const message = `cheki API returned ${status} for ${method} ${path}${serverMessage ? `: ${serverMessage}` : ""}`;
+            if (status === 429) {
+                const retryAfter = parseRetryAfter(response.headers.get("retry-after"));
+                if (canRetry && (retryAfter === undefined || retryAfter * 1000 <= MAX_RETRY_AFTER_MS)) {
+                    await this.sleep(this.retryDelayMs(retryAfter), externalSignal);
+                    continue;
+                }
+                throw new ChekiRateLimitError(message, parsed, path, retryAfter);
+            }
+            if (status === 413)
+                throw new ChekiPayloadTooLargeError(message, parsed, path);
+            if (status >= 500 && canRetry) {
+                const retryAfter = parseRetryAfter(response.headers.get("retry-after"));
+                if (retryAfter === undefined || retryAfter * 1000 <= MAX_RETRY_AFTER_MS) {
+                    await this.sleep(this.retryDelayMs(retryAfter), externalSignal);
+                    continue;
+                }
+            }
+            throw new ChekiAPIError(message, status, parsed, path);
         }
-        // Unreachable - the loop always returns or throws on every iteration.
-        throw new ChekiError("cheki: unreachable state in request loop");
     }
 }
 exports.Cheki = Cheki;
+/** Drop empty optional fields so the server sees exactly what was given. */
+function cleanReceipt(r) {
+    const out = { bank: r.bank };
+    if (r.reference)
+        out.reference = r.reference;
+    if (r.accountNumber)
+        out.accountNumber = r.accountNumber;
+    if (r.phoneNumber)
+        out.phoneNumber = r.phoneNumber;
+    if (r.qrData)
+        out.qrData = r.qrData;
+    return out;
+}
 exports.default = Cheki;
