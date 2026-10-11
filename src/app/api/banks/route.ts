@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAllBanks } from "@/lib";
-import { formatAccountDigits, isSupportedFormat } from "@/lib/manifest/formats";
+import { formatAccountDigits, isCheckableFormat } from "@/lib/manifest/formats";
 
 export const runtime = "nodejs";
 
@@ -34,7 +34,7 @@ export async function GET() {
       inputs: f.inputs.map((i) => i.name),
       accountDigits: formatAccountDigits(f),
       responseType: f.responseType,
-      supported: isSupportedFormat(f),
+      supported: isCheckableFormat(b, f),
       confidence: f.confidence,
     })),
   }));

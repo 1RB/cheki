@@ -199,7 +199,8 @@
             "color": "#00A0DC",
             "initials": "TB",
             "formats": [
-              { "id": "telebirr-receipt-html", "status": "current", "label": "Transaction number", "inputs": ["reference"], "responseType": "html", "supported": true, "confidence": "verified" }
+              { "id": "telebirr-receipt-html", "status": "current", "label": "Transaction number", "inputs": ["reference"], "responseType": "html", "supported": true, "confidence": "verified" },
+              { "id": "telebirr-receipt-qr", "status": "current", "label": "Receipt QR code", "inputs": ["qr"], "responseType": "html", "supported": true, "confidence": "verified" }
             ]
           },
           {

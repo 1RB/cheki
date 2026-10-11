@@ -226,19 +226,22 @@ export const endpointDocs: EndpointDoc[] = [
   {
     id: "telebirr",
     label: "Telebirr",
-    inputNeeded: "Transaction number",
+    inputNeeded: "Transaction number, or the Payment QR Code on the receipt",
     placeholders: [
       {
         name: "{REFERENCE}",
         what: "The Telebirr transaction number.",
-        whereToFind: "In the Telebirr SMS sent to payer and receiver, and on the in-app receipt.",
-        format: "10 characters: a 2 or 3 letter prefix (DET, CHQ, DAB, DEL, ADQ, ...) plus letters and digits, e.g. DET8FJGUJ4.",
+        whereToFind: "In the Telebirr SMS sent to payer and receiver, and on the in-app receipt. The receipt's Payment QR Code holds it too: scan or upload the QR and cheki reads the number out of it.",
+        format: "10 characters: a 2 or 3 letter prefix (DET, CHQ, DAB, DJA, DEL, ADQ, ...) plus letters and digits, e.g. DET8FJGUJ4.",
       },
     ],
     redactedExample: "https://transactioninfo.ethiotelecom.et/receipt/DETXXXXXXX",
     fieldsParsed: ["senderName", "senderAccount", "receiverName", "receiverAccount", "amount", "currency", "date", "reference", "invoiceNumber", "transactionStatus", "settledAmount", "stampDuty", "discountAmount", "serviceFee", "serviceFeeVat", "totalPaid", "amountInWords", "paymentMode", "paymentChannel", "reason", "bankAccountNumber", "bankAccountName"],
     unknownRef: "Not checked from CI. The endpoint only answers Ethiopian IP addresses.",
-    gotchas: ["Geo-blocked: requests from outside Ethiopia time out or are refused. cheki shows the official link as a fallback."],
+    gotchas: [
+      "Geo-blocked: requests from outside Ethiopia time out or are refused. cheki shows the official link as a fallback.",
+      "The receipt's Payment QR Code is base64 of a hex string holding TLV data: tag 81 contains tag 00, the transaction number in ASCII; tag 63 is a CRC-16/CCITT-FALSE over the characters before it, case-sensitive. It holds nothing else cheki uses (no amount, no names), so cheki only takes the transaction number from it and checks that like a typed one. A QR is never proof of payment. Decoder: src/lib/qr/telebirr.ts, write-up: docs/telebirr-qr.md.",
+    ],
     changelog: [],
     parserSource: "src/lib/parsers/telebirr.ts",
     fixture: "tests/parsers/telebirr-mpesa.test.ts",

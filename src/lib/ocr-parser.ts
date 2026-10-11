@@ -137,7 +137,7 @@ const OCR_PATTERNS: { bank: string; pattern: RegExp; confidence: OcrParseConfide
   // Telebirr: older invoice prefixes.
   {
     bank: "telebirr",
-    pattern: /\b(DET|CHQ|DAB|DEL|ADQ|DEP|CHG|CHA|CHB|CHC|CHD|CHE|CHF|DEB|DEC|DED|DEE|DEF|DEG|DEH|DEI|DEJ|DEK|DEM|DEN|DEO|DEQ|DER|DES|DEU|DEV|DEW|DEX|DEY|DEZ|DF)[A-Z0-9]{6,8}\b/i,
+    pattern: /\b(DET|CHQ|DAB|DJA|DEL|ADQ|DEP|CHG|CHA|CHB|CHC|CHD|CHE|CHF|DEB|DEC|DED|DEE|DEF|DEG|DEH|DEI|DEJ|DEK|DEM|DEN|DEO|DEQ|DER|DES|DEU|DEV|DEW|DEX|DEY|DEZ|DF)[A-Z0-9]{6,8}\b/i,
     confidence: "high",
   },
   // Telebirr: newer invoice numbers seen on web receipts (e.g. CGItLDQDUD).

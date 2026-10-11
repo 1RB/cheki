@@ -213,6 +213,9 @@ export const translations = {
         noRef: "Couldn't find a reference in that image. Try a clearer screenshot or type the reference.",
         failed: "Couldn't read that image.",
       },
+      qr: {
+        telebirr: "Transaction number read from the Telebirr receipt QR. The QR is not proof of payment: only Telebirr's own receipt confirms it.",
+      },
     },
     banks: {
       title: "Supported banks and wallets",

@@ -37,6 +37,27 @@ export function isSupportedFormat(f: ReceiptFormat): boolean {
   return Boolean(f.parser) && f.status !== "deprecated";
 }
 
+/**
+ * An input-only format (`via` set, no parser): a receipt QR that only names
+ * the reference. It is checked through the `via` format and never fetched.
+ */
+export function isInputOnlyFormat(f: ReceiptFormat): boolean {
+  return Boolean(f.via) && !f.parser;
+}
+
+/** The bank's input-only formats (e.g. Telebirr's receipt QR), in manifest order. */
+export function inputOnlyFormats(bank: Pick<BankManifestEntry, "formats"> | undefined): ReceiptFormat[] {
+  return formatsOf(bank).filter(isInputOnlyFormat);
+}
+
+/** cheki can check a receipt given in this format: directly, or through the format an input-only one resolves to. */
+export function isCheckableFormat(bank: Pick<BankManifestEntry, "formats"> | undefined, f: ReceiptFormat): boolean {
+  if (isSupportedFormat(f)) return true;
+  if (!isInputOnlyFormat(f)) return false;
+  const target = formatsOf(bank).find((x) => x.id === f.via);
+  return Boolean(target && isSupportedFormat(target));
+}
+
 export function supportedFormats(bank: Pick<BankManifestEntry, "formats"> | undefined): ReceiptFormat[] {
   return formatsOf(bank).filter(isSupportedFormat);
 }
@@ -46,10 +67,14 @@ export function primaryFormat(bank: Pick<BankManifestEntry, "formats"> | undefin
   return supportedFormats(bank)[0];
 }
 
-/** Every format except the primary one, in manifest order (legacy and deprecated included). */
+/**
+ * Every receipt format except the primary one, in manifest order (legacy and
+ * deprecated included). Input-only formats are not receipt formats of their
+ * own, so they are left out (see inputOnlyFormats).
+ */
 export function secondaryFormats(bank: Pick<BankManifestEntry, "formats"> | undefined): ReceiptFormat[] {
   const primary = primaryFormat(bank);
-  return formatsOf(bank).filter((f) => f !== primary);
+  return formatsOf(bank).filter((f) => f !== primary && !isInputOnlyFormat(f));
 }
 
 export function formatNeeds(f: ReceiptFormat | undefined, name: ReceiptFormatInputName): boolean {
