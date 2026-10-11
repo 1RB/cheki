@@ -25,6 +25,7 @@ import { DashenParser, DASHEN_NOT_FOUND } from "../parsers/dashen";
 import { BOAParser } from "../parsers/boa";
 import { ZemenParser } from "../parsers/zemen";
 import { CBEBirrParser } from "../parsers/cbebirr";
+import { MpesaParser } from "../parsers/mpesa";
 import { verificationGate, gateFailureMessage } from "./gate";
 import { checkAccountSuffix, checkPhone, checkReference } from "../security/reference";
 import { selectFormat, formatNeeds, formatAccountDigits, fillTemplate } from "../manifest/formats";
@@ -342,6 +343,30 @@ export class Verifier {
             html && CBEBirrParser.isEmptyShell(html)
               ? "CBE Birr returned an empty receipt. Check the receipt number and the payer phone number."
               : "Could not read the CBE Birr receipt. Check the receipt number and the payer phone number.",
+        });
+      }
+      return ok(parsed);
+    }
+
+    // M-Pesa: a JSON envelope carrying the receipt as a base64 PDF
+    // ({responseCode, responseDescription, base64Data}). The envelope and the
+    // decoded PDF are size-checked before any text extraction.
+    if (id === "mpesa") {
+      const { parsed, envelope } = await MpesaParser.parseEnvelope(data);
+      if (!envelope.ok) {
+        const message =
+          envelope.reason === "upstream-error"
+            ? `M-Pesa did not return a receipt for this transaction number${envelope.description ? ` (${envelope.description})` : ""}. Check the transaction number.`
+            : envelope.reason === "too-large"
+              ? "M-Pesa returned a receipt larger than cheki accepts."
+              : "M-Pesa did not return a valid receipt.";
+        return err({ kind: "EXTRACTION_ERROR", bank: manifestEntry.name, message });
+      }
+      if (!parsed.verified) {
+        return err({
+          kind: "EXTRACTION_ERROR",
+          bank: manifestEntry.name,
+          message: "Could not read the M-Pesa receipt PDF. Check the transaction number.",
         });
       }
       return ok(parsed);
