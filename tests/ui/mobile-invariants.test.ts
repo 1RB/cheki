@@ -41,8 +41,7 @@ const globals = read("src/app/globals.css");
 function coarseBlocks(css: string): string[] {
   const out: string[] = [];
   const re = /@media \(pointer: coarse\)[^{]*\{/g;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(css))) {
+  while (re.exec(css) !== null) {
     let depth = 1, i = re.lastIndex;
     for (; i < css.length && depth > 0; i++) {
       if (css[i] === "{") depth++;
