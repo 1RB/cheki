@@ -21,7 +21,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "cli": "tsx src/cli/index.ts"
+    "cli": "tsx src/cli/index.ts",
+    "probe": "tsx scripts/probe.ts",
+    "health-check": "tsx scripts/health-check.ts"
   },
   "bin": {
     "cheki": "src/cli/index.ts"

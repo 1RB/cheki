@@ -24,6 +24,7 @@ import { CBEParser } from "../parsers/cbe";
 import { DashenParser, DASHEN_NOT_FOUND } from "../parsers/dashen";
 import { BOAParser } from "../parsers/boa";
 import { ZemenParser } from "../parsers/zemen";
+import { CBEBirrParser } from "../parsers/cbebirr";
 import { verificationGate, gateFailureMessage } from "./gate";
 import { checkAccountSuffix, checkPhone, checkReference } from "../security/reference";
 
@@ -306,6 +307,27 @@ export class Verifier {
           message: `The bank did not return a valid receipt PDF. ${pdf.hint}`,
         });
       }
+    }
+
+    // CBE Birr: a real receipt may come back as a PDF or as HTML (the body is
+    // read as bytes, under the PDF size cap); an unknown TID/PH is an empty
+    // Telerik shell. Either way the result still goes through the gate.
+    if (id === "cbebirr") {
+      const buf = Buffer.isBuffer(data) ? data : Buffer.from(data);
+      const isPdf = CBEBirrParser.isPdf(buf);
+      const html = isPdf ? "" : buf.toString("utf8");
+      const parsed = CBEBirrParser.parseText(isPdf ? await CBEBirrParser.extractPdfText(buf) : CBEBirrParser.htmlToText(html));
+      if (!parsed.verified) {
+        return err({
+          kind: "EXTRACTION_ERROR",
+          bank: manifestEntry.name,
+          message:
+            html && CBEBirrParser.isEmptyShell(html)
+              ? "CBE Birr returned an empty receipt. Check the receipt number and the payer phone number."
+              : "Could not read the CBE Birr receipt. Check the receipt number and the payer phone number.",
+        });
+      }
+      return ok(parsed);
     }
 
     if (id === "dashen") {
