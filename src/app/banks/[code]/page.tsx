@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { banks, getBank } from "@/lib/banks";
 import { Nav, Footer } from "@/components/Chrome";
 import { BouncyAccordion } from "@/components/motion/bouncy-accordion";
@@ -107,9 +108,9 @@ export default async function BankPage({ params }: { params: Promise<{ code: str
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
       <main className="container" style={{ paddingTop: "48px", paddingBottom: "48px" }}>
         <nav aria-label="Breadcrumb" style={{ fontSize: "13px", color: "var(--ink-3)", marginBottom: "16px" }}>
-          <a href="/" style={{ color: "var(--ink-3)" }}>Home</a>
+          <Link href="/" style={{ color: "var(--ink-3)" }}>Home</Link>
           <span style={{ margin: "0 6px"}}>/</span>
-          <a href="/banks" style={{ color: "var(--ink-3)" }}>Banks</a>
+          <Link href="/banks" style={{ color: "var(--ink-3)" }}>Banks</Link>
           <span style={{ margin: "0 6px"}}>/</span>
           <span style={{ color: "var(--ink)" }}>{bank.shortName}</span>
         </nav>
@@ -204,7 +205,7 @@ export default async function BankPage({ params }: { params: Promise<{ code: str
             <p>cheki provides a free REST API for {bank.shortName} verification:</p>
             <p><code>POST https://cheki.et/api/verify</code></p>
             <p>Request body: <code>{`{ "bank": "${bank.code}", "reference": "${bank.referenceExample}"${bank.requiresAccount ? `, "accountNumber": "1000XXXXXXX"` : ""} }`}</code></p>
-            <p>See the <a href="/docs">API documentation</a> for full details.</p>
+            <p>See the <Link href="/docs">API documentation</Link> for full details.</p>
 
             {mergedSections.map((sec, i) => (
               <div key={`merged-${i}`}>
@@ -223,7 +224,7 @@ export default async function BankPage({ params }: { params: Promise<{ code: str
                 <h2>More about {bank.shortName} receipts</h2>
                 <ul>
                   {topicPages.map((tp) => (
-                    <li key={tp.slug}><a href={`/verify/${tp.slug}`}>{stripBrandSuffix(tp.h1)}</a></li>
+                    <li key={tp.slug}><Link href={`/verify/${tp.slug}`}>{stripBrandSuffix(tp.h1)}</Link></li>
                   ))}
                 </ul>
               </>
