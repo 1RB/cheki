@@ -2,34 +2,90 @@
  * Verifier - the orchestrator. Pure business logic, no direct I/O.
  *
  * Flow:
- *   1. Validate input (bank exists, reference present, account if required)
- *   2. Get parser from registry
- *   3. Fetch receipt data from bank endpoint (via parser's fetchReceipt)
- *   4. Parse the response into a ParsedReceipt
- *   5. Return a Receipt entity
+ *   1. Resolve the input: a QR payload, a receipt link or a reference
+ *      becomes (bank, reference, account, phone). Links are only used to
+ *      extract those parts; the bank URL is always rebuilt from a fixed host.
+ *   2. Gate the bank: it exists, is live, has a parser, and the account or
+ *      phone it needs is present and well formed.
+ *   3. Validate the reference (no path/query characters, strict charset).
+ *   4. Fetch from the bank (allowlisted hosts only) and parse.
+ *   5. Run the shared verification gate (amount, matching reference, a
+ *      party, a non-failure status). It fails closed.
  *
- * For CBE PDF: extract text first, then parse
- * For geo-blocked banks: the parser handles fallback URLs
+ * BOA QR payloads are decrypted only to find the receipt, then looked up at
+ * BOA like any other reference. They never verify on their own.
  */
-import type { Result, Receipt, VerifyRequest, ChekiError } from "./types";
+import type { Result, Receipt, VerifyRequest, ChekiError, ParsedReceipt, BankManifestEntry } from "./types";
 import { ok, err } from "./types";
-import { getParser } from "../parsers/registry";
+import { getParser, type RegisteredParser } from "../parsers/registry";
 import { getBank, suggestBank } from "../manifest/loader";
-import { detectBankFromUrl, isUrl } from "../adapters/url-detector";
+import { detectBankFromUrl, isUrl, looksLikeUrl } from "../adapters/url-detector";
 import { CBEParser } from "../parsers/cbe";
 import { DashenParser } from "../parsers/dashen";
 import { BOAParser } from "../parsers/boa";
 import { ZemenParser } from "../parsers/zemen";
+import { verificationGate, gateFailureMessage } from "./gate";
+import { checkAccountSuffix, checkPhone, checkReference } from "../security/reference";
+
+/** Receipts verified at the same time in one batch. */
+export const BATCH_CONCURRENCY = 5;
+const MAX_QR_LENGTH = 4096;
+
+function asOptionalString(v: unknown): string | undefined {
+  return typeof v === "string" ? v : undefined;
+}
+
+/** Strip debugging data before a receipt leaves the core. */
+function publicFields(parsed: ParsedReceipt): Omit<ParsedReceipt, "raw" | "verified"> {
+  const rest: Partial<ParsedReceipt> = { ...parsed };
+  delete rest.raw;
+  delete rest.verified;
+  return rest as Omit<ParsedReceipt, "raw" | "verified">;
+}
 
 export class Verifier {
   /**
-   * Verify a single receipt.
+   * Verify a single receipt. Never throws: unexpected failures become
+   * INTERNAL_ERROR so one bad item cannot sink a batch.
    */
   async verify(request: VerifyRequest): Promise<Result<Receipt, ChekiError>> {
     const startTime = Date.now();
-    let { bank, reference, accountNumber, phoneNumber, qrData } = request;
+    try {
+      return await this.resolve(request, startTime, 0);
+    } catch {
+      return err({ kind: "INTERNAL_ERROR", message: "Verification failed unexpectedly. Try again." });
+    }
+  }
 
-    // Validate reference (or QR data for BOA)
+  /**
+   * Verify multiple receipts, at most BATCH_CONCURRENCY at a time, keeping
+   * the input order.
+   */
+  async verifyBatch(requests: VerifyRequest[]): Promise<Result<Receipt, ChekiError>[]> {
+    const results: Result<Receipt, ChekiError>[] = new Array(requests.length);
+    let next = 0;
+    const worker = async () => {
+      while (next < requests.length) {
+        const i = next++;
+        results[i] = await this.verify(requests[i]);
+      }
+    };
+    await Promise.all(Array.from({ length: Math.min(BATCH_CONCURRENCY, requests.length) }, worker));
+    return results;
+  }
+
+  // ─── Input resolution ─────────────────────────────────────────────
+
+  private async resolve(request: VerifyRequest, startTime: number, depth: number): Promise<Result<Receipt, ChekiError>> {
+    if (depth > 2) {
+      return err({ kind: "MISSING_INPUT", field: "reference", message: "Could not resolve this receipt." });
+    }
+    const bank = asOptionalString(request.bank);
+    const reference = asOptionalString(request.reference)?.trim();
+    const accountNumber = asOptionalString(request.accountNumber)?.trim() || undefined;
+    const phoneNumber = asOptionalString(request.phoneNumber)?.trim() || undefined;
+    const qrData = asOptionalString(request.qrData)?.trim();
+
     if (!reference && !qrData) {
       return err({
         kind: "MISSING_INPUT",
@@ -38,35 +94,67 @@ export class Verifier {
       });
     }
 
-    // Auto-detect bank from URL
-    const trimmedRef = (reference || "").trim();
-    if (trimmedRef && isUrl(trimmedRef)) {
-      const detected = detectBankFromUrl(trimmedRef);
-      if (detected) {
-        bank = detected.bank;
-        reference = detected.reference;
-        if (detected.accountNumber && !accountNumber) {
-          accountNumber = detected.accountNumber;
+    // QR payloads
+    if (qrData) {
+      if (qrData.length > MAX_QR_LENGTH) {
+        return err({ kind: "MISSING_INPUT", field: "qrData", message: "QR data is too long." });
+      }
+      if ((bank || "").toLowerCase() === "boa") {
+        return this.verifyBoaQr(qrData, startTime, depth);
+      }
+      if (looksLikeUrl(qrData)) {
+        // Only a receipt link cheki recognises. An unknown URL is rejected,
+        // never fetched or used as a reference.
+        if (!isUrl(qrData) || !detectBankFromUrl(qrData)) {
+          return err({
+            kind: "MISSING_INPUT",
+            field: "qrData",
+            message: "This QR code is not a receipt link cheki recognises.",
+          });
         }
-        if (detected.phoneNumber && !phoneNumber) {
-          phoneNumber = detected.phoneNumber;
-        }
-      } else {
+        return this.resolve({ bank: bank ?? "", reference: qrData, accountNumber, phoneNumber }, startTime, depth + 1);
+      }
+      // Plain reference inside the QR, for the bank the caller named.
+      return this.resolve({ bank: bank ?? "", reference: qrData, accountNumber, phoneNumber }, startTime, depth + 1);
+    }
+
+    let resolvedBank = bank;
+    let resolvedRef = reference!;
+    let resolvedAccount = accountNumber;
+    let resolvedPhone = phoneNumber;
+
+    // Receipt links. Anything with URL syntax must be a proper http(s) link
+    // to a known bank host; "http:/x", "http:evil.com", "//x" are rejected.
+    if (looksLikeUrl(resolvedRef)) {
+      const detected = isUrl(resolvedRef) ? detectBankFromUrl(resolvedRef) : null;
+      if (!detected) {
         return err({
           kind: "MISSING_INPUT",
           field: "reference",
           message: "Could not detect bank from URL. Please paste the reference number manually.",
         });
       }
+      resolvedBank = detected.bank;
+      resolvedRef = detected.reference;
+      if (detected.accountNumber && !resolvedAccount) resolvedAccount = detected.accountNumber;
+      if (detected.phoneNumber && !resolvedPhone) resolvedPhone = detected.phoneNumber;
     }
 
-    // Validate bank
+    return this.verifyReference(
+      { bank: resolvedBank, reference: resolvedRef, accountNumber: resolvedAccount, phoneNumber: resolvedPhone },
+      startTime
+    );
+  }
+
+  // ─── Bank + input gates, fetch, parse, verification gate ─────────────
+
+  private async verifyReference(
+    input: { bank?: string; reference: string; accountNumber?: string; phoneNumber?: string },
+    startTime: number
+  ): Promise<Result<Receipt, ChekiError>> {
+    const bank = input.bank;
     if (!bank) {
-      return err({
-        kind: "MISSING_INPUT",
-        field: "bank",
-        message: "Bank is required.",
-      });
+      return err({ kind: "MISSING_INPUT", field: "bank", message: "Bank is required." });
     }
 
     const manifestEntry = getBank(bank);
@@ -79,278 +167,209 @@ export class Verifier {
       });
     }
 
-    // Check if bank is in development
     if (manifestEntry.status === "in-development") {
       return err({
         kind: "BANK_NOT_SUPPORTED",
-        bank: bank,
+        bank,
         message: `${manifestEntry.name} is in development and not yet supported.`,
-      } as ChekiError);
-    }
-
-    // Validate account number if required (skip for QR-based verification)
-    if (manifestEntry.requiresAccount && !accountNumber && !qrData) {
-      return err({
-        kind: "MISSING_INPUT",
-        field: "accountNumber",
-        message: `${manifestEntry.name} requires the full receiving account number.`,
       });
     }
 
-    // Get parser
-    const parser = getParser(bank.toLowerCase());
+    const parser = getParser(manifestEntry.id.toLowerCase());
     if (!parser) {
       return err({
         kind: "BANK_NOT_SUPPORTED",
         bank,
         message: `No parser registered for ${manifestEntry.name}.`,
-      } as ChekiError);
-    }
-
-    // QR-based verification
-    if (qrData) {
-      // Non-BOA banks: QR content is usually a URL or plain reference.
-      // Treat it as reference input and let the normal flow handle it.
-      if (parser.bankId !== "boa") {
-        // If qrData looks like a URL, detect bank + extract reference
-        if (isUrl(qrData)) {
-          const detected = detectBankFromUrl(qrData);
-          if (detected) {
-            bank = detected.bank;
-            reference = detected.reference;
-            if (detected.accountNumber && !accountNumber) {
-              accountNumber = detected.accountNumber;
-            }
-            // Re-validate bank after QR detection
-            const qrManifest = getBank(bank);
-            if (!qrManifest) {
-              return err({
-                kind: "BANK_NOT_SUPPORTED",
-                bank,
-                message: `QR detected as ${bank}, but that bank is not supported.`,
-              });
-            }
-            const qrParser = getParser(bank);
-            if (!qrParser) {
-              return err({
-                kind: "BANK_NOT_SUPPORTED",
-                bank,
-                message: `No parser registered for ${qrManifest.name}.`,
-              });
-            }
-            // Fall through to normal fetch with extracted reference
-            const ref = reference;
-            const fallbackUrl = qrParser.buildUrl(ref, accountNumber, phoneNumber);
-            const fetchResult = await qrParser.fetchReceipt(ref, accountNumber, phoneNumber, { fallbackUrl });
-            if (!fetchResult.ok) return fetchResult;
-            const { data, contentType } = fetchResult.value;
-            const durationMs = Date.now() - startTime;
-
-            // CBE PDF handling
-            if (bank.toLowerCase() === "cbe") {
-              const buf = Buffer.isBuffer(data) ? data : Buffer.from(data);
-              if (!buf.toString("ascii", 0, 4).includes("%PDF")) {
-                return err({
-                  kind: "EXTRACTION_ERROR",
-                  bank: qrManifest.name,
-                  message: "The bank did not return a valid receipt PDF.",
-                });
-              }
-              const text = await CBEParser.extractPdfText(buf);
-              const parsed = CBEParser.parsePdfText(text);
-              if (!parsed.verified) {
-                return err({
-                  kind: "EXTRACTION_ERROR",
-                  bank: qrManifest.name,
-                  message: "Could not parse the receipt PDF.",
-                });
-              }
-              return ok({
-                ...parsed,
-                bank: qrManifest.name,
-                bankCode: qrManifest.id,
-                reference: ref,
-                sourceUrl: fallbackUrl,
-                durationMs,
-              });
-            }
-
-            // All other banks: parse directly
-            const parsed = qrParser.parse(data, contentType);
-            if (!parsed.verified) {
-              return err({
-                kind: "EXTRACTION_ERROR",
-                bank: qrManifest.name,
-                message: "Receipt not found or invalid.",
-              });
-            }
-            return ok({
-              ...parsed,
-              bank: qrManifest.name,
-              bankCode: qrManifest.id,
-              reference: parsed.reference || ref,
-              sourceUrl: fallbackUrl,
-              durationMs,
-            });
-          }
-        }
-
-        // Not a URL, so treat qrData as a plain reference for this bank
-        reference = qrData;
-        // Fall through to normal verification below
-      } else {
-        // BOA: encrypted QR payload → decrypt
-        const boaParser = parser as BOAParser;
-        const parsed = boaParser.decryptQr(qrData);
-        const durationMs = Date.now() - startTime;
-        if (!parsed.verified || !parsed.reference) {
-          return err({
-            kind: "EXTRACTION_ERROR",
-            bank: manifestEntry.name,
-            message: "Could not decrypt the QR code. It may be malformed or not a BOA receipt.",
-          });
-        }
-        return ok({
-          ...parsed,
-          bank: manifestEntry.name,
-          bankCode: manifestEntry.id,
-          reference: parsed.reference,
-          sourceUrl: "qr://boa",
-          durationMs,
-        });
-      }
-    }
-
-    // Fetch receipt data (reference is guaranteed here because qrData path is handled above)
-    if (!reference) {
-      return err({
-        kind: "MISSING_INPUT",
-        field: "reference",
-        message: "Reference number or receipt URL is required.",
       });
     }
-    const ref = reference;
-    const fallbackUrl = parser.buildUrl(ref, accountNumber, phoneNumber);
-    const fetchResult = await parser.fetchReceipt(ref, accountNumber, phoneNumber, { fallbackUrl });
 
-    if (!fetchResult.ok) {
-      return fetchResult;
+    // Account number (only the suffix the bank needs, digits only)
+    let account: string | undefined;
+    if (manifestEntry.requiresAccount) {
+      if (!input.accountNumber) {
+        return err({
+          kind: "MISSING_INPUT",
+          field: "accountNumber",
+          message: `${manifestEntry.name} requires the full receiving account number.`,
+        });
+      }
+      const digits = manifestEntry.accountDigits ?? parser.accountDigits ?? 1;
+      const checked = checkAccountSuffix(input.accountNumber, digits);
+      if (!checked.ok) return err({ kind: "MISSING_INPUT", field: "accountNumber", message: checked.message });
+      account = checked.value;
     }
+
+    // Phone number (CBE Birr)
+    let phone: string | undefined;
+    if (parser.requiresPhone || manifestEntry.requiresPhone) {
+      if (!input.phoneNumber) {
+        return err({
+          kind: "MISSING_INPUT",
+          field: "phoneNumber",
+          message: `${manifestEntry.name} requires the payer's phone number.`,
+        });
+      }
+      const checked = checkPhone(input.phoneNumber);
+      if (!checked.ok) return err({ kind: "MISSING_INPUT", field: "phoneNumber", message: checked.message });
+      phone = checked.value;
+    }
+
+    // Reference: strict charset, no path or query characters.
+    const refCheck = parser.normalizeReference(input.reference);
+    if (!refCheck.ok) {
+      return err({ kind: "REF_ERROR", bank: manifestEntry.name, message: refCheck.message });
+    }
+    const ref = refCheck.value;
+
+    let fallbackUrl: string;
+    try {
+      fallbackUrl = parser.buildUrl(ref, account, phone);
+    } catch (e) {
+      return err({
+        kind: "REF_ERROR",
+        bank: manifestEntry.name,
+        message: e instanceof Error ? e.message : "Invalid reference.",
+      });
+    }
+
+    const fetchResult = await parser.fetchReceipt(ref, account, phone, { fallbackUrl });
+    if (!fetchResult.ok) return fetchResult;
 
     const { data, contentType } = fetchResult.value;
-    const durationMs = Date.now() - startTime;
+    const parsedResult = await this.parseResponse(manifestEntry, parser, data, contentType);
+    if (!parsedResult.ok) return parsedResult;
+    const parsed = parsedResult.value;
 
-    // CBE PDF: special handling (extract text first)
-    if (bank.toLowerCase() === "cbe") {
-      const buf = Buffer.isBuffer(data) ? data : Buffer.from(data);
-      if (!buf.toString("ascii", 0, 4).includes("%PDF")) {
-        return err({
-          kind: "EXTRACTION_ERROR",
-          bank: manifestEntry.name,
-          message: "The bank did not return a valid receipt PDF. The reference or account may be incorrect.",
-        });
-      }
-      const text = await CBEParser.extractPdfText(buf);
-      const parsed = CBEParser.parsePdfText(text);
-      if (!parsed.verified) {
-        return err({
-          kind: "EXTRACTION_ERROR",
-          bank: manifestEntry.name,
-          message: "Could not parse the receipt PDF. The reference or account may be incorrect.",
-        });
-      }
-      return ok({
-        ...parsed,
-        bank: manifestEntry.name,
-        bankCode: manifestEntry.id,
-        reference: ref,
-        sourceUrl: fallbackUrl,
-        durationMs,
-      });
-    }
-
-    // Dashen PDF: special handling (extract text first)
-    if (bank.toLowerCase() === "dashen") {
-      const buf = Buffer.isBuffer(data) ? data : Buffer.from(data);
-      if (!buf.toString("ascii", 0, 4).includes("%PDF")) {
-        return err({
-          kind: "EXTRACTION_ERROR",
-          bank: manifestEntry.name,
-          message: "The bank did not return a valid receipt PDF. Check the reference number.",
-        });
-      }
-      const text = await DashenParser.extractPdfText(buf);
-      const parsed = DashenParser.parsePdfText(text);
-      if (!parsed.verified) {
-        return err({
-          kind: "EXTRACTION_ERROR",
-          bank: manifestEntry.name,
-          message: "Could not parse the Dashen receipt PDF. Check the reference number.",
-        });
-      }
-      return ok({
-        ...parsed,
-        bank: manifestEntry.name,
-        bankCode: manifestEntry.id,
-        reference: parsed.reference || ref,
-        sourceUrl: fallbackUrl,
-        durationMs,
-      });
-    }
-
-    // Zemen PDF: special handling (extract text first)
-    if (bank.toLowerCase() === "zemen") {
-      const buf = Buffer.isBuffer(data) ? data : Buffer.from(data);
-      if (!buf.toString("ascii", 0, 4).includes("%PDF")) {
-        return err({
-          kind: "EXTRACTION_ERROR",
-          bank: manifestEntry.name,
-          message: "The bank did not return a valid receipt PDF. Check the reference number.",
-        });
-      }
-      const text = await ZemenParser.extractPdfText(buf);
-      const parsed = ZemenParser.parsePdfText(text);
-      if (!parsed.verified) {
-        return err({
-          kind: "EXTRACTION_ERROR",
-          bank: manifestEntry.name,
-          message: "Could not parse the Zemen receipt PDF. Check the reference number.",
-        });
-      }
-      return ok({
-        ...parsed,
-        bank: manifestEntry.name,
-        bankCode: manifestEntry.id,
-        reference: parsed.reference || ref,
-        sourceUrl: fallbackUrl,
-        durationMs,
-      });
-    }
-
-    // All other banks: parse directly
-    const parsed = parser.parse(data, contentType);
-    if (!parsed.verified) {
-      return err({
-        kind: "EXTRACTION_ERROR",
-        bank: manifestEntry.name,
-        message: "Receipt not found or invalid.",
-      });
+    const gate = verificationGate(parsed, { bankId: manifestEntry.id, requestedReference: ref });
+    if (!gate.ok) {
+      return err({ kind: "EXTRACTION_ERROR", bank: manifestEntry.name, message: gateFailureMessage(gate) });
     }
 
     return ok({
-      ...parsed,
+      ...publicFields(parsed),
+      verified: true,
       bank: manifestEntry.name,
       bankCode: manifestEntry.id,
       reference: parsed.reference || ref,
       sourceUrl: fallbackUrl,
-      durationMs,
+      durationMs: Date.now() - startTime,
     });
   }
 
+  /** Bank-specific body handling (PDF text extraction) before the gate. */
+  private async parseResponse(
+    manifestEntry: BankManifestEntry,
+    parser: RegisteredParser,
+    data: string | Buffer,
+    contentType: string
+  ): Promise<Result<ParsedReceipt, ChekiError>> {
+    const id = manifestEntry.id.toLowerCase();
+    const pdfParsers: Record<string, { extract: (b: Buffer) => Promise<string>; parse: (t: string) => ParsedReceipt; hint: string }> = {
+      cbe: { extract: CBEParser.extractPdfText, parse: CBEParser.parsePdfText, hint: "The reference or account may be incorrect." },
+      dashen: { extract: DashenParser.extractPdfText, parse: DashenParser.parsePdfText, hint: "Check the reference number." },
+      zemen: { extract: ZemenParser.extractPdfText, parse: ZemenParser.parsePdfText, hint: "Check the reference number." },
+    };
+    const pdf = Object.hasOwn(pdfParsers, id) ? pdfParsers[id] : undefined;
+
+    if (pdf) {
+      const buf = Buffer.isBuffer(data) ? data : Buffer.from(data);
+      if (!buf.toString("ascii", 0, 4).includes("%PDF")) {
+        return err({
+          kind: "EXTRACTION_ERROR",
+          bank: manifestEntry.name,
+          message: `The bank did not return a valid receipt PDF. ${pdf.hint}`,
+        });
+      }
+      const parsed = pdf.parse(await pdf.extract(buf));
+      if (!parsed.verified) {
+        return err({
+          kind: "EXTRACTION_ERROR",
+          bank: manifestEntry.name,
+          message: `Could not parse the receipt PDF. ${pdf.hint}`,
+        });
+      }
+      return ok(parsed);
+    }
+
+    const parsed = parser.parse(data, contentType);
+    if (!parsed.verified) {
+      return err({ kind: "EXTRACTION_ERROR", bank: manifestEntry.name, message: "Receipt not found or invalid." });
+    }
+    return ok(parsed);
+  }
+
+  // ─── BOA QR ───────────────────────────────────────────────────────
+
   /**
-   * Verify multiple receipts in parallel (batch).
+   * A BOA QR is AES-encrypted with a key that is public, so anyone can make
+   * one. The decrypted reference and receiver account are only used to look
+   * the receipt up at BOA; the result shown is BOA's, not the QR's.
    */
-  async verifyBatch(requests: VerifyRequest[]): Promise<Result<Receipt, ChekiError>[]> {
-    return Promise.all(requests.map((r) => this.verify(r)));
+  private async verifyBoaQr(qrData: string, startTime: number, depth: number): Promise<Result<Receipt, ChekiError>> {
+    const manifestEntry = getBank("boa");
+    const parser = getParser("boa") as BOAParser | undefined;
+    if (!manifestEntry || !parser || manifestEntry.status !== "live") {
+      return err({ kind: "BANK_NOT_SUPPORTED", bank: "boa" });
+    }
+
+    const decoded = parser.decryptQr(qrData);
+    if (!decoded.reference) {
+      return err({
+        kind: "EXTRACTION_ERROR",
+        bank: manifestEntry.name,
+        message: "Could not decrypt the QR code. It may be malformed or not a BOA receipt.",
+      });
+    }
+
+    const digits = manifestEntry.accountDigits ?? 5;
+    const refOk = checkReference(decoded.reference).ok;
+    const accountOk = !!decoded.receiverAccount && checkAccountSuffix(decoded.receiverAccount, digits).ok;
+
+    const decodedOnly = (): Result<Receipt, ChekiError> =>
+      ok({
+        ...publicFields(decoded),
+        verified: false,
+        decodedOnly: true,
+        bank: manifestEntry.name,
+        bankCode: manifestEntry.id,
+        reference: decoded.reference!,
+        sourceUrl: "qr://boa",
+        durationMs: Date.now() - startTime,
+      });
+
+    if (!refOk || !accountOk) {
+      // Nothing usable to look up at the bank.
+      return decodedOnly();
+    }
+
+    const lookup = await this.resolve(
+      { bank: "boa", reference: decoded.reference, accountNumber: decoded.receiverAccount },
+      startTime,
+      depth + 1
+    );
+
+    if (lookup.ok) {
+      // The bank's amount wins. A QR that claims a different amount than the
+      // bank's record is a forgery signal, so it fails.
+      if (
+        decoded.amount !== undefined &&
+        lookup.value.amount !== undefined &&
+        Math.abs(decoded.amount - lookup.value.amount) > 0.009
+      ) {
+        return err({
+          kind: "EXTRACTION_ERROR",
+          bank: manifestEntry.name,
+          message: "The QR code does not match the bank's record for this receipt.",
+        });
+      }
+      return lookup;
+    }
+
+    // BOA could not be reached: show what the QR says, clearly unconfirmed.
+    if (lookup.error.kind === "ENDPOINT_ERROR") return decodedOnly();
+
+    // BOA answered and has no matching receipt (or it failed the gate).
+    return lookup;
   }
 }
