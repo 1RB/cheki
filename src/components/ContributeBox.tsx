@@ -13,6 +13,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import jsQR from "jsqr";
+import { retryAfterSeconds } from "@/lib/verify-response";
 
 type LeadMode = "screenshot" | "link";
 
@@ -237,9 +238,21 @@ export function ContributeBox({
       form.append("website", website);
       if (shot) form.append("image", shot.blob, "receipt.jpg");
       const resp = await fetch("/api/contribute", { method: "POST", body: form });
-      const data: { success: boolean; error?: string; message?: string } = await resp.json();
-      if (!data.success) {
-        setError(data.error || "Something went wrong. Nothing was saved.");
+      // 429/413 (or a proxy's HTML error page) must not read as "Network error".
+      let data: { success?: boolean; error?: string; message?: string } | null = null;
+      try {
+        data = await resp.json();
+      } catch {
+        data = null;
+      }
+      if (resp.status === 429) {
+        const wait = retryAfterSeconds(resp);
+        const when = !wait ? "a few minutes" : wait >= 120 ? `${Math.ceil(wait / 60)} minutes` : `${wait} seconds`;
+        setError(data?.error || `Too many submissions from your network. Try again in ${when}.`);
+      } else if (resp.status === 413) {
+        setError(data?.error || "That screenshot is too large. Crop it and try again.");
+      } else if (!resp.ok || !data || data.success !== true) {
+        setError(data?.error || "Something went wrong. Nothing was saved.");
       } else {
         setDone(data.message || "Thanks. Your receipt was sent privately to the maintainers.");
         setSentCredit(credit.trim());
@@ -384,6 +397,9 @@ export function ContributeBox({
         <div>
           <p role="status" style={{ padding: "12px 14px", borderRadius: "8px", background: "var(--green-light)", color: "var(--green-dark)", fontSize: "14px", fontWeight: 600, lineHeight: 1.5 }}>
             {done} {sentCredit ? `We will credit ${sentCredit} when ${shortName} goes live.` : ""}
+          </p>
+          <p style={{ marginTop: "8px", fontSize: "13px", color: "var(--ink-3)", lineHeight: 1.5 }}>
+            Sending a receipt here does not check it. cheki can&apos;t confirm {shortName} receipts until the bank is live.
           </p>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px 16px", flexWrap: "wrap", marginTop: "12px" }}>
             <p style={{ fontSize: "14px", color: "var(--ink-2)", lineHeight: 1.5, flex: "1 1 220px" }}>
