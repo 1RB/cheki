@@ -165,7 +165,7 @@ Self-hosting on an Ethiopian IP bypasses Telebirr/M-Pesa geo-blocks.
 ## Features
 
 - **Web UI**: receipt aesthetic, auto-detect bank from reference format, dark mode
-- **REST API**: free, no API key, no rate limit, batch verification up to 50 receipts
+- **REST API**: free, no API key, per-IP rate limits (verify 30/min, batch 5/min, parse and ocr 20/min each, per instance; 429 with Retry-After), batch verification up to 20 receipts
 - **CLI**: verify receipts from the terminal (`npx cheki verify`)
 - **5 SDKs**: TypeScript, Python, Go, Dart, PHP with typed errors and retry
 - **10 live banks**: CBE, Telebirr, BOA, M-Pesa, Dashen, Awash, Zemen, CBE Birr, Siinqee, eBirr
