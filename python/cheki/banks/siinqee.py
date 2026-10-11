@@ -1,6 +1,6 @@
 from cheki.banks.base import BankVerifier
 from cheki.errors import UnsupportedBankError
-from cheki.result import VerificationResult, VerificationStatus
+from cheki.result import VerificationResult
 
 
 class SiinqeeVerifier(BankVerifier):
