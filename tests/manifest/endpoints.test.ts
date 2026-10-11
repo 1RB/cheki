@@ -5,7 +5,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { getAllBanks } from "@/lib/manifest/loader";
-import { endpointDocs, getEndpointRows } from "@/lib/manifest/endpoints";
+import { changelogFor, endpointDocs, getEndpointRows } from "@/lib/manifest/endpoints";
 import { buildProbeTargets, describeResponse, evaluate, isoNow, matchExpectation } from "@/lib/health";
 import status from "../../public/status.json";
 
@@ -39,9 +39,14 @@ describe("endpoint docs", () => {
     expect(zemen.placeholders[0].format).toMatch(/24 character/);
   });
 
-  it("records the Dashen host change and the FT Ref trap", () => {
+  it("records the Dashen host change (manifest endpointHistory) and the FT Ref trap", () => {
     const dashen = endpointDocs.find((d) => d.id === "dashen")!;
-    expect(dashen.changelog.some((c) => c.date === "2026-10-10" && /receipts\.dashenbanksc\.com/.test(c.note))).toBe(true);
+    const row = getEndpointRows().find((r) => r.bank.id === "dashen")!;
+    // Endpoint moves are data in banks.json, shown through changelogFor.
+    expect(row.bank.endpointHistory?.some((h) => h.date === "2026-10-10" && /receipts\.dashenbanksc\.com/.test(h.change))).toBe(true);
+    expect(changelogFor(row).some((c) => c.date === "2026-10-10" && /receipts\.dashenbanksc\.com/.test(c.note))).toBe(true);
+    const dates = changelogFor(row).map((c) => c.date);
+    expect(dates).toEqual([...dates].sort().reverse());
     expect(dashen.placeholders[0].traps).toMatch(/Transaction Ref/);
     expect(dashen.gotchas.join(" ")).toMatch(/receipt\.dashensuperapp\.com.*502/);
   });
@@ -78,6 +83,20 @@ describe("health check", () => {
     expect(t.find((x) => x.id === "cbe-new")?.headers?.["X-App-ID"]).toBeTruthy();
   });
 
+  it("probes CBE's current format first and its legacy format as a separate, non-failing row", () => {
+    const t = buildProbeTargets({ checkGeoRestricted: false });
+    const cbe = t.find((x) => x.id === "cbe")!;
+    expect(cbe.url).toMatch(/^https:\/\/mb\.cbe\.com\.et\/api\/v1\/transactions\/public\/transaction-detail\//);
+    expect(cbe.headers?.["X-App-ID"]).toBeTruthy();
+    expect(cbe.formatStatus).toBeUndefined();
+    const legacy = t.find((x) => x.id === "cbe:cbe-ft-pdf")!;
+    expect(legacy.formatStatus).toBe("legacy");
+    expect(legacy.url).toContain("apps.cbe.com.et:100/?id=");
+    // A legacy host going down is reported, but the row is marked so --strict ignores it.
+    expect(evaluate(legacy, { error: "connect failed" }, "x")).toMatchObject({ status: "degraded", formatStatus: "legacy" });
+    expect(t.indexOf(cbe)).toBeLessThan(t.indexOf(legacy));
+  });
+
   it("matches the Dashen unknown-reference shape and flags a change", () => {
     const t = buildProbeTargets({ checkGeoRestricted: false }).find((x) => x.id === "dashen")!;
     const good = { status: 400, contentType: "application/json; charset=utf-8", body: '{"statusCode":400,"message":"Transaction not found"}' };
@@ -99,9 +118,11 @@ describe("health check", () => {
     expect(isoNow(new Date(Date.UTC(2026, 9, 10, 18, 8, 5)))).toBe("2026-10-10T18:08:05Z");
   });
 
-  it("has a committed status.json covering every bank", () => {
+  it("has a committed status.json covering every bank (plus one row per probed legacy format)", () => {
     const ids = getAllBanks().map((b) => b.id).sort();
-    expect(status.banks.map((b) => b.id).sort()).toEqual(ids);
+    const legacyIds = buildProbeTargets({ checkGeoRestricted: false }).filter((t) => t.formatStatus).map((t) => t.id).sort();
+    expect(status.banks.filter((b) => !b.id.includes(":")).map((b) => b.id).sort()).toEqual(ids);
+    expect(status.banks.filter((b) => b.id.includes(":")).map((b) => b.id).sort()).toEqual(legacyIds);
     expect(status.generatedAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/);
     for (const b of status.banks) expect(["live", "in-development", "degraded", "not-checked"]).toContain(b.status);
   });
