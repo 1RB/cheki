@@ -3,6 +3,7 @@
  * receipt host comes from the manifest and is the only Dashen host fetched,
  * the HTML goes through parseResponse and the shared gate, and Dashen's
  * HTTP 400 for an unknown FT Ref is a not-found answer that is never retried.
+ * GET /api/receipt redirects to Dashen's own page instead of proxying HTML.
  */
 import { describe, it, expect, afterEach, vi } from "vitest";
 import { NextRequest } from "next/server";
@@ -127,7 +128,10 @@ describe("Dashen 400 = not found, never retried", () => {
     if (!r.ok) expect(r.error.kind).toBe("ENDPOINT_ERROR");
   });
 
-  it("/api/receipt answers 404 for Dashen's 400 and fetches only the manifest host", async () => {
+  it("/api/receipt redirects Dashen to the manifest host and never fetches (or proxies) Dashen's HTML", async () => {
+    // Dashen answers with HTML, so /api/receipt sends the user to Dashen's own
+    // page (302) instead of serving bank markup from cheki's origin. A missing
+    // receipt is then Dashen's own "Transaction not found" page, not a cheki 404.
     const fetchMock = vi.fn<(url: string | URL) => Promise<Response>>(async () => new Response('{"message":"Transaction not found"}', { status: 400 }));
     vi.stubGlobal("fetch", fetchMock);
     const r = await receiptGET(
@@ -135,9 +139,29 @@ describe("Dashen 400 = not found, never retried", () => {
         headers: { "x-real-ip": "10.77.0.1" },
       })
     );
-    expect(r.status).toBe(404);
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(new URL(String(fetchMock.mock.calls[0][0])).host).toBe("receipts.dashenbanksc.com");
+    expect(r.status).toBe(302);
+    const location = new URL(r.headers.get("location")!);
+    expect(location.protocol).toBe("https:");
+    expect(location.host).toBe("receipts.dashenbanksc.com");
+    expect(location.href).toBe(`https://receipts.dashenbanksc.com/receipt/${REF}`);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("/api/receipt never redirects to a pasted legacy or look-alike Dashen host", async () => {
+    vi.stubGlobal("fetch", vi.fn());
+    for (const ref of [
+      `https://receipt.dashensuperapp.com/receipt/${REF}`,
+      `https://receipts.dashenbanksc.com.evil.example/receipt/${REF}`,
+      `//evil.example/${REF}`,
+    ]) {
+      const r = await receiptGET(
+        new NextRequest(`https://cheki.et/api/receipt?bank=dashen&reference=${encodeURIComponent(ref)}`, {
+          headers: { "x-real-ip": "10.77.0.2" },
+        })
+      );
+      if (r.status === 302) expect(new URL(r.headers.get("location")!).host).toBe("receipts.dashenbanksc.com");
+      else expect(r.status).toBe(400);
+    }
   });
 });
 
