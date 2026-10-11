@@ -28,7 +28,7 @@ export type Reference = Brand<string, "Reference">;
 // ─── Error Hierarchy (discriminated unions, not classes) ────────────
 
 export type ChekiError =
-  | { kind: "BANK_NOT_SUPPORTED"; bank: string; suggestion?: string }
+  | { kind: "BANK_NOT_SUPPORTED"; bank: string; suggestion?: string; message?: string }
   | { kind: "REF_ERROR"; bank: string; message: string }
   | { kind: "ENDPOINT_ERROR"; bank: string; message: string; fallbackUrl?: string }
   | { kind: "EXTRACTION_ERROR"; bank: string; message: string }
@@ -53,6 +53,7 @@ export function errorToHttpStatus(error: ChekiError): number {
 export function errorToMessage(error: ChekiError): string {
   switch (error.kind) {
     case "BANK_NOT_SUPPORTED":
+      if (error.message) return error.message;
       return `Unsupported bank: ${error.bank}.${error.suggestion ? ` Did you mean ${error.suggestion}?` : ""}`;
     case "REF_ERROR":
       return `[${error.bank}] ${error.message}`;
@@ -105,6 +106,12 @@ export interface Receipt {
   bankAccountNumber?: string;
   bankAccountName?: string;
   orderId?: string;
+  /**
+   * True when the data was decoded from a BOA QR code but could not be
+   * confirmed with the bank (it was unreachable). Always paired with
+   * verified: false. A QR payload can be forged, so this is never proof.
+   */
+  decodedOnly?: boolean;
 }
 
 // ─── Verify Request (input) ─────────────────────────────────────────
