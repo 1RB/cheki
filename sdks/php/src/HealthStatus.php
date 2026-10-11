@@ -5,64 +5,65 @@ declare(strict_types=1);
 namespace Cheki;
 
 /**
- * Represents the health-check response from GET /api/health.
+ * GET /api/health: per-bank reachability, cached up to 5 minutes server-side.
  */
 class HealthStatus
 {
-    public bool $success;
-
     public ?string $status;
-
-    public ?string $version;
-
-    public ?string $timestamp;
-
-    /** @var array<string, mixed> */
-    public ?array $checks;
-
+    /** When the probe ran (ISO 8601). */
+    public ?string $checkedAt;
+    /** True when the server answered from its 5-minute cache. */
+    public bool $cached;
+    /** @var BankHealth[] */
+    public array $banks;
     public ?int $httpStatus;
-
+    /** @var array<string, mixed>|null */
     public ?array $raw;
 
+    /**
+     * @param BankHealth[] $banks
+     * @param array<string, mixed>|null $raw
+     */
     public function __construct(
-        bool $success,
         ?string $status = null,
-        ?string $version = null,
-        ?string $timestamp = null,
-        ?array $checks = null,
+        ?string $checkedAt = null,
+        bool $cached = false,
+        array $banks = [],
         ?int $httpStatus = null,
         ?array $raw = null
     ) {
-        $this->success   = $success;
-        $this->status    = $status;
-        $this->version   = $version;
-        $this->timestamp = $timestamp;
-        $this->checks    = $checks;
+        $this->status     = $status;
+        $this->checkedAt  = $checkedAt;
+        $this->cached     = $cached;
+        $this->banks      = $banks;
         $this->httpStatus = $httpStatus;
-        $this->raw       = $raw;
+        $this->raw        = $raw;
     }
 
-    /**
-     * @param array<string, mixed> $data
-     */
+    /** @param array<string, mixed> $data */
     public static function fromResponse(array $data, ?int $httpStatus = null): self
     {
+        $banks = [];
+        if (isset($data['banks']) && is_array($data['banks'])) {
+            foreach ($data['banks'] as $b) {
+                if (is_array($b)) {
+                    $banks[] = BankHealth::fromArray($b);
+                }
+            }
+        }
         return new self(
-            success:   isset($data['success']) ? (bool) $data['success'] : false,
-            status:    isset($data['status']) ? (string) $data['status'] : null,
-            version:   isset($data['version']) ? (string) $data['version'] : null,
-            timestamp: isset($data['timestamp']) ? (string) $data['timestamp'] : null,
-            checks:    isset($data['checks']) && is_array($data['checks']) ? $data['checks'] : null,
+            status:     isset($data['status']) && is_scalar($data['status']) ? (string) $data['status'] : null,
+            checkedAt:  isset($data['checkedAt']) && is_scalar($data['checkedAt']) ? (string) $data['checkedAt'] : null,
+            cached:     ($data['cached'] ?? false) === true,
+            banks:      $banks,
             httpStatus: $httpStatus,
-            raw:       $data
+            raw:        $data
         );
     }
 
-    /**
-     * Whether the service reports a healthy status.
-     */
+    /** The service answered with status "ok". Individual banks may still be unreachable. */
     public function isHealthy(): bool
     {
-        return $this->success && ($this->status === 'ok' || $this->status === 'healthy');
+        return $this->status === 'ok';
     }
 }
