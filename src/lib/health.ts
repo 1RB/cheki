@@ -10,6 +10,7 @@ import { getEndpointRows, type ProbeExpectation, type ProbeSpec } from "./manife
 import type { BankManifestEntry } from "./core/types";
 import { getParser } from "./parsers/registry";
 import "./parsers";
+import { removeScriptsAndStyles, TAG_RE } from "./core/html";
 
 export type HealthStatus = "live" | "in-development" | "degraded" | "not-checked";
 
@@ -46,7 +47,9 @@ export function isoNow(d: Date = new Date()): string {
 
 export function describeResponse(r: ObservedResponse): string {
   const ct = r.contentType.split(";")[0].trim() || "no content type";
-  const text = r.body.replace(/<script[\s\S]*?<\/script>/gi, " ").replace(/<style[\s\S]*?<\/style>/gi, " ");
+  // Linear helpers: the body is untrusted and the lazy/`[^>]+` regexes are
+  // quadratic on unclosed tags.
+  const text = removeScriptsAndStyles(r.body.slice(0, 64 * 1024));
   let hint = "";
   const json = (() => {
     try {
@@ -61,10 +64,15 @@ export function describeResponse(r: ObservedResponse): string {
     else if (json.body !== undefined) hint = JSON.stringify(json.body);
   }
   if (!hint) {
-    const title = text.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1];
-    hint = (title || text.replace(/<[^>]+>/g, " ")).replace(/\s+/g, " ").trim();
+    const lower = text.toLowerCase();
+    const open = lower.indexOf("<title");
+    const gt = open === -1 ? -1 : lower.indexOf(">", open);
+    const close = gt === -1 ? -1 : lower.indexOf("</title", gt);
+    const title = close === -1 ? undefined : text.slice(gt + 1, close);
+    hint = (title || text.replace(TAG_RE, " ")).replace(/\s+/g, " ").trim();
   }
-  hint = hint.slice(0, 80);
+  // Committed to a public repo and shown on /status: no control characters.
+  hint = hint.replace(/[\u0000-\u001f\u007f-\u009f\u202a-\u202e\u2066-\u2069]/g, " ").slice(0, 80);
   return `${r.status} ${ct}${hint ? ` "${hint}"` : ""}`;
 }
 
