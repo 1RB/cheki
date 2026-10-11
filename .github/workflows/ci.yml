@@ -4,12 +4,20 @@ on:
   push:
     branches: [main, master]
   pull_request:
-    branches: [main, master]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  # Supersede stale PR runs, but let every push to main finish (the daily
+  # endpoint-health commit and merges land there back to back).
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  test:
+  web:
+    name: Web app (lint, typecheck, test, build)
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
 
@@ -18,32 +26,114 @@ jobs:
           node-version: 20
           cache: npm
 
-      - run: npm install --prefer-offline
+      # The lockfile must match package.json; npm ci fails the job if it drifts.
+      - run: npm ci --no-audit --no-fund
 
-      - run: npm run lint -- --max-warnings=0 || true
+      # Errors fail the build. Known frontend debt is downgraded to warnings in
+      # eslint.config.mjs until it is fixed.
+      - run: npm run lint
 
-      - run: npm test
+      - run: npx tsc --noEmit
+
+      # Includes tests/contract (SDK fixtures vs route handlers) and tests/sdk (TS SDK).
+      - run: npx vitest run
+
+      - run: npm run build
+
+  sdk-typescript:
+    name: TypeScript SDK
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: sdks/typescript
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --no-audit --no-fund
+      - run: npm run build
+      - name: Committed build output matches src
+        run: git diff --exit-code -- index.js index.d.ts
+
+  sdk-go:
+    name: Go SDK
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: sdks/go
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+      - name: gofmt
+        run: test -z "$(gofmt -l .)" || { gofmt -l .; exit 1; }
+      - run: go vet ./...
+      - run: go test -race ./...
+
+  sdk-php:
+    name: PHP SDK (PHP ${{ matrix.php }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ["8.1", "8.3"]
+    defaults:
+      run:
+        working-directory: sdks/php
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: curl, json
+          tools: phpunit:10
+          coverage: none
+      - name: Lint
+        run: find src tests examples -name '*.php' -print0 | xargs -0 -n1 php -l
+      - run: phpunit
+
+  sdk-dart:
+    name: Dart SDK
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: sdks/dart
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+      - run: dart pub get
+      - run: dart analyze --fatal-infos
+      - run: dart test
 
   python-test:
+    name: Python SDK (Python ${{ matrix.python }})
     runs-on: ubuntu-latest
-
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.10", "3.11", "3.12", "3.13"]
+    defaults:
+      run:
+        working-directory: python
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
-
-      - name: Install uv
-        run: pip install uv
+          python-version: ${{ matrix.python }}
 
       - name: Install dependencies
-        working-directory: python
-        run: uv pip install --system -e ".[dev]"
+        run: |
+          pip install uv
+          uv pip install --system -e ".[dev]"
 
-      - name: Run tests
-        working-directory: python
-        run: pytest -q
+      - run: ruff check .
+      - run: mypy
+      - run: pytest -q
 
   version-check:
     name: Check version sync
