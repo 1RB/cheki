@@ -24,7 +24,10 @@ jobs:
           node-version: 20
           cache: npm
 
-      - run: npm ci
+      # package-lock.json is out of sync with package.json on this base
+      # (npm ci fails on @emnapi/* entries), so install like the old workflow
+      # did. Switch to `npm ci` once the lockfile is regenerated.
+      - run: npm install --prefer-offline --no-audit --no-fund
 
       # Errors fail the build. Known frontend debt is downgraded to warnings in
       # eslint.config.mjs until it is fixed.
