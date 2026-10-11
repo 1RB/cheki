@@ -3,6 +3,7 @@
 import type { OcrParseResult } from "./ocr-parser";
 import { parseReceiptText } from "./ocr-parser";
 import { rateLimitMessage, retryAfterSeconds } from "./verify-response";
+import { prepareUpload } from "./image/prepare";
 
 export type OcrProgress = {
   status: string;
@@ -71,6 +72,8 @@ async function runClientOcr(
   }
 }
 
+const MAX_CANDIDATES = 20;
+
 function ambiguousReferenceCandidatesClient(reference: string): string[] {
   const candidates = new Set<string>();
   candidates.add(reference);
@@ -87,7 +90,10 @@ function ambiguousReferenceCandidatesClient(reference: string): string[] {
     Z: ["Z", "2"],
   };
 
+  // Stops at MAX_CANDIDATES: a reference made only of ambiguous characters
+  // has 2^n spellings, and building them all froze the tab.
   function backtrack(idx: number, current: string[]) {
+    if (candidates.size >= MAX_CANDIDATES) return;
     if (idx === chars.length) {
       candidates.add(current.join(""));
       return;
@@ -123,8 +129,17 @@ export async function extractTextFromImage(
 
   onProgress?.({ status: "uploading", progress: 0.05 });
 
+  // A phone photo is often 5-12 MB, over the platform's 4.5 MB body limit.
+  // Re-encode on the device first: smaller, and EXIF (location) is dropped.
+  let upload: Blob;
+  try {
+    upload = await prepareUpload(file);
+  } catch {
+    throw new Error("That image is too large to read. Use a screenshot or a smaller photo.");
+  }
+
   const formData = new FormData();
-  formData.append("image", file);
+  formData.append("image", upload, "receipt.jpg");
 
   const resp = await fetch("/api/ocr", {
     method: "POST",
@@ -132,7 +147,7 @@ export async function extractTextFromImage(
   });
 
   if (resp.status === 429) throw new Error(rateLimitMessage(retryAfterSeconds(resp)));
-  if (resp.status === 413) throw new Error("That image is too large. Use a smaller screenshot (under 10 MB).");
+  if (resp.status === 413) throw new Error("That image is too large. Use a screenshot or a smaller photo.");
   if (!resp.ok) {
     const data = await resp.json().catch(() => ({}));
     throw new Error(data.error || "OCR failed.");
@@ -160,7 +175,7 @@ export async function extractTextFromImage(
   }
 
   // No QR -> run client-side Tesseract.
-  return runClientOcr(file, onProgress);
+  return runClientOcr(upload, onProgress);
 }
 
 export function imageToBlob(image: HTMLImageElement): Promise<Blob> {
