@@ -139,6 +139,8 @@ export const limiters = {
   batch: new RateLimiter(5, MINUTE),
   parse: new RateLimiter(20, MINUTE),
   ocr: new RateLimiter(20, MINUTE),
+  /** /api/contribute: a low-volume form that forwards to Telegram. */
+  contribute: new RateLimiter(5, 10 * MINUTE),
 };
 
 /** A 429 response, or null when the request may go ahead. */
