@@ -154,7 +154,7 @@ export default function GeoFallback({ bankCode, bankName, receiptUrl, t, onResul
             placeholder={t("verify.browser.pastePlaceholder")}
             spellCheck={false}
           />
-          <button type="button" className="vc-btn vc-btn--primary gf-read" onClick={read} disabled={busy || !content.trim()} aria-busy={busy}>
+          <button type="button" className="vc-btn vc-btn--quiet gf-read" onClick={read} disabled={busy || !content.trim()} aria-busy={busy}>
             {busy ? t("verify.browser.readingPaste") : t("verify.browser.read")}
           </button>
           {error && <p className="vi-hint" data-error role="alert">{error}</p>}

@@ -17,7 +17,9 @@ export const translations = {
     },
     hero: {
       title: "Verify Ethiopian receipts for free",
-      subtitle: "No signup. No API key. No charge. Paste the transaction reference and confirm the payment before you release the goods.",
+      titleLead: "Verify an Ethiopian receipt",
+      titleRest: "against the bank's own record.",
+      subtitle: "Paste a receipt link, reference or QR before you hand over the goods. Free, no signup, no API key.",
       bankLabel: "Bank or wallet",
       referenceLabel: "Receipt",
       referencePlaceholder: "e.g. https://mbreciept.cbe.com.et/fHCxyV4mg5pRIwEkJO",
@@ -81,7 +83,7 @@ export const translations = {
         open: "Open the {bank} receipt",
         server: "Check from cheki's server anyway",
         serverHint: "Usually blocked: cheki's server is outside Ethiopia.",
-        paste: "Paste the receipt page",
+        paste: "Paste the page",
         bookmarklet: "Bookmarklet",
         pasteSteps: "On the receipt page: select all, copy, come back and paste here.",
         pastePlaceholder: "Paste the receipt page text here",
@@ -165,6 +167,10 @@ export const translations = {
       },
       copy: {
         notVerified: "NOT VERIFIED",
+      },
+      summary: {
+        checked: "Checked",
+        edit: "Edit",
       },
       actions: {
         copy: "Copy result",
@@ -254,6 +260,8 @@ export const translations = {
     },
     hero: {
       title: "የኢትዮጵያ ደረሰኞችን በነፃ ያረጋግጡ",
+      titleLead: "የኢትዮጵያ ደረሰኞችን በነፃ ያረጋግጡ",
+      titleRest: "",
       subtitle: "ምዝገባ የለም። የAPI ቁልፍ የለም። ክፍያ የለም። የግብይት ማጣበቂያ ቁጥርን ያስገቡና ከብረኛው ከመሰናበት በፊት ክፍያውን ያረጋግጡ።",
       bankLabel: "ባንክ ወይም ዋላት",
       referenceLabel: "የማጣበቂያ ቁጥር",

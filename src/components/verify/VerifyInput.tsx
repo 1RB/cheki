@@ -132,6 +132,8 @@ export function VerifyInput({
     );
   }
 
+  const statusKey = `${d.kind}:${d.bank?.code ?? ""}:${otherBank}:${d.overridden ? 1 : 0}:${d.olderFormat ? 1 : 0}`;
+
   return (
     <div className="vi">
       <label htmlFor={id} className="vi-label">
@@ -180,7 +182,11 @@ export function VerifyInput({
 
       <div className="vi-row">
         <p id={`${id}-status`} className="vi-status" data-tone={tone} role="status">
-          {status}
+          {/* Keyed on what was detected: a new reading cross-fades in instead
+              of jumping; the idle hint (first paint) never animates. */}
+          <span key={statusKey} className="vi-status-inner" data-fresh={d.kind !== "empty" || undefined}>
+            {status}
+          </span>
         </p>
         {!lockedBank && (
           <div className="vi-select-wrap">

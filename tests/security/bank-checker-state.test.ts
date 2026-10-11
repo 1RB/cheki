@@ -26,11 +26,15 @@ describe("bank page checker labelling", () => {
     expect(verdict).toMatch(/verificationState\(result\)/);
     expect(verdict).not.toMatch(/verified\s*!==\s*false/);
     expect(verdict).not.toMatch(/result\?\.success\s*&&\s*result\.verified/);
-    // The green tint is only reachable from the green (verified) tone.
-    for (const m of css.matchAll(/--vc-tint: var\(--green-light\)/g)) {
-      const before = css.slice(Math.max(0, (m.index ?? 0) - 80), m.index);
-      expect(before).toMatch(/\.vc\[data-tone="green"\]/);
-    }
+    // The card's only colour is its status dot; the green dot is only
+    // reachable from the green (verified) tone, and nothing else in the card
+    // CSS reads --green.
+    const greens = [...css.matchAll(/--vc-dot: var\(--green\)/g)];
+    expect(greens).toHaveLength(1);
+    const before = css.slice(Math.max(0, (greens[0].index ?? 0) - 80), greens[0].index);
+    expect(before).toMatch(/\.vc\[data-tone="green"\]/);
+    const card = css.slice(css.indexOf("── Verdict"), css.indexOf("Skeleton:"));
+    expect(card.replace(/--vc-dot: var\(--green\)/, "")).not.toMatch(/var\(--green/);
   });
 
   it("has amber copy for decodedOnly and parsed", () => {

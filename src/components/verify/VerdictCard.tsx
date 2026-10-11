@@ -1,11 +1,13 @@
 "use client";
 
 /**
- * The verdict is the hero: one card, one colour, one sentence that answers
- * "can I hand over the goods?". Everything it shows comes from presentVerdict()
- * (src/lib/verify/verdict.ts); this component never decides a colour itself.
+ * The verdict, typeset like a receipt: a status dot and one sentence that
+ * answers "can I hand over the goods?", the amount, then label/value rows.
+ * Colour is only the dot (set by data-tone in CSS). Everything it shows comes
+ * from presentVerdict() (src/lib/verify/verdict.ts); this component never
+ * decides a colour itself.
  */
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
 import Link from "next/link";
 import type { VerifyResult } from "@/lib/banks";
 import { publicJson, type Verdict } from "@/lib/verify/verdict";
@@ -14,20 +16,13 @@ import type { Translate } from "@/lib/i18n/translate";
 import { BankLogoByName } from "@/components/BankLogo";
 import {
   Icon,
-  CheckmarkCircle01Icon,
-  Alert01Icon,
-  CancelCircleIcon,
-  Clock01Icon,
-  WifiDisconnected01Icon,
-  InformationCircleIcon,
   Copy01Icon,
   CopyCheckIcon,
   Share08Icon,
   PrinterIcon,
   RefreshIcon,
   ArrowUpRight01Icon,
-  ArrowRight01Icon,
-  Tick02Icon,
+  ChevronDownIcon,
 } from "@/components/Icon";
 
 interface Props {
@@ -71,24 +66,15 @@ function Countdown({ seconds, t, onRetry }: { seconds: number; t: Translate; onR
   return (
     <button type="button" className="vc-btn vc-btn--primary" onClick={onRetry} disabled={left > 0 || !onRetry} aria-live="off">
       <Icon icon={RefreshIcon} size={16} />
-      {left > 0 ? t("verify.card.retryIn", { s: left }) : t("verify.card.retry")}
+      <span className="vc-num">{left > 0 ? t("verify.card.retryIn", { s: left }) : t("verify.card.retry")}</span>
     </button>
   );
 }
-
-const TONE_ICON = {
-  green: CheckmarkCircle01Icon,
-  amber: Alert01Icon,
-  red: CancelCircleIcon,
-  neutral: InformationCircleIcon,
-} as const;
 
 export function VerdictCard({ verdict, result, checkedAt, t, onAnother, onRetry }: Props) {
   const [copied, setCopied] = useState<"text" | "json" | null>(null);
   const canShare = useCanShare();
   const v = verdict;
-  const icon =
-    v.kind === "rateLimited" ? Clock01Icon : v.kind === "offline" ? WifiDisconnected01Icon : TONE_ICON[v.tone];
   const isJudgement = v.tone !== "neutral";
   const text = () => resultText(v, { checkedAt, t });
 
@@ -127,56 +113,50 @@ export function VerdictCard({ verdict, result, checkedAt, t, onAnother, onRetry 
         ].filter(([, val]) => typeof val === "string" && val) as [string, string][])
       : [];
 
+  // One filled action per card. A retry/open beats "Verify another"; when
+  // there is none, "Verify another" is the primary.
+  const hasOwnPrimary =
+    v.kind === "rateLimited" || ((v.kind === "unavailable" || v.kind === "offline") && !!onRetry) || (v.kind === "geoBlocked" && !!v.fallbackUrl);
+  const rows: [string, ReactNode, string?][] = [];
+  if (v.showDetails && (v.from || v.to)) {
+    const party = (p?: { name?: string; account?: string }) => (
+      <>
+        <span className="vc-name">{p?.name || p?.account || "-"}</span>
+        {p?.name && p.account && <span className="vc-acct">{p.account}</span>}
+      </>
+    );
+    rows.push([t("verify.card.from"), party(v.from)]);
+    rows.push([t("verify.card.to"), party(v.to)]);
+  }
+  if (v.showDetails && v.date) rows.push([t("verify.card.date"), <span key="d" className="vc-num">{prettyDate(v.date)}</span>]);
+  if (v.reference) rows.push([t("verify.card.reference"), <span key="r" className="vc-mono">{v.reference}</span>]);
+  if (v.bank) rows.push([t("verify.card.bank"), <span key="b" className="vc-bank"><BankLogoByName code={v.bank.code} size={18} /><span>{v.bank.shortName}</span></span>, "vc-bank-row"]);
+
   return (
     <article className="vc" data-tone={v.tone} data-kind={v.kind} data-print-slip aria-labelledby="vc-title">
       <header className="vc-head">
-        <span className="vc-icon" aria-hidden="true">
-          <Icon icon={icon} size={22} strokeWidth={2} />
-        </span>
-        <div className="vc-headtext">
+        <div className="vc-status">
+          <span className="vc-dot" aria-hidden="true" />
           <h2 id="vc-title" className="vc-title" tabIndex={-1}>{v.title}</h2>
-          <p className="vc-sub">{v.subtitle}</p>
         </div>
+        <p className="vc-sub">{v.subtitle}</p>
       </header>
 
       {amount && (
         <p className="vc-amount" aria-label={`${t("verify.card.amount")} ${formatAmount(v.amount!.value, v.amount!.currency)}`}>
-          <span className="vc-amount-num">{amount.whole}</span>
-          {amount.cents && <span className="vc-amount-cents">.{amount.cents}</span>}
+          <span className="vc-amount-num">{amount.whole}{amount.cents && <span className="vc-amount-cents">.{amount.cents}</span>}</span>
           <span className="vc-amount-cur">{v.amount!.currency}</span>
         </p>
       )}
 
-      {v.showDetails && (v.from || v.to) && (
-        <div className="vc-parties">
-          <div className="vc-party">
-            <span className="vc-lbl">{t("verify.card.from")}</span>
-            <span className="vc-party-name">{v.from?.name || v.from?.account || "-"}</span>
-            {v.from?.name && v.from.account && <span className="vc-party-acct">{v.from.account}</span>}
-          </div>
-          <span className="vc-arrow" aria-hidden="true"><Icon icon={ArrowRight01Icon} size={18} /></span>
-          <div className="vc-party">
-            <span className="vc-lbl">{t("verify.card.to")}</span>
-            <span className="vc-party-name">{v.to?.name || v.to?.account || "-"}</span>
-            {v.to?.name && v.to.account && <span className="vc-party-acct">{v.to.account}</span>}
-          </div>
-        </div>
-      )}
-
-      {(v.reference || v.bank || (v.showDetails && v.date)) && (
-        <dl className="vc-meta">
-          {v.showDetails && v.date && (
-            <div><dt>{t("verify.card.date")}</dt><dd>{prettyDate(v.date)}</dd></div>
-          )}
-          {v.reference && (
-            <div className={v.reference.length > 14 ? "vc-meta-wide" : undefined}><dt>{t("verify.card.reference")}</dt><dd className="vc-mono">{v.reference}</dd></div>
-          )}
-          {v.bank && (
-            <div>
-              <dt>{t("verify.card.bank")}</dt>
-              <dd className="vc-bank"><BankLogoByName code={v.bank.code} size={18} /><span>{v.bank.shortName}</span></dd>
+      {rows.length > 0 && (
+        <dl className="vc-rows">
+          {rows.map(([label, value, cls]) => (
+            <div key={label} className={cls ? `vc-row ${cls}` : "vc-row"}>
+              <dt>{label}</dt>
+              <dd>{value}</dd>
             </div>
-          )}
+          ))}
         </dl>
       )}
 
@@ -184,14 +164,13 @@ export function VerdictCard({ verdict, result, checkedAt, t, onAnother, onRetry 
         <ul className="vc-checks">
           {v.checks.map((c) => (
             <li key={c.id} data-state={c.state}>
-              <Icon icon={c.state === "pass" ? Tick02Icon : c.state === "mismatch" ? CancelCircleIcon : Alert01Icon} size={16} strokeWidth={2} />
-              <span><strong>{c.label}</strong>{c.detail ? <> {c.detail}</> : null}</span>
+              <span><strong>{c.label}</strong>{c.detail ? <>. {c.detail}</> : null}</span>
             </li>
           ))}
         </ul>
       )}
 
-      {v.kind === "verified" && <p className="vc-before">{t("verify.card.before")}</p>}
+      {v.kind === "verified" && <p className="vc-note">{t("verify.card.before")}</p>}
 
       {v.nextStep && (
         <p className="vc-next">
@@ -219,53 +198,72 @@ export function VerdictCard({ verdict, result, checkedAt, t, onAnother, onRetry 
             <Icon icon={ArrowUpRight01Icon} size={16} />
           </a>
         )}
+        {!hasOwnPrimary && (
+          <button type="button" className="vc-btn vc-btn--primary" onClick={onAnother}>
+            {t("verify.actions.another")}
+          </button>
+        )}
         {isJudgement && (
-          <button type="button" className="vc-btn" onClick={() => copy("text")}>
-            <Icon icon={copied === "text" ? CopyCheckIcon : Copy01Icon} size={16} />
-            <span aria-live="polite">{copied === "text" ? t("verify.actions.copied") : t("verify.actions.copy")}</span>
+          <button
+            type="button"
+            className="vc-btn vc-btn--quiet vc-btn--icon"
+            onClick={() => copy("text")}
+            aria-label={copied === "text" ? t("verify.actions.copied") : t("verify.actions.copy")}
+            title={t("verify.actions.copy")}
+          >
+            <Icon icon={copied === "text" ? CopyCheckIcon : Copy01Icon} size={18} />
           </button>
         )}
         {isJudgement && canShare && (
-          <button type="button" className="vc-btn" onClick={share}>
-            <Icon icon={Share08Icon} size={16} />
-            {t("verify.actions.share")}
+          <button type="button" className="vc-btn vc-btn--quiet vc-btn--icon" onClick={share} aria-label={t("verify.actions.share")} title={t("verify.actions.share")}>
+            <Icon icon={Share08Icon} size={18} />
           </button>
         )}
         {isJudgement && (
-          <button type="button" className="vc-btn" onClick={() => window.print()}>
-            <Icon icon={PrinterIcon} size={16} />
-            {t("verify.actions.print")}
+          <button type="button" className="vc-btn vc-btn--quiet vc-btn--icon" onClick={() => window.print()} aria-label={t("verify.actions.print")} title={t("verify.actions.print")}>
+            <Icon icon={PrinterIcon} size={18} />
           </button>
         )}
-        <button type="button" className="vc-btn vc-btn--ghost" onClick={onAnother}>
-          {t("verify.actions.another")}
-        </button>
+        <span className="sr-only" aria-live="polite">{copied ? t("verify.actions.copied") : ""}</span>
+        {hasOwnPrimary && (
+          <button type="button" className="vc-btn vc-btn--text" onClick={onAnother}>
+            {t("verify.actions.another")}
+          </button>
+        )}
       </div>
 
-      {v.sourceUrl && (
-        <a className="vc-source vc-no-print" href={v.sourceUrl} target="_blank" rel="noopener noreferrer">
-          <span>{t("verify.card.source")}</span>
-          <span className="vc-source-url">{v.sourceUrl.replace(/^https:\/\//, "")}</span>
-          <Icon icon={ArrowUpRight01Icon} size={14} />
-        </a>
-      )}
-
-      {result && isJudgement && (
-        <details className="vc-details vc-no-print">
-          <summary>{t("verify.card.details")}</summary>
-          {extraRows.length > 0 && (
-            <dl className="vc-rows">
-              {extraRows.map(([k, val]) => (
-                <div key={k}><dt>{k}</dt><dd>{val}</dd></div>
-              ))}
-            </dl>
+      {(v.sourceUrl || (result && isJudgement)) && (
+        <div className="vc-foot vc-no-print">
+          {v.sourceUrl && (
+            <a className="vc-source" href={v.sourceUrl} target="_blank" rel="noopener noreferrer">
+              <span>{t("verify.card.source")}</span>
+              <span className="vc-source-url">{v.sourceUrl.replace(/^https:\/\//, "")}</span>
+              <Icon icon={ArrowUpRight01Icon} size={16} />
+            </a>
           )}
-          <pre className="vc-json">{JSON.stringify(publicJson(result, v), null, 2)}</pre>
-          <button type="button" className="vc-btn vc-btn--small" onClick={() => copy("json")}>
-            <Icon icon={copied === "json" ? CopyCheckIcon : Copy01Icon} size={14} />
-            {copied === "json" ? t("verify.actions.copied") : t("verify.card.copyJson")}
-          </button>
-        </details>
+          {result && isJudgement && (
+            <details className="vc-details">
+              <summary>
+                {t("verify.card.details")}
+                <span className="vc-chev" aria-hidden="true"><Icon icon={ChevronDownIcon} size={16} /></span>
+              </summary>
+              <div className="vc-details-body">
+                {extraRows.length > 0 && (
+                  <dl className="vc-xrows">
+                    {extraRows.map(([k, val]) => (
+                      <div key={k}><dt>{k}</dt><dd>{val}</dd></div>
+                    ))}
+                  </dl>
+                )}
+                <pre className="vc-json">{JSON.stringify(publicJson(result, v), null, 2)}</pre>
+                <button type="button" className="vc-btn vc-btn--small" onClick={() => copy("json")}>
+                  <Icon icon={copied === "json" ? CopyCheckIcon : Copy01Icon} size={14} />
+                  {copied === "json" ? t("verify.actions.copied") : t("verify.card.copyJson")}
+                </button>
+              </div>
+            </details>
+          )}
+        </div>
       )}
     </article>
   );

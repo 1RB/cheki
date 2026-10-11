@@ -32,6 +32,7 @@ import { VerdictCard } from "./VerdictCard";
 import { VerdictSkeleton } from "./VerdictSkeleton";
 import { RecentChecks } from "./RecentChecks";
 import { Icon, ArrowUpRight01Icon } from "@/components/Icon";
+import { BankLogoByName } from "@/components/BankLogo";
 
 const CameraScanner = dynamic(() => import("./CameraScanner"), { ssr: false });
 const BatchPanel = dynamic(() => import("./BatchPanel"), { ssr: false });
@@ -89,6 +90,8 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
   const [batch, setBatch] = useState<File[] | null>(null);
   const [checkingBank, setCheckingBank] = useState<string>("");
   const [forced, setForced] = useState(false);
+  /** After a verdict the input folds to one row; Edit unfolds it. */
+  const [editing, setEditing] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const extraRef = useRef<HTMLInputElement>(null);
@@ -126,10 +129,22 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
     const el = resultRef.current;
     const heading = el.querySelector<HTMLElement>("#vc-title");
     const navH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--nav-h")) || 0;
-    if (verdictNeedsScroll(el.getBoundingClientRect(), window.innerHeight, navH)) {
-      el.scrollIntoView({ behavior: reduceMotion() ? "auto" : "smooth", block: "start" });
-    }
+    const reduced = reduceMotion();
+    const settle = () => {
+      if (verdictNeedsScroll(el.getBoundingClientRect(), window.innerHeight, navH)) {
+        el.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
+      }
+    };
     heading?.focus({ preventScroll: true });
+    // The input folds above the verdict (a 240ms grid-row transition), so
+    // measure where the verdict lands, not where it starts. Under reduced
+    // motion the fold is instant and the measurement is already final.
+    if (reduced) {
+      settle();
+      return;
+    }
+    const id = window.setTimeout(settle, 260);
+    return () => window.clearTimeout(id);
   }, [phase, outcome]);
 
   const focusInput = useCallback(() => {
@@ -187,6 +202,7 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
       const ctrl = new AbortController();
       abortRef.current = ctrl;
       setCheckingBank(d.bank.shortName);
+      setEditing(false);
       setPhase("checking");
       setOutcome(null);
       setBatch(null);
@@ -322,6 +338,7 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
     setExtraError(null);
     setBatch(null);
     setForced(false);
+    setEditing(false);
     setPhase("idle");
     focusInput();
   }, [focusInput]);
@@ -333,6 +350,10 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
   const hideSubmit = detection.browserFirst && !forced && phase === "done";
   const olderFormats = detection.bank ? secondaryFormats(detection.bank).filter((f) => f.status !== "current") : [];
   const busy = phase === "checking" || phase === "reading";
+  const folded = phase === "done" && !!outcome && !editing;
+  const summaryBank = outcome?.bankCode ? liveBanks.find((b) => b.code === outcome.bankCode) : undefined;
+  const summaryRef =
+    detection.kind === "boaQr" ? t("verify.detect.boaQr") : (outcome?.reference || input.trim().replace(/^https?:\/\//i, ""));
   const idleBanks = useMemo(() => {
     const names = liveBanks.map((b) => b.shortName);
     return names.length > 3 ? `${names.slice(0, 3).join(", ")} +${names.length - 3} more` : names.join(", ");
@@ -340,6 +361,28 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
 
   return (
     <div className="vp" data-phase={phase}>
+      <div className="vp-card" data-folded={folded || undefined}>
+      <div className="vp-fold" data-hidden={!folded || undefined} inert={!folded}>
+        <div>
+          <div className="vp-summary">
+            {summaryBank && <BankLogoByName code={summaryBank.code} size={20} />}
+            <span className="vp-summary-label">{t("verify.summary.checked")}</span>
+            <span className="vp-summary-ref" data-plain={detection.kind === "boaQr" || undefined}>{summaryRef}</span>
+            <button
+              type="button"
+              className="vp-edit"
+              onClick={() => {
+                setEditing(true);
+                focusInput();
+              }}
+            >
+              {t("verify.summary.edit")}
+            </button>
+          </div>
+        </div>
+      </div>
+      <div className="vp-fold" data-hidden={folded || undefined} inert={folded}>
+      <div>
       <form
         className="vp-form"
         noValidate
@@ -457,6 +500,9 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
           </details>
         )}
       </form>
+      </div>
+      </div>
+      </div>
 
       <div ref={resultRef} className="vp-result">
         {busy && <VerdictSkeleton label={phase === "reading" ? t("verify.reading") : t("verify.checking", { bank: checkingBank })} />}
