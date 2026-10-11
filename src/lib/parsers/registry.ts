@@ -14,6 +14,8 @@ export interface RegisteredParser {
   accountDigits?: number;
   requiresPhone: boolean;
   buildUrl(ref: string, account?: string, phone?: string): string;
+  /** Validate and canonicalise a reference before it is put in a URL. */
+  normalizeReference(ref: string): import("../security/reference").Checked<string>;
   parse(data: string | Buffer, contentType: string): import("../core/types").ParsedReceipt;
   fetchReceipt(
     ref: string,
