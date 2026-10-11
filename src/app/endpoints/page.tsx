@@ -32,7 +32,7 @@ function escapeHtml(s: string): string {
 
 function responseTypeLabel({ bank, doc }: EndpointRow): string {
   if (doc.responseTypeLabel) return doc.responseTypeLabel;
-  return bank.responseType === "pdf" ? "PDF" : bank.responseType === "json" ? "JSON" : "HTML";
+  return fmtLabel(bank.responseType);
 }
 
 function hasEndpoint({ bank }: EndpointRow): boolean {
@@ -44,7 +44,10 @@ const small: React.CSSProperties = { fontSize: "14px", color: "var(--ink-2)", li
 const tag: React.CSSProperties = { display: "inline-block", fontSize: "11px", fontWeight: 600, padding: "1px 8px", borderRadius: "4px", background: "var(--amber-light)", color: "var(--amber-text)", marginLeft: "6px" };
 
 
-const fmtLabel = (rt: ReceiptFormat["responseType"]) => (rt === "pdf" ? "PDF" : rt === "json" ? "JSON" : "HTML");
+function fmtLabel(rt: ReceiptFormat["responseType"]): string {
+  if (rt === "pdf-in-json") return "PDF inside JSON (base64)";
+  return rt === "pdf" ? "PDF" : rt === "json" ? "JSON" : "HTML";
+}
 
 function FormatSummary({ f, bankId }: { f: ReceiptFormat; bankId: string }) {
   const health = getBankHealth(`${bankId}:${f.id}`);
@@ -91,8 +94,15 @@ function EndpointCard({ row }: { row: EndpointRow }) {
           <a href={`#${bank.id}`} style={{ color: "var(--ink)" }}>{doc.label}</a>
         </h2>
         <span style={{ fontSize: "14px", color: "var(--ink-3)" }}>{bank.name}</span>
+        {bank.beta && <span style={tag}>Beta</span>}
         <span style={{ marginLeft: "auto" }}><StatusPill status={healthStatusFor(bank)} /></span>
       </header>
+
+      {live && bank.beta && bank.betaNote && (
+        <p style={{ marginTop: "12px", padding: "10px 14px", borderRadius: "8px", background: "var(--surface-alt)", ...small }}>
+          <strong>Beta.</strong> {bank.betaNote.replace(/^Beta:\s*/, "")}
+        </p>
+      )}
 
       {!live && hasBankPage && (
         <p style={{ marginTop: "12px", padding: "10px 14px", borderRadius: "8px", background: "var(--surface-alt)", ...small }}>
