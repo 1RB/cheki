@@ -48,9 +48,9 @@ func main() {
 	// 3. One receipt. Only IsVerified() means the bank confirmed it.
 	fmt.Println("\n=== Verify ===")
 	result, err := client.Verify(ctx, cheki.VerifyOptions{
-		Bank:          "cbe",
-		Reference:     "FT26140P01YB",
-		AccountNumber: "1000560536171",
+		Bank:      "cbe",
+		Reference: "https://mbreciept.cbe.com.et/fHCxExampleRcpt01",
+		// Older FT-only CBE receipt (legacy): Reference: "FT26140P01YB", AccountNumber: "1000560536171".
 	})
 	var apiErr *cheki.APIError
 	switch {
@@ -67,7 +67,7 @@ func main() {
 	// 4. Up to 20 receipts in one batch.
 	fmt.Println("\n=== Batch Verify ===")
 	batch, err := client.VerifyBatch(ctx, []cheki.VerifyOptions{
-		{Bank: "cbe", Reference: "FT26140P01YB", AccountNumber: "1000560536171"},
+		{Bank: "cbe", Reference: "https://mbreciept.cbe.com.et/fHCxExampleRcpt01"},
 		{Bank: "telebirr", Reference: "CHQ0FJ403O"},
 	})
 	if err != nil {
