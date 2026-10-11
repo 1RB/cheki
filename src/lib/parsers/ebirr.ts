@@ -20,6 +20,9 @@
  */
 import { BaseParser } from "./base";
 import type { ParsedReceipt } from "../core/types";
+import { removeScriptsAndStyles, TAG_RE } from "../core/html";
+import { parseMoney } from "../core/money";
+import { parseEbirrReference, buildEbirrUrl, type Checked } from "../security/reference";
 
 // Map tenant codes to bank names
 const TENANT_MAP: Record<string, string> = {
@@ -39,19 +42,23 @@ export class EBirrParser extends BaseParser {
   readonly accountDigits?: number = undefined;
   readonly requiresPhone = false;
 
+  /**
+   * Accepts "tenant/token" or a https://receipt.ebirr.com/tenant/token link and
+   * returns the canonical "tenant/token". The link is never fetched as given.
+   */
+  normalizeReference(ref: string): Checked<string> {
+    const parsed = parseEbirrReference(ref);
+    if (!parsed.ok) return parsed;
+    return { ok: true, value: `${parsed.value.tenant}/${parsed.value.token}` };
+  }
+
   buildUrl(ref: string): string {
-    // ref can be either:
-    //   "nib/abc123" (tenant/token format)
-    //   "https://receipt.ebirr.com/nib/abc123" (full URL)
-    const cleaned = ref.trim();
-
-    // If it's already a full URL, use it directly
-    if (cleaned.startsWith("http")) {
-      return cleaned;
-    }
-
-    // Otherwise, treat it as tenant/token
-    return `https://receipt.ebirr.com/${cleaned}`;
+    // Always rebuilt from the fixed eBirr host. A full URL or anything that
+    // does not parse as tenant/token is rejected (it used to be fetched as is,
+    // which allowed SSRF and forged "verified" receipts).
+    const parsed = parseEbirrReference(ref);
+    if (!parsed.ok) throw new Error(parsed.message);
+    return buildEbirrUrl(parsed.value.tenant, parsed.value.token);
   }
 
   parse(data: string | Buffer, _contentType: string): ParsedReceipt {
@@ -103,21 +110,19 @@ export class EBirrParser extends BaseParser {
     const phone = fields["phone"] || fields["mobile"] || fields["phone number"];
 
     // Parse amount
-    let amount: number | undefined;
-    if (amountStr) {
-      const m = amountStr.replace(/[^0-9.]/g, "");
-      if (m) amount = parseFloat(m);
-    }
+    const amount = parseMoney(amountStr);
 
     const bankName = tenant ? TENANT_MAP[tenant] : undefined;
 
     const result: ParsedReceipt = {
-      verified: !!(senderName || receiverName || amount),
+      // A real receipt names a party, an amount, and a reference or a date.
+      // One field alone (e.g. a page with only "To: support desk") is not a receipt.
+      verified: !!((senderName || receiverName) && amount !== undefined && amount > 0 && (reference || date)),
       senderName,
       receiverName,
       senderAccount,
       receiverAccount,
-      amount: Number.isFinite(amount) ? amount : undefined,
+      amount,
       currency: "ETB",
       date,
       reference,
@@ -135,17 +140,15 @@ export class EBirrParser extends BaseParser {
    * Strip HTML tags and decode entities to get plain text.
    */
   private stripHtml(html: string): string {
-    return html
-      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
-      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
+    return removeScriptsAndStyles(html)
       .replace(/<br\s*\/?>/gi, "\n")
-      .replace(/<\/td>\s*<td[^>]*>/gi, ":\t")
+      .replace(/<\/td>\s*<td[^<>]*>/gi, ":\t")
       .replace(/<\/tr>/gi, "\n")
       .replace(/<\/div>/gi, "\n")
       .replace(/<\/p>/gi, "\n")
-      .replace(/<div[^>]*>/gi, "")
-      .replace(/<p[^>]*>/gi, "")
-      .replace(/<[^>]+>/g, " ")
+      .replace(/<div[^<>]*>/gi, "")
+      .replace(/<p[^<>]*>/gi, "")
+      .replace(TAG_RE, " ")
       .replace(/&nbsp;/g, " ")
       .replace(/&amp;/g, "&")
       .replace(/&lt;/g, "<")
