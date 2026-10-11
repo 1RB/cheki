@@ -8,6 +8,7 @@
  */
 import { getEndpointRows, type ProbeExpectation, type ProbeSpec } from "./manifest/endpoints";
 import type { BankManifestEntry } from "./core/types";
+import { primaryFormat } from "./manifest/formats";
 import { getParser } from "./parsers/registry";
 import "./parsers";
 import { removeScriptsAndStyles, TAG_RE } from "./core/html";
@@ -30,6 +31,8 @@ export interface BankHealth {
   /** Short description of what came back, e.g. `400 application/json "Transaction not found"`. */
   observed?: string;
   checkedAt: string;
+  /** Set on rows for a bank's older format ("<bank>:<formatId>"). A legacy host being down never fails the run. */
+  formatStatus?: "legacy";
 }
 
 export interface StatusFile {
@@ -98,21 +101,47 @@ export interface ProbeTarget {
   headers?: Record<string, string>;
   probe?: ProbeSpec;
   skip?: "no-endpoint" | "geo-restricted";
+  formatStatus?: "legacy";
+}
+
+/** Headers of the manifest format a parser reads (falls back to the bank's own headers). */
+function headersFor(bank: BankManifestEntry, parserId: string): Record<string, string> | undefined {
+  return bank.formats?.find((f) => f.parser === parserId)?.headers ?? bank.headers;
 }
 
 export function buildProbeTargets(opts: { checkGeoRestricted: boolean }): ProbeTarget[] {
-  return getEndpointRows().map(({ bank, doc }) => {
+  return getEndpointRows().flatMap(({ bank, doc }) => {
     const base = { id: bank.id, label: doc.label, bank };
-    if ("skip" in doc.probe) return { ...base, skip: doc.probe.skip };
-    if (bank.geoBlocked && !opts.checkGeoRestricted) return { ...base, skip: "geo-restricted" as const };
-    const parser = getParser(doc.probe.parser ?? bank.id);
-    if (!parser) return { ...base, skip: "no-endpoint" as const };
-    return {
-      ...base,
-      probe: doc.probe,
-      url: parser.buildUrl(doc.probe.ref, doc.probe.account, doc.probe.phone),
-      headers: doc.probe.useManifestHeaders ? bank.headers : undefined,
-    };
+    const legacy: ProbeTarget[] = (doc.legacy ?? []).flatMap((l) => {
+      if (!l.probe) return [];
+      const lp = getParser(l.probe.parser ?? bank.id);
+      if (!lp) return [];
+      return [{
+        id: `${bank.id}:${l.formatId}`,
+        label: `${doc.label} (legacy: ${bank.formats?.find((f) => f.id === l.formatId)?.label ?? l.formatId})`,
+        bank,
+        formatStatus: "legacy" as const,
+        probe: l.probe,
+        url: lp.buildUrl(l.probe.ref, l.probe.account, l.probe.phone),
+        headers: l.probe.useManifestHeaders ? headersFor(bank, lp.bankId) : undefined,
+      }];
+    });
+    if ("skip" in doc.probe) return [{ ...base, skip: doc.probe.skip }, ...legacy];
+    if (bank.geoBlocked && !opts.checkGeoRestricted) return [{ ...base, skip: "geo-restricted" as const }, ...legacy];
+    // The bank's row probes its current format: the probe's parser defaults to
+    // the primary (current) format's parser, so a format switch in banks.json
+    // moves the probe with it.
+    const parser = getParser(doc.probe.parser ?? primaryFormat(bank)?.parser ?? bank.id);
+    if (!parser) return [{ ...base, skip: "no-endpoint" as const }, ...legacy];
+    return [
+      {
+        ...base,
+        probe: doc.probe,
+        url: parser.buildUrl(doc.probe.ref, doc.probe.account, doc.probe.phone),
+        headers: doc.probe.useManifestHeaders ? headersFor(bank, parser.bankId) : undefined,
+      },
+      ...legacy,
+    ];
   });
 }
 
@@ -122,7 +151,7 @@ export function evaluate(
   outcome: { response?: ObservedResponse; error?: string },
   checkedAt: string,
 ): BankHealth {
-  const base = { id: t.id, label: t.label, manifestStatus: t.bank.status, checkedAt };
+  const base = { id: t.id, label: t.label, manifestStatus: t.bank.status, checkedAt, ...(t.formatStatus ? { formatStatus: t.formatStatus } : {}) };
   if (t.skip === "geo-restricted") {
     return { ...base, status: "not-checked", detail: "Geo-restricted to Ethiopian IPs, not checked from CI." };
   }
