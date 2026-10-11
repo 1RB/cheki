@@ -21,7 +21,7 @@
 .hp-trust li + li::before { content: "·"; margin: 0 10px; color: var(--ink-3); }
 .hp-hero-desktop-extra { display: none; margin-top: 28px; }
 /* The checker brings its own surfaces (input card, verdict card). */
-.hp-panel { min-width: 0; scroll-margin-top: calc(var(--nav-h) + 16px); }
+.hp-panel { min-width: 0; }
 
 @media (min-width: 900px) {
   .hp-hero { padding-top: 56px; padding-bottom: 24px; }

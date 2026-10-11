@@ -11,6 +11,11 @@
  *  3. Footer links are 44px rows on touch screens, and fixed full-screen
  *     surfaces clear the home indicator (safe-area inset).
  *  4. Pinch zoom stays available.
+ *  5. Inline code wraps at normal break points (break-all split
+ *     `"reference":` and 10-character receipt IDs mid-token).
+ *  6. In-page anchors clear the sticky nav (#faq landed under it).
+ *  7. Nothing paints literal white on var(--ink), which is near-white in
+ *     dark mode (the POST badge on /developers was 1.2:1).
  */
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, resolve } from "node:path";
@@ -55,11 +60,18 @@ describe("mobile: form controls never trigger iOS focus zoom", () => {
     expect(rule).toMatch(/font-size:\s*16px\s*!important/);
   });
 
+  it("the bank picker is a transparent 16px select over a 13px face", () => {
+    const verify = read("src/components/verify/verify.css");
+    expect(verify).toMatch(/\.vi-select \{[^}]*font-size: 16px/);
+    expect(verify).toMatch(/\.vi-select \{[^}]*opacity: 0/);
+    expect(read("src/components/verify/VerifyInput.tsx")).toContain('className="vi-select-face" aria-hidden="true"');
+  });
+
   it("no inline style gives a form control a font-size under 16px", () => {
     const offenders: string[] = [];
     for (const f of tsxFiles) {
       const src = readFileSync(f, "utf8");
-      for (const m of src.matchAll(/<(input|select|textarea)\b[^>]*?style=\{\{([^}]*)\}\}/gs)) {
+      for (const m of src.matchAll(/<(input|select|textarea)\b[^>]*?style=\{\{([^}]*)\}\}/g)) {
         const size = /fontSize:\s*"?(\d+(?:\.\d+)?)(px)?"?/.exec(m[2]);
         if (size && Number(size[1]) < 16) offenders.push(`${f.replace(root, "")}: <${m[1]}> fontSize ${size[1]}`);
       }
@@ -113,5 +125,27 @@ describe("mobile: touch targets and safe areas", () => {
     const layout = read("src/app/layout.tsx");
     expect(layout).not.toMatch(/userScalable:\s*false/);
     expect(layout).not.toMatch(/maximumScale:\s*1\b/);
+  });
+});
+
+describe("mobile: wrapping, anchors and dark contrast", () => {
+  it("inline code never uses word-break: break-all", () => {
+    for (const f of cssFiles) expect(readFileSync(f, "utf8"), f).not.toMatch(/word-break:\s*break-all/);
+    for (const f of tsxFiles) expect(readFileSync(f, "utf8"), f).not.toMatch(/wordBreak:\s*"break-all"/);
+  });
+
+  it("anchors scroll to below the sticky nav", () => {
+    expect(globals).toMatch(/html \{ scroll-padding-top: calc\(var\(--nav-h\) \+ \d+px\); \}/);
+  });
+
+  it("no literal white text on an ink background", () => {
+    const offenders: string[] = [];
+    for (const f of tsxFiles) {
+      const src = readFileSync(f, "utf8");
+      for (const m of src.matchAll(/style=\{\{([^}]*)\}\}/g)) {
+        if (/background:[^,]*var\(--ink\)/.test(m[1]) && /color:[^,]*"#fff(?:fff)?"/.test(m[1])) offenders.push(f.replace(root, ""));
+      }
+    }
+    expect(offenders).toEqual([]);
   });
 });

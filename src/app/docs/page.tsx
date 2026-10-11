@@ -315,7 +315,7 @@ function EndpointHeader({
             fontSize: "16px",
             fontFamily: "var(--mono)",
             color: "var(--ink)",
-            wordBreak: "break-all",
+            overflowWrap: "anywhere",
             minWidth: 0,
             fontWeight: 600,
           }}

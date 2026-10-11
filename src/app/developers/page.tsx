@@ -142,10 +142,10 @@ export default function DevelopersPage() {
               <span style={{
                 fontSize: "12px", fontWeight: 700, padding: "4px 10px", borderRadius: "4px",
                 background: ep.method === "GET" ? "var(--green-light)" : "var(--ink)",
-                color: ep.method === "GET" ? "var(--green-dark)" : "#fff", flexShrink: 0,
+                color: ep.method === "GET" ? "var(--green-dark)" : "var(--bg)", flexShrink: 0,
               }}>{ep.method}</span>
               <div style={{ minWidth: 0 }}>
-                <p style={{ fontSize: "14px", fontFamily: "var(--mono)", fontWeight: 600, marginBottom: "4px", wordBreak: "break-all" }}>{ep.path}</p>
+                <p style={{ fontSize: "14px", fontFamily: "var(--mono)", fontWeight: 600, marginBottom: "4px", overflowWrap: "anywhere" }}>{ep.path}</p>
                 <p style={{ fontSize: "14px", color: "var(--ink-2)", maxWidth: "60ch" }}>{ep.desc}</p>
               </div>
             </div>

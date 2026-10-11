@@ -129,18 +129,23 @@
   font-size: 12px; font-weight: 550; color: var(--amber-text);
 }
 .vi-beta::before { content: ""; width: 6px; height: 6px; border-radius: 999px; background: var(--amber); }
-.vi-select-wrap { flex-shrink: 0; position: relative; }
-.vi-select {
-  height: 32px; max-width: 150px; padding: 0 26px 0 10px; appearance: none;
-  border: none; border-radius: var(--radius-sm); background-color: transparent;
-  color: var(--ink-2); font-size: 13px; font-weight: 500; cursor: pointer;
+.vi-select-wrap {
+  flex-shrink: 0; position: relative; display: inline-flex; align-items: center; height: 32px; max-width: 150px;
+  padding: 0 26px 0 10px; border-radius: var(--radius-sm); color: var(--ink-2); font-size: 13px; font-weight: 500;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   background-position: right 9px center; background-size: 10px 6px; background-repeat: no-repeat;
   transition: background-color var(--dur-fast) var(--ease-out);
 }
-@media (hover: hover) { .vi-select:hover { background-color: var(--border); } }
-/* The visual is 32px; the hit area is grown to 44px without moving layout. */
-.vi-select-wrap::before { content: ""; position: absolute; inset: -6px 0; pointer-events: none; }
+.vi-select-face { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; pointer-events: none; }
+/* The real control: transparent, on top, 16px (no iOS focus zoom), and
+   44px tall so the hit area is a full target while the face stays 32px. */
+.vi-select {
+  position: absolute; left: 0; right: 0; top: 50%; height: 44px; width: 100%; transform: translateY(-50%);
+  opacity: 0; appearance: none; border: 0; margin: 0; padding: 0; font-size: 16px; cursor: pointer;
+  background: transparent; color: var(--ink);
+}
+@media (hover: hover) { .vi-select-wrap:hover { background-color: var(--border); } }
+.vi-select-wrap:has(.vi-select:focus-visible) { outline: 2px solid var(--ring); outline-offset: 2px; }
 
 /* Extra field: opens only when the detected format needs it. */
 .vi-extra {
@@ -196,11 +201,10 @@
 /* Segmented control instead of underlined tabs. */
 .gf-tabs { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 2px; padding: 2px; border-radius: var(--radius-md); background: var(--surface-alt); }
 .gf-tab {
-  min-height: 40px; padding: 0 12px; border: none; border-radius: 10px; background: none; cursor: pointer;
+  min-height: 44px; padding: 0 12px; border: none; border-radius: 10px; background: none; cursor: pointer;
   font-size: 13px; font-weight: 550; color: var(--ink-2);
   transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
 }
-/* 40px visual inside a 44px row (2px padding each side). */
 .gf-tab[aria-selected="true"] { color: var(--ink); background: var(--surface); box-shadow: 0 0 0 1px var(--border), var(--shadow-sm); }
 .gf-panel { display: flex; flex-direction: column; gap: 10px; }
 .gf-steps, .gf-note { font-size: 13px; line-height: 1.55; color: var(--ink-2); }
@@ -252,7 +256,6 @@
 /* ── Verdict: a typeset receipt ─────────────────────────────────────── */
 .vp-result:empty { display: none; }
 /* scrollIntoView clears the sticky header */
-.vp-result { scroll-margin-top: calc(var(--nav-h, 56px) + 12px); }
 /* Focus lands on the heading programmatically (tabindex=-1, not in the tab
    order) so screen readers start there; it is not a control, so no ring. */
 .vc-title:focus, .vc-title:focus-visible { outline: none; }
@@ -468,7 +471,7 @@
 }
 
 @media (max-width: 380px) {
-  .vi-select { max-width: 118px; }
+  .vi-select-wrap { max-width: 128px; }
   .vc-row { grid-template-columns: 76px minmax(0, 1fr); }
 }
 
