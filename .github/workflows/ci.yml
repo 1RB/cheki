@@ -10,7 +10,9 @@ permissions:
 
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  # Supersede stale PR runs, but let every push to main finish (the daily
+  # endpoint-health commit and merges land there back to back).
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   web:
@@ -24,10 +26,8 @@ jobs:
           node-version: 20
           cache: npm
 
-      # package-lock.json is out of sync with package.json on this base
-      # (npm ci fails on @emnapi/* entries), so install like the old workflow
-      # did. Switch to `npm ci` once the lockfile is regenerated.
-      - run: npm install --prefer-offline --no-audit --no-fund
+      # The lockfile must match package.json; npm ci fails the job if it drifts.
+      - run: npm ci --no-audit --no-fund
 
       # Errors fail the build. Known frontend debt is downgraded to warnings in
       # eslint.config.mjs until it is fixed.
