@@ -229,6 +229,14 @@ export interface ReceiptFormatInput {
   digits?: number;
 }
 
+/**
+ * What a receipt endpoint answers with, as recorded in banks.json.
+ * "pdf-in-json": a JSON envelope whose field holds the receipt as a
+ * base64-encoded PDF (M-Pesa's getReceipt). Parsers still declare the wire
+ * format ("json") as their own responseType.
+ */
+export type ManifestResponseType = "pdf" | "html" | "json" | "pdf-in-json";
+
 export interface ReceiptFormat {
   id: string;
   status: ReceiptFormatStatus;
@@ -244,7 +252,7 @@ export interface ReceiptFormat {
   inputs: ReceiptFormatInput[];
   /** References this format accepts. Used to pick a format by the shape of the input. */
   refPattern?: BankRefPattern;
-  responseType: "pdf" | "html" | "json";
+  responseType: ManifestResponseType;
   headers?: Record<string, string>;
   /** How GET /api/receipt serves it: a 302 to `link`, or the bank's PDF proxied. */
   receiptPage?: "redirect" | "pdf";
@@ -274,8 +282,15 @@ export interface BankManifestEntry {
   swift?: string;
   type: "bank" | "wallet" | "mobile";
   status: "live" | "in-development";
+  /**
+   * Live but not yet confirmed with a real receipt (the parser follows other
+   * verifiers' source). Copy and clients should label it beta; `betaNote`
+   * says why. Cleared once a real receipt verifies.
+   */
+  beta?: boolean;
+  betaNote?: string;
   parser: string;
-  responseType: "pdf" | "html" | "json";
+  responseType: ManifestResponseType;
   requiresAccount: boolean;
   accountLabel?: string;
   accountDigits?: number;
