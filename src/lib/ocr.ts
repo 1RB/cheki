@@ -2,6 +2,7 @@
 
 import type { OcrParseResult } from "./ocr-parser";
 import { parseReceiptText } from "./ocr-parser";
+import { rateLimitMessage, retryAfterSeconds } from "./verify-response";
 
 export type OcrProgress = {
   status: string;
@@ -130,6 +131,8 @@ export async function extractTextFromImage(
     body: formData,
   });
 
+  if (resp.status === 429) throw new Error(rateLimitMessage(retryAfterSeconds(resp)));
+  if (resp.status === 413) throw new Error("That image is too large. Use a smaller screenshot (under 10 MB).");
   if (!resp.ok) {
     const data = await resp.json().catch(() => ({}));
     throw new Error(data.error || "OCR failed.");
