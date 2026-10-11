@@ -386,8 +386,10 @@
     "shortName": "M-Pesa",
     "type": "mobile",
     "status": "live",
+    "beta": true,
+    "betaNote": "Beta: M-Pesa's receipt format is taken from other open-source verifiers. cheki has not yet verified a real M-Pesa receipt, so treat a result as provisional until one confirms the parser.",
     "parser": "mpesa",
-    "responseType": "json",
+    "responseType": "pdf-in-json",
     "requiresAccount": false,
     "endpoint": "https://m-pesabusiness.safaricom.et/api/receipt/getReceipt?trxNo={ref}",
     "endpointFormat": "https://m-pesabusiness.safaricom.et/api/receipt/getReceipt?trxNo={REFERENCE}",
@@ -395,7 +397,7 @@
     "geoBlocked": true,
     "color": "#00A651",
     "initials": "MP",
-    "notes": "Geo-blocked from non-Ethiopian IPs. Other verifiers read the answer as a JSON envelope carrying a base64 PDF (inferred); cheki's parser is not confirmed with a real receipt.",
+    "notes": "Beta. Geo-blocked from non-Ethiopian IPs. The endpoint answers with a JSON envelope {responseCode, responseDescription, base64Data} whose base64Data is the receipt PDF; cheki decodes it (5 MB cap) and reads the PDF text. Inferred from other open-source verifiers; not yet confirmed with a real receipt.",
     "refPattern": {
       "source": "^[A-Z]{2}\\d{6}",
       "flags": "i"
@@ -403,12 +405,12 @@
     "refPrefixes": [
       "Various"
     ],
-    "description": "M-Pesa Ethiopia is Safaricom's mobile money service operating in Ethiopia. M-Pesa receipts are available via a public JSON API that returns structured transaction data. The endpoint is geo-blocked to Ethiopian IP addresses, similar to Telebirr.",
+    "description": "M-Pesa Ethiopia is Safaricom's mobile money service operating in Ethiopia. Its public receipt API answers with a small JSON envelope that carries the receipt as a PDF, which cheki decodes and reads. The endpoint is geo-blocked to Ethiopian IP addresses, similar to Telebirr. M-Pesa support is in beta until a real receipt confirms the parser.",
     "referenceFormat": "Alphanumeric reference (typically 2 letters followed by 6+ digits)",
     "referenceExample": "SE12345678",
     "howToVerify": [
-      "Get the transaction reference from the customer's M-Pesa SMS or receipt",
-      "cheki calls M-Pesa's public JSON API and extracts payment data",
+      "Get the transaction number from the customer's M-Pesa SMS or receipt",
+      "cheki calls M-Pesa's public receipt API, decodes the receipt PDF it returns and reads the payment details",
       "If the server can't reach M-Pesa (geo-block), cheki provides a direct receipt URL"
     ],
     "useCases": [
@@ -424,7 +426,7 @@
       },
       {
         "q": "Is M-Pesa receipt verification free?",
-        "a": "Yes. The M-Pesa receipt API is public and returns JSON data. check.et and verify.et charge for accessing this same endpoint. cheki does it for free."
+        "a": "Yes. The M-Pesa receipt API is public: it returns the receipt as a PDF inside a JSON response. check.et and verify.et charge for accessing this same endpoint. cheki does it for free. M-Pesa support is in beta until a real receipt confirms cheki's parser."
       },
       {
         "q": "What information do I need to verify an M-Pesa transaction?",
@@ -460,9 +462,32 @@
             "example": "SE12345678"
           }
         ],
-        "responseType": "json",
+        "responseType": "pdf-in-json",
         "confidence": "inferred",
-        "evidence": "Geo-blocked, not probed. Vixen878/verifier-api and links.et (source tag mpesa-pdf) read the answer as a JSON envelope {responseCode, base64Data} carrying a PDF; cheki's parser reads flat JSON fields and has not been confirmed with a real receipt."
+        "evidence": "Geo-blocked, not probed by cheki. Five independent open-source verifiers read the answer as a JSON envelope {responseCode, responseDescription, base64Data} with responseCode \"0\" on success and base64Data a PDF: Vixen878/verifier-api (src/services/verifyMpesa.ts), nahom-d54/tx-verify (src/providers/mpesa.ts), nahom-d54/veri-py, kira-coding/kira-verify-opensource (MpesaVerifier.php), matthias22m/transaction-verify; links.et tags it mpesa-pdf (PDF parsed). PDF labels (TRANSACTION ID, SENDER/PAYER NAME, RECEIPT NO / PAYMENT DATE / SETTLED AMOUNT, TOTAL, ...) come from tx-verify and verifier-api. No source reads flat JSON fields.",
+        "headers": {
+          "Accept": "application/json, text/plain, */*",
+          "Referer": "https://m-pesabusiness.safaricom.et/"
+        },
+        "notes": "Beta until a real receipt verifies. cheki's fixture is synthetic (tests/fixtures/mpesa)."
+      }
+    ],
+    "headers": {
+      "Accept": "application/json, text/plain, */*",
+      "Referer": "https://m-pesabusiness.safaricom.et/"
+    },
+    "endpointHistory": [
+      {
+        "date": "2026-02-22",
+        "formatId": "mpesa-getreceipt",
+        "change": "Vixen878/verifier-api adds M-Pesa: getReceipt returns {responseCode, base64Data}; the PDF is parsed for PAYER NAME, TRANSACTION ID, TOTAL and more.",
+        "source": "https://github.com/Vixen878/verifier-api/blob/main/src/services/verifyMpesa.ts"
+      },
+      {
+        "date": "2026-10-11",
+        "formatId": "mpesa-getreceipt",
+        "change": "cheki reads the envelope and its PDF instead of flat JSON fields (which no source shows the endpoint returning). M-Pesa labelled beta until a real receipt verifies.",
+        "source": "cheki (inferred from other verifiers' source; not probed, geo-blocked)"
       }
     ]
   },

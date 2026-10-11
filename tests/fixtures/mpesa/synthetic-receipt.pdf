@@ -1,0 +1,79 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R /F2 5 0 R >> >> /Contents 6 0 R >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>
+endobj
+6 0 obj
+<< /Length 1877 >>
+stream
+BT /F2 14 Tf 40 800 Td (Safaricom M-PESA) Tj ET
+BT /F1 8 Tf 40 782 Td (SYNTHETIC TEST FIXTURE - NOT A REAL M-PESA RECEIPT) Tj ET
+BT /F2 10 Tf 40 752 Td (TRANSACTION INFORMATION) Tj ET
+BT /F1 8 Tf 40 730 Td (RECEIPT NO) Tj ET
+BT /F1 8 Tf 200 730 Td (PAYMENT DATE) Tj ET
+BT /F1 8 Tf 400 730 Td (SETTLED AMOUNT) Tj ET
+BT /F1 10 Tf 40 716 Td (UCK0SYNTH1) Tj ET
+BT /F1 10 Tf 200 716 Td (2026-09-14 10:21:33) Tj ET
+BT /F1 10 Tf 400 716 Td (1500.00) Tj ET
+BT /F2 10 Tf 40 686 Td (TRANSACTION DETAIL) Tj ET
+BT /F1 9 Tf 40 664 Td (/ SENDER NAME) Tj ET
+BT /F1 9 Tf 300 664 Td (SYNTHETIC TEST PAYER) Tj ET
+BT /F1 9 Tf 40 644 Td (/ SENDER NUMBER) Tj ET
+BT /F1 9 Tf 300 644 Td (251700000001) Tj ET
+BT /F1 9 Tf 40 624 Td (/ RECEIVER NAME) Tj ET
+BT /F1 9 Tf 300 624 Td (SYNTHETIC TEST MERCHANT) Tj ET
+BT /F1 9 Tf 40 604 Td (/ RECEIVER ACCOUNT NUMBER) Tj ET
+BT /F1 9 Tf 300 604 Td (251700000002) Tj ET
+BT /F1 9 Tf 40 584 Td (/ TRANSACTION ID) Tj ET
+BT /F1 9 Tf 300 584 Td (UCK0SYNTH1) Tj ET
+BT /F1 9 Tf 40 564 Td (/ TRANSACTION TYPE) Tj ET
+BT /F1 9 Tf 300 564 Td (Pay Merchant) Tj ET
+BT /F1 9 Tf 40 544 Td (/ PAYMENT METHOD) Tj ET
+BT /F1 9 Tf 300 544 Td (M-PESA) Tj ET
+BT /F1 9 Tf 40 524 Td (/ PAYMENT CHANNEL) Tj ET
+BT /F1 9 Tf 300 524 Td (APP) Tj ET
+BT /F1 9 Tf 40 504 Td (/ PAYMENT REASON) Tj ET
+BT /F1 9 Tf 300 504 Td (Synthetic fixture) Tj ET
+BT /F1 9 Tf 40 484 Td (/ SERVICE FEE) Tj ET
+BT /F1 9 Tf 300 484 Td (0.00 Birr) Tj ET
+BT /F1 9 Tf 40 464 Td (/ DISCOUNT) Tj ET
+BT /F1 9 Tf 300 464 Td (0.00) Tj ET
+BT /F1 9 Tf 40 444 Td (/ + 15% VAT) Tj ET
+BT /F1 9 Tf 300 444 Td (0.00 Birr) Tj ET
+BT /F1 9 Tf 40 424 Td (/ TOTAL) Tj ET
+BT /F1 9 Tf 300 424 Td (1,500.00 Birr) Tj ET
+BT /F1 9 Tf 40 404 Td (/ TOTAL AMOUNT IN WORDS) Tj ET
+BT /F1 9 Tf 300 404 Td (One Thousand Five Hundred Birr) Tj ET
+BT /F2 9 Tf 40 374 Td (SCAN TO VERIFY) Tj ET
+BT /F1 9 Tf 40 344 Td (THANK YOU FOR USING M-PESA) Tj ET
+endstream
+endobj
+7 0 obj
+<< /Title (SYNTHETIC M-Pesa receipt - test fixture, not real) /Producer (cheki tests) >>
+endobj
+xref
+0 8
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000251 00000 n 
+0000000348 00000 n 
+0000000450 00000 n 
+0000002379 00000 n 
+trailer
+<< /Size 8 /Root 1 0 R /Info 7 0 R >>
+startxref
+2483
+%%EOF

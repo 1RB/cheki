@@ -228,6 +228,20 @@
             "formats": [
               { "id": "ebirr-nib", "status": "current", "label": "eBirr receipt link", "inputs": ["link"], "responseType": "html", "supported": true, "confidence": "inferred" }
             ]
+          },
+          {
+            "id": "mpesa",
+            "name": "M-Pesa Ethiopia",
+            "type": "mobile",
+            "status": "live",
+            "beta": true,
+            "requiresAccount": false,
+            "endpoint": "https://m-pesabusiness.safaricom.et/api/receipt/getReceipt?trxNo={ref}",
+            "color": "#00A651",
+            "initials": "MP",
+            "formats": [
+              { "id": "mpesa-getreceipt", "status": "current", "label": "Transaction number", "inputs": ["reference"], "responseType": "pdf-in-json", "supported": true, "confidence": "inferred" }
+            ]
           }
         ]
       }

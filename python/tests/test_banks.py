@@ -1,5 +1,8 @@
+import base64
+import json
 from datetime import datetime
 from io import BytesIO
+from pathlib import Path
 from unittest.mock import patch
 
 import pytest
@@ -7,7 +10,8 @@ import responses
 
 from cheki import supported_banks, verify
 from cheki.banks.cbe import CBEVerifier
-from cheki.errors import ReceiptNotFoundError
+from cheki.banks.mpesa import MAX_BASE64_CHARS, decode_envelope, parse_lines
+from cheki.errors import ReceiptNotFoundError, UpstreamError
 
 # Direct verification is deprecated; these tests cover it until it is removed.
 pytestmark = pytest.mark.filterwarnings("ignore::DeprecationWarning")
@@ -176,44 +180,99 @@ def test_boa_verify_not_found():
         pass
 
 
+# SYNTHETIC M-Pesa receipt (not a real one), built by tests/fixtures/mpesa/synthetic-receipt.ts.
+# The envelope shape and PDF labels are inferred from other verifiers; see cheki/banks/mpesa.py.
+MPESA_PDF = (Path(__file__).resolve().parents[2] / "tests" / "fixtures" / "mpesa" / "synthetic-receipt.pdf").read_bytes()
+MPESA_URL = "https://m-pesabusiness.safaricom.et/api/receipt/getReceipt"
+
+
+def _mpesa_envelope(pdf: bytes = MPESA_PDF, **overrides: object) -> dict:
+    body: dict = {"responseCode": "0", "responseDescription": "Success", "base64Data": base64.b64encode(pdf).decode()}
+    body.update(overrides)
+    return body
+
+
 @responses.activate
 def test_mpesa_verify_success():
-    url = "https://m-pesabusiness.safaricom.et/api/receipt/getReceipt?trxNo=MP12345"
-    responses.add(
-        responses.GET,
-        url,
-        json={
-            "responseCode": "0",
-            "responseDescription": "Success",
-            "senderName": "Alice",
-            "receiverName": "Bob",
-            "amount": 150,
-            "currency": "ETB",
-        },
-        status=200,
-    )
-    result = verify("mpesa", "MP12345")
+    responses.add(responses.GET, MPESA_URL, json=_mpesa_envelope(), status=200)
+    result = verify("mpesa", "UCK0SYNTH1")
     assert result.status.value == "verified"
-    assert result.amount == 150.0
-    assert result.sender_name == "Alice"
+    assert result.amount == 1500.0
+    assert result.sender_name == "SYNTHETIC TEST PAYER"
+    assert result.receiver_account == "251700000002"
+    assert result.transaction_date == datetime(2026, 9, 14, 10, 21, 33)
+    sent = responses.calls[0].request
+    assert "trxNo=UCK0SYNTH1" in sent.url
+    assert sent.headers["Referer"] == "https://m-pesabusiness.safaricom.et/"
+
+
+@responses.activate
+def test_mpesa_mismatched_reference_fails_the_gate():
+    responses.add(responses.GET, MPESA_URL, json=_mpesa_envelope(), status=200)
+    result = verify("mpesa", "UCK0OTHER9")
+    assert result.status.value == "failed"
+    assert "different reference" in (result.message or "")
 
 
 @responses.activate
 def test_mpesa_verify_not_found():
-    url = "https://m-pesabusiness.safaricom.et/api/receipt/getReceipt?trxNo=FAKE123"
     responses.add(
         responses.GET,
-        url,
-        json={
-            "responseCode": "2032",
-            "responseDescription": "The transaction receipt number does not exist.",
-        },
+        MPESA_URL,
+        json={"responseCode": "1", "responseDescription": "Transaction not found"},
         status=200,
     )
-    try:
+    with pytest.raises(ReceiptNotFoundError):
         verify("mpesa", "FAKE123")
-    except ReceiptNotFoundError:
-        pass
+
+
+@responses.activate
+def test_mpesa_flat_json_is_not_a_receipt():
+    """The old flat-JSON shape was never observed anywhere; it must not verify."""
+    responses.add(
+        responses.GET,
+        MPESA_URL,
+        json={"responseCode": "0", "senderName": "Alice", "receiverName": "Bob", "amount": 150},
+        status=200,
+    )
+    with pytest.raises(UpstreamError):
+        verify("mpesa", "MP12345")
+
+
+@pytest.mark.parametrize(
+    "envelope",
+    [
+        {"responseCode": "0", "base64Data": "not base64!!"},
+        {"responseCode": "0", "base64Data": "QUJD"},  # valid base64, not a PDF
+        {"responseCode": "0", "base64Data": "A" * (MAX_BASE64_CHARS + 4)},
+    ],
+)
+def test_mpesa_rejects_bad_envelopes(envelope):
+    with pytest.raises(UpstreamError):
+        decode_envelope(json.dumps(envelope))
+
+
+def test_mpesa_parse_lines_handles_amharic_and_older_labels():
+    fields = parse_lines([
+        "የክፍያ መረጃ / RECEIPT NO PAYMENT DATE SETTLED AMOUNT",
+        "UCK0SYNTH1 2026-09-14 10:21:33 250.00",
+        "የከፋይ ስም / PAYER NAME SYNTHETIC PAYER",
+        "PAYER PHONE NUMBER 251700000003",
+        "TRANSACTION ID UCK0SYNTH1",
+        "TOTAL 250.00 Birr",
+    ])
+    assert fields["sender_name"] == "SYNTHETIC PAYER"
+    assert fields["sender_account"] == "251700000003"
+    assert fields["amount"] == 250.0
+
+
+def test_mpesa_parse_lines_is_linear_on_hostile_text():
+    import time
+
+    start = time.monotonic()
+    for hostile in ("TOTAL " * 16_667, "1" * 100_000, "PAYER NAME " + "A " * 50_000, " " * 99_999 + "x"):
+        parse_lines([hostile])
+    assert time.monotonic() - start < 2
 
 
 @responses.activate

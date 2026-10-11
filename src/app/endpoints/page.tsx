@@ -56,7 +56,7 @@ const FIELD_MEANING: Record<string, string> = {
 
 function responseTypeLabel({ bank, doc }: EndpointRow): string {
   if (doc.responseTypeLabel) return doc.responseTypeLabel;
-  return bank.responseType === "pdf" ? "PDF" : bank.responseType === "json" ? "JSON" : "HTML";
+  return fmtLabel(bank.responseType);
 }
 
 function hasEndpoint({ bank }: EndpointRow): boolean {
@@ -68,7 +68,10 @@ function abs(iso: string | undefined): string | undefined {
   return p ? formatAbsolute(p, "en") : undefined;
 }
 
-const fmtLabel = (rt: ReceiptFormat["responseType"]) => (rt === "pdf" ? "PDF" : rt === "json" ? "JSON" : "HTML");
+function fmtLabel(rt: ReceiptFormat["responseType"]): string {
+  if (rt === "pdf-in-json") return "PDF inside JSON (base64)";
+  return rt === "pdf" ? "PDF" : rt === "json" ? "JSON" : "HTML";
+}
 
 function stateOf(row: EndpointRow): BankState {
   return bankState(row.bank, healthStatusFor(row.bank));
@@ -158,8 +161,15 @@ function EndpointPanel({ row }: { row: EndpointRow }) {
       <header className="ep-head">
         <h2 id={`${bank.id}-title`}><a href={`#${bank.id}`}>{doc.label}</a></h2>
         <span className="ep-fullname">{bank.name}</span>
+        {bank.beta && <span className="ep-flag">Beta</span>}
         <StatusDot state={stateOf(row)} />
       </header>
+
+      {live && bank.beta && bank.betaNote && (
+        <p className="ep-dev">
+          <strong>Beta.</strong> {bank.betaNote.replace(/^Beta:\s*/, "")}
+        </p>
+      )}
 
       {!live && hasBankPage && (
         <p className="ep-dev">
