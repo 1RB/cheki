@@ -112,6 +112,26 @@ export function detectBank(reference: string): string | null {
   return null;
 }
 
+/**
+ * The one way the UI decides how to present an API result. Only a bank
+ * confirmation (`verified: true`) is "verified"; `success` only means the
+ * request was handled. A BOA QR the bank could not confirm is "decodedOnly"
+ * and pasted content is "parsed": both are shown amber, never green, and
+ * never saved as checked. Strict `=== true` so a stringly "true" or a stray
+ * truthy value can't turn anything green.
+ */
+export type VerificationState = "verified" | "decodedOnly" | "parsed" | "none";
+
+export function verificationState(
+  r: Pick<VerifyResult, "success" | "verified" | "decodedOnly" | "parsed"> | null | undefined
+): VerificationState {
+  if (!r || r.success !== true) return "none";
+  if (r.verified === true && r.decodedOnly !== true && r.parsed !== true) return "verified";
+  if (r.decodedOnly === true) return "decodedOnly";
+  if (r.parsed === true) return "parsed";
+  return "none";
+}
+
 export interface VerifyResult {
   success: boolean;
   error?: string;
