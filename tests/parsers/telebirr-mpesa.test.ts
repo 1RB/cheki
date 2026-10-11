@@ -84,33 +84,8 @@ describe("MpesaParser", () => {
     expect(parser.geoBlocked).toBe(true);
   });
 
-  it("parses valid M-Pesa JSON", () => {
-    const json = JSON.stringify({
-      senderName: "John Doe",
-      receiverName: "Jane Smith",
-      amount: "1000",
-      currency: "ETB",
-      transactionId: "ABC123",
-      transactionDate: "2026-06-15",
-    });
-    const result = parser.parse(json, "application/json");
-    expect(result.verified).toBe(true);
-    expect(result.senderName).toBe("John Doe");
-    expect(result.receiverName).toBe("Jane Smith");
-    expect(result.amount).toBe(1000);
-  });
-
-  it("returns verified=false for error response", () => {
-    const json = JSON.stringify({
-      responseCode: "1",
-      responseDescription: "Transaction not found",
-    });
-    const result = parser.parse(json, "application/json");
-    expect(result.verified).toBe(false);
-  });
-
-  it("returns verified=false for invalid JSON", () => {
-    const result = parser.parse("not json", "application/json");
-    expect(result.verified).toBe(false);
+  it("never verifies from the sync parse(): the receipt is a PDF inside a JSON envelope (see mpesa.test.ts)", () => {
+    expect(parser.parse('{"responseCode":"1","responseDescription":"Transaction not found"}', "application/json").verified).toBe(false);
+    expect(parser.parse("not json", "application/json").verified).toBe(false);
   });
 });
