@@ -2,7 +2,7 @@
 
 > TypeScript SDK for the [cheki](https://cheki.et) receipt verification API.
 
-Verify Ethiopian bank transfer receipts from CBE, Telebirr, BOA, Dashen, M-Pesa, Awash, Zemen, CBE Birr, Siinqee and eBirr. Zero runtime dependencies (uses the global `fetch`, Node.js ≥ 18).
+Verify Ethiopian bank transfer receipts from CBE, Telebirr, BOA, Dashen, M-Pesa, Awash, Siinqee and eBirr (the live banks; `getBanks()` lists the current set). Zero runtime dependencies (uses the global `fetch`, Node.js ≥ 18).
 
 > **Server-side only.** The hosted API does not send CORS headers on `/api/verify`, `/api/verify/batch`, `/api/banks` or `/api/health`, so browsers block these calls. Call cheki from your backend.
 
