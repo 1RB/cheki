@@ -5,7 +5,6 @@ from __future__ import annotations
 import responses
 
 from cheki import (
-    ChekiAPIError,
     ChekiClient,
     ChekiClientError,
     ChekiNetworkError,
@@ -281,12 +280,13 @@ def test_get_banks():
     assert len(banks) == 2
     assert all(isinstance(b, ClientBankInfo) for b in banks)
     cbe = banks[0]
-    assert cbe.code == "cbe"          # mapped from `id`
+    assert cbe.id == "cbe"
+    assert cbe.code == "cbe"          # deprecated alias of `id`
     assert cbe.name == "Commercial Bank of Ethiopia"
     assert cbe.requires_account is True
     assert cbe.account_digits == 8
     assert cbe.is_live is True
-    assert cbe.to_dict()["code"] == "cbe"
+    assert cbe.to_dict()["id"] == "cbe"
 
 
 @responses.activate
@@ -332,11 +332,24 @@ def test_get_health():
 
 
 def test_get_receipt_url():
+    """Matches the validated /api/receipt: cbe (with account), zemen, dashen only."""
     cheki = ChekiClient()
-    url = cheki.get_receipt_url("cbe", "FT123", account_number="1000")
-    assert url == f"{API}/api/receipt?bank=cbe&reference=FT123&account=1000"
-    url2 = cheki.get_receipt_url("telebirr", "DET8FJGUJ4")
-    assert url2 == f"{API}/api/receipt?bank=telebirr&reference=DET8FJGUJ4"
+    url = cheki.get_receipt_url("cbe", "FT123", account_number="1000 5605 36171")
+    assert url == f"{API}/api/receipt?bank=cbe&reference=FT123&account=1000560536171"
+    assert cheki.get_receipt_url("Zemen", "ZB123") == f"{API}/api/receipt?bank=zemen&reference=ZB123"
+    for bank, ref, acct in [
+        ("telebirr", "DET8FJGUJ4", None),
+        ("constructor", "X1", None),
+        ("zemen", "../admin", None),
+        ("zemen", "a/b", None),
+        ("cbe", "FT1", None),
+        ("cbe", "FT1", "1234"),
+    ]:
+        try:
+            cheki.get_receipt_url(bank, ref, account_number=acct)
+        except ValueError:
+            continue
+        raise AssertionError(f"{bank} {ref} should be rejected")
 
 
 # ─── error handling ─────────────────────────────────────────────────
@@ -465,14 +478,14 @@ def test_batch_result_derives_counts():
     assert batch.failed == 2
 
 
-def test_health_tolerates_optional_fields():
+def test_health_checks_is_an_alias_of_banks():
     health = ClientHealthStatus.from_dict({
-        "success": True,
         "status": "ok",
-        "version": "1.2.3",
-        "timestamp": "2026-01-01T00:00:00Z",
-        "checks": [{"name": "db", "status": "ok", "latencyMs": 5}],
+        "checkedAt": "2026-10-11T09:00:00.000Z",
+        "cached": True,
+        "banks": [{"id": "cbe", "name": "CBE", "status": "reachable", "latencyMs": 5}],
     })
-    assert health.version == "1.2.3"
-    assert health.timestamp == "2026-01-01T00:00:00Z"
-    assert health.checks[0].name == "db"
+    assert health.checked_at == "2026-10-11T09:00:00.000Z"
+    assert health.cached is True
+    assert health.checks is health.banks
+    assert health.banks[0].id == "cbe"
