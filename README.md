@@ -29,7 +29,7 @@ check.et charges 499 ETB/month. verify.et charges $20-40/month. Both verify rece
 | Bank | Code | Type | Status | Current input | Geo-blocked |
 |------|------|------|--------|---------------|-------------|
 | Commercial Bank of Ethiopia | `cbe` | Bank | ✅ Live | Receipt ID or mbreciept.cbe.com.et link (older FT receipts: + last 8 account digits) | No |
-| Telebirr (Ethio Telecom) | `telebirr` | Mobile money | ✅ Live | Transaction number | Yes (Ethiopia only) |
+| Telebirr (Ethio Telecom) | `telebirr` | Mobile money | ✅ Live | Transaction number, or the receipt's Payment QR Code | Yes (Ethiopia only) |
 | Bank of Abyssinia | `boa` | Bank | ✅ Live | Reference + last 5 account digits, or the receipt QR | No |
 | M-Pesa Ethiopia | `mpesa` | Mobile money | ✅ Live (beta) | Transaction number | Yes (Ethiopia only) |
 | Dashen Bank | `dashen` | Bank | ✅ Live | FT Ref (16 characters) | No |
@@ -52,6 +52,7 @@ cheki ships SDKs in 5 languages. All wrap the same REST API and are tested again
 What every SDK does the same way:
 
 - **`verified` is the only success signal.** A 200 response can still be unverified: a BOA QR code the bank could not confirm comes back as `success: true, verified: false, decodedOnly: true`. Each SDK has a helper (`isVerified()`, `is_verified`, `IsVerified()`).
+- **QR codes go in `qrData`:** a BOA inter-bank receipt QR (bank `boa`) or the Payment QR Code on a Telebirr receipt (bank `telebirr`). The server reads the reference out of the QR and checks it with the bank; a QR on its own never verifies.
 - **Banks are identified by `id`** (`code` is kept as a deprecated alias).
 - **Batch: at most 20 receipts**, checked before sending. The response has `results`, `total`, `verified`, `failed` and `cached`; `failed` includes decoded-only QR results.
 - **Typed errors** for 429 (with the `Retry-After` seconds) and 413, and the server's `error` text and `fallbackUrl` (geo-blocked banks) on every API error.
@@ -250,7 +251,7 @@ src/
     highlight.ts            # Syntax highlighting
     verify/
       verdict.ts            # presentVerdict(): the one place a result gets a colour
-      detect.ts             # Live input detection (link, reference, BOA QR)
+      detect.ts             # Live input detection (link, reference, BOA QR, Telebirr QR)
       history.ts            # Recent checks: verified only, no names
       client.ts             # /api/verify and /api/parse calls (429/413/offline)
       summary.ts            # Copy/share text

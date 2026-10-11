@@ -14,6 +14,10 @@
  *
  * BOA QR payloads are decrypted only to find the receipt, then looked up at
  * BOA like any other reference. They never verify on their own.
+ *
+ * Telebirr receipt QR payloads only carry the transaction number
+ * (src/lib/qr/telebirr.ts). It is read out and checked exactly like a typed
+ * Telebirr reference; nothing else from the QR is used.
  */
 import type { Result, Receipt, VerifyRequest, ChekiError, ParsedReceipt, BankManifestEntry } from "./types";
 import { ok, err } from "./types";
@@ -28,6 +32,7 @@ import { CBEBirrParser } from "../parsers/cbebirr";
 import { MpesaParser } from "../parsers/mpesa";
 import { verificationGate, gateFailureMessage } from "./gate";
 import { checkAccountSuffix, checkPhone, checkReference } from "../security/reference";
+import { parseTelebirrQr } from "../qr/telebirr";
 import { selectFormat, formatNeeds, formatAccountDigits, fillTemplate } from "../manifest/formats";
 
 /** Receipts verified at the same time in one batch. */
@@ -102,6 +107,20 @@ export class Verifier {
     if (qrData) {
       if (qrData.length > MAX_QR_LENGTH) {
         return err({ kind: "MISSING_INPUT", field: "qrData", message: "QR data is too long." });
+      }
+      // A Telebirr receipt QR (CRC-checked, so it can't be mistaken for a
+      // BOA ciphertext). Only the transaction number inside is used.
+      const telebirr = parseTelebirrQr(qrData);
+      if (telebirr.ok) {
+        const named = (bank || "").trim().toLowerCase();
+        if (named && named !== "telebirr") {
+          return err({
+            kind: "MISSING_INPUT",
+            field: "qrData",
+            message: "This QR code is from a Telebirr receipt. Check it with bank \"telebirr\".",
+          });
+        }
+        return this.resolve({ bank: "telebirr", reference: telebirr.reference }, startTime, depth + 1);
       }
       if ((bank || "").toLowerCase() === "boa") {
         return this.verifyBoaQr(qrData, startTime, depth);

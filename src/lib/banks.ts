@@ -113,7 +113,7 @@ export function detectBank(reference: string): string | null {
   }
   // Fallback: check prefixes manually
   if (upper.startsWith("FT")) return "cbe";
-  if (/^(DET|CHQ|DAB|DEL|ADQ|DEP|CHG|DF|DEV)/i.test(upper)) return "telebirr";
+  if (/^(DET|CHQ|DAB|DJA|DEL|ADQ|DEP|CHG|DF|DEV)/i.test(upper)) return "telebirr";
   // eBirr receipt URL or tenant/token
   if (/receipt\.ebirr\.com/i.test(upper)) return "ebirr";
   if (/^(nib|wegagen|ahadu|kaafimf)\//i.test(upper)) return "ebirr";

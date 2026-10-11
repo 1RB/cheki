@@ -80,7 +80,7 @@ export interface VerifyOptions {
   accountNumber?: string;
   /** Payer phone number (required by CBE Birr). */
   phoneNumber?: string;
-  /** Raw QR code payload (BOA QR codes, or a receipt link from a QR). */
+  /** Raw QR code payload (BOA QR codes, a Telebirr receipt QR, or a receipt link from a QR). */
   qrData?: string;
 }
 
@@ -219,7 +219,7 @@ export interface ReceiptFormatInfo {
   /** "current" formats come first; "legacy" still works; "deprecated" links are only read for their reference. */
   status: "current" | "legacy" | "deprecated" | (string & {});
   label: string;
-  /** What the format needs: "reference", "receiptId", "link", "account", "phone". */
+  /** What the format needs: "reference", "receiptId", "link", "account", "phone", "qr". */
   inputs: string[];
   /** Trailing account digits, when the format needs an account. */
   accountDigits?: number;

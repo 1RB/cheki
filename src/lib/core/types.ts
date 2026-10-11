@@ -218,8 +218,8 @@ export interface BankRefPattern {
  */
 export type ReceiptFormatStatus = "current" | "legacy" | "deprecated";
 
-/** What a format needs from the user. */
-export type ReceiptFormatInputName = "reference" | "receiptId" | "link" | "account" | "phone";
+/** What a format needs from the user. "qr": a receipt QR code (scanned, uploaded or pasted). */
+export type ReceiptFormatInputName = "reference" | "receiptId" | "link" | "account" | "phone" | "qr";
 
 export interface ReceiptFormatInput {
   name: ReceiptFormatInputName;
@@ -243,6 +243,13 @@ export interface ReceiptFormat {
   label: string;
   /** Registered parser that fetches this format. Absent: cheki does not fetch it (not supported yet, or deprecated). */
   parser?: string;
+  /**
+   * Input-only format: cheki reads the reference out of it (on the device or
+   * the server) and checks it through the format with this id, exactly as if
+   * the reference had been typed. Never fetched, never proof on its own.
+   * Telebirr's receipt QR is one.
+   */
+  via?: string;
   /** URL template cheki fetches. Its host is allowlisted when the format has a parser and is not deprecated. */
   endpoint?: string;
   /** URL template of the receipt page people share or open. */

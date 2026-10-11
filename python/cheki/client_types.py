@@ -341,7 +341,7 @@ class ClientReceiptFormat:
     id: str = ""
     status: str = ""
     label: str = ""
-    #: What the format needs: "reference", "receiptId", "link", "account", "phone".
+    #: What the format needs: "reference", "receiptId", "link", "account", "phone", "qr".
     inputs: list[str] = field(default_factory=list)
     account_digits: int | None = None
     response_type: str = ""

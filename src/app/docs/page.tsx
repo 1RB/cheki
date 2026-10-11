@@ -210,7 +210,7 @@ const verifyParams = [
   { name: "bank", type: "string", required: "Yes (unless URL)", desc: `Bank id (the id field from GET /api/banks). Live: ${liveProviders.map((b) => b.id).join(", ")}` },
   { name: "reference", type: "string", required: "Yes (unless qrData)", desc: "Receipt link, Receipt ID or transaction reference, in the bank's current format (e.g. a CBE mbreciept.cbe.com.et link, a Dashen FT Ref, a Telebirr transaction number)" },
   { name: "accountNumber", type: "string", required: "BOA; older CBE FT receipts", desc: "Last 5 digits for BOA. Last 8 digits only for an older CBE receipt that shows just an FT reference (legacy format); a CBE Receipt ID or link needs none" },
-  { name: "qrData", type: "string", required: "BOA QR", desc: "Raw QR payload for BOA inter-bank transfers" },
+  { name: "qrData", type: "string", required: "BOA or Telebirr QR", desc: "Raw QR payload: a BOA inter-bank receipt QR (bank \"boa\"), or the Payment QR Code on a Telebirr receipt (bank \"telebirr\" or empty), whose transaction number is checked exactly like a typed one. A QR alone is never proof of payment." },
   { name: "phoneNumber", type: "string", required: "CBE Birr", desc: "Payer phone number, format: 2519XXXXXXXXX" },
 ];
 
@@ -743,7 +743,7 @@ docker-compose up -d
               <EndpointHeader
                 method="POST"
                 path="/api/verify"
-                desc="Verify a single receipt. Send the bank code and the receipt link or reference in the bank's current format (a CBE mbreciept link needs no account number). BOA, and older CBE receipts with only an FT reference, also need the account number. For BOA inter-bank transfers, send the QR payload in qrData instead."
+                desc="Verify a single receipt. Send the bank code and the receipt link or reference in the bank's current format (a CBE mbreciept link needs no account number). BOA, and older CBE receipts with only an FT reference, also need the account number. For BOA inter-bank transfers, send the QR payload in qrData instead. A Telebirr receipt QR also goes in qrData: cheki reads the transaction number out of it and checks that number with Telebirr."
               />
               <p
                 style={{

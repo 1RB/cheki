@@ -61,7 +61,7 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--qr",
         dest="qr_data",
-        help="Raw QR payload (supported for Bank of Abyssinia inter-bank receipts)",
+        help="Raw QR payload (Bank of Abyssinia inter-bank receipts, Telebirr receipt QR)",
     )
     parser.add_argument(
         "--api",

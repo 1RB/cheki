@@ -188,13 +188,14 @@
     "initials": "TB",
     "notes": "Geo-blocked from non-Ethiopian IPs.",
     "refPattern": {
-      "source": "^(DET|CHQ|DAB|DEL|ADQ|DEP|CHG|CHA|CHB|CHC|CHD|CHE|CHF|DEB|DEC|DED|DEE|DEF|DEG|DEH|DEI|DEJ|DEK|DEL|DEM|DEN|DEO|DEP|DEQ|DER|DES|DET|DEU|DEV|DEW|DEX|DEY|DEZ|DF)",
+      "source": "^(DET|CHQ|DAB|DJA|DEL|ADQ|DEP|CHG|CHA|CHB|CHC|CHD|CHE|CHF|DEB|DEC|DED|DEE|DEF|DEG|DEH|DEI|DEJ|DEK|DEL|DEM|DEN|DEO|DEP|DEQ|DER|DES|DET|DEU|DEV|DEW|DEX|DEY|DEZ|DF)",
       "flags": "i"
     },
     "refPrefixes": [
       "DET",
       "CHQ",
       "DAB",
+      "DJA",
       "DEL",
       "ADQ",
       "DEP",
@@ -204,9 +205,10 @@
     "referenceFormat": "2-3 letter prefix followed by 6-8 alphanumeric characters (e.g. DET8FJGUJ4, CHQ0FJ403O)",
     "referenceExample": "DET8FJGUJ4",
     "howToVerify": [
-      "Get the transaction reference from the customer's Telebirr SMS or receipt",
-      "The reference starts with a 2-3 letter prefix (DET, CHQ, DAB, DEL, ADQ, etc.)",
-      "cheki fetches the receipt from Telebirr's public endpoint and extracts payment data"
+      "Get the transaction number from the customer's Telebirr SMS or receipt, or scan or upload the Payment QR Code on the Telebirr receipt",
+      "The transaction number is 10 letters and digits starting with a 2-3 letter prefix (DET, CHQ, DAB, DJA, DEL, ADQ, etc.)",
+      "cheki fetches the receipt from Telebirr's public endpoint and extracts payment data",
+      "The receipt QR only holds the transaction number: cheki reads it and checks it exactly like a typed one. A QR on its own is never proof of payment."
     ],
     "useCases": [
       "Shops confirming Telebirr payments at the counter",
@@ -218,6 +220,10 @@
       {
         "q": "What does a Telebirr reference number look like?",
         "a": "Telebirr transaction references start with a 2-3 letter prefix followed by 6-8 alphanumeric characters. Common prefixes include DET, CHQ, DAB, DEL, and ADQ. The full reference is sent via SMS to both payer and receiver after each transaction."
+      },
+      {
+        "q": "Can I scan the QR code on a Telebirr receipt?",
+        "a": "Yes. Scan or upload the Payment QR Code on the Telebirr receipt and cheki reads the transaction number out of it, then checks that number with Telebirr exactly as if you had typed it. The QR only contains the transaction number (no amount or names), so it is not proof of payment on its own: only Telebirr's receipt record confirms a payment."
       },
       {
         "q": "Why does Telebirr verification fail from outside Ethiopia?",
@@ -265,7 +271,32 @@
         ],
         "responseType": "html",
         "confidence": "verified",
-        "evidence": "Live cheki parser. Geo-blocked: not probed from CI."
+        "evidence": "Live cheki parser. Geo-blocked: not probed from CI.",
+        "notes": "Also reached from the receipt QR (format telebirr-receipt-qr), which only names the transaction number."
+      },
+      {
+        "id": "telebirr-receipt-qr",
+        "status": "current",
+        "label": "Receipt QR code",
+        "via": "telebirr-receipt-html",
+        "inputs": [
+          {
+            "name": "qr",
+            "label": "Payment QR Code on the receipt"
+          }
+        ],
+        "responseType": "html",
+        "confidence": "verified",
+        "evidence": "Decoded from a real Telebirr receipt (2026-10-10): base64 of an ASCII hex string; EMVCo-style TLV over the hex characters (tag, 2-digit decimal length): 80 (unknown, 9 bytes), 81 (byte TLV whose tag 00 is the 10-character transaction number in ASCII), 63 = CRC-16/CCITT-FALSE over the preceding characters including \"6304\", as emitted (case-sensitive). The CRC validated. Test fixtures are synthetic.",
+        "notes": "Input only, never fetched and never proof of payment: cheki reads the transaction number out of the QR (on the device, or from qrData in the API) and checks it through telebirr-receipt-html exactly like a typed one. Nothing else in the QR is used."
+      }
+    ],
+    "endpointHistory": [
+      {
+        "date": "2026-10-12",
+        "formatId": "telebirr-receipt-qr",
+        "change": "cheki reads the Payment QR Code on Telebirr receipts (base64 → hex → TLV, tag 81/00 = transaction number, CRC-16/CCITT-FALSE checked) and checks the number like a typed reference. Before this the QR was not recognised. DJA added to the known transaction-number prefixes.",
+        "source": "cheki, from a real Telebirr receipt (not committed; fixtures are synthetic)"
       }
     ]
   },

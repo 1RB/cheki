@@ -12,12 +12,17 @@ import { detectBankFromUrl, isUrl } from "@/lib/adapters/url-detector";
 import { formatAccountDigits, formatNeeds, matchesFormat, primaryFormat, supportedFormats } from "@/lib/manifest/formats";
 import type { ReceiptFormat } from "@/lib/core/types";
 import { isBoaQrPayload } from "@/lib/qr/decode";
+import { parseTelebirrQr } from "@/lib/qr/telebirr";
 
-export type InputKind = "empty" | "url" | "unknownUrl" | "reference" | "boaQr";
+/**
+ * "telebirrQr": a Telebirr receipt QR payload. Only its transaction number is
+ * used (as `value`); it is then checked exactly like a typed reference.
+ */
+export type InputKind = "empty" | "url" | "unknownUrl" | "reference" | "boaQr" | "telebirrQr";
 
 export interface Detection {
   kind: InputKind;
-  /** The trimmed input. */
+  /** The trimmed input. For a Telebirr receipt QR: the transaction number read out of it. */
   value: string;
   /** The bank the check will go to (locked, chosen, or detected). */
   bank?: Bank;
@@ -97,6 +102,28 @@ export function detectInput(raw: string, opts: { lockedBank?: string; overrideBa
   };
 
   if (!value) return finish(base);
+
+  // Telebirr receipt QR before BOA: its CRC-checked structure cannot match a
+  // BOA ciphertext, while a Telebirr payload can be a multiple of 16 bytes.
+  // Like a link, the QR names its own bank, so a locked page reports it
+  // instead of sending the transaction number to another bank.
+  const telebirrQr = parseTelebirrQr(value);
+  if (telebirrQr.ok) {
+    const telebirr = bankByCode("telebirr");
+    if (telebirr) {
+      return finish({
+        ...base,
+        kind: "telebirrQr",
+        value: telebirrQr.reference,
+        bank: telebirr,
+        candidates: [telebirr],
+        overridden: false,
+        format: primaryFormat(telebirr),
+        needsAccount: false,
+        needsPhone: false,
+      });
+    }
+  }
 
   if (isBoaQrPayload(value)) {
     const boa = bankByCode("boa");

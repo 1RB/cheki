@@ -7,6 +7,9 @@
  * Flow: one smart input -> live detection -> one request -> one verdict.
  *   - Enter submits; a link, BOA QR payload or image pasted anywhere on the
  *     page is checked straight away.
+ *   - A Telebirr receipt QR (photo, camera or paste) is swapped for the
+ *     transaction number inside it and checked as if it had been typed. The
+ *     QR itself proves nothing; Telebirr's record decides.
  *   - Telebirr / M-Pesa lead with "Open the receipt" and the paste/bookmarklet
  *     panel. No server request goes out unless the user asks for one.
  *   - Every response goes through readVerifyResponse (src/lib/verify/client.ts)
@@ -21,6 +24,7 @@ import { verificationState, type VerifyResult } from "@/lib/banks";
 import { useTranslation } from "@/lib/i18n/use-translation";
 import { isUrl } from "@/lib/adapters/url-detector";
 import { isBoaQrPayload } from "@/lib/qr/decode";
+import { isTelebirrQrPayload, parseTelebirrQr } from "@/lib/qr/telebirr";
 import { browserReceiptUrl, detectInput, liveBanks, type Detection } from "@/lib/verify/detect";
 import { postJson } from "@/lib/verify/client";
 import { presentVerdict, type FraudCheck } from "@/lib/verify/verdict";
@@ -233,11 +237,36 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
       const nextHistory = addVerified(historyRef.current, result, { bank: bankCode, ref: savedRef }, checkedAt);
       historyRef.current = nextHistory;
       setHistory(nextHistory);
-      const enteredRef = d.kind === "url" ? d.urlReference : d.kind === "reference" ? d.value : undefined;
+      const enteredRef = d.kind === "url" ? d.urlReference : d.kind === "reference" || d.kind === "telebirrQr" ? d.value : undefined;
       setOutcome({ result, checks, checkedAt, bankCode, reference: enteredRef });
       setPhase("done");
     },
     [extra, lockedBank, overrideBank, t]
+  );
+
+  /**
+   * Text read from a QR (photo, camera) or pasted. A Telebirr receipt QR is
+   * replaced by the transaction number inside it and Telebirr is chosen, so
+   * the check is exactly the typed-reference flow: browser-first panel, then
+   * the server gate. Nothing from the QR but that number is used or shown.
+   * On another bank's page it is left as is and reported as a Telebirr
+   * receipt, like a link for another bank.
+   */
+  const acceptScanned = useCallback(
+    async (raw: string) => {
+      const text = raw.trim();
+      const telebirr = parseTelebirrQr(text);
+      if (telebirr.ok && (!lockedBank || lockedBank === "telebirr")) {
+        setInput(telebirr.reference);
+        if (!lockedBank) setOverrideBank("telebirr");
+        await runCheck(telebirr.reference, { override: "telebirr" });
+        setNotice(t("verify.qr.telebirr"));
+        return;
+      }
+      setInput(text);
+      await runCheck(text);
+    },
+    [lockedBank, runCheck, t]
   );
 
   const handleFiles = useCallback(
@@ -258,9 +287,8 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
       const { decodeQrFromImage } = await import("@/lib/qr/decode");
       const raw = await decodeQrFromImage(file);
       if (raw) {
-        setInput(raw.trim());
         setPhase("idle");
-        await runCheck(raw.trim());
+        await acceptScanned(raw);
         return;
       }
       try {
@@ -280,7 +308,7 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
         setNotice((e as Error)?.message || t("verify.photo.failed"));
       }
     },
-    [focusInput, lockedBank, runCheck, t]
+    [acceptScanned, focusInput, lockedBank, t]
   );
 
   const onInputPaste = (e: ClipboardEvent<HTMLInputElement>) => {
@@ -292,19 +320,18 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
       return;
     }
     const text = e.clipboardData?.getData("text")?.trim() ?? "";
-    if (text && (isUrl(text) || isBoaQrPayload(text))) {
+    if (text && (isUrl(text) || isBoaQrPayload(text) || isTelebirrQrPayload(text))) {
       e.preventDefault();
-      setInput(text);
-      runCheck(text);
+      acceptScanned(text);
     }
   };
 
   // Paste anywhere on the page (outside other fields) checks a link, a QR
   // payload or an image. The listener reads the latest handlers from a ref.
-  const latest = useRef({ runCheck, handleFiles });
+  const latest = useRef({ acceptScanned, handleFiles });
   useEffect(() => {
-    latest.current = { runCheck, handleFiles };
-  }, [runCheck, handleFiles]);
+    latest.current = { acceptScanned, handleFiles };
+  }, [acceptScanned, handleFiles]);
   useEffect(() => {
     const onPaste = (e: globalThis.ClipboardEvent) => {
       if (isEditable(e.target)) return;
@@ -316,10 +343,9 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
         return;
       }
       const text = e.clipboardData?.getData("text")?.trim() ?? "";
-      if (text && (isUrl(text) || isBoaQrPayload(text))) {
+      if (text && (isUrl(text) || isBoaQrPayload(text) || isTelebirrQrPayload(text))) {
         e.preventDefault();
-        setInput(text);
-        latest.current.runCheck(text);
+        latest.current.acceptScanned(text);
       }
     };
     document.addEventListener("paste", onPaste);
@@ -401,8 +427,7 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
             }}
             onResult={(raw) => {
               setCamera(false);
-              setInput(raw.trim());
-              runCheck(raw.trim());
+              acceptScanned(raw);
             }}
             onPhoto={(file) => handleFiles([file])}
           />

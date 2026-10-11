@@ -158,8 +158,10 @@ class ChekiClient:
             account_number: Receiving account number. Required for banks
                 that need it (e.g. cbe, boa).
             phone_number: Payer phone number. Required for cbebirr.
-            qr_data: Raw QR payload. Currently supported for boa
-                inter-bank transfers.
+            qr_data: Raw QR payload: a boa inter-bank receipt QR, or the
+                Payment QR Code on a telebirr receipt (the server reads the
+                transaction number and checks it like a typed one). A QR
+                alone never verifies.
 
         Returns:
             A :class:`ClientVerifyResult`. ``result.is_verified`` is the
