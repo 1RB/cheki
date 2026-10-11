@@ -17,7 +17,12 @@ export function getBankHealth(id: string): BankHealth | undefined {
 
 /** Health status for a bank, falling back to its manifest status when it has not been checked yet. */
 export function healthStatusFor(bank: BankManifestEntry): HealthStatus {
-  return byId.get(bank.id)?.status ?? (bank.status === "live" ? "live" : "in-development");
+  const checked = byId.get(bank.id)?.status;
+  // The manifest decides whether cheki verifies a bank. An older status.json
+  // can't make an in-development bank look live (or the reverse).
+  if (bank.status !== "live") return checked === "degraded" ? "degraded" : "in-development";
+  if (checked === "in-development") return "live";
+  return checked ?? "live";
 }
 
 /** "2026-10-10 18:08 UTC", stable across server and client renders. */
