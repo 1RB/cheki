@@ -24,7 +24,7 @@ check.et charges 499 ETB/month. verify.et charges $20-40/month. Both verify rece
 
 ## Supported banks
 
-**10 live banks** · 21 in research
+**8 live banks** · 23 in research
 
 | Bank | Code | Type | Status | Requires account | Geo-blocked |
 |------|------|------|--------|------------------|-------------|
@@ -34,14 +34,12 @@ check.et charges 499 ETB/month. verify.et charges $20-40/month. Both verify rece
 | M-Pesa Ethiopia | `mpesa` | Mobile money | ✅ Live | No | Yes (Ethiopia only) |
 | Dashen Bank | `dashen` | Bank | ✅ Live | No | No |
 | Awash Bank | `awash` | Bank | ✅ Live | No | No |
-| Zemen Bank | `zemen` | Bank | ✅ Live | No | No |
-| CBE Birr | `cbebirr` | Wallet | ✅ Live | Phone required | No |
 | Siinqee Bank | `siinqee` | Bank | ✅ Live | No | No |
 | eBirr | `ebirr` | Mobile money | ✅ Live | No | No |
 
-### In research (21)
+### In research (23)
 
-Nib, Wegagen, Ahadu, KAAFI, Abay, Addis International, Amhara, Berhan, Bunna, Enat, Global Bank Ethiopia, Lion International, Oromia International, Hibret, ZamZam, Hijra, Shabelle, Goh Betoch, Tsedey, Gadaa, Rammis.
+Zemen Bank and CBE Birr (parsers exist, waiting on a confirmed real receipt), Nib, Wegagen, Ahadu, KAAFI, Abay, Addis International, Amhara, Berhan, Bunna, Enat, Global Bank Ethiopia, Lion International, Oromia International, Hibret, ZamZam, Hijra, Shabelle, Goh Betoch, Tsedey, Gadaa, Rammis.
 
 Want to help? See [contributing a new bank](#adding-a-bank) below or [open an issue](https://github.com/1RB/cheki/issues).
 
@@ -189,7 +187,7 @@ Self-hosting on an Ethiopian IP bypasses Telebirr/M-Pesa geo-blocks.
 - **REST API**: free, no API key, per-IP rate limits (verify 30/min, batch 5/min, parse and ocr 20/min each, per instance; 429 with Retry-After), batch verification up to 20 receipts
 - **CLI**: verify receipts from the terminal (`npm run cli -- verify ...` in a clone, or `cheki-verify` from `pip install cheki`)
 - **5 SDKs**: TypeScript, Python, Go, Dart, PHP with typed errors and retry
-- **10 live banks**: CBE, Telebirr, BOA, M-Pesa, Dashen, Awash, Zemen, CBE Birr, Siinqee, eBirr
+- **8 live banks**: CBE, Telebirr, BOA, M-Pesa, Dashen, Awash, Siinqee, eBirr (Zemen and CBE Birr are in development)
 - **Docker**: self-hosting with docker-compose
 - **SEO**: bank-specific pages, guides, sitemap, structured data
 - **AI-friendly**: `llms.txt`, allows all AI crawlers in `robots.txt`
@@ -204,9 +202,9 @@ Each Ethiopian bank publishes transaction receipts at public URLs:
 3. **BOA**: `https://cs.bankofabyssinia.com/api/onlineSlip/getDetails/?id={REFERENCE}{LAST_5_DIGITS}` → JSON
 4. **M-Pesa**: `https://m-pesabusiness.safaricom.et/api/receipt/getReceipt?trxNo={REFERENCE}` → JSON
 5. **Awash**: share link from Awash mobile app → HTML
-6. **Dashen**: PDF receipt URL → PDF
-7. **Zemen**: PDF receipt URL → PDF
-8. **CBE Birr**: phone + reference → HTML
+6. **Dashen**: `https://receipts.dashenbanksc.com/receipt/{FT_REF}` → HTML (unknown refs: HTTP 400)
+7. **Zemen** (in development): PDF receipt URL → PDF
+8. **CBE Birr** (in development): phone + reference → HTML
 9. **Siinqee**: receipt URL → HTML
 10. **eBirr**: receipt URL → HTML (covers Nib, Wegagen, Ahadu, KAAFI)
 
@@ -481,8 +479,8 @@ Include the reference number you tested with (or note that you tested from an Et
 ### Response type notes
 
 - **JSON** banks (BOA, M-Pesa): parse the JSON body in `parse()`, extract fields with standard property access
-- **HTML** banks (Telebirr, Awash, CBE Birr, Siinqee, eBirr): fetch returns HTML, extract fields with regex or string slicing. Use `cheerio` if needed
-- **PDF** banks (CBE, Dashen, Zemen): `parse()` should return `{ verified: false }` since PDF text extraction is async. Implement a `static parsePdfText(text: string): ParsedReceipt` method instead. The verifier calls `unpdf` to extract text, then calls your parser's `parsePdfText`
+- **HTML** banks (Telebirr, Awash, Dashen, CBE Birr, Siinqee, eBirr): fetch returns HTML, extract fields with regex or string slicing. Use `cheerio` if needed
+- **PDF** banks (CBE, Zemen; Dashen for legacy PDFs only): `parse()` should return `{ verified: false }` since PDF text extraction is async. Implement a `static parsePdfText(text: string): ParsedReceipt` method instead. The verifier calls `unpdf` to extract text, then calls your parser's `parsePdfText`
 
 ### Need help?
 
