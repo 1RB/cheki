@@ -12,6 +12,21 @@
  */
 import { BaseParser } from "./base";
 import type { ParsedReceipt } from "../core/types";
+import { birrAmountIn } from "../core/money";
+import { TAG_RE } from "../core/html";
+
+/**
+ * Drop a trailing Amharic label ("<amharic text> /") from a value. Written
+ * without a regex: `/[\u1200-\u137F].*\/\s*$/` backtracks quadratically on a
+ * long run of Amharic characters with no "/" after them.
+ */
+function stripTrailingAmharicLabel(value: string): string {
+  if (!/\/\s*$/.test(value)) return value;
+  const first = value.search(/[\u1200-\u137F]/);
+  if (first === -1) return value;
+  const lastSlash = value.lastIndexOf("/");
+  return first < lastSlash ? value.slice(0, first) : value;
+}
 
 /**
  * Mobile "Select All" copy of a Telebirr receipt often concatenates every
@@ -77,8 +92,9 @@ function restructureInvoiceSection(text: string): string {
   const settledLine = lines[settledIdx];
   const valueText = settledLine.replace(/Settled\s*Amount/i, "").trim();
 
+  // Bounded amount group: `(\d+\.?\d*)` backtracks on long digit runs.
   const match = valueText.match(
-    /^([A-Z]{2,3}[A-Z0-9]{6,8})(\d{2}-\d{2}-\d{4}\s+\d{2}:\d{2}:\d{2})(\d+\.?\d*)\s*Birr/
+    /^([A-Z]{2,3}[A-Z0-9]{6,8})(\d{2}-\d{2}-\d{4}\s+\d{2}:\d{2}:\d{2})(\d[\d,]{0,30}(?:\.\d{1,2})?)\s*Birr/
   );
 
   if (match) {
@@ -118,7 +134,7 @@ function restructureInvoiceSection(text: string): string {
   if (values.length < 3) return text;
   const [ref, date, amount] = values;
   if (!/^\d{2}-\d{2}-\d{4}\s+\d{2}:\d{2}:\d{2}$/.test(date)) return text;
-  if (!/^\d[\d,]*\.?\d*\s*Birr$/i.test(amount)) return text;
+  if (!/^\d[\d,]{0,30}(?:\.\d{1,2})?\s*Birr$/i.test(amount)) return text;
 
   const section = ["Invoice No.", ref, "Payment date", date, "Settled Amount", amount];
   const newLines = [...lines];
@@ -136,7 +152,7 @@ export class TelebirrParser extends BaseParser {
   readonly geoBlocked = true;
 
   buildUrl(ref: string): string {
-    return `https://transactioninfo.ethiotelecom.et/receipt/${ref}`;
+    return `https://transactioninfo.ethiotelecom.et/receipt/${encodeURIComponent(ref)}`;
   }
 
   parse(data: string | Buffer, _contentType: string): ParsedReceipt {
@@ -152,7 +168,7 @@ export class TelebirrParser extends BaseParser {
     let text = raw
       .replace(/<\/td>/gi, "\n")
       .replace(/<\/tr>/gi, "\n")
-      .replace(/<[^>]+>/g, "\n")
+      .replace(TAG_RE, "\n")
       .replace(/&nbsp;/g, " ")
       .replace(/&amp;/g, "&")
       .replace(/&lt;/g, "<")
@@ -178,21 +194,13 @@ export class TelebirrParser extends BaseParser {
           // or on the next line
           const afterLabel = line.split(en)[1] || (am ? line.split(am)[1] : "");
           if (afterLabel && afterLabel.trim()) {
-            const cleaned = afterLabel
-              .trim()
-              .replace(/^[.\-:]+/, "")
-              .replace(/[\u1200-\u137F].*\/\s*$/, "")
-              .trim();
+            const cleaned = stripTrailingAmharicLabel(afterLabel.trim().replace(/^[.\-:]+/, "")).trim();
             if (cleaned) return cleaned;
           }
           if (am) {
             const afterAm = line.split(am)[1];
             if (afterAm && afterAm.trim()) {
-              const cleaned = afterAm
-                .trim()
-                .replace(/^[.\-:]+/, "")
-                .replace(/[\u1200-\u137F].*\/\s*$/, "")
-                .trim();
+              const cleaned = stripTrailingAmharicLabel(afterAm.trim().replace(/^[.\-:]+/, "")).trim();
               if (cleaned) return cleaned;
             }
           }
@@ -215,12 +223,12 @@ export class TelebirrParser extends BaseParser {
         const line = text[i];
         if (line.includes(label) || (am && line.includes(am))) {
           // Check current line
-          const m = line.match(/([0-9,]+\.?\d*)\s*(Birr|ETB)/i);
-          if (m) return parseFloat(m[1].replace(/,/g, ""));
+          const m = birrAmountIn(line);
+          if (m !== undefined) return m;
           // Look at next few lines for the amount
           for (let j = i + 1; j < Math.min(i + 4, text.length); j++) {
-            const m2 = text[j].match(/([0-9,]+\.?\d*)\s*(Birr|ETB)/i);
-            if (m2) return parseFloat(m2[1].replace(/,/g, ""));
+            const m2 = birrAmountIn(text[j]);
+            if (m2 !== undefined) return m2;
           }
         }
       }
@@ -281,13 +289,16 @@ export class TelebirrParser extends BaseParser {
     let amount = settledAmount;
     if (amount === undefined) {
       for (const line of text) {
-        const m = line.match(/([0-9,]+\.?\d*)\s*(Birr|ETB)/i);
-        if (m) { amount = parseFloat(m[1].replace(/,/g, "")); break; }
+        const m = birrAmountIn(line);
+        if (m !== undefined) { amount = m; break; }
       }
     }
 
     return {
-      verified: true,
+      // The shared verification gate also requires an amount, a party, a
+      // matching reference and a non-failure status before anything is shown
+      // as verified.
+      verified: !!(invoiceNumber || amount !== undefined),
       senderName,
       senderAccount,
       receiverName,
