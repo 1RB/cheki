@@ -1,274 +1,110 @@
 # cheki Go SDK
 
-A Go client library for the [cheki](https://cheki.et) receipt verification API, a free Ethiopian receipt verification service.
-
-## Features
-
-- ✅ Single receipt verification
-- ✅ Batch receipt verification
-- ✅ List supported banks
-- ✅ Service health checks
-- ✅ Context-aware requests (cancellation & timeouts)
-- ✅ Configurable base URL, HTTP client, and timeout
-- ✅ Standard library only: no external dependencies
-- ✅ Idiomatic Go with typed errors
-
-## Installation
+Go client for the [cheki](https://cheki.et) receipt verification API: verify Ethiopian bank transfer receipts from CBE, Telebirr, BOA, Dashen, M-Pesa, Awash, Zemen, CBE Birr, Siinqee and eBirr.
 
 ```bash
 go get github.com/1RB/cheki/sdks/go
 ```
 
-## Quick Start
+There is no `sdks/go/vX.Y.Z` tag yet, so `go get` resolves a pseudo-version.
+
+## Quick start
 
 ```go
 package main
 
 import (
-    "context"
-    "fmt"
-    "log"
-    "time"
+	"context"
+	"errors"
+	"fmt"
 
-    "github.com/1RB/cheki/sdks/go"
+	cheki "github.com/1RB/cheki/sdks/go"
 )
 
 func main() {
-    client := cheki.NewClient(cheki.WithTimeout(15 * time.Second))
+	client := cheki.NewClient() // 65 s per attempt, at most 1 retry
 
-    ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-    defer cancel()
-
-    result, err := client.Verify(ctx, cheki.VerifyOptions{
-        Bank:      "cbe",
-        Reference: "123456789",
-    })
-    if err != nil {
-        log.Fatal(err)
-    }
-
-    fmt.Printf("Verified: %t\n", result.Verified)
-    fmt.Printf("Amount:   %.2f %s\n", result.Amount, result.Currency)
-    fmt.Printf("Sender:   %s\n", result.SenderName)
+	result, err := client.Verify(context.Background(), cheki.VerifyOptions{
+		Bank:          "cbe",
+		Reference:     "FT26140P01YB",
+		AccountNumber: "1000560536171",
+	})
+	var apiErr *cheki.APIError
+	switch {
+	case errors.Is(err, cheki.ErrRateLimited) && errors.As(err, &apiErr):
+		fmt.Println("rate limited, retry in", apiErr.RetryAfter)
+	case errors.As(err, &apiErr):
+		fmt.Println(apiErr.StatusCode, apiErr.Message, apiErr.FallbackURL)
+	case err != nil:
+		fmt.Println("request failed:", err)
+	case result.IsVerified():
+		fmt.Println("verified:", result.Amount, result.SenderName)
+	default:
+		fmt.Println("NOT verified (decoded only:", result.DecodedOnly, ")")
+	}
 }
 ```
 
-## Configuration
+### `Verified` is the only success signal
 
-The client accepts functional options at construction time:
+`Verify` returns a result for HTTP 200, and a 200 can still be unverified: a BOA QR code that BOA could not confirm comes back with `Success: true, Verified: false, DecodedOnly: true`. A QR code can be forged. Use `result.IsVerified()`.
 
-```go
-// Use a custom base URL (e.g. for a self-hosted instance)
-client := cheki.NewClient(cheki.WithBaseURL("https://cheki.example.com"))
+QR-only (BOA): `client.Verify(ctx, cheki.VerifyOptions{Bank: "boa", QRData: "3cHRaxVjn/pySp..."})`.
 
-// Supply a fully custom HTTP client
-client := cheki.NewClient(cheki.WithHTTPClient(&http.Client{
-    Timeout: 60 * time.Second,
-}))
-
-// Use a specific timeout with the default client
-client := cheki.NewClient(cheki.WithTimeout(60 * time.Second))
-```
-
-| Option            | Description                                  | Default                          |
-|-------------------|----------------------------------------------|----------------------------------|
-| `WithBaseURL`     | Override the API base URL                    | `https://cheki.et`    |
-| `WithHTTPClient`  | Provide a custom `*http.Client`              | `&http.Client{Timeout: 30s}`     |
-| `WithTimeout`     | Set the default client timeout               | `30s`                            |
-
-## API Reference
-
-### `NewClient(opts ...Option) *Client`
-
-Creates a new cheki API client.
-
-### `(*Client).Verify(ctx context.Context, opts VerifyOptions) (*VerifyResult, error)`
-
-Verifies a single receipt.
+### Batch (max 20)
 
 ```go
-result, err := client.Verify(ctx, cheki.VerifyOptions{
-    Bank:          "cbe",
-    Reference:     "123456789",
-    AccountNumber: "0123456789012", // optional, bank-dependent
-    PhoneNumber:   "0912345678",    // optional
-    QRData:        "...",           // optional
+batch, err := client.VerifyBatch(ctx, []cheki.VerifyOptions{
+	{Bank: "cbe", Reference: "FT26140P01YB", AccountNumber: "1000560536171"},
+	{Bank: "telebirr", Reference: "CHQ0FJ403O"},
 })
+// batch.Total, batch.Verified (only Verified: true), batch.Failed (everything else), batch.Cached
+for _, item := range batch.Results {
+	if !item.Success {
+		fmt.Println(item.Index, item.Status, item.Error) // e.g. 422 "Receipt not found"
+		continue
+	}
+	fmt.Println(item.Index, item.IsVerified(), item.Amount)
+}
 ```
 
-### `(*Client).VerifyBatch(ctx context.Context, receipts []VerifyOptions) (*BatchResult, error)`
+More than 20 receipts returns `ErrBatchTooLarge` without a request. Each receipt also counts against the per-IP verify limit (30 per minute).
 
-Verifies multiple receipts in a single request.
-
-```go
-result, err := client.VerifyBatch(ctx, []cheki.VerifyOptions{
-    {Bank: "cbe", Reference: "123456789"},
-    {Bank: "dashen", Reference: "987654321", AccountNumber: "0123456789"},
-})
-fmt.Printf("Verified %d of %d\n", result.Verified, result.Total)
-```
-
-### `(*Client).GetBanks(ctx context.Context) ([]BankInfo, error)`
-
-Lists all banks supported by the service.
+### Banks and health
 
 ```go
-banks, err := client.GetBanks(ctx)
+banks, _ := client.GetBanks(ctx)
 for _, b := range banks {
-    fmt.Printf("%s (%s) - %s\n", b.Name, b.Code, b.Status)
+	fmt.Println(b.ID, b.Name, b.Type, b.Status, b.RequiresAccount, b.AccountDigits, b.RequiresPhone)
+} // b.Code is a deprecated alias of b.ID
+
+health, _ := client.GetHealth(ctx) // cached up to 5 minutes server-side
+for _, b := range health.Banks {
+	fmt.Println(b.ID, b.Status, b.LatencyMs) // reachable | unreachable | geo-blocked | no-parser | in-development
 }
 ```
 
-### `(*Client).GetHealth(ctx context.Context) (*HealthStatus, error)`
-
-Checks the health of the cheki service.
+### Receipt download links
 
 ```go
-health, err := client.GetHealth(ctx)
-fmt.Printf("Status: %s, Version: %s\n", health.Status, health.Version)
+u, err := client.GetReceiptURL("cbe", "FT26140P01YB", "1000560536171")
 ```
 
-### `(*Client).GetReceiptURL(bank, reference string) string`
+Only `cbe` (account required, at least the last 8 digits), `zemen` and `dashen`; anything else returns `ErrInvalidInput`.
 
-Constructs the public-facing URL for viewing a receipt on the cheki web
-service. This is a convenience method that does not make an HTTP request.
+## Errors
 
-```go
-url := client.GetReceiptURL("cbe", "123456789")
-fmt.Println(url) // https://cheki.et/receipt/cbe/123456789
-```
+Non-2xx responses are `*APIError` with `StatusCode`, `Message` (the server's text), `FallbackURL` (geo-blocked banks), `RetryAfter` (-1 when not sent) and `Body`. `errors.Is(err, cheki.ErrRateLimited)` matches 429 and `errors.Is(err, cheki.ErrPayloadTooLarge)` matches 413. Timeouts match `errors.Is(err, context.DeadlineExceeded)`.
 
-## Types
+Status codes: 400 bad input, 404 unsupported bank, 413 too large, 422 receipt not found or failed verification, 429 rate limited, 502 bank unreachable or geo-blocked, 500 internal error.
 
-### `VerifyOptions`
+## Timeouts and retries
 
-| Field          | Type   | Required | Description                          |
-|----------------|--------|----------|--------------------------------------|
-| `Bank`         | string | yes      | Bank code (e.g. `"cbe"`, `"dashen"`) |
-| `Reference`    | string | yes      | Transaction reference number         |
-| `AccountNumber`| string | no       | Account number (bank-dependent)      |
-| `PhoneNumber`  | string | no       | Phone number (bank-dependent)        |
-| `QRData`       | string | no       | Raw QR data payload                  |
+- `DefaultTimeout` is **65 s per attempt** (the server may spend up to 60 s). `WithTimeout` works with or without `WithHTTPClient`, in any order.
+- **No retries on 4xx** (except 429) and **none on timeouts** or a cancelled context.
+- **At most one retry** (`MaxRetries = 1`, `WithMaxRetries(0)` disables it) on a network error, 5xx or 429, after `Retry-After` when sent (up to 60 s), otherwise 1-2 s.
+- The server tries each bank at most 2 times, so one call reaches the bank at most **4 times** (a batch: 4 per receipt).
 
-### `VerifyResult`
+## Tests
 
-| Field               | Type    | Description                      |
-|---------------------|---------|----------------------------------|
-| `Success`           | bool    | Whether the request succeeded    |
-| `Verified`          | bool    | Whether the receipt was verified |
-| `Bank`              | string  | Bank code                        |
-| `BankCode`          | string  | Bank code (alternate)            |
-| `Reference`         | string  | Transaction reference            |
-| `SourceURL`         | string  | Source verification URL          |
-| `SenderName`        | string  | Sender's name                    |
-| `SenderAccount`     | string  | Sender's account number          |
-| `ReceiverName`      | string  | Receiver's name                  |
-| `ReceiverAccount`   | string  | Receiver's account number        |
-| `Amount`            | float64 | Transaction amount               |
-| `Currency`          | string  | Currency code                    |
-| `Date`              | string  | Transaction date                 |
-| `Branch`            | string  | Bank branch                      |
-| `Reason`            | string  | Reason/failure description       |
-| `DurationMs`        | int64   | Verification duration in ms      |
-| `InvoiceNumber`     | string  | Invoice number                   |
-| `TransactionStatus` | string  | Transaction status               |
-| `SettledAmount`     | float64 | Settled amount                   |
-| `StampDuty`         | float64 | Stamp duty                       |
-| `DiscountAmount`    | float64 | Discount amount                  |
-| `ServiceFee`        | float64 | Service fee                      |
-| `ServiceFeeVat`     | float64 | Service fee VAT                  |
-| `TotalPaid`         | float64 | Total paid                       |
-| `AmountInWords`     | string  | Amount in words                  |
-| `PaymentMode`       | string  | Payment mode                     |
-| `PaymentChannel`    | string  | Payment channel                  |
-| `BankAccountNumber` | string  | Bank account number              |
-| `BankAccountName`   | string  | Bank account name                |
-| `Error`             | string  | Error message (if any)           |
-
-### `BankInfo`
-
-| Field             | Type   | Description                                |
-|-------------------|--------|--------------------------------------------|
-| `Code`            | string | Bank code                                  |
-| `Name`            | string | Bank name                                  |
-| `Status`          | string | Bank status (`live`, `in-development`)     |
-| `Type`            | string | Bank type (`bank`, `wallet`)               |
-| `RequiresAccount` | bool   | Whether account number is required         |
-| `AccountDigits`   | int    | Expected account number digit count        |
-| `RequiresPhone`   | bool   | Whether phone number is required           |
-| `ResponseType`    | string | Response type                              |
-| `Endpoint`        | string | Bank verification endpoint                 |
-| `SslVerify`       | bool   | Whether SSL verification is used           |
-| `Notes`           | string | Additional notes                           |
-| `Color`           | string | Brand color                                |
-| `Initials`        | string | Bank initials                              |
-
-### `BatchResult`
-
-| Field     | Type             | Description                          |
-|-----------|------------------|--------------------------------------|
-| `Success` | bool             | Whether the request succeeded        |
-| `Total`   | int              | Total receipts submitted             |
-| `Verified`| int              | Number verified                      |
-| `Failed`  | int              | Number that failed                   |
-| `Results` | []VerifyResult   | Per-receipt verification results     |
-
-### `HealthStatus`
-
-| Field       | Type          | Description                        |
-|-------------|---------------|------------------------------------|
-| `Success`   | bool          | Whether the request succeeded      |
-| `Status`    | string        | Overall service status             |
-| `Version`   | string        | API version                        |
-| `Timestamp` | string        | Server timestamp                   |
-| `Checks`    | []HealthCheck | Individual health check entries    |
-
-## Error Handling
-
-The client returns wrapped errors with the `"cheki:"` prefix. HTTP errors (status ≥ 400) are returned as `*cheki.APIError`, which exposes `StatusCode`, `Body`, and `Message`:
-
-```go
-result, err := client.Verify(ctx, opts)
-if err != nil {
-    var apiErr *cheki.APIError
-    if errors.As(err, &apiErr) {
-        fmt.Printf("API error %d: %s\n", apiErr.StatusCode, apiErr.Body)
-    }
-    log.Fatal(err)
-}
-```
-
-## Retry Logic
-
-The client automatically retries failed requests on HTTP **429** (Too Many Requests)
-and **5xx** (Server Error) responses. Up to **3 retry attempts** are made with
-exponential backoff starting at 500ms, doubling each retry, capped at 5s. A random
-jitter of up to 50% of the backoff is added to avoid thundering-herd effects.
-Context cancellation is respected during backoff waits. If the context is
-cancelled while waiting to retry, the context error is returned immediately.
-Network-level errors (connection failures, DNS errors, etc.) are not retried.
-
-## Context & Timeouts
-
-All methods accept a `context.Context` as their first argument, enabling deadlines and cancellation:
-
-```go
-ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-defer cancel()
-
-result, err := client.Verify(ctx, opts)
-// Request is cancelled if it exceeds 10 seconds.
-```
-
-## Examples
-
-See [`examples/basic/main.go`](examples/basic/main.go) for a complete runnable example covering health checks, bank listing, single verification, and batch verification.
-
-```bash
-cd examples/basic
-go run main.go
-```
-
-## License
-
-MIT
+`go test ./...` decodes the shared fixtures in `../fixtures/api-contract.json`, which the repo's `tests/contract` suite checks against the real route handlers.
