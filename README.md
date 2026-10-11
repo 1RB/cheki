@@ -211,7 +211,6 @@ src/
     api/
       verify/route.ts       # POST /api/verify
       verify/batch/route.ts # POST /api/verify/batch
-      verify-geo/route.ts   # POST /api/verify-geo (geo-aware)
       banks/route.ts        # GET /api/banks
       health/route.ts       # GET /api/health
       receipt/route.ts      # GET /api/receipt
