@@ -11,7 +11,7 @@ export const metadata: Metadata = {
     images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "cheki - verify Ethiopian receipts for free" }],
     title: "cheki Developer Guide - Integrate Ethiopian Receipt Verification",
     description:
-      "Free REST API, 5 SDKs, CLI tool, and Docker self-hosting. No API key, no signup, no rate limit.",
+      "Free REST API, 5 SDKs, CLI tool, and Docker self-hosting. No API key, no signup, per-IP rate limits.",
     type: "website",
     url: "https://cheki.et/developers",
   },
