@@ -3,12 +3,14 @@ import Link from "next/link";
 import { Nav, Footer } from "@/components/Chrome";
 import { CodeBlock } from "@/components/CodeBlock";
 import { StatusPill } from "@/components/StatusPill";
-import { getEndpointRows, REPO_URL, REPORT_CHANGE_URL, type EndpointRow } from "@/lib/manifest/endpoints";
+import { changelogFor, getEndpointRows, REPO_URL, REPORT_CHANGE_URL, type EndpointRow } from "@/lib/manifest/endpoints";
+import { primaryFormat, secondaryFormats, templateHost } from "@/lib/manifest/formats";
+import type { ReceiptFormat } from "@/lib/core/types";
 import { formatCheckedAt, getBankHealth, healthStatusFor, statusFile } from "@/lib/status-data";
 
 const TITLE = "Ethiopian Bank Receipt Endpoints: Reference for Developers";
 const DESCRIPTION =
-  "Every public receipt endpoint cheki uses, generated from its bank manifest: URL templates, where to find each placeholder, unknown-reference error shapes, gotchas, and a dated changelog.";
+  "Every public receipt endpoint cheki uses, generated from its bank manifest: current format first, legacy formats, where to find each placeholder, unknown-reference error shapes, gotchas, and a dated changelog.";
 
 export const metadata: Metadata = {
   title: TITLE,
@@ -41,11 +43,44 @@ const h3: React.CSSProperties = { fontSize: "13px", fontWeight: 700, color: "var
 const small: React.CSSProperties = { fontSize: "14px", color: "var(--ink-2)", lineHeight: 1.6 };
 const tag: React.CSSProperties = { display: "inline-block", fontSize: "11px", fontWeight: 600, padding: "1px 8px", borderRadius: "4px", background: "var(--amber-light)", color: "var(--amber-text)", marginLeft: "6px" };
 
+
+const fmtLabel = (rt: ReceiptFormat["responseType"]) => (rt === "pdf" ? "PDF" : rt === "json" ? "JSON" : "HTML");
+
+function FormatSummary({ f, bankId }: { f: ReceiptFormat; bankId: string }) {
+  const health = getBankHealth(`${bankId}:${f.id}`);
+  const template = f.link ?? f.endpoint;
+  return (
+    <li style={{ ...small, marginBottom: "12px" }}>
+      <strong>{f.label}</strong>
+      <span style={tag}>{f.status === "current" ? "Newer, not supported yet" : f.status === "legacy" ? "Legacy" : "Deprecated"}</span>
+      {f.confidence === "inferred" && <span style={tag}>Inferred</span>}
+      <br />
+      {template ? <code style={{ wordBreak: "break-all" }}>{template}</code> : <>Host: <code>{(f.linkHosts ?? []).join(", ")}</code></>}
+      {f.endpoint && f.link && templateHost(f.endpoint) !== templateHost(f.link) && <> (cheki fetches <code style={{ wordBreak: "break-all" }}>{f.endpoint}</code>)</>}
+      <br />
+      Needs: {f.inputs.map((i) => i.label).join(" + ")}. Response: {fmtLabel(f.responseType)}.
+      {f.since ? ` Since ${f.since}.` : ""}
+      {f.deprecatedAt ? ` Retired ${f.deprecatedAt}.` : ""}
+      {f.replacedBy ? ` Replaced by the current format.` : ""}
+      {f.status === "legacy" && f.parser ? " cheki still checks it." : f.status === "deprecated" ? " cheki never fetches it; links are read for their reference only." : !f.parser ? " cheki does not read it yet." : ""}
+      {f.notes ? <> {f.notes}</> : null}
+      <br />
+      <span style={{ color: "var(--ink-3)" }}>Evidence: {f.evidence}</span>
+      {health && <><br />Last check: {health.detail} ({formatCheckedAt(health.checkedAt)})</>}
+    </li>
+  );
+}
+
 function EndpointCard({ row }: { row: EndpointRow }) {
   const { bank, doc } = row;
   const template = bank.endpointFormat ?? bank.endpoint;
   const live = bank.status === "live";
-  const hasBankPage = bank.id !== "cbe-new";
+  const hasBankPage = !doc.aliasOf;
+  const current = primaryFormat(bank);
+  const others = secondaryFormats(bank);
+  const older = others.filter((f) => f.status !== "current");
+  const newerUnsupported = others.filter((f) => f.status === "current");
+  const changelog = changelogFor(row);
   return (
     <article
       id={bank.id}
@@ -66,11 +101,15 @@ function EndpointCard({ row }: { row: EndpointRow }) {
         </p>
       )}
 
-      <h3 style={h3}>Template URL</h3>
+      <h3 style={h3}>{older.length > 0 ? "Current format" : "Template URL"}</h3>
+      {current && older.length > 0 && <p style={{ ...small, marginBottom: "8px" }}><strong>{current.label}</strong>. {current.notes}</p>}
       {hasEndpoint(row) ? (
         <CodeBlock code={template} highlightedHtml={escapeHtml(template)} langLabel="url" />
       ) : (
         <p style={small}>No public receipt endpoint is known yet.</p>
+      )}
+      {current?.endpoint && current.link && templateHost(current.endpoint) !== templateHost(current.link) && (
+        <p style={{ ...small, marginTop: "8px" }}>cheki reads it from <code style={{ wordBreak: "break-all" }}>{current.endpoint}</code>.</p>
       )}
 
       {doc.placeholders.length > 0 && (
@@ -123,10 +162,47 @@ function EndpointCard({ row }: { row: EndpointRow }) {
         {doc.gotchas.map((g, i) => <li key={i} style={small}>{g}</li>)}
       </ul>
 
+      {older.length > 0 && (
+        <>
+          <h3 style={h3}>Legacy formats</h3>
+          <p style={{ ...small, marginBottom: "8px" }}>Older receipts. Most receipts use the current format above.</p>
+          <ul style={{ paddingLeft: "20px", margin: 0, listStyle: "disc" }}>
+            {older.map((f) => <FormatSummary key={f.id} f={f} bankId={bank.id} />)}
+          </ul>
+          {(doc.legacy ?? []).map((l) => (
+            <div key={l.formatId} style={{ marginTop: "12px" }}>
+              <div className="table-wrap">
+                <table>
+                  <thead>
+                    <tr><th>Placeholder (legacy)</th><th>What it is</th><th>Where to find it</th><th>Length and pattern</th><th>Traps</th></tr>
+                  </thead>
+                  <tbody>
+                    {l.placeholders.map((p) => (
+                      <tr key={p.name}><td><code>{p.name}</code></td><td>{p.what}</td><td>{p.whereToFind}</td><td>{p.format}</td><td>{p.traps ?? "None known"}</td></tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {l.redactedExample && <p style={small}>Redacted example: <code style={{ wordBreak: "break-all" }}>{l.redactedExample}</code></p>}
+              <p style={small}>Unknown reference: {l.unknownRef}</p>
+            </div>
+          ))}
+        </>
+      )}
+
+      {newerUnsupported.length > 0 && (
+        <>
+          <h3 style={h3}>{current ? "Also reported (not supported yet)" : "Reported receipt host (not supported yet)"}</h3>
+          <ul style={{ paddingLeft: "20px", margin: 0, listStyle: "disc" }}>
+            {newerUnsupported.map((f) => <FormatSummary key={f.id} f={f} bankId={bank.id} />)}
+          </ul>
+        </>
+      )}
+
       <h3 style={h3}>Changelog</h3>
-      {doc.changelog.length > 0 ? (
+      {changelog.length > 0 ? (
         <ul style={{ paddingLeft: "20px", margin: 0, listStyle: "disc" }}>
-          {doc.changelog.map((c, i) => (
+          {changelog.map((c, i) => (
             <li key={i} style={small}><time dateTime={c.date} style={{ fontWeight: 600 }}>{c.date}</time>: {c.note}</li>
           ))}
         </ul>
@@ -149,7 +225,8 @@ function EndpointCard({ row }: { row: EndpointRow }) {
 }
 
 export default function EndpointsPage() {
-  const rows = getEndpointRows();
+  // Parser aliases (cbe-new) are documented on their bank's card.
+  const rows = getEndpointRows().filter((r) => !r.doc.aliasOf);
 
   const techArticleJsonLd = {
     "@context": "https://schema.org",
