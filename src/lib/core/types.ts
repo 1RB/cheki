@@ -105,6 +105,7 @@ export interface Receipt {
   paymentChannel?: string;
   bankAccountNumber?: string;
   bankAccountName?: string;
+  orderId?: string;
   /**
    * True when the data was decoded from a BOA QR code but could not be
    * confirmed with the bank (it was unreachable). Always paired with
@@ -165,6 +166,7 @@ export interface ParsedReceipt {
   paymentChannel?: string;
   bankAccountNumber?: string;
   bankAccountName?: string;
+  orderId?: string;
 }
 
 // ─── HTTP Port (interface for fetching from banks) ──────────────────
