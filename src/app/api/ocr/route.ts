@@ -3,11 +3,15 @@ import { decodeQrFromImage, parseQrReference } from "@/lib/server-ocr";
 import { detectBankFromUrl, isUrl } from "@/lib/adapters/url-detector";
 import { ambiguousReferenceCandidates } from "@/lib/ocr-parser";
 import { limiters, rateLimited } from "@/lib/rate-limit";
+import { readFormDataCapped, BodyTooLargeError, InvalidFormDataError } from "@/lib/http/read-body";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+/** The image plus room for multipart boundaries and headers. */
+const MAX_BODY_BYTES = MAX_IMAGE_BYTES + 64 * 1024;
+const TOO_LARGE = "Image is too large. Maximum size is 10MB.";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -24,17 +28,29 @@ export async function POST(request: NextRequest) {
   const limited = rateLimited(limiters.ocr, request.headers, 1, CORS_HEADERS);
   if (limited) return limited;
 
-  // Reject an oversized upload before formData() buffers it.
-  const declared = Number(request.headers.get("content-length"));
-  if (Number.isFinite(declared) && declared > MAX_IMAGE_BYTES + 64 * 1024) {
+  // The body is read with a hard cap (Content-Length and the stream itself,
+  // so a chunked upload with no Content-Length is covered too), then the form
+  // is parsed from those capped bytes.
+  let formData: FormData;
+  try {
+    formData = await readFormDataCapped(request, MAX_BODY_BYTES);
+  } catch (e) {
+    if (e instanceof BodyTooLargeError) {
+      return NextResponse.json({ success: false, error: TOO_LARGE }, { status: 413, headers: CORS_HEADERS });
+    }
+    if (e instanceof InvalidFormDataError) {
+      return NextResponse.json(
+        { success: false, error: "Image file is required." },
+        { status: 400, headers: CORS_HEADERS }
+      );
+    }
     return NextResponse.json(
-      { success: false, error: "Image is too large. Maximum size is 10MB." },
-      { status: 413, headers: CORS_HEADERS }
+      { success: false, error: "Could not read that image. Try a JPEG or PNG screenshot." },
+      { status: 400, headers: CORS_HEADERS }
     );
   }
 
   try {
-    const formData = await request.formData();
     const image = formData.get("image");
 
     if (!image || typeof image === "string") {
@@ -49,7 +65,7 @@ export async function POST(request: NextRequest) {
 
     if (inputBuffer.length > MAX_IMAGE_BYTES) {
       return NextResponse.json(
-        { success: false, error: "Image is too large. Maximum size is 10MB." },
+        { success: false, error: TOO_LARGE },
         { status: 413, headers: CORS_HEADERS }
       );
     }
