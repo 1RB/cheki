@@ -1,16 +1,94 @@
-from cheki.banks import VERIFIERS, BankVerifier
-from cheki.result import VerificationResult
+"""Direct verification (deprecated).
+
+:func:`verify` fetches bank endpoints from your own machine. These Python
+parsers have drifted from the server's TypeScript parsers and lack the
+server's hardening (the shared verification gate, the host allowlist, the
+ReDoS fixes, the eBirr/Siinqee and new Dashen support). Use
+:class:`cheki.ChekiClient` instead, or self-host the cheki server.
+
+Until it is removed, :func:`verify`:
+
+* emits a :class:`DeprecationWarning`;
+* rejects references that are not plain receipt numbers (no ``/ ? # & %``,
+  ``..`` or whitespace), so nothing can be smuggled into a bank URL;
+* runs a fail-closed port of the server's verification gate: a result is
+  only ``VERIFIED`` with a positive amount, at least one party, and no
+  failure/pending transaction status. Anything else becomes ``FAILED``.
+"""
+
+from __future__ import annotations
+
+import math
+import re
+import warnings
+from typing import Any
+
+from cheki.banks import VERIFIERS
+from cheki.result import VerificationResult, VerificationStatus
+
+_SAFE_REFERENCE = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,63}")
+
+# Same list as src/lib/core/status.ts (FAILURE_RE).
+_FAILURE_STATUS = re.compile(
+    r"\b(fail(?:ed|ure|s)?|unsuccessful|revers(?:ed|al|e)|pending|cancel(?:l)?ed|cancel(?:l)?ation|declined"
+    r"|rejected|expired|refunded|error|timed?\s?out|in\s+progress|processing|on\s+hold|initiated|incomplete"
+    r"|not\s+(?:completed|successful|paid)|voided?|charge\s?backs?|disputed?|suspended|rolled\s?back|returned"
+    r"|bounced)\b",
+    re.IGNORECASE,
+)
+
+_DEPRECATION = (
+    "cheki.verify() (direct verification) is deprecated and will be removed in the next major "
+    "version. Its parsers lack the server's verification gate and hardening. Use "
+    "cheki.ChekiClient().verify(...) instead, or self-host the cheki server."
+)
 
 
 def supported_banks() -> dict[str, str]:
-    return {
-        code: cls.BANK_NAME
-        for code, cls in VERIFIERS.items()
-    }
+    """Banks the deprecated direct verifiers know (not the hosted API's list)."""
+    return {code: cls.BANK_NAME for code, cls in VERIFIERS.items()}
+
+
+def _status_text(result: VerificationResult) -> str | None:
+    raw: dict[str, Any] = result.raw if isinstance(result.raw, dict) else {}
+    for key in ("transaction_status", "transactionStatus", "status"):
+        value = raw.get(key)
+        if isinstance(value, str) and value.strip():
+            return value
+    return None
+
+
+def gate(result: VerificationResult) -> VerificationResult:
+    """Fail-closed port of the server's verification gate (src/lib/core/gate.ts).
+
+    A ``VERIFIED`` result is downgraded to ``FAILED`` unless it has a finite
+    amount greater than zero, at least one party, and no failure status.
+    """
+    if result.status is not VerificationStatus.VERIFIED:
+        return result
+    reason: str | None = None
+    amount = result.amount
+    if not isinstance(amount, (int, float)) or not math.isfinite(amount) or amount <= 0:
+        reason = "The bank's response has no valid amount, so it cannot be confirmed as a receipt."
+    elif not any(
+        isinstance(v, str) and v.strip()
+        for v in (result.sender_name, result.receiver_name, result.sender_account, result.receiver_account)
+    ):
+        reason = "The bank's response is missing the payer and receiver, so it cannot be confirmed as a receipt."
+    else:
+        status = _status_text(result)
+        if status and _FAILURE_STATUS.search(status[:80]):
+            reason = f'The bank lists this transaction as "{status[:40]}". It is not a completed payment.'
+    if reason is None:
+        return result
+    result.status = VerificationStatus.FAILED
+    result.exists = False
+    result.message = reason
+    return result
 
 
 def verify(bank: str, reference: str, **kwargs: object) -> VerificationResult:
-    """Verify a receipt for the given bank.
+    """Verify a receipt directly against the bank (deprecated).
 
     Args:
         bank: Bank/wallet code, e.g. "cbe", "telebirr", "boa", "mpesa".
@@ -18,11 +96,20 @@ def verify(bank: str, reference: str, **kwargs: object) -> VerificationResult:
         **kwargs: Bank-specific extras:
             - cbe, boa: account_number (full receiving account)
             - cbebirr: phone_number (payer phone)
+
+    Raises:
+        ValueError: For an unknown bank or a reference that is not a plain
+            receipt number.
     """
+    warnings.warn(_DEPRECATION, DeprecationWarning, stacklevel=2)
     bank = bank.lower().strip()
     if bank not in VERIFIERS:
+        raise ValueError(f"Unsupported bank '{bank}'. Supported: {', '.join(VERIFIERS)}")
+    ref = (reference or "").strip()
+    if not _SAFE_REFERENCE.fullmatch(ref) or ".." in ref:
         raise ValueError(
-            f"Unsupported bank '{bank}'. Supported: {', '.join(VERIFIERS)}"
+            "A reference can only contain letters, digits, dots, dashes and underscores "
+            "(no /, ?, #, &, %, '..' or spaces), up to 64 characters."
         )
     verifier = VERIFIERS[bank]()
-    return verifier.verify(reference, **kwargs)
+    return gate(verifier.verify(ref, **kwargs))
