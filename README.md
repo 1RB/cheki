@@ -45,14 +45,23 @@ Want to help? See [contributing a new bank](#adding-a-bank) below or [open an is
 
 ## SDKs
 
-cheki ships SDKs in 5 languages. All wrap the same REST API with idiomatic patterns, typed errors, retry with exponential backoff, and timeout support.
+cheki ships SDKs in 5 languages. All wrap the same REST API and are tested against one shared set of response fixtures (`sdks/fixtures/api-contract.json`), which CI also checks against the route handlers.
+
+What every SDK does the same way:
+
+- **`verified` is the only success signal.** A 200 response can still be unverified: a BOA QR code the bank could not confirm comes back as `success: true, verified: false, decodedOnly: true`. Each SDK has a helper (`isVerified()`, `is_verified`, `IsVerified()`).
+- **Banks are identified by `id`** (`code` is kept as a deprecated alias).
+- **Batch: at most 20 receipts**, checked before sending. The response has `results`, `total`, `verified`, `failed` and `cached`; `failed` includes decoded-only QR results.
+- **Typed errors** for 429 (with the `Retry-After` seconds) and 413, and the server's `error` text and `fallbackUrl` (geo-blocked banks) on every API error.
+- **Timeouts and retries:** each attempt waits up to 65 s (the server may take up to 60 s). A 4xx (other than 429) or a timeout is never retried. A network error, 5xx or 429 is retried at most once, after `Retry-After` when the server sends one (up to 60 s). The server itself makes at most 2 attempts per bank fetch, so one SDK call reaches a bank at most **4** times (a batch: 4 per receipt).
+- **`getReceiptUrl`** builds `/api/receipt` links for CBE (account required), Zemen and Dashen only, and rejects anything else.
 
 | Language | Install | Package | Registry |
 |----------|---------|---------|----------|
 | **TypeScript** | `npm install cheki-verify` | [`cheki-verify`](https://www.npmjs.com/package/cheki-verify) | npm · [GitHub Packages](https://github.com/1RB/cheki/pkgs/npm/cheki-verify) |
 | **Python** | `pip install cheki` | [`cheki`](https://pypi.org/project/cheki/) | PyPI |
 | **Go** | `go get github.com/1RB/cheki/sdks/go` | `github.com/1RB/cheki/sdks/go` | [Go modules](https://pkg.go.dev/github.com/1RB/cheki/sdks/go) |
-| **Dart** | *Coming soon* | `cheki` | pub.dev (pending) |
+| **Dart** | git dependency (see [sdks/dart](sdks/dart/README.md)) | `cheki` | pub.dev (not published yet) |
 | **PHP** | `composer require cheki/cheki` | [`cheki/cheki`](https://packagist.org/packages/cheki/cheki) | Packagist |
 
 ### TypeScript
@@ -62,14 +71,16 @@ npm install cheki-verify
 ```
 
 ```ts
-import { Cheki } from "cheki-verify";
+import { Cheki, isVerified } from "cheki-verify";
 
 const cheki = new Cheki();
 const result = await cheki.verify("cbe", "FT26140P01YB", {
   accountNumber: "1000560536171",
 });
-console.log(result.verified, result.amount, result.senderName);
+if (isVerified(result)) console.log(result.amount, result.senderName);
 ```
+
+Non-2xx responses throw `ChekiAPIError` (`ChekiRateLimitError` for 429, `ChekiPayloadTooLargeError` for 413). Call it from a server: the hosted API does not send CORS headers on these routes.
 
 ### Python
 
@@ -85,13 +96,9 @@ result = cheki.verify("cbe", "FT26140P01YB", account_number="1000560536171")
 print(result.is_verified, result.amount, result.sender_name)
 ```
 
-Also includes direct verification (no API server needed):
+`verify()` returns a result for API errors too: check `result.http_status`, `result.error`, and `result.is_rate_limited` / `result.retry_after`. Python 3.10+.
 
-```python
-from cheki import verify
-
-result = verify("cbe", "FT26140P01YB", account_number="1000560536171")
-```
+The old direct mode (`from cheki import verify`, which fetches banks from your machine) is **deprecated**: its parsers lack the server's verification gate and hardening. It now warns, rejects unsafe references, applies a fail-closed gate, and will be removed in the next major version. Self-host the server instead if you cannot use the hosted API.
 
 ### Go
 
@@ -102,10 +109,14 @@ go get github.com/1RB/cheki/sdks/go
 ```go
 client := cheki.NewClient()
 result, err := client.Verify(ctx, cheki.VerifyOptions{
-    Bank:      "cbe",
-    Reference: "FT26140P01YB",
+    Bank:          "cbe",
+    Reference:     "FT26140P01YB",
     AccountNumber: "1000560536171",
 })
+if err == nil && result.IsVerified() {
+    fmt.Println(result.Amount, result.SenderName)
+}
+// errors.Is(err, cheki.ErrRateLimited); errors.As(err, &apiErr) for StatusCode, Message, RetryAfter, FallbackURL
 ```
 
 ### Dart
@@ -117,6 +128,7 @@ final result = await client.verify(
   reference: 'FT26140P01YB',
   accountNumber: '1000560536171',
 );
+print(result.isVerified);
 client.close();
 ```
 
@@ -127,6 +139,8 @@ $client = new ChekiClient();
 $result = $client->verify('cbe', 'FT26140P01YB', '1000560536171');
 if ($result->isVerified()) {
     echo "$result->senderName sent $result->amount $result->currency";
+} elseif ($result->isRateLimited()) {
+    echo "retry in {$result->retryAfter} s";
 }
 ```
 
@@ -138,9 +152,16 @@ Visit [cheki.et](https://cheki.et). No signup required.
 
 ### CLI
 
+The CLI runs from a clone of this repo. Do not use `npx cheki`: the npm package named `cheki` is an unrelated project, and this repo's root package is private.
+
 ```bash
-npx cheki verify cbe FT26140P01YB --account 1000560536171
+git clone https://github.com/1RB/cheki.git && cd cheki && npm install
+npm run cli -- verify cbe FT26140P01YB -a 1000560536171
+npm run cli -- verify telebirr CHQ0FJ403O
+npm run cli -- health
 ```
+
+Or use the Python CLI, which calls the hosted API: `pip install cheki`, then `cheki-verify cbe FT26140P01YB --account 1000560536171`.
 
 ### API
 
@@ -164,7 +185,7 @@ Self-hosting on an Ethiopian IP bypasses Telebirr/M-Pesa geo-blocks.
 
 - **Web UI**: receipt aesthetic, auto-detect bank from reference format, dark mode
 - **REST API**: free, no API key, per-IP rate limits (verify 30/min, batch 5/min, parse and ocr 20/min each, per instance; 429 with Retry-After), batch verification up to 20 receipts
-- **CLI**: verify receipts from the terminal (`npx cheki verify`)
+- **CLI**: verify receipts from the terminal (`npm run cli -- verify ...` in a clone, or `cheki-verify` from `pip install cheki`)
 - **5 SDKs**: TypeScript, Python, Go, Dart, PHP with typed errors and retry
 - **8 live banks**: CBE, Telebirr, BOA, M-Pesa, Dashen, Awash, Siinqee, eBirr (Zemen and CBE Birr are in development)
 - **Docker**: self-hosting with docker-compose
@@ -218,7 +239,7 @@ src/
     robots.ts               # robots.txt (allows AI crawlers)
     manifest.ts             # Web manifest
   cli/
-    index.ts                # CLI entry point (npx cheki)
+    index.ts                # CLI entry point (npm run cli)
   lib/
     banks.ts                # Bank data and reference detection
     guides.ts               # Guide articles data
@@ -270,9 +291,10 @@ src/
       tilt-card.tsx         # 3D tilt card
       toast-stack.tsx       # Toast notifications
 sdks/
-  typescript/               # TypeScript SDK (npm: cheki-verify, GH Packages: @1RB/cheki-verify)
+  fixtures/                 # Shared API contract fixtures every SDK test decodes
+  typescript/               # TypeScript SDK (npm: cheki-verify, GH Packages: @1rb/cheki-verify)
   go/                       # Go SDK (go get)
-  dart/                     # Dart SDK (pub.dev)
+  dart/                     # Dart SDK (not on pub.dev yet)
   php/                      # PHP SDK (Packagist)
 python/                     # Python SDK (PyPI: cheki)
 Dockerfile
