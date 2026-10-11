@@ -1,7 +1,7 @@
 {
   "name": "cheki-verify",
   "version": "1.4.1",
-  "description": "Free Ethiopian receipt verification SDK. Verify bank transfers from CBE, Telebirr, BOA, Dashen, M-Pesa, Awash, Zemen, CBE Birr, Siinqee, and eBirr.",
+  "description": "Free Ethiopian receipt verification SDK for the cheki API. Verify bank transfers from CBE, Telebirr, BOA, Dashen, M-Pesa, Awash, Zemen, CBE Birr, Siinqee, and eBirr.",
   "type": "commonjs",
   "main": "index.js",
   "module": "index.mjs",
@@ -16,10 +16,12 @@
   "files": [
     "index.js",
     "index.mjs",
-    "index.d.ts"
+    "index.d.ts",
+    "README.md"
   ],
   "scripts": {
     "build": "tsc",
+    "check": "tsc --noEmit",
     "clean": "rm -f index.js index.d.ts",
     "prepublishOnly": "npm run build"
   },
@@ -58,5 +60,8 @@
   "engines": {
     "node": ">=18"
   },
-  "sideEffects": false
+  "sideEffects": false,
+  "devDependencies": {
+    "typescript": "^5.6.0"
+  }
 }
