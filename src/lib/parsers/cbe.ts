@@ -5,8 +5,18 @@
  * 1. Legacy: PDF receipt from apps.cbe.com.et:100 (requires FT ref + last 8 digits)
  * 2. New: JSON API at Mb.cbe.com.et (receipt ID from QR code / mbreciept.cbe.com.et URLs)
  */
-import { BaseParser } from "./base";
-import type { ParsedReceipt } from "../core/types";
+import { BaseParser, BROWSER_UA } from "./base";
+import type { ParsedReceipt, Result, HttpResult } from "../core/types";
+import { ok, err } from "../core/types";
+import { parseMoney } from "../core/money";
+import { safeFetch, describeFetchError, MAX_PDF_BYTES, MAX_TEXT_BYTES } from "../http/safe-fetch";
+import { HostNotAllowedError } from "../security/hosts";
+
+function str(v: unknown): string | undefined {
+  if (typeof v === "string") return v.trim() || undefined;
+  if (typeof v === "number" && Number.isFinite(v)) return String(v);
+  return undefined;
+}
 
 export class CBEParser extends BaseParser {
   readonly bankId = "cbe";
@@ -15,11 +25,10 @@ export class CBEParser extends BaseParser {
   readonly requiresAccount = true;
   readonly accountDigits = 8;
   readonly requiresPhone = false;
-  readonly sslVerify = false;
 
   buildUrl(ref: string, account?: string): string {
-    const suffix = (account || "").slice(-8);
-    return `https://apps.cbe.com.et:100/?id=${ref}${suffix}`;
+    const suffix = (account || "").replace(/\D/g, "").slice(-8);
+    return `https://apps.cbe.com.et:100/?id=${encodeURIComponent(ref)}${suffix}`;
   }
 
   parse(data: string | Buffer, _contentType: string): ParsedReceipt {
@@ -99,8 +108,12 @@ export class CBEParser extends BaseParser {
     const reasonMatch = text.match(/Reason\s*\/\s*Type of service\s*(.+?)(?:\n|$|Transferred)/);
     if (reasonMatch) reason = reasonMatch[1].trim();
 
+    // The bank name alone (e.g. an error page on the CBE host) is not a
+    // receipt. Require the amount, a party and the reference.
+    const verified = !!(amount !== undefined && amount > 0 && (senderName || receiverName) && reference);
+
     return {
-      verified: true,
+      verified,
       senderName,
       senderAccount,
       receiverName,
@@ -133,16 +146,14 @@ export class CBEParser extends BaseParser {
     ref: string,
     account?: string,
     _phone?: string,
-    options?: { fallbackUrl?: string }
-  ) {
-    const { ok, err } = await import("../core/types");
-    const url = this.buildUrl(ref, account);
-    const timeoutMs = 30000;
-
+    _options?: { fallbackUrl?: string }
+  ): Promise<Result<HttpResult>> {
+    const gone = "CBE no longer supports the old FT reference format. Ask the sender for the new receipt link (mbreciept.cbe.com.et).";
     try {
-      const resp = await fetch(url, {
-        headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" },
-        signal: AbortSignal.timeout(timeoutMs),
+      const resp = await safeFetch(this.buildUrl(ref, account), {
+        headers: { "User-Agent": BROWSER_UA },
+        timeoutMs: 30000,
+        maxBytes: MAX_PDF_BYTES,
       });
 
       if (resp.status === 404) {
@@ -153,21 +164,16 @@ export class CBEParser extends BaseParser {
         });
       }
 
-      if (!resp.ok) {
-        return err({
-          kind: "ENDPOINT_ERROR" as const,
-          bank: this.bankName,
-          message: "CBE no longer supports the old FT reference format. Ask the sender for the new receipt link (mbreciept.cbe.com.et).",
-        });
+      if (resp.status < 200 || resp.status >= 300) {
+        return err({ kind: "ENDPOINT_ERROR" as const, bank: this.bankName, message: gone });
       }
 
-      const data = Buffer.from(await resp.arrayBuffer());
-      return ok({ status: resp.status, data, contentType: "application/pdf" });
-    } catch {
+      return ok({ status: resp.status, data: resp.body, contentType: "application/pdf" });
+    } catch (e) {
       return err({
         kind: "ENDPOINT_ERROR" as const,
         bank: this.bankName,
-        message: "CBE no longer supports the old FT reference format. Ask the sender for the new receipt link (mbreciept.cbe.com.et).",
+        message: e instanceof HostNotAllowedError ? describeFetchError(e) : gone,
       });
     }
   }
@@ -180,7 +186,6 @@ export class CBENewParser extends BaseParser {
   readonly requiresAccount = false;
   readonly accountDigits?: number = undefined;
   readonly requiresPhone = false;
-  readonly sslVerify = false;
 
   private static readonly API_URL = "https://Mb.cbe.com.et/api/v1/transactions/public/transaction-detail";
   private static readonly HEADERS = {
@@ -191,29 +196,28 @@ export class CBENewParser extends BaseParser {
   };
 
   buildUrl(ref: string): string {
-    return `${CBENewParser.API_URL}/${ref}`;
+    return `${CBENewParser.API_URL}/${encodeURIComponent(ref)}`;
   }
 
   parse(data: string | Buffer, _contentType: string): ParsedReceipt {
     try {
       const json = JSON.parse(data.toString());
-      const id = json.id as string;
+      if (!json || typeof json !== "object") return { verified: false };
+      const id = str(json.id);
       if (!id) return { verified: false };
 
-      const debitHolder = json.debitAccountHolder as string;
-      const creditHolder = json.creditAccountHolder as string;
-      const debitAccount = json.debitAccountNo as string;
-      const creditAccount = json.creditAccountNo as string;
-      const amountStr = (json.amountCredited as string) || (json.amountDebited as string);
-      const amount = amountStr ? parseFloat(amountStr) : undefined;
-      const currency = (json.creditCurrency as string) || "ETB";
-      const dateTimes = json.dateTimes as string[];
-      const date = dateTimes?.[0] ?? undefined;
-      const paymentDetails = json.paymentDetails as string[];
-      const reason = paymentDetails?.[0] ?? undefined;
+      const debitHolder = str(json.debitAccountHolder);
+      const creditHolder = str(json.creditAccountHolder);
+      const debitAccount = str(json.debitAccountNo);
+      const creditAccount = str(json.creditAccountNo);
+      // "1,250.00" used to parse as 1 with parseFloat.
+      const amount = parseMoney(json.amountCredited) ?? parseMoney(json.amountDebited);
+      const currency = str(json.creditCurrency) || "ETB";
+      const date = Array.isArray(json.dateTimes) ? str(json.dateTimes[0]) : undefined;
+      const reason = Array.isArray(json.paymentDetails) ? str(json.paymentDetails[0]) : undefined;
 
       return {
-        verified: true,
+        verified: !!(amount !== undefined && amount > 0 && (debitHolder || creditHolder || debitAccount || creditAccount)),
         senderName: debitHolder,
         senderAccount: debitAccount,
         receiverName: creditHolder,
@@ -237,13 +241,12 @@ export class CBENewParser extends BaseParser {
     _account?: string,
     _phone?: string,
     _options?: { fallbackUrl?: string }
-  ) {
-    const url = this.buildUrl(ref);
-    const { ok, err } = await import("../core/types");
+  ): Promise<Result<HttpResult>> {
     try {
-      const resp = await fetch(url, {
+      const resp = await safeFetch(this.buildUrl(ref), {
         headers: CBENewParser.HEADERS,
-        signal: AbortSignal.timeout(10000),
+        timeoutMs: 10000,
+        maxBytes: MAX_TEXT_BYTES,
       });
       if (resp.status === 404) {
         return err({
@@ -252,20 +255,19 @@ export class CBENewParser extends BaseParser {
           message: "Receipt not found. Check the link or reference.",
         });
       }
-      if (!resp.ok) {
+      if (resp.status < 200 || resp.status >= 300) {
         return err({
           kind: "ENDPOINT_ERROR" as const,
           bank: this.bankName,
           message: "CBE receipt service unavailable. Try again.",
         });
       }
-      const data = await resp.text();
-      return ok({ status: resp.status, data, contentType: "application/json" });
+      return ok({ status: resp.status, data: resp.body.toString("utf8"), contentType: "application/json" });
     } catch (e) {
       return err({
         kind: "ENDPOINT_ERROR" as const,
         bank: this.bankName,
-        message: `Failed to reach CBE receipt service: ${e instanceof Error ? e.message : String(e)}`,
+        message: `Failed to reach CBE receipt service: ${describeFetchError(e)}`,
       });
     }
   }
