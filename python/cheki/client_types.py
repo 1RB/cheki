@@ -46,6 +46,18 @@ class ChekiAPIError(ChekiClientError):
         return self.message
 
 
+class ChekiRateLimitError(ChekiAPIError):
+    """HTTP 429. ``retry_after`` is the server's Retry-After in seconds, if sent."""
+
+    def __init__(self, message: str, status_code: int = 429, body: str = "", retry_after: float | None = None) -> None:
+        super().__init__(message, status_code=status_code, body=body)
+        self.retry_after = retry_after
+
+
+class ChekiPayloadTooLargeError(ChekiAPIError):
+    """HTTP 413: the request body is over the route's cap (verify 16 KB, batch 64 KB)."""
+
+
 class ChekiNetworkError(ChekiClientError):
     """Raised when a network-level failure prevents reaching the API."""
 
@@ -78,7 +90,7 @@ def _coerce_float(value: Any) -> float | None:
         if not value:
             return None
     try:
-        return float(value)  # type: ignore[arg-type]
+        return float(value)
     except (TypeError, ValueError):
         return None
 
@@ -88,7 +100,7 @@ def _coerce_int(value: Any) -> int | None:
     if value is None or value == "":
         return None
     try:
-        return int(value)  # type: ignore[arg-type]
+        return int(value)
     except (TypeError, ValueError):
         return None
 
@@ -111,13 +123,26 @@ def _coerce_bool(value: Any) -> bool | None:
 class ClientVerifyResult:
     """Result of a single receipt verification against the cheki API.
 
-    Mirrors the JSON returned by ``POST /api/verify``. On success the
-    receipt fields are populated; on failure ``success`` is ``False`` and
-    ``error`` describes the problem.
+    Mirrors the JSON returned by ``POST /api/verify`` (and each batch item).
+    On failure ``success`` is ``False`` and ``error`` describes the problem;
+    ``http_status`` / ``retry_after`` say why (e.g. 429 with Retry-After).
+
+    ``is_verified`` is the ONLY success signal. ``success`` only means the
+    request was processed: a BOA QR code that could not be confirmed with
+    the bank comes back with ``success=True, verified=False,
+    decoded_only=True``.
     """
 
     success: bool = False
-    verified: bool | None = None
+    verified: bool = False
+    #: BOA QR only: decrypted but not confirmed with the bank. Never proof of payment.
+    decoded_only: bool = False
+    #: ``/api/parse`` only: parsed from caller-supplied text, never checked with the bank.
+    parsed: bool = False
+    source: str | None = None
+    label: str | None = None
+    #: True when the server answered from its receipt cache.
+    cached: bool = False
     bank: str | None = None
     bank_code: str | None = None
     reference: str | None = None
@@ -131,6 +156,7 @@ class ClientVerifyResult:
     date: str | None = None
     branch: str | None = None
     reason: str | None = None
+    transaction_type: str | None = None
     duration_ms: int | None = None
     # Telebirr / wallet-specific fields
     invoice_number: str | None = None
@@ -149,6 +175,11 @@ class ClientVerifyResult:
     # Error reporting
     error: str | None = None
     fallback_url: str | None = None
+    #: HTTP status of the response. Failed batch items carry the status a
+    #: single verify would have returned (the API's ``status`` field).
+    http_status: int | None = None
+    #: Seconds from the Retry-After header on a 429, when sent.
+    retry_after: float | None = None
     # Batch bookkeeping (index within a batch response)
     index: int | None = None
     # The raw, unparsed payload for advanced consumers.
@@ -156,16 +187,38 @@ class ClientVerifyResult:
 
     @property
     def is_verified(self) -> bool:
-        """``True`` when the receipt was confirmed as legitimate."""
-        return bool(self.success and self.verified)
+        """``True`` only when the bank confirmed the receipt.
+
+        ``success``, ``decoded_only`` and ``parsed`` are not proof of payment.
+        """
+        return self.success is True and self.verified is True
+
+    @property
+    def is_rate_limited(self) -> bool:
+        """HTTP 429: wait ``retry_after`` seconds (when set) before retrying."""
+        return self.http_status == 429
+
+    @property
+    def is_payload_too_large(self) -> bool:
+        """HTTP 413: the request body is over the route's cap."""
+        return self.http_status == 413
 
     @classmethod
-    def from_dict(cls, data: Mapping[str, Any]) -> "ClientVerifyResult":
+    def from_dict(
+        cls,
+        data: Mapping[str, Any],
+        http_status: int | None = None,
+        retry_after: float | None = None,
+    ) -> "ClientVerifyResult":
         """Build a :class:`ClientVerifyResult` from a decoded JSON object."""
-        known: dict[str, Any] = {}
+        known: dict[str, Any] = {"http_status": http_status, "retry_after": retry_after}
         for key, value in data.items():
+            if key == "status":
+                # Batch items report the per-item HTTP status as ``status``.
+                known["http_status"] = _coerce_int(value)
+                continue
             attr = _to_snake_case(key)
-            if not hasattr(cls, attr):
+            if attr in {"raw", "http_status", "retry_after", "index"} or attr not in cls.__dataclass_fields__:
                 continue
             # Numeric / boolean coercion for known numeric fields.
             if attr in {
@@ -175,8 +228,8 @@ class ClientVerifyResult:
                 value = _coerce_float(value)
             elif attr == "duration_ms":
                 value = _coerce_int(value)
-            elif attr in {"success", "verified"}:
-                value = _coerce_bool(value)
+            elif attr in {"success", "verified", "decoded_only", "parsed", "cached"}:
+                value = value is True
             known[attr] = value
         known["raw"] = dict(data)
         return cls(**known)
@@ -193,29 +246,46 @@ class ClientVerifyResult:
 class ClientBatchResult:
     """Result of a batch verification request (``POST /api/verify/batch``).
 
-    The cheki API returns ``{ success, results: [...] }``. When
-    ``total`` / ``verified`` / ``failed`` are not provided by the server
-    they are derived from ``results`` so callers always get useful
-    summaries.
+    The API returns ``{success, results, total, verified, failed, cached}``.
+    ``verified`` counts only ``verified: true`` items; ``failed`` is
+    everything else (errors and decoded-only QR results). Counts are
+    derived from ``results`` if a server omits them.
     """
 
     success: bool = False
     total: int = 0
     verified: int = 0
     failed: int = 0
+    cached: int = 0
     results: list[ClientVerifyResult] = field(default_factory=list)
     error: str | None = None
+    #: HTTP status of the batch request itself.
+    http_status: int | None = None
+    #: Seconds from the Retry-After header on a 429, when sent.
+    retry_after: float | None = None
     raw: dict[str, Any] = field(default_factory=dict, repr=False)
 
+    @property
+    def is_rate_limited(self) -> bool:
+        """HTTP 429 for the whole batch."""
+        return self.http_status == 429
+
     @classmethod
-    def from_dict(cls, data: Mapping[str, Any]) -> "ClientBatchResult":
+    def from_dict(
+        cls,
+        data: Mapping[str, Any],
+        http_status: int | None = None,
+        retry_after: float | None = None,
+    ) -> "ClientBatchResult":
         """Build a :class:`ClientBatchResult` from a decoded JSON object."""
-        raw_results = data.get("results") or data.get("receipts") or []
+        raw_results = data.get("results") or []
         results: list[ClientVerifyResult] = []
         if isinstance(raw_results, Sequence):
             for entry in raw_results:
                 if isinstance(entry, Mapping):
-                    results.append(ClientVerifyResult.from_dict(entry))
+                    item = ClientVerifyResult.from_dict(entry)
+                    item.index = len(results)
+                    results.append(item)
 
         total = _coerce_int(data.get("total"))
         verified = _coerce_int(data.get("verified"))
@@ -230,12 +300,15 @@ class ClientBatchResult:
             failed = sum(1 for r in results if not r.is_verified)
 
         return cls(
-            success=bool(_coerce_bool(data.get("success")) or False),
+            success=data.get("success") is True,
             total=total,
             verified=verified or 0,
             failed=failed or 0,
+            cached=_coerce_int(data.get("cached")) or 0,
             results=results,
             error=data.get("error"),
+            http_status=http_status,
+            retry_after=retry_after,
             raw=dict(data),
         )
 
@@ -246,6 +319,7 @@ class ClientBatchResult:
             "total": self.total,
             "verified": self.verified,
             "failed": self.failed,
+            "cached": self.cached,
             "results": [r.to_dict() for r in self.results],
             "error": self.error,
         }
@@ -259,11 +333,11 @@ class ClientBankInfo:
     """Metadata for a single bank/wallet supported by cheki.
 
     Mirrors an element of the ``banks`` array returned by
-    ``GET /api/banks``. The API uses ``id`` as the bank identifier; this
-    client normalises it to :attr:`code` for consistency with the other
-    SDKs and with the ``bank`` parameter used in verify calls.
+    ``GET /api/banks``. :attr:`id` is the value to pass as ``bank``;
+    :attr:`code` is kept as an alias with the same value.
     """
 
+    id: str = ""
     code: str = ""
     name: str = ""
     swift: str | None = None
@@ -280,7 +354,7 @@ class ClientBankInfo:
     @property
     def is_live(self) -> bool:
         """``True`` when the bank integration is operational."""
-        return (self.status or "").lower() in {"live", "active", "ok"}
+        return self.status == "live"
 
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> "ClientBankInfo":
@@ -288,6 +362,7 @@ class ClientBankInfo:
         # The API exposes the identifier as ``id``; fall back to ``code``.
         code = data.get("id") or data.get("code") or ""
         return cls(
+            id=str(code),
             code=str(code),
             name=str(data.get("name") or ""),
             swift=data.get("swift"),
@@ -305,7 +380,8 @@ class ClientBankInfo:
     def to_dict(self) -> dict[str, Any]:
         """Serialize this bank info back to a JSON-compatible dict."""
         return {
-            "code": self.code,
+            "id": self.id,
+            "code": self.code,  # deprecated alias of id
             "name": self.name,
             "swift": self.swift,
             "type": self.type,
@@ -326,11 +402,12 @@ class ClientBankInfo:
 class ClientHealthCheck:
     """A single per-bank health check entry.
 
-    The cheki health endpoint reports reachability per bank. Each entry
-    exposes the bank ``name``/``id``, a ``status`` string, and an
-    optional ``latency_ms``.
+    The cheki health endpoint reports reachability per bank: ``id``,
+    ``name``, ``status`` (reachable, unreachable, geo-blocked, no-parser,
+    in-development) and ``latency_ms``.
     """
 
+    id: str = ""
     name: str = ""
     status: str = ""
     latency_ms: int | None = None
@@ -338,73 +415,73 @@ class ClientHealthCheck:
 
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> "ClientHealthCheck":
-        name = data.get("name") or data.get("id") or ""
         return cls(
-            name=str(name),
+            id=str(data.get("id") or ""),
+            name=str(data.get("name") or data.get("id") or ""),
             status=str(data.get("status") or ""),
             latency_ms=_coerce_int(data.get("latencyMs")),
             raw=dict(data),
         )
 
     def to_dict(self) -> dict[str, Any]:
-        return {"name": self.name, "status": self.status, "latencyMs": self.latency_ms}
+        return {"id": self.id, "name": self.name, "status": self.status, "latencyMs": self.latency_ms}
 
 
 @dataclass
 class ClientHealthStatus:
-    """Health status of the cheki service (``GET /api/health``).
+    """Health of the cheki service (``GET /api/health``).
 
-    The API returns ``{ status, banks: [...] }`` where ``banks`` is the
-    list of per-bank reachability checks. This client normalises that
-    array into :attr:`checks` and tolerates the optional ``success``,
-    ``version`` and ``timestamp`` fields exposed by some deployments.
+    The API returns ``{status, checkedAt, banks: [...], cached}`` and caches
+    the probe for up to 5 minutes. :attr:`checks` is a deprecated alias of
+    :attr:`banks`.
     """
 
-    success: bool | None = None
     status: str = "unknown"
-    version: str | None = None
-    timestamp: str | None = None
-    checks: list[ClientHealthCheck] = field(default_factory=list)
+    checked_at: str | None = None
+    cached: bool = False
+    banks: list[ClientHealthCheck] = field(default_factory=list)
     raw: dict[str, Any] = field(default_factory=dict, repr=False)
 
     @property
+    def checks(self) -> list[ClientHealthCheck]:
+        """Deprecated alias of :attr:`banks`."""
+        return self.banks
+
+    @property
     def is_ok(self) -> bool:
-        """``True`` when the overall service status is healthy."""
-        return (self.status or "").lower() in {"ok", "healthy", "up"}
+        """``True`` when the service answered ``status: "ok"``."""
+        return self.status == "ok"
 
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> "ClientHealthStatus":
-        # The API nests per-bank results under ``banks``; some deployments
-        # use ``checks``. Accept either.
-        checks_raw = data.get("checks") or data.get("banks") or []
-        checks: list[ClientHealthCheck] = []
-        if isinstance(checks_raw, Sequence):
-            for entry in checks_raw:
+        banks_raw = data.get("banks") or []
+        banks: list[ClientHealthCheck] = []
+        if isinstance(banks_raw, Sequence):
+            for entry in banks_raw:
                 if isinstance(entry, Mapping):
-                    checks.append(ClientHealthCheck.from_dict(entry))
-
+                    banks.append(ClientHealthCheck.from_dict(entry))
         return cls(
-            success=_coerce_bool(data.get("success")),
             status=str(data.get("status") or "unknown"),
-            version=data.get("version"),
-            timestamp=data.get("timestamp"),
-            checks=checks,
+            checked_at=data.get("checkedAt"),
+            cached=data.get("cached") is True,
+            banks=banks,
             raw=dict(data),
         )
 
     def to_dict(self) -> dict[str, Any]:
         return {
-            "success": self.success,
             "status": self.status,
-            "version": self.version,
-            "timestamp": self.timestamp,
-            "checks": [c.to_dict() for c in self.checks],
+            "checkedAt": self.checked_at,
+            "cached": self.cached,
+            "banks": [c.to_dict() for c in self.banks],
         }
 
 
 __all__ = [
     "ChekiClientError",
     "ChekiAPIError",
+    "ChekiRateLimitError",
+    "ChekiPayloadTooLargeError",
     "ChekiNetworkError",
     "ChekiTimeoutError",
     "ClientVerifyResult",
