@@ -137,7 +137,8 @@ describe("per-IP rate limiter", () => {
 
   it("reads the client IP from proxy headers", () => {
     expect(clientIp(new Headers({ "x-vercel-forwarded-for": "1.2.3.4" }))).toBe("1.2.3.4");
-    expect(clientIp(new Headers({ "x-forwarded-for": "5.6.7.8, 9.9.9.9" }))).toBe("5.6.7.8");
+    // Rightmost entry: the leftmost one is whatever the client sent.
+    expect(clientIp(new Headers({ "x-forwarded-for": "5.6.7.8, 9.9.9.9" }))).toBe("9.9.9.9");
   });
 
   it("returns 429 once a client exceeds the parse limit", async () => {
