@@ -23,13 +23,19 @@ class Bank
     /** Trailing account digits the bank needs, when it needs an account. */
     public ?int $accountDigits;
     public bool $requiresPhone;
+    /** URL template of the bank's current format (informational). */
     public ?string $endpoint;
     public ?string $color;
     public ?string $initials;
+    /** @var list<ReceiptFormat> Receipt formats, current first. */
+    public array $formats;
     /** @var array<string, mixed>|null */
     public ?array $raw;
 
-    /** @param array<string, mixed>|null $raw */
+    /**
+     * @param array<string, mixed>|null $raw
+     * @param list<ReceiptFormat> $formats
+     */
     public function __construct(
         string $id = '',
         ?string $name = null,
@@ -42,7 +48,8 @@ class Bank
         ?string $color = null,
         ?string $initials = null,
         ?string $swift = null,
-        ?array $raw = null
+        ?array $raw = null,
+        array $formats = []
     ) {
         $this->id              = $id;
         $this->code            = $id;
@@ -57,6 +64,7 @@ class Bank
         $this->initials        = $initials;
         $this->swift           = $swift;
         $this->raw             = $raw;
+        $this->formats         = $formats;
     }
 
     /** @param array<string, mixed> $data */
@@ -75,7 +83,11 @@ class Bank
             color:           $str('color'),
             initials:        $str('initials'),
             swift:           $str('swift'),
-            raw:             $data
+            raw:             $data,
+            formats:         array_values(array_map(
+                static fn ($f): ReceiptFormat => ReceiptFormat::fromArray(is_array($f) ? $f : []),
+                is_array($data['formats'] ?? null) ? $data['formats'] : []
+            ))
         );
     }
 
