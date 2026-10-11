@@ -15,7 +15,18 @@ export const metadata: Metadata = {
 const ORDER: HealthStatus[] = ["degraded", "live", "not-checked", "in-development"];
 
 export default function StatusPage() {
-  const rows = getEndpointRows().map((r) => ({ ...r, health: getBankHealth(r.bank.id), status: healthStatusFor(r.bank) }));
+  // One row per bank (its current format); parser aliases are folded into their bank.
+  const rows = getEndpointRows()
+    .filter((r) => !r.doc.aliasOf)
+    .map((r) => ({ ...r, health: getBankHealth(r.bank.id), status: healthStatusFor(r.bank) }));
+  // Legacy formats are listed separately: their hosts going away is expected.
+  const legacyRows = getEndpointRows().flatMap((r) =>
+    (r.doc.legacy ?? []).map((l) => {
+      const health = getBankHealth(`${r.bank.id}:${l.formatId}`);
+      const format = r.bank.formats?.find((f) => f.id === l.formatId);
+      return { key: `${r.bank.id}:${l.formatId}`, bankId: r.bank.id, label: `${r.doc.label}: ${format?.label ?? l.formatId}`, health, status: (health?.status ?? "not-checked") as HealthStatus };
+    })
+  );
   const counts = ORDER.map((s) => ({ s, n: rows.filter((r) => r.status === s).length })).filter((c) => c.n > 0);
   const sorted = [...rows].sort((a, b) => ORDER.indexOf(a.status) - ORDER.indexOf(b.status));
 
@@ -69,6 +80,33 @@ export default function StatusPage() {
             </tbody>
           </table>
         </div>
+
+        {legacyRows.length > 0 && (
+          <section aria-labelledby="legacy-formats" style={{ marginTop: "32px" }}>
+            <h2 id="legacy-formats" style={{ fontSize: "20px", fontWeight: 800, marginBottom: "8px" }}>Legacy formats</h2>
+            <p style={{ fontSize: "14px", color: "var(--ink-3)", marginBottom: "12px" }}>
+              Older receipt formats cheki still accepts. Most receipts use each bank&apos;s current format above, so a legacy host going down does not mark the bank degraded.
+            </p>
+            <div className="table-wrap">
+              <table>
+                <thead>
+                  <tr><th>Format</th><th>Status</th><th>What we saw</th><th>Unknown-reference response</th><th>Recorded</th></tr>
+                </thead>
+                <tbody>
+                  {legacyRows.map((r) => (
+                    <tr key={r.key}>
+                      <td><Link href={`/endpoints#${r.bankId}`} style={{ color: "var(--green-dark)", fontWeight: 600 }}>{r.label}</Link></td>
+                      <td><StatusPill status={r.status} /></td>
+                      <td>{r.health?.detail ?? "Not checked yet."}</td>
+                      <td>{r.health?.observed ? <code style={{ wordBreak: "break-word" }}>{r.health.observed}</code> : "None"}</td>
+                      <td>{formatCheckedAt(r.health?.checkedAt)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
       </main>
       <Footer />
     </>
