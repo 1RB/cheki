@@ -1,356 +1,328 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
+import 'dart:math';
 
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart' show parseHttpDate;
 
 import 'models.dart';
 import 'verify_options.dart';
 
+/// SDK version, sent in the User-Agent header.
+const String chekiSdkVersion = '1.4.1';
+
 /// A client for the cheki receipt verification API.
 ///
-/// cheki is a free Ethiopian receipt verification service. This client
-/// provides typed access to the four REST endpoints:
-///
 /// * [verify] - `POST /api/verify`
-/// * [verifyBatch] - `POST /api/verify/batch`
+/// * [verifyBatch] - `POST /api/verify/batch` (at most [maxBatchSize] receipts)
 /// * [getBanks] - `GET /api/banks`
 /// * [getHealth] - `GET /api/health`
 ///
-/// ## Usage
+/// [VerifyResult.isVerified] is the only success signal. A 200 response can
+/// still be unverified (a decoded-only BOA QR code).
+///
+/// Retries: at most one, on network errors, 5xx and 429 (waiting out a
+/// Retry-After of up to 60 s). Other 4xx and timeouts are never retried.
 ///
 /// ```dart
 /// final client = ChekiClient();
 /// final result = await client.verify(
 ///   bank: 'cbe',
-///   reference: 'RT123456789',
-///   accountNumber: '1000123456789',
+///   reference: 'FT26140P01YB',
+///   accountNumber: '1000560536171',
 /// );
-/// print(result.verified);
+/// print(result.isVerified);
 /// client.close();
 /// ```
-///
-/// You can override the base URL (e.g. for testing or self-hosting):
-///
-/// ```dart
-/// final client = ChekiClient(baseUrl: 'http://localhost:3000');
-/// ```
-///
-/// You can also configure a custom timeout:
-///
-/// ```dart
-/// final client = ChekiClient(timeout: Duration(seconds: 60));
-/// ```
 class ChekiClient {
+  /// Maximum receipts per batch, enforced client-side.
+  static const int maxBatchSize = 20;
+
+  /// Default per-attempt timeout. The server gives a verification up to
+  /// 60 s, so the client waits a little longer.
+  static const Duration defaultTimeout = Duration(seconds: 65);
+
+  /// Most retries on top of the first attempt. The server already makes up to
+  /// 2 attempts per bank fetch, so one SDK call reaches a bank at most 4 times.
+  static const int maxRetriesCap = 1;
+
+  /// Banks `/api/receipt` can download => account digits needed (0 = none).
+  static const Map<String, int> receiptDownloadBanks = {'cbe': 8, 'zemen': 0, 'dashen': 0};
+
+  static const Duration _maxRetryAfter = Duration(seconds: 60);
+  static final RegExp _safeReference = RegExp(r'^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$');
+
   /// The base URL of the cheki API (no trailing slash).
   final String baseUrl;
 
-  /// The underlying HTTP client used for requests.
-  ///
-  /// Exposed so callers can inject a mock client in tests.
+  /// The underlying HTTP client (inject a `MockClient` in tests).
   final http.Client httpClient;
 
-  /// The timeout for each HTTP request.
-  ///
-  /// Defaults to 30 seconds. Set to `null` to disable timeouts entirely.
+  /// Per-attempt timeout. `null` disables it.
   final Duration? timeout;
 
-  /// Default headers sent with every request.
-  final Map<String, String> _defaultHeaders = {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json',
-    'User-Agent': 'cheki-dart-sdk/0.1.0',
-  };
+  /// Retries on network errors, 5xx and 429 (0 or 1).
+  final int maxRetries;
 
-  /// Maximum number of retry attempts for transient failures (429/5xx).
-  static const int _maxRetries = 3;
-
-  /// Base delay for exponential backoff between retries.
-  static const Duration _baseBackoff = Duration(milliseconds: 200);
+  final String _userAgent;
+  final Random _random = Random();
 
   /// Creates a new [ChekiClient].
   ///
-  /// [baseUrl] defaults to the production cheki service.
-  /// [timeout] defaults to 30 seconds. Pass `null` to disable.
-  /// Pass a custom [client] to inject a mock or configured HTTP client.
+  /// [timeout] defaults to [defaultTimeout] (65 s). [maxRetries] defaults to
+  /// 1 and is clamped to 0..1.
   ChekiClient({
     String? baseUrl,
     http.Client? client,
-    this.timeout = const Duration(seconds: 30),
-  })  : baseUrl = (baseUrl ?? 'https://cheki.et').replaceAll(
-            RegExp(r'/+$'),
-            ''),
-        httpClient = client ?? http.Client();
+    this.timeout = defaultTimeout,
+    int maxRetries = maxRetriesCap,
+    String? userAgent,
+  })  : baseUrl = (baseUrl ?? 'https://cheki.et').replaceAll(RegExp(r'/+$'), ''),
+        httpClient = client ?? http.Client(),
+        maxRetries = maxRetries.clamp(0, maxRetriesCap),
+        _userAgent = userAgent ?? 'cheki-dart-sdk/$chekiSdkVersion';
 
-  /// Verifies a single bank transfer receipt.
+  /// Verifies a single receipt.
   ///
-  /// [bank] is the bank code (e.g. `cbe`, `dashen`).
-  /// [reference] is the transaction reference number.
-  /// Provide [accountNumber], [phoneNumber], or [qrData] as required
-  /// by the specific bank.
+  /// Pass [bank] plus [reference] (or [qrData] alone for a BOA QR code), or a
+  /// [VerifyOptions] object via [options].
   ///
-  /// Alternatively, pass a [VerifyOptions] object via [options] for
-  /// a more structured approach.
-  ///
-  /// Returns a [VerifyResult] containing the verification details.
-  ///
-  /// Throws [ChekiException] on API-level errors or [FormatException]
-  /// if the response cannot be decoded.
+  /// Returns for HTTP 200, which includes unverified decoded-only results:
+  /// check [VerifyResult.isVerified]. Throws [ChekiException] for any other
+  /// status ([ChekiRateLimitException] for 429,
+  /// [ChekiPayloadTooLargeException] for 413).
   Future<VerifyResult> verify({
-    required String bank,
-    required String reference,
+    String? bank,
+    String? reference,
     String? accountNumber,
     String? phoneNumber,
     String? qrData,
     VerifyOptions? options,
   }) async {
-    final Map<String, dynamic> body;
-
-    if (options != null) {
-      body = options.toJson();
-    } else {
-      body = {
-        'bank': bank,
-        'reference': reference,
-        if (accountNumber != null) 'accountNumber': accountNumber,
-        if (phoneNumber != null) 'phoneNumber': phoneNumber,
-        if (qrData != null) 'qrData': qrData,
-      };
+    final opts = options ??
+        VerifyOptions(
+          bank: bank ?? '',
+          reference: reference ?? '',
+          accountNumber: accountNumber,
+          phoneNumber: phoneNumber,
+          qrData: qrData,
+        );
+    if (opts.bank.trim().isEmpty) {
+      throw const ChekiValidationException('bank is required');
     }
-
-    final response = await _post('/api/verify', body);
-    final json = _decodeJson(response);
+    if (opts.reference.trim().isEmpty && (opts.qrData ?? '').trim().isEmpty) {
+      throw const ChekiValidationException('reference or qrData is required');
+    }
+    final json = await _request('POST', '/api/verify', opts.toJson());
     return VerifyResult.fromJson(json);
   }
 
-  /// Verifies multiple receipts in a single batch request.
+  /// Verifies up to [maxBatchSize] receipts in one request. Each item also
+  /// counts against the per-IP verify limit (30 per minute).
   ///
-  /// [receipts] is a list of [BatchReceipt] objects, each containing
-  /// the bank code, reference, and optional account/phone numbers.
-  ///
-  /// Returns a [BatchResult] with aggregate counts and per-receipt results.
-  ///
-  /// Throws [ChekiException] on API-level errors.
+  /// Throws [ChekiValidationException] for an empty batch or more than 20
+  /// receipts, without making a request.
   Future<BatchResult> verifyBatch(List<BatchReceipt> receipts) async {
-    final body = {
+    if (receipts.isEmpty) {
+      throw const ChekiValidationException('verifyBatch needs at least one receipt');
+    }
+    if (receipts.length > maxBatchSize) {
+      throw ChekiValidationException(
+        'verifyBatch accepts at most $maxBatchSize receipts (got ${receipts.length}). '
+        'Split the list into chunks of $maxBatchSize.',
+      );
+    }
+    final json = await _request('POST', '/api/verify/batch', {
       'receipts': receipts.map((r) => r.toJson()).toList(),
-    };
-
-    final response = await _post('/api/verify/batch', body);
-    final json = _decodeJson(response);
+    });
     return BatchResult.fromJson(json);
   }
 
-  /// Retrieves the list of banks supported by cheki.
-  ///
-  /// Returns a list of [BankInfo] objects.
-  ///
-  /// Throws [ChekiException] on API-level errors.
+  /// Supported banks. [BankInfo.id] is the value to pass as `bank`.
   Future<List<BankInfo>> getBanks() async {
-    final response = await _get('/api/banks');
-    final json = _decodeJson(response);
-
-    final banksRaw = json['banks'] as List?;
-    if (banksRaw == null) {
-      throw ChekiException(
-        'Unexpected response from /api/banks: missing "banks" field',
-        statusCode: response.statusCode,
-      );
+    final json = await _request('GET', '/api/banks', null);
+    final raw = json['banks'];
+    if (raw is! List) {
+      throw const ChekiException('Unexpected response from /api/banks: missing "banks"', path: '/api/banks');
     }
-
-    return banksRaw
-        .map((e) => BankInfo.fromJson(e as Map<String, dynamic>))
-        .toList();
+    return raw.whereType<Map<String, dynamic>>().map(BankInfo.fromJson).toList();
   }
 
-  /// Checks the health of the cheki service.
-  ///
-  /// Returns a [HealthStatus] with the service status, version, and
-  /// individual check results.
-  ///
-  /// Throws [ChekiException] on API-level errors.
+  /// Per-bank reachability (cached up to 5 minutes server-side).
   Future<HealthStatus> getHealth() async {
-    final response = await _get('/api/health');
-    final json = _decodeJson(response);
-    return HealthStatus.fromJson(json);
+    return HealthStatus.fromJson(await _request('GET', '/api/health', null));
   }
 
-  /// Constructs the URL for viewing a receipt on the cheki web service.
+  /// URL of `GET /api/receipt`, which downloads the bank's receipt file.
+  /// Only CBE (needs the account number, at least its last 8 digits), Zemen
+  /// and Dashen are supported. No request is made.
   ///
-  /// This is a convenience method that does not make an HTTP request.
-  /// It builds the public-facing receipt page URL from the [baseUrl],
-  /// [bank], and [reference].
-  String getReceiptUrl(String bank, String reference) {
-    return '$baseUrl/receipt/$bank/$reference';
+  /// Throws [ChekiValidationException] for an unsupported bank, a bad
+  /// reference or a missing CBE account.
+  String getReceiptUrl(String bank, String reference, [String? accountNumber]) {
+    final id = bank.trim().toLowerCase();
+    final digits = receiptDownloadBanks[id];
+    if (digits == null) {
+      throw const ChekiValidationException('Receipt download is only supported for: cbe, zemen, dashen.');
+    }
+    final ref = reference.trim();
+    if (!_safeReference.hasMatch(ref) || ref.contains('..')) {
+      throw const ChekiValidationException('reference must be 1-64 letters, digits, dots, dashes or underscores.');
+    }
+    final params = <String, String>{'bank': id, 'reference': ref};
+    if (digits > 0) {
+      final acct = (accountNumber ?? '').replaceAll(RegExp(r'[\s-]'), '');
+      if (!RegExp(r'^\d+$').hasMatch(acct) || acct.length < digits) {
+        throw ChekiValidationException('$id needs the receiving account number (at least the last $digits digits).');
+      }
+      params['account'] = acct;
+    }
+    return '$baseUrl/api/receipt?${Uri(queryParameters: params).query}';
   }
 
-  /// Closes the underlying HTTP client and releases resources.
-  ///
-  /// Call this when you are done with the client, or use the client
-  /// within a try/finally block:
-  ///
-  /// ```dart
-  /// final client = ChekiClient();
-  /// try {
-  ///   // use client...
-  /// } finally {
-  ///   client.close();
-  /// }
-  /// ```
-  void close() {
-    httpClient.close();
-  }
+  /// Closes the underlying HTTP client.
+  void close() => httpClient.close();
 
   // ---------------------------------------------------------------------------
   // Internal helpers
   // ---------------------------------------------------------------------------
 
-  /// Sends a POST request with retry support.
-  ///
-  /// Retries up to [_maxRetries] times on HTTP 429 and 5xx responses
-  /// with exponential backoff.
-  Future<http.Response> _post(
-    String path,
-    Map<String, dynamic> body,
-  ) async {
+  Future<Map<String, dynamic>> _request(String method, String path, Map<String, dynamic>? body) async {
     final uri = Uri.parse('$baseUrl$path');
-    return _requestWithRetry(
-      path,
-      () => httpClient.post(
-        uri,
-        headers: _defaultHeaders,
-        body: jsonEncode(body),
-      ),
-    );
-  }
+    final headers = <String, String>{
+      'Accept': 'application/json',
+      'User-Agent': _userAgent,
+      if (body != null) 'Content-Type': 'application/json',
+    };
 
-  /// Sends a GET request with retry support.
-  ///
-  /// Retries up to [_maxRetries] times on HTTP 429 and 5xx responses
-  /// with exponential backoff.
-  Future<http.Response> _get(String path) async {
-    final uri = Uri.parse('$baseUrl$path');
-    return _requestWithRetry(
-      path,
-      () => httpClient.get(uri, headers: _defaultHeaders),
-    );
-  }
-
-  /// Executes an HTTP request with automatic retry on 429/5xx responses.
-  ///
-  /// Up to [_maxRetries] retry attempts are made with exponential backoff
-  /// (200ms, 400ms, 800ms). Network-level errors (socket exceptions, client
-  /// exceptions) are not retried. Timeout is enforced per attempt if
-  /// [timeout] is set.
-  Future<http.Response> _requestWithRetry(
-    String path,
-    Future<http.Response> Function() requestFn,
-  ) async {
-    for (int attempt = 0; attempt <= _maxRetries; attempt++) {
+    for (var attempt = 0;; attempt++) {
+      final canRetry = attempt < maxRetries;
       http.Response response;
-
       try {
-        final future = requestFn();
-        response = timeout != null
-            ? await future.timeout(timeout!)
-            : await future;
-      } on http.ClientException catch (e) {
-        throw ChekiException(
-          'HTTP request failed: ${e.message}',
-          path: path,
-        );
-      } on SocketException catch (e) {
-        throw ChekiException(
-          'Network error: ${e.message}',
-          path: path,
-        );
+        final future = method == 'POST'
+            ? httpClient.post(uri, headers: headers, body: jsonEncode(body))
+            : httpClient.get(uri, headers: headers);
+        response = timeout != null ? await future.timeout(timeout!) : await future;
       } on TimeoutException {
-        throw ChekiException(
-          'Request timed out after ${timeout?.inSeconds ?? 30}s',
-          path: path,
-        );
+        throw ChekiTimeoutException('Request to $path timed out after ${timeout!.inMilliseconds}ms', path: path);
+      } on http.ClientException catch (e) {
+        if (canRetry) {
+          await Future<void>.delayed(_retryDelay(null));
+          continue;
+        }
+        throw ChekiException('HTTP request failed: ${e.message}', path: path);
       }
 
-      // Check if the response is retryable (429 or 5xx).
-      final isRetryable =
-          response.statusCode == 429 || response.statusCode >= 500;
+      final status = response.statusCode;
+      if (status >= 200 && status < 300) {
+        try {
+          final decoded = jsonDecode(response.body);
+          if (decoded is Map<String, dynamic>) return decoded;
+        } on FormatException {
+          // fall through
+        }
+        throw ChekiException('Unexpected response: expected a JSON object', statusCode: status, path: path);
+      }
 
-      if (isRetryable && attempt < _maxRetries) {
-        // Exponential backoff: 200ms, 400ms, 800ms.
-        final backoff = _baseBackoff * (1 << attempt);
-        await Future.delayed(backoff);
+      final retryAfter = parseRetryAfter(response.headers['retry-after']);
+      final retryable = status == 429 || status >= 500;
+      if (retryable && canRetry && (retryAfter == null || retryAfter <= _maxRetryAfter)) {
+        await Future<void>.delayed(_retryDelay(retryAfter));
         continue;
       }
-
-      // Non-retryable or retries exhausted - validate status and return.
-      _checkStatus(response);
-      return response;
-    }
-
-    // Unreachable: the loop always returns or throws.
-    // Included to satisfy the analyzer's flow analysis.
-    throw ChekiException('Max retries exceeded', path: path);
-  }
-
-  void _checkStatus(http.Response response) {
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      String? apiError;
-      try {
-        final json = jsonDecode(response.body) as Map<String, dynamic>;
-        apiError = json['error'] as String?;
-      } catch (_) {
-        // Response body is not JSON; use raw body.
-        apiError = response.body.isNotEmpty ? response.body : null;
-      }
-      throw ChekiException(
-        apiError ?? 'HTTP ${response.statusCode}',
-        statusCode: response.statusCode,
-      );
+      throw ChekiException.fromResponse(response, path, retryAfter);
     }
   }
 
-  Map<String, dynamic> _decodeJson(http.Response response) {
-    try {
-      final decoded = jsonDecode(response.body);
-      if (decoded is! Map<String, dynamic>) {
-        throw ChekiException(
-          'Unexpected response format: expected a JSON object',
-          statusCode: response.statusCode,
-        );
-      }
-      return decoded;
-    } on FormatException catch (e) {
-      throw ChekiException(
-        'Failed to decode JSON response: ${e.message}',
-        statusCode: response.statusCode,
-      );
-    }
+  Duration _retryDelay(Duration? retryAfter) => retryAfter ?? Duration(milliseconds: 1000 + _random.nextInt(1000));
+}
+
+/// Parses a Retry-After header (delta-seconds or HTTP-date).
+Duration? parseRetryAfter(String? value, [DateTime? now]) {
+  if (value == null || value.trim().isEmpty) return null;
+  final v = value.trim();
+  final secs = int.tryParse(v);
+  if (secs != null && secs >= 0) return Duration(seconds: secs);
+  try {
+    final at = parseHttpDate(v);
+    final d = at.difference(now ?? DateTime.now().toUtc());
+    return d.isNegative ? Duration.zero : Duration(seconds: (d.inMilliseconds / 1000).round());
+  } on FormatException {
+    return null;
   }
 }
 
-/// An exception thrown by the cheki client when an API request fails.
+/// Thrown when an API request fails.
+///
+/// Status codes: 400 bad input, 404 unsupported bank, 413 body too large,
+/// 422 receipt not found or not a valid receipt, 429 rate limited, 502 bank
+/// unreachable, 500 internal error.
 class ChekiException implements Exception {
-  /// A human-readable error message.
+  /// A human-readable message (the server's text when it sent one).
   final String message;
 
-  /// The HTTP status code associated with the error, if applicable.
+  /// HTTP status, when there was a response.
   final int? statusCode;
 
-  /// The API path that was called, if applicable.
+  /// API path that was called.
   final String? path;
 
+  /// For geo-blocked banks: open this link in a browser in Ethiopia instead.
+  final String? fallbackUrl;
+
   /// Constructs a [ChekiException].
-  const ChekiException(
-    this.message, {
-    this.statusCode,
-    this.path,
-  });
+  const ChekiException(this.message, {this.statusCode, this.path, this.fallbackUrl});
+
+  /// Builds the right exception type for an error response.
+  factory ChekiException.fromResponse(http.Response response, String path, Duration? retryAfter) {
+    String? serverMessage;
+    String? fallbackUrl;
+    try {
+      final json = jsonDecode(response.body);
+      if (json is Map<String, dynamic>) {
+        serverMessage = json['error'] is String ? json['error'] as String : null;
+        fallbackUrl = json['fallbackUrl'] is String ? json['fallbackUrl'] as String : null;
+      }
+    } on FormatException {
+      serverMessage = response.body.isNotEmpty ? response.body : null;
+    }
+    final status = response.statusCode;
+    final message = serverMessage ?? 'HTTP $status';
+    if (status == 429) {
+      return ChekiRateLimitException(message, path: path, retryAfter: retryAfter);
+    }
+    if (status == 413) return ChekiPayloadTooLargeException(message, path: path);
+    return ChekiException(message, statusCode: status, path: path, fallbackUrl: fallbackUrl);
+  }
 
   @override
   String toString() {
     final parts = <String>[message];
     if (statusCode != null) parts.add('status: $statusCode');
     if (path != null) parts.add('path: $path');
-    return 'ChekiException(${parts.join(', ')})';
+    if (fallbackUrl != null) parts.add('fallbackUrl: $fallbackUrl');
+    return '$runtimeType(${parts.join(', ')})';
   }
+}
+
+/// HTTP 429. [retryAfter] is the server's Retry-After, when sent.
+class ChekiRateLimitException extends ChekiException {
+  final Duration? retryAfter;
+
+  const ChekiRateLimitException(super.message, {super.path, this.retryAfter}) : super(statusCode: 429);
+}
+
+/// HTTP 413: the request body is over the route's cap.
+class ChekiPayloadTooLargeException extends ChekiException {
+  const ChekiPayloadTooLargeException(super.message, {super.path}) : super(statusCode: 413);
+}
+
+/// An attempt timed out. Timeouts are not retried.
+class ChekiTimeoutException extends ChekiException {
+  const ChekiTimeoutException(super.message, {super.path});
+}
+
+/// Invalid input caught before any request was made.
+class ChekiValidationException extends ChekiException {
+  const ChekiValidationException(super.message);
 }
