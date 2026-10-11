@@ -30,6 +30,7 @@ import { checkAccountSuffix, checkPhone, checkReference } from "../security/refe
 /** Receipts verified at the same time in one batch. */
 export const BATCH_CONCURRENCY = 5;
 const MAX_QR_LENGTH = 4096;
+const MAX_BANK_LENGTH = 32;
 
 function asOptionalString(v: unknown): string | undefined {
   return typeof v === "string" ? v : undefined;
@@ -155,6 +156,12 @@ export class Verifier {
     const bank = input.bank;
     if (!bank) {
       return err({ kind: "MISSING_INPUT", field: "bank", message: "Bank is required." });
+    }
+
+    // Bank codes are short. A huge value is neither looked up, fuzzy-matched
+    // (suggestBank is quadratic in its input) nor echoed back in full.
+    if (bank.length > MAX_BANK_LENGTH) {
+      return err({ kind: "BANK_NOT_SUPPORTED", bank: bank.slice(0, MAX_BANK_LENGTH) });
     }
 
     const manifestEntry = getBank(bank);
@@ -322,9 +329,27 @@ export class Verifier {
       });
     }
 
+    // Both parts must be checkable before anything is fetched. A QR with an
+    // invalid reference, or a receiving account that is missing or masked
+    // ("1****42674"), can't be looked up at BOA, so it is an error, never a
+    // decoded-only result.
     const digits = manifestEntry.accountDigits ?? 5;
-    const refOk = checkReference(decoded.reference).ok;
-    const accountOk = !!decoded.receiverAccount && checkAccountSuffix(decoded.receiverAccount, digits).ok;
+    const refCheck = checkReference(decoded.reference);
+    if (!refCheck.ok) {
+      return err({
+        kind: "EXTRACTION_ERROR",
+        bank: manifestEntry.name,
+        message: "The QR code does not contain a valid BOA reference, so it can't be checked with the bank.",
+      });
+    }
+    const accountCheck = decoded.receiverAccount ? checkAccountSuffix(decoded.receiverAccount, digits) : null;
+    if (!accountCheck || !accountCheck.ok) {
+      return err({
+        kind: "EXTRACTION_ERROR",
+        bank: manifestEntry.name,
+        message: "The QR code does not contain a full receiving account number, so it can't be checked with the bank.",
+      });
+    }
 
     const decodedOnly = (): Result<Receipt, ChekiError> =>
       ok({
@@ -333,18 +358,13 @@ export class Verifier {
         decodedOnly: true,
         bank: manifestEntry.name,
         bankCode: manifestEntry.id,
-        reference: decoded.reference!,
+        reference: refCheck.value,
         sourceUrl: "qr://boa",
         durationMs: Date.now() - startTime,
       });
 
-    if (!refOk || !accountOk) {
-      // Nothing usable to look up at the bank.
-      return decodedOnly();
-    }
-
     const lookup = await this.resolve(
-      { bank: "boa", reference: decoded.reference, accountNumber: decoded.receiverAccount },
+      { bank: "boa", reference: refCheck.value, accountNumber: decoded.receiverAccount },
       startTime,
       depth + 1
     );
@@ -366,7 +386,8 @@ export class Verifier {
       return lookup;
     }
 
-    // BOA could not be reached: show what the QR says, clearly unconfirmed.
+    // A real lookup was attempted and BOA could not be reached: show what the
+    // QR says, clearly unconfirmed. decodedOnly is only ever reached here.
     if (lookup.error.kind === "ENDPOINT_ERROR") return decodedOnly();
 
     // BOA answered and has no matching receipt (or it failed the gate).
