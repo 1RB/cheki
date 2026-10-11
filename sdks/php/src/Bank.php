@@ -5,111 +5,96 @@ declare(strict_types=1);
 namespace Cheki;
 
 /**
- * Represents a supported bank returned by GET /api/banks.
- *
- * Mirrors the full BankInfo response from the cheki API.
+ * A supported bank or wallet from GET /api/banks.
  */
 class Bank
 {
-    public ?string $code;
+    /** Bank id, the value to pass as $bank to verify() (e.g. 'cbe'). */
+    public string $id;
+    /** @deprecated Use $id. Kept as an alias with the same value. */
+    public string $code;
     public ?string $name;
-    public ?string $status;
+    public ?string $swift;
+    /** 'bank', 'mobile' or 'wallet'. */
     public ?string $type;
+    /** 'live' or 'in-development'. */
+    public ?string $status;
     public bool $requiresAccount;
+    /** Trailing account digits the bank needs, when it needs an account. */
     public ?int $accountDigits;
     public bool $requiresPhone;
-    public ?string $responseType;
     public ?string $endpoint;
-    public bool $sslVerify;
-    public ?string $notes;
     public ?string $color;
     public ?string $initials;
-
-    /** @var array<string, mixed> */
+    /** @var array<string, mixed>|null */
     public ?array $raw;
 
+    /** @param array<string, mixed>|null $raw */
     public function __construct(
-        ?string $code = null,
+        string $id = '',
         ?string $name = null,
         ?string $status = null,
         ?string $type = null,
         bool $requiresAccount = false,
         ?int $accountDigits = null,
         bool $requiresPhone = false,
-        ?string $responseType = null,
         ?string $endpoint = null,
-        bool $sslVerify = true,
-        ?string $notes = null,
         ?string $color = null,
         ?string $initials = null,
+        ?string $swift = null,
         ?array $raw = null
     ) {
-        $this->code             = $code;
-        $this->name             = $name;
-        $this->status           = $status;
-        $this->type             = $type;
-        $this->requiresAccount  = $requiresAccount;
-        $this->accountDigits    = $accountDigits;
-        $this->requiresPhone    = $requiresPhone;
-        $this->responseType     = $responseType;
-        $this->endpoint         = $endpoint;
-        $this->sslVerify        = $sslVerify;
-        $this->notes            = $notes;
-        $this->color            = $color;
-        $this->initials         = $initials;
-        $this->raw              = $raw;
+        $this->id              = $id;
+        $this->code            = $id;
+        $this->name            = $name;
+        $this->status          = $status;
+        $this->type            = $type;
+        $this->requiresAccount = $requiresAccount;
+        $this->accountDigits   = $accountDigits;
+        $this->requiresPhone   = $requiresPhone;
+        $this->endpoint        = $endpoint;
+        $this->color           = $color;
+        $this->initials        = $initials;
+        $this->swift           = $swift;
+        $this->raw             = $raw;
     }
 
-    /**
-     * @param array<string, mixed> $data
-     */
+    /** @param array<string, mixed> $data */
     public static function fromArray(array $data): self
     {
+        $str = static fn (string $k): ?string => isset($data[$k]) && is_scalar($data[$k]) ? (string) $data[$k] : null;
         return new self(
-            code:            isset($data['code']) ? (string) $data['code'] : null,
-            name:            isset($data['name']) ? (string) $data['name'] : null,
-            status:          isset($data['status']) ? (string) $data['status'] : null,
-            type:            isset($data['type']) ? (string) $data['type'] : null,
-            requiresAccount: isset($data['requiresAccount']) ? (bool) $data['requiresAccount'] : false,
-            accountDigits:   isset($data['accountDigits']) ? (int) $data['accountDigits'] : null,
-            requiresPhone:   isset($data['requiresPhone']) ? (bool) $data['requiresPhone'] : false,
-            responseType:    isset($data['responseType']) ? (string) $data['responseType'] : null,
-            endpoint:        isset($data['endpoint']) ? (string) $data['endpoint'] : null,
-            sslVerify:       isset($data['sslVerify']) ? (bool) $data['sslVerify'] : true,
-            notes:           isset($data['notes']) ? (string) $data['notes'] : null,
-            color:           isset($data['color']) ? (string) $data['color'] : null,
-            initials:        isset($data['initials']) ? (string) $data['initials'] : null,
+            id:              (string) ($str('id') ?? $str('code') ?? ''),
+            name:            $str('name'),
+            status:          $str('status'),
+            type:            $str('type'),
+            requiresAccount: ($data['requiresAccount'] ?? false) === true,
+            accountDigits:   isset($data['accountDigits']) && is_numeric($data['accountDigits']) ? (int) $data['accountDigits'] : null,
+            requiresPhone:   ($data['requiresPhone'] ?? false) === true,
+            endpoint:        $str('endpoint'),
+            color:           $str('color'),
+            initials:        $str('initials'),
+            swift:           $str('swift'),
             raw:             $data
         );
     }
 
-    /**
-     * Whether this bank is currently live and available.
-     */
     public function isLive(): bool
     {
         return $this->status === 'live';
     }
 
-    /**
-     * Whether this bank is currently active/available.
-     */
-    public function isActive(): bool
-    {
-        return $this->status === 'live' || $this->status === 'active' || $this->status === 'online';
-    }
-
-    /**
-     * Whether this is a bank (as opposed to a wallet).
-     */
     public function isBank(): bool
     {
         return $this->type === 'bank';
     }
 
-    /**
-     * Whether this is a wallet (as opposed to a bank).
-     */
+    /** Mobile money (Telebirr, M-Pesa, eBirr). */
+    public function isMobile(): bool
+    {
+        return $this->type === 'mobile';
+    }
+
     public function isWallet(): bool
     {
         return $this->type === 'wallet';
