@@ -16,6 +16,14 @@
  *  6. In-page anchors clear the sticky nav (#faq landed under it).
  *  7. Nothing paints literal white on var(--ink), which is near-white in
  *     dark mode (the POST badge on /developers was 1.2:1).
+ *  8. Theme: one shared Light/Dark/System control (header and menu), set
+ *     before first paint by a plain inline script (next/script's
+ *     beforeInteractive waited for the runtime and flashed the wrong
+ *     palette), 44px in the menu with the whole row tappable, en + am
+ *     strings, and no motion under prefers-reduced-motion.
+ *  9. Language: the same segmented control (English / አማርኛ), header and
+ *     menu, no dropdown, selection drawn from html[data-locale] set before
+ *     first paint.
  */
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, resolve } from "node:path";
@@ -146,5 +154,96 @@ describe("mobile: wrapping, anchors and dark contrast", () => {
       }
     }
     expect(offenders).toEqual([]);
+  });
+});
+
+describe("mobile: theme control", () => {
+  const chrome = read("src/components/Chrome.tsx");
+  const layout = read("src/app/layout.tsx");
+
+  it("is one shared component, used by the header and the menu, with nothing else toggling the theme", () => {
+    expect(chrome.match(/<ThemeControl\b/g)).toHaveLength(2);
+    expect(chrome).toContain('<ThemeControl variant="compact" />');
+    expect(chrome).toContain('<ThemeControl labelledBy="nmm-theme-label" />');
+    const writers = tsxFiles.filter((f) => /setAttribute\(\s*"data-theme"|localStorage\.setItem\(\s*["']cheki-theme/.test(readFileSync(f, "utf8")));
+    expect(writers.map((f) => f.replace(root, ""))).toEqual([]);
+  });
+
+  it("the theme is set by a plain inline script in <head>, not next/script", () => {
+    expect(layout).not.toMatch(/from "next\/script"/);
+    expect(layout).toMatch(/<script id="cheki-theme-init" dangerouslySetInnerHTML=\{\{ __html: THEME_INIT_SCRIPT \}\} \/>/);
+    expect(layout).toMatch(/<html [^>]*suppressHydrationWarning/);
+  });
+
+  it("the control is a radiogroup of aria-checked radios", () => {
+    const src = read("src/components/segmented-control.tsx");
+    expect(src).toContain('role="radiogroup"');
+    expect(src).toContain('role="radio"');
+    expect(src).toMatch(/aria-checked=\{checked\}/);
+    // no placeholder-until-mounted: the selection is CSS-driven from data-theme-pref
+    expect(src + read("src/components/theme-control.tsx")).not.toMatch(/setMounted|mounted\)/);
+    for (const p of ["light", "dark", "system"]) {
+      expect(globals).toContain(`html[data-theme-pref="${p}"] .tc-opt[data-v="${p}"]::before`);
+    }
+  });
+
+  it("menu options are 44px (38px + 3px track padding) and fill the 52px row", () => {
+    expect(globals).toMatch(/^\.tc \{[^}]*padding: 3px/m);
+    expect(globals).toMatch(/^\.tc-opt \{[^}]*min-height: 0; height: 38px/m);
+    // options are sized to their labels: no equal-width grid that overflows a 360px row
+    expect(globals).toMatch(/^\.tc \{[^}]*display: inline-flex/m);
+    expect(globals).toMatch(/\.nmm-row--setting \.tc-opt::after \{[^}]*top: -7px; bottom: -7px/);
+    expect(globals).toMatch(/@media \(pointer: coarse\) \{ \.tc--compact \.tc-opt \{[^}]*height: 38px/);
+  });
+
+  it("the desktop header only shows where it fits (1024px+); below that, the menu", () => {
+    expect(globals).toMatch(/@media \(max-width: 1023px\) \{\s*\.nav-desktop \{ display: none !important; \}/);
+    expect(globals).toContain("@media (min-width: 1024px) { .nav-mobile-actions { display: none; } }");
+  });
+
+  it("has no motion under prefers-reduced-motion", () => {
+    expect(globals).toMatch(/@media \(prefers-reduced-motion: reduce\) \{\s*\.tc-opt, \.tc-opt::before \{ transition: none; \}/);
+  });
+
+  it("has English and Amharic strings", async () => {
+    const { translations } = await import("@/lib/i18n/translations");
+    for (const locale of ["en", "am"] as const) {
+      const theme = (translations[locale] as unknown as { theme?: Record<string, string> }).theme;
+      expect(theme, locale).toBeDefined();
+      for (const k of ["label", "light", "dark", "system"]) expect(theme?.[k], `${locale}.theme.${k}`).toBeTruthy();
+    }
+    expect(chrome).toContain('t("theme.label")');
+  });
+});
+
+describe("mobile: language control", () => {
+  const chrome = read("src/components/Chrome.tsx");
+  const layout = read("src/app/layout.tsx");
+  const switcher = read("src/components/language-switcher.tsx");
+
+  it("is the shared segmented control in both places, not a dropdown", () => {
+    expect(chrome).toContain('<LanguageSwitcher variant="compact" />');
+    expect(chrome).toContain('<LanguageSwitcher variant="full" labelledBy="nmm-lang-label" />');
+    expect(switcher).toContain("<SegmentedControl");
+    expect(switcher).not.toMatch(/aria-expanded|useState|mousedown/);
+    // the old dropdown marked the current locale in brand green; green means bank-confirmed only
+    expect(switcher).not.toMatch(/--green/);
+    expect(read("src/components/theme-control.tsx")).toContain("<SegmentedControl");
+  });
+
+  it("both settings rows are whole-row tappable 44px rows sharing one class", () => {
+    expect(chrome.match(/className="nmm-row nmm-row--setting" onClick=\{onSettingRowClick\}/g)).toHaveLength(2);
+    expect(globals).toMatch(/\.nmm-row--setting \.tc-opt::after \{[^}]*top: -7px; bottom: -7px/);
+  });
+
+  it("the selection is drawn from html[data-locale] (every locale), set inline before first paint", async () => {
+    expect(layout).toMatch(/<script id="cheki-locale-init" dangerouslySetInnerHTML=\{\{ __html: LOCALE_INIT_SCRIPT \}\} \/>/);
+    const { translations } = await import("@/lib/i18n/translations");
+    for (const l of Object.keys(translations)) expect(globals).toContain(`html[data-locale="${l}"] .tc-opt[data-v="${l}"]::before`);
+  });
+
+  it("options carry their language so Amharic is pronounced as Amharic", () => {
+    expect(read("src/components/segmented-control.tsx")).toMatch(/lang=\{o\.lang\}/);
+    expect(switcher).toMatch(/lang: code/);
   });
 });

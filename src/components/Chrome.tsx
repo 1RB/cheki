@@ -8,10 +8,16 @@ import { createPortal } from "react-dom";
 import { Icon, GithubIcon, Menu01Icon, Cancel01Icon, ArrowRight01Icon, Search01Icon } from "@/components/Icon";
 import { useTranslation } from "@/lib/i18n/use-translation";
 import { LanguageSwitcher } from "@/components/language-switcher";
-import { ThemeToggle } from "@/components/motion/theme-toggle";
+import { ThemeControl } from "@/components/theme-control";
+import { selectNextInRow } from "@/components/segmented-control";
 
 // The palette (and its search index) loads on the first ⌘K or click only.
 const CommandPalette = dynamic(() => import("@/components/motion/command-palette"), { ssr: false });
+
+function onSettingRowClick(e: React.MouseEvent<HTMLDivElement>) {
+  if ((e.target as HTMLElement).closest('[role="radiogroup"]')) return;
+  selectNextInRow(e.currentTarget);
+}
 
 /**
  * Mobile menu as a real modal: focus moves in on open and is kept inside,
@@ -77,13 +83,15 @@ function MobileMenu({ links, onClose, t }: { links: { href: string; label: strin
           ))}
         </div>
         <div className="nmm-group">
-          <div className="nmm-row">
-            <span>{t("language.switch")}</span>
-            <LanguageSwitcher />
+          {/* Settings rows: the whole row is tappable. The options fill the
+              row's height, and a tap on the label selects the next option. */}
+          <div className="nmm-row nmm-row--setting" onClick={onSettingRowClick}>
+            <span id="nmm-lang-label">{t("language.switch")}</span>
+            <LanguageSwitcher variant="full" labelledBy="nmm-lang-label" />
           </div>
-          <div className="nmm-row">
-            <span>Theme</span>
-            <ThemeToggle size={36} />
+          <div className="nmm-row nmm-row--setting" onClick={onSettingRowClick}>
+            <span id="nmm-theme-label">{t("theme.label")}</span>
+            <ThemeControl labelledBy="nmm-theme-label" />
           </div>
           <a href="https://github.com/1RB/cheki" target="_blank" rel="noopener noreferrer" onClick={onClose} className="nmm-gh">
             <Icon icon={GithubIcon} size={18} color="var(--ink)" />
@@ -158,8 +166,8 @@ export function Nav() {
             <button type="button" className="nav-icon-btn" onClick={() => setPaletteOpen(true)} aria-label="Search (⌘K)" aria-haspopup="dialog">
               <Icon icon={Search01Icon} size={17} color="var(--ink-3)" />
             </button>
-            <LanguageSwitcher />
-            <ThemeToggle />
+            <LanguageSwitcher variant="compact" />
+            <ThemeControl variant="compact" />
             <a href="https://github.com/1RB/cheki" target="_blank" rel="noopener noreferrer" className="nav-gh">
               <Icon icon={GithubIcon} size={15} color="var(--ink-2)" />
               GitHub
