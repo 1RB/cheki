@@ -7,6 +7,15 @@ name: Endpoint health
 # GitHub runners are outside Ethiopia, so geo-restricted endpoints (Telebirr,
 # M-Pesa) are recorded as "not-checked". A self-hosted runner on an Ethiopian
 # network can set CHEKI_CHECK_GEO=1 to check them too.
+#
+# status.json is only committed when a result changes (timestamps ignored).
+# Every commit to main redeploys production, and a deploy starts fresh
+# instances and a fresh CDN cache, which throws away the 5-minute /api/health
+# cache. A daily timestamp-only commit would do that every day for nothing.
+#
+# The probe job runs repo code and dependencies, so it only gets a read-only
+# token (not even persisted to disk). The commit job runs no repo code: it
+# downloads the file, checks its shape and size, and pushes it.
 
 on:
   schedule:
@@ -14,18 +23,24 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: endpoint-health
   cancel-in-progress: false
 
 jobs:
-  check:
+  probe:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      contents: read
+    outputs:
+      changed: ${{ steps.diff.outputs.changed }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - uses: actions/setup-node@v4
         with:
@@ -37,14 +52,63 @@ jobs:
       - name: Probe bank endpoints
         env:
           CHEKI_RUNNER: GitHub Actions (ubuntu-latest)
-        run: npx tsx scripts/health-check.ts
-
-      - name: Commit status.json
         run: |
-          if git diff --quiet -- public/status.json; then
-            echo "No changes."
-            exit 0
-          fi
+          cp public/status.json "$RUNNER_TEMP/status.previous.json"
+          npx tsx scripts/health-check.ts
+
+      - name: Did any result change?
+        id: diff
+        run: |
+          node -e '
+            const fs = require("fs");
+            const strip = (f) => {
+              const j = JSON.parse(fs.readFileSync(f, "utf8"));
+              delete j.generatedAt;
+              for (const b of j.banks ?? []) delete b.checkedAt;
+              return JSON.stringify(j);
+            };
+            const changed = strip(process.env.RUNNER_TEMP + "/status.previous.json") !== strip("public/status.json");
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, "changed=" + changed + "\n");
+            console.log(changed ? "Results changed." : "No result changed; nothing to commit.");
+          '
+
+      - if: steps.diff.outputs.changed == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: status-json
+          path: public/status.json
+          retention-days: 3
+
+  commit:
+    needs: probe
+    if: needs.probe.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: status-json
+          path: ${{ runner.temp }}/status
+
+      - name: Validate and commit status.json
+        run: |
+          f="$RUNNER_TEMP/status/status.json"
+          size=$(stat -c %s "$f")
+          if [ "$size" -gt 262144 ]; then echo "status.json is too large ($size bytes)"; exit 1; fi
+          node -e '
+            const j = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"));
+            const ok = typeof j.generatedAt === "string" && Array.isArray(j.banks) && j.banks.length < 200 &&
+              j.banks.every((b) => typeof b.id === "string" && /^[a-z0-9-]{1,40}$/.test(b.id) &&
+                ["live", "in-development", "degraded", "not-checked"].includes(b.status) &&
+                (b.observed === undefined || (typeof b.observed === "string" && b.observed.length <= 200)) &&
+                (b.detail === undefined || (typeof b.detail === "string" && b.detail.length <= 500)));
+            if (!ok) { console.error("status.json failed validation"); process.exit(1); }
+          ' "$f"
+          cp "$f" public/status.json
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add public/status.json
