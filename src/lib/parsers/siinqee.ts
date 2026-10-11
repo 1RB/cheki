@@ -10,6 +10,19 @@
 import { BaseParser } from "./base";
 import { EBirrParser } from "./ebirr";
 import type { ParsedReceipt } from "../core/types";
+import { parseEbirrReference, buildEbirrUrl, type Checked } from "../security/reference";
+
+/** Tenants on receipt.ebirr.com that belong to Siinqee (Cooperative Bank of Oromia). */
+const SIINQEE_TENANTS = new Set(["siinqee", "coop"]);
+
+function parseSiinqee(ref: string): Checked<{ tenant: string; token: string }> {
+  const parsed = parseEbirrReference(ref, "siinqee");
+  if (!parsed.ok) return parsed;
+  if (!SIINQEE_TENANTS.has(parsed.value.tenant)) {
+    return { ok: false, message: "That eBirr receipt was not issued by Siinqee Bank." };
+  }
+  return parsed;
+}
 
 export class SiinqeeParser extends BaseParser {
   readonly bankId = "siinqee";
@@ -21,21 +34,17 @@ export class SiinqeeParser extends BaseParser {
 
   private ebirrParser = new EBirrParser();
 
+  normalizeReference(ref: string): Checked<string> {
+    const parsed = parseSiinqee(ref);
+    if (!parsed.ok) return parsed;
+    return { ok: true, value: `${parsed.value.tenant}/${parsed.value.token}` };
+  }
+
   buildUrl(ref: string): string {
-    const cleaned = ref.trim();
-
-    // If it's already a full URL, use it directly
-    if (cleaned.startsWith("http")) {
-      return cleaned;
-    }
-
-    // If it already has a tenant prefix (e.g., "siinqee/abc123"), use as-is
-    if (cleaned.includes("/")) {
-      return `https://receipt.ebirr.com/${cleaned}`;
-    }
-
-    // Otherwise, prepend the siinqee tenant
-    return `https://receipt.ebirr.com/siinqee/${cleaned}`;
+    // Rebuilt from the fixed eBirr host; a user-supplied URL is never fetched as is.
+    const parsed = parseSiinqee(ref);
+    if (!parsed.ok) throw new Error(parsed.message);
+    return buildEbirrUrl(parsed.value.tenant, parsed.value.token);
   }
 
   parse(data: string | Buffer, contentType: string): ParsedReceipt {
