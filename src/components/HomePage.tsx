@@ -5,6 +5,7 @@ import Link from "next/link";
 import { motion } from "motion/react";
 import jsQR from "jsqr";
 import { banks, detectBank, type BankCode, type VerifyResult } from "@/lib/banks";
+import { classifyStatus } from "@/lib/core/status";
 import { detectBankFromUrl, isUrl } from "@/lib/adapters/url-detector";
 import { articles } from "@/lib/guides";
 import { homeFaqs } from "@/lib/home-faq";
@@ -676,7 +677,7 @@ export function HomePage() {
    A repeat check of the same receipt returns "cached": true instantly, so
    re-verifying before releasing goods costs nothing.
 4. To reconcile many receipts, POST ${origin}/api/verify/batch with
-   {"receipts": [{...}, ...]}, up to 50 per call.
+   {"receipts": [{...}, ...]}, up to 20 per call.
 5. GET ${origin}/api/health reports per-bank latency if a check is slow.
 
 Source: https://github.com/1RB/cheki
@@ -744,7 +745,8 @@ ${receipt}`;
     fetch('https://cheki.et/api/parse',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({bank:bank,html:html,url:url})})
     .then(function(r){return r.json();})
     .then(function(d){
-      if(d.success){
+      if(d.success&&(d.verified||d.parsed)){
+        var esc=function(v){return String(v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});};
         var rows=[];
         if(d.senderName)rows.push(['From',d.senderName]);
         if(d.receiverName)rows.push(['To',d.receiverName]);
@@ -757,8 +759,8 @@ ${receipt}`;
         if(d.invoiceNumber&&d.invoiceNumber!==d.reference)rows.push(['Invoice',d.invoiceNumber]);
         if(d.transactionStatus)rows.push(['Status',d.transactionStatus]);
         if(d.paymentMode)rows.push(['Mode',d.paymentMode]);
-        var rh=rows.map(function(r){return '<div style="display:flex;justify-content:space-between;padding:7px 0;font-size:14px;border-bottom:1px solid #f0f0f0"><span style="color:#888;flex-shrink:0">'+r[0]+'</span><span style="color:#1a1a1a;font-weight:500;text-align:right;word-break:break-word">'+r[1]+'</span></div>';}).join('');
-        b.innerHTML='<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="11" fill="#16a34a"/><path d="M7 12.5l3 3 7-7" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg><span style="font-size:16px;font-weight:700;color:#1a1a1a">Receipt verified</span></div><div style="border-top:1px solid #eee;padding-top:8px">'+rh+'</div><div style="display:flex;gap:8px;margin-top:16px"><a href="https://cheki.et" target="_blank" style="flex:1;text-align:center;padding:10px;border:1px solid #16a34a;border-radius:8px;background:#fff;color:#16a34a;font-size:13px;font-weight:600;text-decoration:none">Open cheki</a><button onclick="document.getElementById(\\'cheki-overlay\\').remove()" style="flex:1;padding:10px;border:none;border-radius:8px;background:#16a34a;color:#fff;font-size:13px;font-weight:600;cursor:pointer">Done</button></div>';
+        var rh=rows.map(function(r){return '<div style="display:flex;justify-content:space-between;padding:7px 0;font-size:14px;border-bottom:1px solid #f0f0f0"><span style="color:#888;flex-shrink:0">'+esc(r[0])+'</span><span style="color:#1a1a1a;font-weight:500;text-align:right;word-break:break-word">'+esc(r[1])+'</span></div>';}).join('');
+        b.innerHTML='<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="11" fill="#d97706"/><path d="M12 7v6M12 16.5v.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" fill="none"/></svg><span style="font-size:16px;font-weight:700;color:#1a1a1a">Read from this page, not checked by cheki</span></div><div style="border-top:1px solid #eee;padding-top:8px">'+rh+'</div><div style="display:flex;gap:8px;margin-top:16px"><a href="https://cheki.et" target="_blank" style="flex:1;text-align:center;padding:10px;border:1px solid #16a34a;border-radius:8px;background:#fff;color:#16a34a;font-size:13px;font-weight:600;text-decoration:none">Open cheki</a><button onclick="document.getElementById(\\'cheki-overlay\\').remove()" style="flex:1;padding:10px;border:none;border-radius:8px;background:#16a34a;color:#fff;font-size:13px;font-weight:600;cursor:pointer">Done</button></div>';
       }else{
         b.innerHTML='<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px"><svg width="20" height="20" viewBox="0 0 24 24" fill="#dc2626"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15h2v-2h-2v2zm0-4h2V7h-2v6z"/></svg><span style="font-size:15px;font-weight:600;color:#dc2626">Could not verify</span></div><p style="font-size:13px;color:#666;margin-bottom:16px;line-height:1.5">'+(d.error||'Make sure you are on the bank receipt page.')+'</p><button onclick="document.getElementById(\\'cheki-overlay\\').remove()" style="width:100%;padding:10px;border:none;border-radius:8px;background:#f3f4f6;color:#1a1a1a;font-size:14px;font-weight:600;cursor:pointer">Close</button>';
       }
@@ -794,7 +796,7 @@ ${receipt}`;
   const features = [
     { title: "1-3 second verification", body: "Fetch receipts from bank endpoints in real time. Fast enough for checkout counters." },
     { title: "No API key, no signup", body: "Start verifying immediately. No account, no business plan, no credit limit." },
-    { title: "Batch verification", body: "Verify up to 50 receipts in a single API call. Perfect for end-of-day reconciliation." },
+    { title: "Batch verification", body: "Verify up to 20 receipts in a single API call. Perfect for end-of-day reconciliation." },
     { title: "Python library", body: "pip install cheki. Server-side verification from Ethiopian networks. CLI included." },
     { title: "Self-host with Docker", body: "Run cheki on your own infrastructure. Bypass geo-blocks with an Ethiopian IP." },
     { title: "Structured JSON", body: "Every bank returns the same response shape. Write the integration once." },
@@ -1288,7 +1290,7 @@ ${receipt}`;
                       disabled={fallbackLoading || !pasteContent.trim()}
                       style={{ width: "100%", marginTop: "10px", padding: "12px 20px", fontSize: "14px", fontWeight: 600, border: "none", borderRadius: "8px", background: fallbackLoading || !pasteContent.trim() ? "var(--border)" : "var(--green)", color: fallbackLoading || !pasteContent.trim() ? "var(--ink-3)" : "var(--bg)", cursor: fallbackLoading || !pasteContent.trim() ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", minHeight: "44px" }}
                     >
-                      {fallbackLoading ? (<><span className="spin" style={{ width: "16px", height: "16px", border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "#fff", borderRadius: "50%", display: "inline-block" }} /> Parsing...</>) : "Verify pasted content"}
+                      {fallbackLoading ? (<><span className="spin" style={{ width: "16px", height: "16px", border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "#fff", borderRadius: "50%", display: "inline-block" }} /> Parsing...</>) : "Read pasted content"}
                     </button>
                     {fallbackError && (
                       <div className="t-shake" style={{ marginTop: "10px", padding: "10px 14px", borderRadius: "8px", background: "var(--red-light)", border: "1px solid #fecaca" }}>
@@ -1346,7 +1348,7 @@ ${receipt}`;
 
                     <div style={{ padding: "12px 14px", borderRadius: "8px", background: "var(--surface)", border: "1px solid color-mix(in srgb, var(--amber) 30%, transparent)" }}>
                       <p style={{ fontSize: "12px", color: "var(--amber-text)", lineHeight: 1.5 }}>
-                        After installing, the bookmarklet reads the receipt page and sends it to cheki for parsing. An overlay appears on the page showing the verified result. No data is stored.
+                        After installing, the bookmarklet reads the receipt page and sends it to cheki for parsing. An overlay appears on the page showing what it read. No data is stored.
                       </p>
                     </div>
                   </div>
@@ -1622,13 +1624,38 @@ function ReceiptCard({ result, copied, onCopy, onReset }: { result: VerifyResult
     return () => cancelAnimationFrame(raf);
   }, []);
 
-  if (!result.verified) return null;
+  // Three honest states: confirmed by the bank (verified), decoded from a
+  // BOA QR the bank could not confirm (decodedOnly), or read from text the
+  // user pasted (parsed). The last two are never shown as verified.
+  const unconfirmed = !result.verified && (result.decodedOnly || result.parsed);
+  if (!result.verified && !unconfirmed) return null;
 
   // cbe-new is a parser alias for the same institution as cbe.
   const bankCode = result.bank === "cbe-new" ? "cbe" : (result.bank ?? "");
   const bankInfo = banks.find((b) => b.code === bankCode);
   const bankName = bankInfo?.name ?? result.bank ?? "Bank";
-  const status = result.transactionStatus || "Verified";
+  const statusTone = classifyStatus(result.transactionStatus);
+  const unconfirmedLabel = result.decodedOnly
+    ? "Decoded from QR, not confirmed with the bank"
+    : "Parsed from your text, not checked with the bank";
+  // A non-success status (Failed, Pending, Reversed, ...) is never green.
+  const tone: "green" | "amber" | "red" =
+    statusTone === "failure" ? "red" : unconfirmed ? "amber" : "green";
+  const status = unconfirmed
+    ? (result.decodedOnly ? "Not confirmed" : "Not checked")
+    : result.transactionStatus || "Verified";
+  const pillStyle =
+    tone === "green"
+      ? undefined
+      : tone === "red"
+        ? { color: "var(--red-text)", background: "var(--red-light)", borderColor: "color-mix(in srgb, var(--red) 40%, transparent)" }
+        : { color: "var(--amber-text)", background: "var(--amber-light)", borderColor: "color-mix(in srgb, var(--amber) 50%, transparent)" };
+  const sourceIsLink = typeof result.sourceUrl === "string" && result.sourceUrl.startsWith("https://");
+  const bannerText = [
+    unconfirmed ? `${unconfirmedLabel}.` : "",
+    result.decodedOnly ? "Anyone can create a QR code like this, so do not release goods on it alone." : "",
+    tone === "red" ? `The receipt lists the transaction as "${result.transactionStatus}". It is not a completed payment.` : "",
+  ].filter(Boolean).join(" ");
   const amount = result.amount != null ? `${result.amount.toLocaleString()} ${result.currency || "ETB"}` : null;
   const senderAccount = result.senderAccount || result.bankAccountNumber;
   const receiverAccount = result.receiverAccount;
@@ -1654,7 +1681,10 @@ function ReceiptCard({ result, copied, onCopy, onReset }: { result: VerifyResult
   // The header copies the receipt as readable text, the shape someone drops
   // into a message. The JSON stays behind the disclosure below, for machines.
   const copySummary = () => {
-    const lines = ["Receipt verified by cheki", `Bank: ${bankName} (${status})`];
+    const lines = [
+      unconfirmed ? `NOT VERIFIED: ${unconfirmedLabel}` : tone === "red" ? `Bank status: ${status}` : "Receipt verified by cheki",
+      `Bank: ${bankName} (${unconfirmed && result.transactionStatus ? result.transactionStatus : status})`,
+    ];
     if (amount) lines.push(`Amount: ${amount}`);
     if (result.date) lines.push(`Date: ${result.date}`);
     const from = [result.senderName, senderAccount].filter(Boolean).join(" · ");
@@ -1683,14 +1713,18 @@ function ReceiptCard({ result, copied, onCopy, onReset }: { result: VerifyResult
           </div>
         </div>
         <div className="rc-head-right">
-          <span className="rc-status">
+          <span className="rc-status" style={pillStyle} data-tone={tone}>
             <motion.span
               initial={{ opacity: 0, scale: 0.5, rotate: -45 }}
               animate={{ opacity: 1, scale: 1, rotate: 0 }}
               transition={{ type: "spring", stiffness: 260, damping: 18, mass: 0.8, delay: 0.12 }}
               style={{ display: "inline-flex" }}
             >
-              <Icon icon={CheckmarkCircle01Icon} size={15} color="var(--green)" />
+              {tone === "green" ? (
+                <Icon icon={CheckmarkCircle01Icon} size={15} color="var(--green)" />
+              ) : (
+                <Icon icon={Alert01Icon} size={15} color={tone === "red" ? "var(--red-text)" : "var(--amber-text)"} />
+              )}
             </motion.span>
             {status}
           </span>
@@ -1700,6 +1734,24 @@ function ReceiptCard({ result, copied, onCopy, onReset }: { result: VerifyResult
           </button>
         </div>
       </div>
+
+      {(unconfirmed || tone === "red") && (
+        <div
+          role="status"
+          style={{
+            margin: "0 14px 4px",
+            padding: "10px 12px",
+            borderRadius: "8px",
+            fontSize: "13px",
+            lineHeight: 1.5,
+            ...(tone === "red"
+              ? { background: "var(--red-light)", color: "var(--red-text)", border: "1px solid color-mix(in srgb, var(--red) 30%, transparent)" }
+              : { background: "var(--amber-light)", color: "var(--amber-text)", border: "1px solid color-mix(in srgb, var(--amber) 40%, transparent)" }),
+          }}
+        >
+          {bannerText}
+        </div>
+      )}
 
       {/* How much */}
       <div className="rc-amount">
@@ -1767,7 +1819,7 @@ function ReceiptCard({ result, copied, onCopy, onReset }: { result: VerifyResult
         </div>
       )}
 
-      {result.sourceUrl && (
+      {sourceIsLink && (
         <div className="rc-foot">
           <p className="rc-section-title">Source (public bank endpoint)</p>
           <a href={result.sourceUrl} target="_blank" rel="noopener noreferrer" className="rc-source">
