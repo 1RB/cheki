@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Nav, Footer } from "@/components/Chrome";
 import { CodeBlock } from "@/components/CodeBlock";
 import { DocsSidebar } from "@/components/docs/DocsSidebar";
@@ -15,6 +16,7 @@ const sections = [
   { id: "receipt", label: "GET /api/receipt", group: "Endpoints" },
   { id: "sdks", label: "SDKs", group: "SDKs" },
   { id: "errors", label: "Error Codes", group: "Reference" },
+  { id: "bank-endpoints", label: "Bank endpoints", group: "Reference" },
   { id: "self-host", label: "Self-hosting", group: "Reference" },
 ];
 
@@ -977,6 +979,12 @@ docker-compose up -d
                   </tbody>
                 </table>
               </div>
+
+              {/* Bank endpoints */}
+              <SectionTitle id="bank-endpoints">Bank endpoints</SectionTitle>
+              <p style={{ fontSize: "15px", color: "var(--ink-2)", lineHeight: 1.7, marginBottom: "12px" }}>
+                The <Link href="/endpoints" style={{ color: "var(--green-dark)", fontWeight: 600 }}>endpoint reference</Link> lists every bank receipt URL cheki reads, with placeholders, unknown-reference error shapes and a dated changelog. It is generated from the manifest. Daily health checks are on the <Link href="/status" style={{ color: "var(--green-dark)", fontWeight: 600 }}>status page</Link>.
+              </p>
 
               {/* Self-hosting */}
               <SectionTitle id="self-host">Self-hosting with Docker</SectionTitle>
