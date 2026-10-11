@@ -7,7 +7,7 @@ import { I18nProvider } from "@/lib/i18n/context";
 
 const SITE_URL = "https://cheki.et";
 
-// Latin subset of Inter (30 KB, wght 400-800), built by scripts/subset-font.sh
+// Latin subset of Inter (46 KB, wght 400-800), built by scripts/subset-font.sh
 // from the full 352 KB variable font. `display: optional` means a slow
 // connection keeps the metric-matched fallback for this page view instead of
 // repainting the hero when the font lands: the swap was the LCP.

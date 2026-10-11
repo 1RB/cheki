@@ -3,7 +3,7 @@
    is above the fold on a 390px phone. */
 
 .hp-hero { padding-top: 20px; padding-bottom: 8px; }
-.hp-hero-grid { display: grid; grid-template-columns: 1fr; gap: 20px; align-items: start; }
+.hp-hero-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; align-items: start; }
 .hp-title {
   font-size: clamp(28px, 7.4vw, 46px); line-height: 1.06; font-weight: 800; letter-spacing: -0.035em;
   color: var(--ink); max-width: 15ch; text-wrap: balance;
@@ -14,6 +14,7 @@
 .hp-trust li::before { content: ""; width: 6px; height: 6px; border-radius: 999px; background: var(--green); }
 .hp-hero-desktop-extra { display: none; margin-top: 28px; }
 .hp-panel {
+  min-width: 0;
   scroll-margin-top: calc(var(--nav-h) + 16px);
   background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 18px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03), 0 18px 40px -24px rgba(0, 0, 0, 0.18);

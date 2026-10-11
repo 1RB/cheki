@@ -87,6 +87,8 @@ export interface PresentOptions {
   /** The browser reported it is offline, or fetch threw. */
   offline?: boolean;
   checks?: FraudCheck[];
+  /** What the user entered, shown when the response carries no reference. */
+  reference?: string;
   t?: Translate;
 }
 
@@ -132,7 +134,7 @@ export function presentVerdict(result: VerifyResult | null | undefined, opts: Pr
     ? { code: bankInfo.code, name: bankInfo.name, shortName: bankInfo.shortName, type: bankInfo.type, geoBlocked: bankInfo.geoBlocked }
     : undefined;
   const short = bank?.shortName ?? t("verify.verdict.theBank");
-  const reference = str(result?.reference);
+  const reference = str(result?.reference) ?? str(opts.reference);
   const fallbackUrl = str(result?.fallbackUrl) && HTTPS.test(result!.fallbackUrl!) ? result!.fallbackUrl : undefined;
   const base = { bank, checks, reference, showDetails: false } as const;
 

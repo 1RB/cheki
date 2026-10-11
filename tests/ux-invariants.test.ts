@@ -166,10 +166,17 @@ describe("theme palette", () => {
   });
 
   it("never falls back to a literal light foreground on a filled button", () => {
-    const button = read("src/components/motion/stateful-button.tsx");
-    expect(button).not.toMatch(/:\s*"#fff"/);
-    expect(button).toContain("var(--green-cta-fg)");
-    expect(button).toContain("var(--red-cta-fg)");
+    // The verify panel's filled buttons (submit, primary card action, CTA).
+    const verifyCss = read("src/components/verify/verify.css");
+    const homeCss = read("src/components/home/home.css");
+    for (const src of [verifyCss, homeCss]) {
+      for (const m of src.matchAll(/([^{}]+)\{([^{}]*background:\s*var\(--green-cta\)[^{}]*)\}/g)) {
+        expect(m[2], `${m[1].trim()} needs a token foreground`).toContain("var(--green-cta-fg)");
+        expect(m[2]).not.toMatch(/color:\s*#fff/i);
+      }
+    }
+    expect(verifyCss).toContain("var(--green-cta-fg)");
+    expect(read("src/app/globals.css")).toContain("--red-cta-fg");
   });
 });
 
@@ -177,9 +184,9 @@ describe("cross-page anchors", () => {
   it("gives every linked id a real target", () => {
     expect(read("src/components/HomePage.tsx")).toContain('id="verify"');
     expect(read("src/app/verify/[slug]/page.tsx")).toContain('id="faq"');
-    // The bank page's link to the full checker lives in its inline BankChecker.
-    expect(read("src/app/banks/[code]/page.tsx")).toContain("<BankChecker");
-    expect(read("src/components/BankChecker.tsx")).toContain("/#verify");
+    // The bank page's link to the full checker lives in its locked VerifyPanel.
+    expect(read("src/app/banks/[code]/page.tsx")).toContain("<VerifyPanel");
+    expect(read("src/components/verify/VerifyInput.tsx")).toContain("/#verify");
   });
 });
 

@@ -1,7 +1,8 @@
 /**
- * The /banks/[code] BankChecker (added by #3) follows the same rule as the
- * homepage after #28: only verificationState() === "verified" is green, and
- * decodedOnly / parsed / 429 / 413 / non-JSON answers are handled.
+ * The /banks/[code] checker (added by #3 as BankChecker, now the shared
+ * VerifyPanel locked to its bank) follows the same rule as the homepage after
+ * #28: only verificationState() === "verified" is green, and decodedOnly /
+ * parsed / 429 / 413 / non-JSON answers are handled.
  */
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
@@ -11,35 +12,46 @@ import { verificationState } from "@/lib/banks";
 
 const read = (p: string) => readFileSync(join(__dirname, "..", "..", p), "utf8");
 
-describe("BankChecker labelling", () => {
-  const src = read("src/components/BankChecker.tsx");
+describe("bank page checker labelling", () => {
+  const verdict = read("src/lib/verify/verdict.ts");
+  const css = read("src/components/verify/verify.css");
+  const page = read("src/app/banks/[code]/page.tsx");
+
+  it("the bank page uses the shared VerifyPanel locked to its bank", () => {
+    expect(page).toMatch(/<VerifyPanel lockedBank=\{bank\.code\} \/>/);
+    expect(page).not.toMatch(/BankChecker/);
+  });
 
   it("decides green with verificationState(), not success or verified !== false", () => {
-    expect(src).toMatch(/verificationState\(result\)/);
-    expect(src).not.toMatch(/verified\s*!==\s*false/);
-    expect(src).not.toMatch(/result\?\.success\s*&&\s*result\.verified/);
-    // The green background is only reachable from the verified state.
-    for (const m of src.matchAll(/var\(--green-light\)/g)) {
-      const before = src.slice(Math.max(0, (m.index ?? 0) - 80), m.index);
-      expect(before).toMatch(/state === "verified"/);
+    expect(verdict).toMatch(/verificationState\(result\)/);
+    expect(verdict).not.toMatch(/verified\s*!==\s*false/);
+    expect(verdict).not.toMatch(/result\?\.success\s*&&\s*result\.verified/);
+    // The green tint is only reachable from the green (verified) tone.
+    for (const m of css.matchAll(/--vc-tint: var\(--green-light\)/g)) {
+      const before = css.slice(Math.max(0, (m.index ?? 0) - 80), m.index);
+      expect(before).toMatch(/\.vc\[data-tone="green"\]/);
     }
   });
 
   it("has amber copy for decodedOnly and parsed", () => {
-    expect(src).toMatch(/state === "decodedOnly"/);
-    expect(src).toMatch(/state === "parsed"/);
-    expect(src).toMatch(/not confirmed with the bank/i);
+    expect(verdict).toMatch(/state === "decodedOnly"/);
+    expect(verdict).toMatch(/state === "parsed"/);
+    expect(read("src/lib/i18n/translations.ts")).toMatch(/not confirmed with the bank/i);
   });
 
   it("reads responses through readVerifyResponse (429/413/non-JSON)", () => {
-    expect(src).toMatch(/readVerifyResponse\(resp\)/);
-    expect(src).not.toMatch(/await resp\.json\(\)/);
+    const client = read("src/lib/verify/client.ts");
+    expect(client).toMatch(/readVerifyResponse\(resp\)/);
+    expect(client).not.toMatch(/await resp\.json\(\)/);
   });
 
-  it("the homepage reads every verify/parse response the same way", () => {
-    const home = read("src/components/HomePage.tsx");
-    expect(home).not.toMatch(/=\s*await resp\.json\(\)/);
-    expect(home.match(/readVerifyResponse\(resp\)/g)?.length).toBeGreaterThanOrEqual(5);
+  it("every verify/parse request in the UI goes through the client", () => {
+    const files = ["VerifyPanel.tsx", "BatchPanel.tsx", "GeoFallback.tsx", "VerdictCard.tsx", "VerifyInput.tsx"].map((f) => read(`src/components/verify/${f}`));
+    for (const src of files) {
+      expect(src).not.toMatch(/fetch\(\s*["'`]\/api\/(verify|parse)/);
+      expect(src).not.toMatch(/=\s*await resp\.json\(\)/);
+    }
+    expect(files.join("\n").match(/postJson\(/g)?.length).toBeGreaterThanOrEqual(3);
   });
 });
 

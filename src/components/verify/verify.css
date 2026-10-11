@@ -8,7 +8,7 @@
   overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
 }
 
-.vp { display: flex; flex-direction: column; gap: 16px; }
+.vp { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 .vp-form { display: flex; flex-direction: column; gap: 12px; }
 
 /* Input */
@@ -206,7 +206,7 @@
   background: var(--vc-tint); color: var(--vc-ink);
 }
 .vc-headtext { min-width: 0; display: flex; flex-direction: column; gap: 4px; padding-top: 1px; }
-.vc-title { font-size: 20px; line-height: 1.25; font-weight: 750; letter-spacing: -0.02em; color: var(--vc-ink); }
+.vc-title { font-size: 19px; line-height: 1.25; font-weight: 750; letter-spacing: -0.02em; color: var(--vc-ink); }
 .vc[data-tone="neutral"] .vc-title { color: var(--ink); }
 .vc-sub { font-size: 14px; line-height: 1.5; color: var(--ink-2); }
 
@@ -350,6 +350,7 @@
 
 @media (min-width: 560px) {
   .vc { padding: 24px; }
+  .vc-title { font-size: 21px; }
   .vc-actions { display: flex; flex-wrap: wrap; }
   .vc-btn--primary, .vc-btn--ghost { grid-column: auto; }
   .vc-btn--ghost { margin-left: auto; }
@@ -377,3 +378,19 @@
   }
   .vc-no-print { display: none !important; }
 }
+
+/* Quiet disclosures: undo the site-wide FAQ styling of <details>. */
+.vp details.vp-older, .vp details.vc-details {
+  margin: 0; border: none; border-radius: 0; background: none; overflow: visible;
+}
+.vp details.vc-details { border-top: 1px solid var(--border); }
+.vp details.vp-older summary, .vp details.vc-details summary {
+  padding: 0; font-size: 13px; background: none; border-bottom: none;
+}
+.vp details.vp-older summary::after { display: none; }
+.vp details.vc-details summary::after {
+  content: "+"; width: auto; height: auto; background: none; transform: none; margin-left: auto;
+}
+.vp details.vc-details[open] summary::after { content: "\2212"; }
+.vp details.vp-older > p { padding: 0; font-size: 13px; color: var(--ink-3); }
+.vp details.vp-older:hover, .vp details.vc-details:hover { border-color: var(--border); }

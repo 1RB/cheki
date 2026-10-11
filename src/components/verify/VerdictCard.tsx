@@ -52,7 +52,8 @@ function prettyDate(raw: string): string {
   if (!/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(raw)) return raw;
   const d = new Date(raw);
   if (Number.isNaN(d.getTime())) return raw;
-  return d.toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: false });
+  // Receipt times are Ethiopian bank times: show them on the bank's clock.
+  return d.toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Africa/Addis_Ababa" });
 }
 
 function splitAmount(value: number): { whole: string; cents?: string } {

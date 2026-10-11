@@ -51,6 +51,8 @@ interface Outcome {
   checks: FraudCheck[];
   checkedAt: Date;
   bankCode?: string;
+  /** The reference as entered (or read out of the link). */
+  reference?: string;
 }
 
 function isEditable(el: EventTarget | null): boolean {
@@ -100,7 +102,7 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
   const verdict = useMemo(
     () =>
       outcome
-        ? presentVerdict(outcome.result, { bankCode: outcome.bankCode, checkedAt: outcome.checkedAt, checks: outcome.checks, t })
+        ? presentVerdict(outcome.result, { bankCode: outcome.bankCode, checkedAt: outcome.checkedAt, checks: outcome.checks, reference: outcome.reference, t })
         : null,
     [outcome, t]
   );
@@ -197,7 +199,8 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
       const nextHistory = addVerified(historyRef.current, result, { bank: bankCode, ref: d.value }, checkedAt);
       historyRef.current = nextHistory;
       setHistory(nextHistory);
-      setOutcome({ result, checks, checkedAt, bankCode });
+      const enteredRef = d.kind === "url" ? d.urlReference : d.kind === "reference" ? d.value : undefined;
+      setOutcome({ result, checks, checkedAt, bankCode, reference: enteredRef });
       setPhase("done");
     },
     [extra, lockedBank, overrideBank, t]
@@ -314,7 +317,7 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
   const busy = phase === "checking" || phase === "reading";
   const idleBanks = useMemo(() => {
     const names = liveBanks.map((b) => b.shortName);
-    return names.length > 4 ? `${names.slice(0, 4).join(", ")} +${names.length - 4}` : names.join(", ");
+    return names.length > 3 ? `${names.slice(0, 3).join(", ")} +${names.length - 3} more` : names.join(", ");
   }, []);
 
   return (

@@ -168,7 +168,7 @@ export default function GeoFallback({ bankCode, bankName, receiptUrl, t, onResul
             </a>
             <button type="button" className="vc-btn vc-btn--small" onClick={copyBookmarklet}>
               <Icon icon={copied ? CopyCheckIcon : Copy01Icon} size={14} />
-              {copied ? t("verify.actions.copied") : t("verify.actions.copy")}
+              {copied ? t("verify.actions.copied") : t("verify.browser.copyLink")}
             </button>
           </div>
           {copied && <p className="gf-steps" role="status">{t("verify.browser.bookmarkletCopied")}</p>}

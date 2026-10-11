@@ -33,9 +33,9 @@ export const translations = {
     },
     verify: {
       inputLabel: "Receipt link, reference or QR",
-      inputPlaceholder: "Paste a receipt link or reference",
-      inputPlaceholderBank: "Paste a {bank} receipt link or reference",
-      inputHint: "Paste, drop a screenshot, or scan the QR. Enter checks it.",
+      inputPlaceholder: "Receipt link or reference",
+      inputPlaceholderBank: "{bank} link or reference",
+      inputHint: "Link, reference, screenshot or QR",
       submit: "Check receipt",
       submitBank: "Check {bank} receipt",
       checking: "Checking with {bank}…",
@@ -46,11 +46,11 @@ export const translations = {
       bankSelect: "Bank",
       autoDetect: "Auto-detect",
       detect: {
-        idle: "Works with {banks}",
+        idle: "{banks}",
         link: "{bank} receipt link",
         reference: "{bank} reference",
         older: "{bank} older receipt",
-        boaQr: "BOA QR code. BOA confirms it.",
+        boaQr: "BOA QR code",
         chosen: "{bank} (chosen)",
         ambiguous: "{a} or {b}? Pick the bank.",
         unknownUrl: "We can't read a bank from this link yet.",
@@ -89,6 +89,7 @@ export const translations = {
         readingPaste: "Reading…",
         bookmarkletSteps: "Drag this button to your bookmarks bar. On any Telebirr or M-Pesa receipt page, click it to read the receipt.",
         bookmarkletButton: "Read with cheki",
+        copyLink: "Copy link",
         bookmarkletCopied: "Copied. Create a bookmark and paste this as its address.",
         bookmarkletPrivacy: "The bookmarklet sends the receipt page to cheki to read it. Nothing is stored.",
       },
@@ -157,6 +158,9 @@ export const translations = {
       checks: {
         seenBefore: "Checked before on this device",
         seenBeforeDetail: "First checked {when}. A receipt pays once: make sure it is not being reused.",
+      },
+      copy: {
+        notVerified: "NOT VERIFIED",
       },
       actions: {
         copy: "Copy result",

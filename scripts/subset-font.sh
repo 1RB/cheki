@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Rebuild src/app/fonts/inter-latin.woff2 from the full Inter variable font.
+# Rebuild src/app/fonts/inter-latin.woff2 (~46 KB) from the full Inter variable font.
 #
 # The full InterVariable.woff2 is ~352 KB (Latin, Latin Extended, Cyrillic,
 # Greek, Vietnamese, two axes). The site only renders Latin text in Inter
@@ -22,12 +22,12 @@ trap 'rm -rf "$TMP"' EXIT
 
 mkdir -p "$(dirname "$OUT")"
 
-# 1. Pin opsz, limit wght (variable font instancer).
-fonttools varLib.instancer "$SRC" opsz=14 wght=400:800 -o "$TMP/inter-instanced.ttf"
+# 1. Limit wght (variable font instancer). Do not pin opsz (see above).
+fonttools varLib.instancer "$SRC" wght=400:800 -o "$TMP/inter-instanced.ttf"
 
 # 2. Subset to the glyphs the site renders.
 pyftsubset "$TMP/inter-instanced.ttf" \
-  --unicodes="U+0020-007E,U+00A0-00FF,U+0131,U+0152-0153,U+02C6,U+02DA,U+02DC,U+2000-206F,U+2190-2193,U+2192,U+20AC,U+2122,U+2212,U+2715,U+2713" \
+  --unicodes="U+0020-007E,U+00A0-00FF,U+0131,U+0152-0153,U+02C6,U+02DA,U+02DC,U+2000-206F,U+2190-2193,U+20AC,U+2122,U+2212,U+2715,U+2713" \
   --layout-features="kern,liga,calt,tnum,case" \
   --no-hinting \
   --desubroutinize \

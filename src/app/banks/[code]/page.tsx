@@ -137,10 +137,6 @@ export default async function BankPage({ params }: { params: Promise<{ code: str
           </div>
         </div>
 
-        <p style={{ color: "var(--ink-2)", fontSize: "17px", lineHeight: 1.6, maxWidth: "680px", marginBottom: "32px" }}>
-          {bank.description}
-        </p>
-
         {isLive && (
           <section id="check" aria-label={`${bank.shortName} receipt checker`} className="bank-check">
             <VerifyPanel lockedBank={bank.code} />
@@ -150,6 +146,10 @@ export default async function BankPage({ params }: { params: Promise<{ code: str
             </p>
           </section>
         )}
+
+        <p style={{ color: "var(--ink-2)", fontSize: "17px", lineHeight: 1.6, maxWidth: "680px", marginBottom: "32px" }}>
+          {bank.description}
+        </p>
 
         {!isLive && (
           <ContributeBox
