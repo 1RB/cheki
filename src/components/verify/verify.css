@@ -141,6 +141,7 @@
 .gf-panel { display: flex; flex-direction: column; gap: 10px; }
 .gf-steps, .gf-note { font-size: 13px; line-height: 1.55; color: var(--ink-2); }
 .gf-note { color: var(--ink-3); font-size: 12px; }
+.gf-textarea::placeholder { font-family: var(--sans); letter-spacing: 0; }
 .gf-textarea {
   width: 100%; min-height: 110px; padding: 12px; resize: vertical; border-radius: 10px;
   border: 1px solid var(--border); background: var(--bg); color: var(--ink); font-family: var(--mono); font-size: 13px;
@@ -182,9 +183,9 @@
 .vp-result:empty { display: none; }
 /* scrollIntoView clears the sticky header */
 .vp-result { scroll-margin-top: calc(var(--nav-h, 56px) + 12px); }
-/* Focus lands on the heading programmatically; outline never shifts layout. */
-.vc-title:focus { outline: none; }
-.vc-title:focus-visible { outline: 2px solid var(--vc-accent); outline-offset: 4px; border-radius: 4px; }
+/* Focus lands on the heading programmatically (tabindex=-1, not in the tab
+   order) so screen readers start there; it is not a control, so no ring. */
+.vc-title:focus, .vc-title:focus-visible { outline: none; }
 .vc {
   --vc-accent: var(--ink-3);
   --vc-tint: var(--surface-alt);
@@ -235,6 +236,8 @@
 .vc-meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px 16px; }
 .vc-meta > div { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
 .vc-meta dd { margin: 0; font-size: 14px; color: var(--ink); overflow-wrap: anywhere; }
+/* A long receipt ID (from a link) gets its own row instead of breaking mid-ID. */
+.vc-meta > .vc-meta-wide { grid-column: 1 / -1; }
 .vc-mono { font-family: var(--mono); font-size: 13px; }
 .vc-bank { display: inline-flex; align-items: center; gap: 6px; }
 

@@ -65,3 +65,19 @@ describe("recent checks", () => {
     expect(list[0].checkedAt).toBe(new Date(2).toISOString());
   });
 });
+
+describe("history: BOA QR payloads", () => {
+  const QR = Buffer.alloc(96, 7).toString("base64");
+  it("stores the bank's reference, never the QR payload", () => {
+    const mem = new Map<string, string>();
+    const s = { getItem: (k: string) => mem.get(k) ?? null, setItem: (k: string, v: string) => void mem.set(k, v), removeItem: (k: string) => void mem.delete(k) };
+    const list = addVerified([], { success: true, verified: true, bankCode: "boa", reference: "FT252003JZPP", amount: 5 }, { bank: "boa", ref: QR }, new Date(), s);
+    expect(list[0].ref).toBe("FT252003JZPP");
+    expect(mem.get(HISTORY_KEY)).not.toContain(QR.slice(0, 40));
+  });
+  it("drops a stored QR payload on read", () => {
+    const mem = new Map<string, string>([[HISTORY_KEY, JSON.stringify([{ bank: "boa", ref: QR, checkedAt: new Date().toISOString() }])]]);
+    const s = { getItem: (k: string) => mem.get(k) ?? null, setItem: (k: string, v: string) => void mem.set(k, v), removeItem: (k: string) => void mem.delete(k) };
+    expect(loadRecent(s)).toEqual([]);
+  });
+});

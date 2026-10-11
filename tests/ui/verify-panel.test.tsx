@@ -172,8 +172,11 @@ describe("VerifyPanel", () => {
   });
 
   it("a verdict already on screen is not scrolled", () => {
-    expect(verdictNeedsScroll({ top: 300, height: 500 }, 844, 56)).toBe(false);
-    expect(verdictNeedsScroll({ top: 700, height: 500 }, 844, 56)).toBe(true);
+    expect(verdictNeedsScroll({ top: 200, height: 900 }, 844, 56)).toBe(false);
+    expect(verdictNeedsScroll({ top: 300, height: 400 }, 844, 56)).toBe(false);
+    expect(verdictNeedsScroll({ top: 405, height: 700 }, 900, 56)).toBe(false); // desktop, beside the hero
+    expect(verdictNeedsScroll({ top: 530, height: 900 }, 844, 56)).toBe(true); // mobile, under the input
+    expect(verdictNeedsScroll({ top: 400, height: 900 }, 560, 56)).toBe(true); // short landscape viewport
     expect(verdictNeedsScroll({ top: 20, height: 500 }, 844, 56)).toBe(true);
   });
 });

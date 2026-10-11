@@ -104,7 +104,11 @@ export default function CommandPalette({ onClose }: Props) {
     document.getElementById(`${listId}-${active}`)?.scrollIntoView({ block: "nearest" });
   }, [active, listId]);
 
-  let lastGroup = "";
+  // Group header above the first item of each group (computed, not mutated in render).
+  const headers = useMemo(
+    () => filtered.map((item, i) => (item.group && item.group !== filtered[i - 1]?.group ? item.group : null)),
+    [filtered]
+  );
   return createPortal(
     <div className="cp-root">
       <div className="cp-backdrop" onClick={onClose} aria-hidden="true" />
@@ -135,8 +139,7 @@ export default function CommandPalette({ onClose }: Props) {
         <ul id={listId} role="listbox" aria-label="Results" className="cp-list">
           {filtered.length === 0 && <li className="cp-empty" role="presentation">{items.length ? "No results" : "Loading…"}</li>}
           {filtered.map((item, i) => {
-            const header = item.group && item.group !== lastGroup ? item.group : null;
-            lastGroup = item.group ?? lastGroup;
+            const header = headers[i];
             return (
               <li key={item.id} role="presentation">
                 {header && <span className="cp-group" aria-hidden="true">{header}</span>}

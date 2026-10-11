@@ -267,7 +267,10 @@ export function presentVerdict(result: VerifyResult | null | undefined, opts: Pr
       showDetails: true,
       sourceUrl,
       title: t("verify.verdict.verified.title", { bank: short }),
-      subtitle: t("verify.verdict.verified.subtitle", { bank: short, time: at }),
+      // A cached answer was confirmed earlier, not "at" this check.
+      subtitle: result.cached === true
+        ? t("verify.verdict.verified.subtitleCached", { bank: short })
+        : t("verify.verdict.verified.subtitle", { bank: short, time: at }),
     };
   }
 

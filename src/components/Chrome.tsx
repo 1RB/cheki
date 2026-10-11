@@ -230,35 +230,35 @@ export function Footer() {
             <p style={{ fontSize: "13px", color: "var(--ink-3)", lineHeight: 1.6, maxWidth: "280px" }}>
               {t("footer.tagline")}
             </p>
-            <a href="/guides/contribute-translations" style={{
+            <Link href="/guides/contribute-translations" prefetch={false} style={{
               display: "inline-flex", marginTop: "12px", fontSize: "13px", color: "var(--green-dark)", fontWeight: 600,
             }}>
               {t("language.contribute")}
-            </a>
+            </Link>
           </div>
           <div>
             <p style={{ fontSize: "12px", fontWeight: 600, color: "var(--ink-3)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "12px" }}>{t("footer.banks")}</p>
             <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
               {bankLinks.map((l) => (
-                <a key={l.href} href={l.href} style={{ fontSize: "13px", color: "var(--ink-2)" }}>{l.label}</a>
+                <Link key={l.href} href={l.href} prefetch={false} style={{ fontSize: "13px", color: "var(--ink-2)" }}>{l.label}</Link>
               ))}
-              <a href="/banks" style={{ fontSize: "13px", color: "var(--green-dark)", fontWeight: 600 }}>{t("footer.banks")}</a>
+              <Link href="/banks" prefetch={false} style={{ fontSize: "13px", color: "var(--green-dark)", fontWeight: 600 }}>{t("footer.banks")}</Link>
             </div>
           </div>
           <div>
             <p style={{ fontSize: "12px", fontWeight: 600, color: "var(--ink-3)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "12px" }}>{t("footer.guides")}</p>
             <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
               {guideLinks.map((l) => (
-                <a key={l.href} href={l.href} style={{ fontSize: "13px", color: "var(--ink-2)" }}>{l.label}</a>
+                <Link key={l.href} href={l.href} prefetch={false} style={{ fontSize: "13px", color: "var(--ink-2)" }}>{l.label}</Link>
               ))}
-              <a href="/guides" style={{ fontSize: "13px", color: "var(--green-dark)", fontWeight: 600 }}>{t("footer.allGuides")}</a>
+              <Link href="/guides" prefetch={false} style={{ fontSize: "13px", color: "var(--green-dark)", fontWeight: 600 }}>{t("footer.allGuides")}</Link>
             </div>
           </div>
           <div>
             <p style={{ fontSize: "12px", fontWeight: 600, color: "var(--ink-3)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "12px" }}>{t("footer.resources")}</p>
             <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
               {resourceLinks.map((l) => (
-                <a key={l.href} href={l.href} style={{ fontSize: "13px", color: "var(--ink-2)" }}>{l.label}</a>
+                <Link key={l.href} href={l.href} prefetch={false} style={{ fontSize: "13px", color: "var(--ink-2)" }}>{l.label}</Link>
               ))}
             </div>
           </div>

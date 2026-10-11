@@ -46,7 +46,7 @@ export function RecentChecks({ items, t, onUse, onRemove, onClear }: Props) {
           const bank = findBank(item.bank);
           return (
             <li key={`${item.bank}:${item.ref}`} className="rch-row">
-              <button type="button" className="rch-use" onClick={() => onUse(item)} aria-label={t("verify.recent.use", { ref: item.ref })}>
+              <button type="button" className="rch-use" onClick={() => onUse(item)} aria-label={t("verify.recent.use", { ref: shortRef(item.ref) })}>
                 <BankLogoByName code={bank?.code ?? item.bank} size={24} />
                 <span className="rch-ref">{shortRef(item.ref)}</span>
                 <span className="rch-meta">

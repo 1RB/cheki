@@ -248,6 +248,12 @@ src/
     guides.ts               # Guide articles data
     ease.ts                 # Custom easing functions
     highlight.ts            # Syntax highlighting
+    verify/
+      verdict.ts            # presentVerdict(): the one place a result gets a colour
+      detect.ts             # Live input detection (link, reference, BOA QR)
+      history.ts            # Recent checks: verified only, no names
+      client.ts             # /api/verify and /api/parse calls (429/413/offline)
+      summary.ts            # Copy/share text
     core/
       types.ts              # ParserPort interface, ParsedReceipt, Receipt types
       verifier.ts           # Bank-agnostic verifier
@@ -270,29 +276,32 @@ src/
     adapters/
       url-detector.ts       # Auto-detect bank from receipt URL
   components/
-    Chrome.tsx              # Nav and Footer
-    BankSelector.tsx        # Bank dropdown selector
+    Chrome.tsx              # Nav (modal mobile menu) and Footer
+    HomePage.tsx            # Homepage (server component)
     BankLogo.tsx            # Bank logo/initials component
     CodeBlock.tsx           # Syntax-highlighted code blocks
+    ContributeBox.tsx       # "Help us add <bank>" box for banks not live yet
     Icon.tsx                # Icon component
+    StatusPill.tsx          # Bank status pill
     language-switcher.tsx   # i18n language switcher
+    verify/
+      VerifyPanel.tsx       # The receipt checker (homepage; locked to one bank on /banks/[code])
+      VerifyInput.tsx       # One smart input with live bank detection
+      VerdictCard.tsx       # The verdict; colours come only from presentVerdict()
+      VerdictSkeleton.tsx   # Placeholder the verdict lands in (no layout shift)
+      RecentChecks.tsx      # Bank-confirmed checks on this device, no names
+      GeoFallback.tsx       # Telebirr / M-Pesa: open in your browser, paste back (lazy)
+      CameraScanner.tsx     # QR camera (lazy)
+      BatchPanel.tsx        # Several screenshots at once (lazy)
+    home/                   # Homepage pieces (agent prompt, client text)
     docs/
       DocsSidebar.tsx       # Docs navigation sidebar
       DocsTabs.tsx          # Docs tab navigation
     motion/
-      animated-badge.tsx    # Spring-animated badge
       bouncy-accordion.tsx  # Accordion with spring physics
-      command-palette.tsx   # Cmd+K command palette
+      command-palette.tsx   # Cmd+K command palette (lazy)
       glitch-404.tsx        # Glitch effect 404
-      magnetic-button.tsx   # Cursor-pull magnetic button (beUI)
-      not-found-404.tsx     # 404 page component
-      number-ticker.tsx     # Animated number counter
-      stateful-button.tsx   # Multi-state button
-      swipeable-list.tsx    # Swipe-to-delete mobile list
-      tabs.tsx              # Animated underline tabs
       theme-toggle.tsx      # Dark/light toggle (bare icon)
-      tilt-card.tsx         # 3D tilt card
-      toast-stack.tsx       # Toast notifications
 sdks/
   fixtures/                 # Shared API contract fixtures every SDK test decodes
   typescript/               # TypeScript SDK (npm: cheki-verify, GH Packages: @1rb/cheki-verify)

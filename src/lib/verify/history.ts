@@ -8,10 +8,14 @@
  * - Everything read back is re-validated, so a hand-edited or old-format entry
  *   cannot inject names or odd values into the page.
  *
+ * - A BOA QR payload is never stored: it carries the receipt's names (BOA
+ *   encrypts them, cheki can decrypt them). The bank's reference is kept.
+ *
  * The old `cheki_history` key held sender and receiver names. It is migrated
  * once (names dropped) and removed.
  */
 import { verificationState, type VerifyResult } from "@/lib/banks";
+import { isBoaQrPayload } from "@/lib/qr/decode";
 
 export interface RecentCheck {
   bank: string;
@@ -42,7 +46,7 @@ function clean(raw: unknown): RecentCheck | null {
   const ref = typeof r.ref === "string" ? r.ref.trim().slice(0, 200) : "";
   const bank = typeof r.bank === "string" ? r.bank.trim().slice(0, 40) : "";
   const when = typeof r.checkedAt === "string" ? r.checkedAt : typeof r.date === "string" ? r.date : "";
-  if (!ref || !bank || Number.isNaN(Date.parse(when))) return null;
+  if (!ref || !bank || isBoaQrPayload(ref) || Number.isNaN(Date.parse(when))) return null;
   const out: RecentCheck = { bank, ref, checkedAt: new Date(when).toISOString() };
   if (typeof r.amount === "number" && Number.isFinite(r.amount)) out.amount = r.amount;
   if (typeof r.currency === "string" && /^[A-Z]{3}$/.test(r.currency)) out.currency = r.currency;
@@ -111,8 +115,9 @@ export function addVerified(
   s: Store | null = store()
 ): RecentCheck[] {
   if (verificationState(result) !== "verified") return list;
-  const ref = (input.ref || result.reference || "").trim();
-  if (!ref) return list;
+  const entered = input.ref.trim();
+  const ref = (entered && !isBoaQrPayload(entered) ? entered : result.reference || "").trim();
+  if (!ref || isBoaQrPayload(ref)) return list;
   const entry: RecentCheck = { bank: input.bank, ref: ref.slice(0, 200), checkedAt: now.toISOString() };
   if (typeof result.amount === "number" && Number.isFinite(result.amount)) entry.amount = result.amount;
   if (typeof result.currency === "string" && /^[A-Z]{3}$/.test(result.currency)) entry.currency = result.currency;

@@ -87,7 +87,7 @@ export const translations = {
         pastePlaceholder: "Paste the receipt page text here",
         read: "Read pasted receipt",
         readingPaste: "Reading…",
-        bookmarkletSteps: "Drag this button to your bookmarks bar. On any Telebirr or M-Pesa receipt page, click it to read the receipt.",
+        bookmarkletSteps: "Drag this button to your bookmarks bar. On any Telebirr or M‑Pesa receipt page, click it to read the receipt.",
         bookmarkletButton: "Read with cheki",
         copyLink: "Copy link",
         bookmarkletCopied: "Copied. Create a bookmark and paste this as its address.",
@@ -95,7 +95,11 @@ export const translations = {
       },
       verdict: {
         theBank: "the bank",
-        verified: { title: "Verified with {bank}", subtitle: "Confirmed with {bank}'s own receipt record at {time}" },
+        verified: {
+          title: "Verified with {bank}",
+          subtitle: "Confirmed with {bank}'s own receipt record at {time}",
+          subtitleCached: "Confirmed with {bank}'s own receipt record on an earlier check (cheki's saved copy)",
+        },
         decodedOnly: {
           title: "Decoded from QR, not confirmed with the bank",
           subtitle: "{bank} could not be reached to confirm this QR code. Anyone can make a QR code like it.",

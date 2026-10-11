@@ -169,7 +169,7 @@ export function VerdictCard({ verdict, result, checkedAt, t, onAnother, onRetry 
             <div><dt>{t("verify.card.date")}</dt><dd>{prettyDate(v.date)}</dd></div>
           )}
           {v.reference && (
-            <div><dt>{t("verify.card.reference")}</dt><dd className="vc-mono">{v.reference}</dd></div>
+            <div className={v.reference.length > 14 ? "vc-meta-wide" : undefined}><dt>{t("verify.card.reference")}</dt><dd className="vc-mono">{v.reference}</dd></div>
           )}
           {v.bank && (
             <div>

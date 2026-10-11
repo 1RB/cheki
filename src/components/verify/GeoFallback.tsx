@@ -70,7 +70,13 @@ const BOOKMARKLET_URL = `javascript:${encodeURIComponent(BOOKMARKLET_CODE)}`;
 
 const noop = () => () => {};
 function useIsMobile(): boolean {
-  return useSyncExternalStore(noop, () => /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent), () => true);
+  // Bookmarklets need a bookmarks bar: lead with paste on touch screens too
+  // (an iPad in desktop mode reports a Mac user agent).
+  return useSyncExternalStore(
+    noop,
+    () => /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || window.matchMedia?.("(pointer: coarse)").matches === true,
+    () => true
+  );
 }
 
 interface Props {
@@ -98,7 +104,9 @@ export default function GeoFallback({ bankCode, bankName, receiptUrl, t, onResul
     setError(null);
     try {
       const data = await postJson("/api/parse", { bank: bankCode, content: content.trim(), url: receiptUrl });
-      if (data.success === true) onResult(data);
+      // Text the user brought back is never bank-confirmed, whatever the
+      // response says: force it to "parsed" so it can only ever be amber.
+      if (data.success === true) onResult({ ...data, verified: false, decodedOnly: undefined, parsed: true });
       else setError((data.error || "").replace(/^\s*\[[^\]]{1,60}\]\s*/, "") || t("verify.photo.failed"));
     } finally {
       setBusy(false);

@@ -147,7 +147,7 @@ a { color: inherit; text-decoration: none; }
 
 /* layout containers */
 .container { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
-.container-narrow { max-width: 760px; margin: 0 auto; padding: 0 24px; }
+
 .container-wide { max-width: 1280px; margin: 0 auto; padding: 0 24px; }
 @media (max-width: 640px) {
   .container, .container-narrow, .container-wide { padding: 0 16px; }
@@ -164,23 +164,17 @@ a { color: inherit; text-decoration: none; }
   .sticky-desktop { position: sticky; }
 }
 
-/* bento grid: 1 col mobile, 2 tablet, 3 desktop, with span support */
-.bento-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
-.bento-grid .bento-wide { grid-column: span 1; }
-
 @media (min-width: 640px) {
   .grid-2 { grid-template-columns: 1fr 1fr; }
   .grid-3 { grid-template-columns: repeat(2, 1fr); }
-  .bento-grid { grid-template-columns: repeat(2, 1fr); gap: 16px; }
-  .bento-grid .bento-wide { grid-column: span 2; }
+
 }
 
 @media (min-width: 900px) {
   .grid-2 { grid-template-columns: 1fr 1fr; gap: 24px; }
   .grid-3 { grid-template-columns: repeat(3, 1fr); gap: 18px; }
   .grid-4 { grid-template-columns: repeat(4, 1fr); gap: 12px; }
-  .bento-grid { grid-template-columns: repeat(3, 1fr); gap: 16px; }
-  .bento-grid .bento-wide { grid-column: span 2; }
+
 }
 
 /* hero grid - mobile: stacked, desktop: side by side */
@@ -209,7 +203,6 @@ a { color: inherit; text-decoration: none; }
   .two-col > article { order: 2 !important; }
   .toc-card { position: static !important; }
 }@media (hover: hover) {
-
 
 /* TOC link hover */
 .toc-link:hover { color: var(--green-dark) !important; border-left-color: var(--green) !important; }
@@ -248,15 +241,6 @@ a { color: inherit; text-decoration: none; }
   .footer-grid { grid-template-columns: 2fr 1fr 1fr 1fr 1fr !important; gap: 20px !important; }
 }
 
-/* bank grid - mobile: 2 cols, tablet: 4, desktop: 5 */
-.bank-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
-@media (min-width: 640px) {
-  .bank-grid { grid-template-columns: repeat(4, 1fr) !important; gap: 12px !important; }
-}
-@media (min-width: 900px) {
-  .bank-grid { grid-template-columns: repeat(5, 1fr) !important; }
-}
-
 /* price compare: stack on mobile, inline on desktop */
 .price-compare { flex-direction: column !important; }
 .price-compare > div { borderRight: none !important; borderBottom: 1px solid #fecaca; }
@@ -265,26 +249,6 @@ a { color: inherit; text-decoration: none; }
   .price-compare { flex-direction: row !important; }
   .price-compare > div { borderRight: 1px solid #fecaca !important; borderBottom: none !important; }
   .price-compare > div:last-child { borderRight: none !important; }
-}
-
-/* terminal endpoint list: stack columns on mobile */
-.endpoint-list a { grid-template-columns: 1fr auto !important; }
-.endpoint-list span:nth-child(2) { display: none !important; }
-@media (min-width: 640px) {
-  .endpoint-list a { grid-template-columns: 120px 1fr auto !important; }
-  .endpoint-list span:nth-child(2) { display: block !important; }
-}
-
-/* bento grid: 1 col mobile, 2 tablet, 3 desktop, with span support */
-.bento-grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
-.bento-grid .bento-wide { grid-column: span 1; }
-@media (min-width: 640px) {
-  .bento-grid { grid-template-columns: repeat(2, 1fr); }
-  .bento-grid .bento-wide { grid-column: span 2; }
-}
-@media (min-width: 900px) {
-  .bento-grid { grid-template-columns: repeat(3, 1fr); gap: 18px; }
-  .bento-grid .bento-wide { grid-column: span 2; }
 }
 
 /* guide list item hover */
@@ -428,34 +392,12 @@ a { color: inherit; text-decoration: none; }
 
 /* animations */
 @keyframes spin { to { transform: rotate(360deg); } }
-@keyframes bankSelectorSlideIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
-/* State-swap entrances. These classes are applied to conditionally rendered
-   blocks (account field, geo warning, photo banner), so they replay on every
-   bank switch. A one-shot keyframe animation cannot retarget mid-flight and
-   leaves content parked at opacity:0 if it is interrupted; a transition with
-   @starting-style can, and degrades to "no animation, content visible" on
-   engines without @starting-style. */
-.fade-up {
-  opacity: 1;
-  transform: none;
-  transition: opacity 0.3s ease-out, transform 0.3s ease-out;
-}
-.fade-in {
-  opacity: 1;
-  transition: opacity 0.2s ease-out;
-}
+
 @starting-style {
   .fade-up { opacity: 0; transform: translateY(12px); }
   .fade-in { opacity: 0; }
 }
 .spin { animation: spin 0.8s linear infinite; }
-
-@media (prefers-reduced-motion: reduce) {
-  .fade-up, .fade-in { transition: none; opacity: 1; transform: none; }
-}
-
-/* receipt dotted line */
-.dotted-line { border: none; border-top: 2px dotted var(--dotted); margin: 0; }
 
 /* prose styles for article content */
 .prose h2 { font-size: 20px; font-weight: 700; color: var(--ink); margin: 28px 0 10px; letter-spacing: -0.01em; }
@@ -687,306 +629,6 @@ details > p, details > div {
   details > p, details > div { padding: 12px 14px; font-size: 13px; }
 }
 
-/* The verify form is one field and one button on a single line: the form
-   reads as a single action rather than a stack of labelled controls. */
-.verify-row {
-  display: flex;
-  gap: 8px;
-  align-items: stretch;
-}
-.verify-input {
-  flex: 1;
-  min-width: 0;
-  padding: 13px 16px;
-  font-size: 16px;
-  font-family: var(--mono);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface);
-  color: var(--ink);
-}
-.verify-input:focus {
-  box-shadow: 0 0 0 3px var(--green-light);
-}
-@media (max-width: 560px) {
-  .verify-row { flex-direction: column; gap: 10px; }
-  .verify-input-wrap { flex: none; }
-}
-/* Three entry buttons (camera / upload / QR) do not fit side by side on a
-   phone: stack them so the labels stay on one line and stay tappable. */
-@media (max-width: 640px) {
-  .verify-alt-row { flex-direction: column; gap: 8px; }
-  .verify-alt-row .verify-alt-btn { width: 100%; min-height: 44px; }
-}
-
-
-/* ── Rolling placeholder ──────────────────────────────────────────────
-   While the field is empty it shows one live bank's real receipt URL,
-   rotating every 3s, with the reference token in the bank's colour. */
-.verify-input-wrap {
-  position: relative;
-  flex: 1;
-  min-width: 0;
-}
-.verify-input-wrap .verify-input {
-  width: 100%;
-}
-.ph-overlay {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  padding: 0 14px;
-  overflow: hidden;
-  white-space: nowrap;
-  pointer-events: none;
-  font-family: var(--mono);
-  font-size: 13px;
-}
-.ph-pop {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-  animation: ph-pop 0.4s cubic-bezier(0.2, 0.8, 0.3, 1) both;
-}
-/* Prefixes the rolling example so a chip naming a different bank reads as
-   "for example", not as the bank currently selected above. */
-.ph-eg {
-  flex-shrink: 0;
-  font-family: var(--sans);
-  font-size: 11px;
-  font-style: italic;
-  color: var(--ink-3);
-}
-.ph-name {
-  flex-shrink: 0;
-  font-family: var(--sans);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  padding: 2px 7px;
-  border: 1px solid;
-  border-radius: 999px;
-}
-.ph-url {
-  min-width: 0;
-  overflow: hidden;
-  color: var(--ink-3);
-}
-.ph-token {
-  font-weight: 700;
-}
-@keyframes ph-pop {
-  from { opacity: 0; transform: translateY(5px); }
-  to   { opacity: 1; transform: none; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .ph-pop { animation: none; }
-}
-
-/* ── Detected bank under the input ──────────────────────────────────── */
-.form-hint {
-  margin-top: 8px;
-  font-size: 12px;
-  line-height: 1.5;
-  color: var(--ink-3);
-}
-/* Why the primary button is grey. A disabled control that gives no reason is
-   indistinguishable from a broken one. */
-.form-hint--actionable {
-  color: var(--ink-2);
-  font-weight: 500;
-}
-/* Required marker next to a field label — the label alone doesn't say the
-   bank will reject an empty value. */
-.req-tag {
-  display: inline-block;
-  margin-left: 6px;
-  padding: 1px 6px;
-  border-radius: 4px;
-  background: var(--surface-alt);
-  border: 1px solid var(--border);
-  color: var(--ink-3);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  vertical-align: middle;
-}
-.detected-chip {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 8px;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--green-dark);
-}
-.detected-chip strong { font-weight: 700; }
-.detected-chip--warn { color: var(--amber-text); }
-.detected-ref {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-family: var(--mono);
-  font-size: 12px;
-  color: var(--ink-3);
-}
-
-/* ── Verified receipt: reads like the payment it describes ──────────── */
-/* scrollIntoView on verify must clear the sticky header */
-.rc-slot { scroll-margin-top: 84px; }
-.rc-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 12px;
-  padding: 18px 24px;
-  border-bottom: 2px dotted var(--dotted);
-}
-.rc-bank { display: flex; align-items: center; gap: 10px; min-width: 0; }
-.rc-bank-text { display: flex; flex-direction: column; min-width: 0; }
-.rc-bank-name { font-size: 16px; font-weight: 700; color: var(--ink); }
-.rc-bank-sub { font-size: 12px; color: var(--ink-3); }
-.rc-head-right { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
-.rc-status {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 4px 11px;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  color: var(--green-dark);
-  background: var(--green-light);
-  border: 1px solid color-mix(in srgb, var(--green) 40%, transparent);
-  border-radius: 999px;
-  white-space: nowrap;
-}
-.rc-cache {
-  padding: 4px 10px;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  color: var(--ink-3);
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  white-space: nowrap;
-}
-.rc-copybtn {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 6px 14px;
-  font-size: 12px;
-  font-weight: 500;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--surface);
-  color: var(--ink-2);
-  cursor: pointer;
-}
-.rc-amount {
-  padding: 22px 24px;
-  text-align: center;
-  border-bottom: 2px dotted var(--dotted);
-}
-.rc-amount-none {
-  font-size: 15px;
-  font-style: italic;
-  color: var(--ink-3);
-}
-.rc-grid { display: grid; grid-template-columns: 1fr 1fr; }
-.rc-cell {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 14px 24px;
-  min-width: 0;
-  border-bottom: 1px dotted var(--dotted);
-}
-.rc-cell:nth-child(even) { border-left: 1px dotted var(--dotted); }
-.rc-cell:last-child { border-bottom: none; }
-.rc-cell--wide { grid-column: 1 / -1; }
-.rc-lbl {
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--ink-3);
-}
-.rc-val {
-  font-size: 16px;
-  font-weight: 500;
-  color: var(--ink);
-  word-break: break-word;
-}
-.rc-val--mono { font-family: var(--mono); font-size: 15px; }
-.rc-sub {
-  font-family: var(--mono);
-  font-size: 13px;
-  color: var(--ink-3);
-  word-break: break-all;
-}
-.rc-section {
-  padding: 4px 24px 8px;
-  border-top: 2px dotted var(--dotted);
-}
-.rc-section-title {
-  margin: 0;
-  padding: 12px 0 4px;
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--ink-3);
-}
-.rc-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 16px;
-  padding: 11px 0;
-}
-.rc-row-val {
-  font-size: 14px;
-  color: var(--ink-2);
-  text-align: right;
-  word-break: break-word;
-}
-.rc-row-val--mono { font-family: var(--mono); }
-.rc-words {
-  margin: 6px 0 8px;
-  font-size: 12px;
-  font-style: italic;
-  color: var(--ink-3);
-  text-transform: capitalize;
-}
-.rc-foot {
-  padding: 14px 24px;
-  border-top: 2px dotted var(--dotted);
-  background: var(--surface-alt);
-}
-.rc-source {
-  display: flex;
-  align-items: flex-start;
-  gap: 6px;
-  font-family: var(--mono);
-  font-size: 12px;
-  color: var(--green-dark);
-  text-decoration: none;
-  word-break: break-all;
-}
-@media (max-width: 640px) {
-  .rc-grid { grid-template-columns: 1fr; }
-  .rc-cell:nth-child(even) { border-left: none; }
-  .rc-head { padding: 16px 18px; }
-  .rc-cell, .rc-section, .rc-foot, .rc-amount { padding-left: 18px; padding-right: 18px; }
-}
-
 /* Press feedback. A control that does not move under the finger reads as
    dead. 0.96 over 150ms is the smallest change that still registers. */
 button:not(:disabled):active,
@@ -1013,7 +655,7 @@ button, [role="button"], a.button, .btn {
 /* mobile: touch targets */
 @media (max-width: 640px) {
   input, select, button { min-height: 44px; }
-  .verify-card { padding: 16px !important; border-radius: 12px !important; }
+
   .hero-copy h1 { font-size: 28px !important; }
   .hero-copy p { font-size: 15px !important; }
 }
@@ -1257,32 +899,6 @@ button, [role="button"], a.button, .btn {
   .t-modal { transition: none !important; }
 }
 
-/* --- 07 Panel reveal --- */
-.t-panel-slide {
-  transform: translateY(var(--panel-translate-y));
-  opacity: 0;
-  filter: blur(var(--panel-blur));
-  pointer-events: none;
-  transition:
-    transform var(--panel-close-dur) var(--panel-ease),
-    opacity   var(--panel-close-dur) var(--panel-ease),
-    filter    var(--panel-close-dur) var(--panel-ease);
-  will-change: transform, opacity, filter;
-}
-.t-panel-slide[data-open="true"] {
-  transform: translateY(0);
-  opacity: 1;
-  filter: blur(0);
-  pointer-events: auto;
-  transition:
-    transform var(--panel-open-dur) var(--panel-ease),
-    opacity   var(--panel-open-dur) var(--panel-ease),
-    filter    var(--panel-open-dur) var(--panel-ease);
-}
-@media (prefers-reduced-motion: reduce) {
-  .t-panel-slide { transition: none !important; }
-}
-
 /* --- 08 Page side-by-side (original) + page enter (Next.js adapted) --- */
 .t-page-slide {
   position: relative;
@@ -1424,12 +1040,6 @@ html[data-nav] .t-page-enter {
     visibility 0s linear 0s;
 }
 .t-input.is-shaking {
-  animation: t-input-shake calc(
-      var(--shake-dur-a) * 2 + var(--shake-dur-b) * 2
-    ) linear;
-}
-/* Generic container shake (for error banners, not just inputs) */
-.t-shake {
   animation: t-input-shake calc(
       var(--shake-dur-a) * 2 + var(--shake-dur-b) * 2
     ) linear;

@@ -61,12 +61,14 @@ function isEditable(el: EventTarget | null): boolean {
 }
 
 /**
- * True when the top of the verdict (title + amount, about 220px) is not on
- * screen below the sticky header. Exported for tests.
+ * True when the verdict's top is not comfortably on screen: under the sticky
+ * header, in the lower half of the visible area (mobile, where the card
+ * renders under the input), or with less than its head and amount (~220px)
+ * showing. A verdict beside the input (desktop) stays put. Exported for tests.
  */
 export function verdictNeedsScroll(rect: { top: number; height: number }, viewportHeight: number, topInset = 0): boolean {
-  const visiblePart = Math.min(rect.height, 220, viewportHeight - topInset);
-  return rect.top < topInset || rect.top + visiblePart > viewportHeight;
+  const room = viewportHeight - topInset;
+  return rect.top < topInset || rect.top > topInset + room * 0.5 || rect.top + Math.min(rect.height, 220) > viewportHeight;
 }
 
 function reduceMotion(): boolean {
@@ -199,7 +201,9 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
       const checks: FraudCheck[] = [];
       const bankCode = d.bank.code;
       // Local reuse signal: this device already saw the same receipt confirmed.
-      const earlier = findPrevious(historyRef.current, bankCode, d.value);
+      // A BOA QR is remembered by the bank's reference, never by its payload.
+      const savedRef = d.kind === "boaQr" ? (typeof result.reference === "string" ? result.reference.trim() : "") : d.value;
+      const earlier = savedRef ? findPrevious(historyRef.current, bankCode, savedRef) : undefined;
       if (earlier && verificationState(result) === "verified") {
         checks.push({
           id: "seen-before",
@@ -210,7 +214,7 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
           }),
         });
       }
-      const nextHistory = addVerified(historyRef.current, result, { bank: bankCode, ref: d.value }, checkedAt);
+      const nextHistory = addVerified(historyRef.current, result, { bank: bankCode, ref: savedRef }, checkedAt);
       historyRef.current = nextHistory;
       setHistory(nextHistory);
       const enteredRef = d.kind === "url" ? d.urlReference : d.kind === "reference" ? d.value : undefined;

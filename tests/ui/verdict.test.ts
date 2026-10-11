@@ -212,3 +212,12 @@ describe("copy text", () => {
     expect(cleanError(undefined)).toBeUndefined();
   });
 });
+
+describe("presentVerdict: cached answers", () => {
+  it("a cached confirmation is still green but does not claim it was confirmed just now", () => {
+    const v = presentVerdict({ success: true, verified: true, bankCode: "cbe", amount: 1, cached: true }, { checkedAt: new Date(2026, 9, 11, 14, 5) });
+    expect(v.tone).toBe("green");
+    expect(v.subtitle).not.toMatch(/14:05/);
+    expect(v.subtitle).toMatch(/saved copy/);
+  });
+});
