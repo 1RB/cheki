@@ -305,6 +305,9 @@
 .vc-row dt { color: var(--ink-3); font-weight: 400; }
 .vc-row dd { margin: 0; color: var(--ink); min-width: 0; overflow-wrap: anywhere; display: flex; flex-direction: column; gap: 2px; }
 .vc-name { font-weight: 550; }
+/* The date row stacks like the party rows: date, then "3 hours ago" quieter. */
+.vc-row .rt-sep { display: none; }
+.vc-row .rt-rel { display: block; font-size: 13px; line-height: 18px; color: var(--ink-3); margin-top: 2px; }
 .vc-acct { font-family: var(--mono); font-size: 12px; line-height: 16px; color: var(--ink-3); letter-spacing: -0.01em; }
 .vc-mono { font-family: var(--mono); font-size: 13px; letter-spacing: -0.01em; }
 .vc-num { font-variant-numeric: tabular-nums; }

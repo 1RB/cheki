@@ -19,7 +19,9 @@ describe("VerdictCard", () => {
     const { container } = card({ success: true, verified: true, bankCode: "cbe", reference: "FT1", amount: 12500, currency: "ETB", senderName: "Abebe", receiverName: "Selam", sourceUrl: "https://mbreciept.cbe.com.et/x" });
     expect(container.querySelector(".vc")?.getAttribute("data-tone")).toBe("green");
     expect(screen.getByRole("heading", { name: "Verified with CBE" })).toBeTruthy();
-    expect(screen.getByText("Confirmed with CBE's own receipt record at 14:32")).toBeTruthy();
+    // The record line is live: "Checked …" comes from the shared minute clock.
+    expect(container.querySelector(".vc-sub")?.textContent).toMatch(/^Confirmed with CBE's own receipt record\. Checked /);
+    expect(container.querySelector(".vc-sub time")?.getAttribute("datetime")).toBe(at.toISOString());
     expect(screen.getByText("12,500")).toBeTruthy();
     expect(screen.getByText("Abebe")).toBeTruthy();
     expect(screen.getByText("Selam")).toBeTruthy();

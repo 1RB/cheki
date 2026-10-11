@@ -21,8 +21,10 @@
 import { banks, verificationState, type Bank, type VerifyResult } from "@/lib/banks";
 import { classifyStatus } from "@/lib/core/status";
 import { tEn, type Translate } from "@/lib/i18n/translate";
+import { formatAgeDays, parseTimestamp } from "@/lib/time/relative";
 
-export type FraudCheckState = "pass" | "warn" | "mismatch" | "unknown";
+/** "info" is a neutral note (grey dot): worth reading, not a warning. */
+export type FraudCheckState = "pass" | "warn" | "mismatch" | "unknown" | "info";
 
 /** One independent signal about the receipt, shown as a row on the card. */
 export interface FraudCheck {
@@ -75,6 +77,30 @@ export interface Verdict {
   checks: FraudCheck[];
   /** The API's message, cleaned of internal prefixes, for the details area. */
   detail?: string;
+  /**
+   * A fresh (not cached) confirmation: the subtitle without its clock time,
+   * so the card can add a live "Checked 2 min ago" (copied text keeps the
+   * subtitle with the time).
+   */
+  liveSubtitle?: string;
+  /** ISO time of the check, for that live line. */
+  checkedAt?: string;
+}
+
+/** Past this age a confirmed receipt gets a neutral "Receipt is N days old" note. */
+export const RECEIPT_AGE_NOTE_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Receipt age as a soft signal: a confirmed receipt from days ago is real, but
+ * it may be an older payment shown again. Neutral, never red; null when the
+ * date is unreadable or recent.
+ */
+export function receiptAgeCheck(date: string | undefined, checkedAt: Date, t: Translate = tEn): FraudCheck | null {
+  const parsed = parseTimestamp(date);
+  if (!parsed) return null;
+  const age = formatAgeDays(parsed, checkedAt.getTime());
+  if (!age) return null;
+  return { id: "receipt-age", state: "info", label: t("verify.checks.receiptAge", { age }), detail: t("verify.checks.receiptAgeDetail") };
 }
 
 export const FRAUD_GUIDE = "/guides/payment-fraud-ethiopia";
@@ -259,14 +285,20 @@ export function presentVerdict(result: VerifyResult | null | undefined, opts: Pr
         guideHref: FRAUD_GUIDE,
       };
     }
+    const checkedAt = opts.checkedAt ?? new Date();
+    const age = receiptAgeCheck(d.date, checkedAt, t);
     return {
       ...base,
       ...d,
+      checks: age ? [...checks, age] : checks,
       kind: "verified",
       tone: "green",
       showDetails: true,
       sourceUrl,
       title: t("verify.verdict.verified.title", { bank: short }),
+      ...(result.cached === true
+        ? {}
+        : { liveSubtitle: t("verify.verdict.verified.subtitleLive", { bank: short }), checkedAt: checkedAt.toISOString() }),
       // A cached answer was confirmed earlier, not "at" this check.
       subtitle: result.cached === true
         ? t("verify.verdict.verified.subtitleCached", { bank: short })

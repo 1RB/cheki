@@ -33,6 +33,11 @@ export const translations = {
       pasteReceipt: "Paste receipt text",
       fallbackOpen: "Open on bank site",
     },
+    time: {
+      justNow: "just now",
+      checked: "Checked {when}",
+      zone: "Addis Ababa time",
+    },
     verify: {
       inputLabel: "Receipt link, reference or QR",
       inputPlaceholder: "Receipt link or reference",
@@ -100,6 +105,7 @@ export const translations = {
         verified: {
           title: "Verified with {bank}",
           subtitle: "Confirmed with {bank}'s own receipt record at {time}",
+          subtitleLive: "Confirmed with {bank}'s own receipt record",
           subtitleCached: "Confirmed with {bank}'s own receipt record on an earlier check (cheki's saved copy)",
         },
         decodedOnly: {
@@ -164,6 +170,8 @@ export const translations = {
       checks: {
         seenBefore: "Checked before on this device",
         seenBeforeDetail: "First checked {when}. A receipt pays once: make sure it is not being reused.",
+        receiptAge: "Receipt is {age} old",
+        receiptAgeDetail: "Make sure it is the payment you are expecting, not an older one.",
       },
       copy: {
         notVerified: "NOT VERIFIED",
@@ -243,6 +251,11 @@ export const translations = {
     },
   },
   am: {
+    time: {
+      justNow: "አሁን",
+      checked: "{when} ተፈትሿል",
+      zone: "የአዲስ አበባ ሰዓት",
+    },
     nav: {
       verify: "ያረጋግጡ",
       banks: "ባንኮች",

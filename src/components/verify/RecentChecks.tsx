@@ -5,16 +5,8 @@ import type { Translate } from "@/lib/i18n/translate";
 import { formatAmount } from "@/lib/verify/summary";
 import { findBank } from "@/lib/verify/verdict";
 import { BankLogoByName } from "@/components/BankLogo";
+import { RelativeTime } from "@/components/RelativeTime";
 import { Icon, Cancel01Icon } from "@/components/Icon";
-
-function when(iso: string): string {
-  const d = new Date(iso);
-  const today = new Date();
-  const sameDay = d.toDateString() === today.toDateString();
-  return sameDay
-    ? d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", hour12: false })
-    : d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
-}
 
 function shortRef(ref: string): string {
   const r = ref.replace(/^https?:\/\/(www\.)?/i, "");
@@ -51,7 +43,7 @@ export function RecentChecks({ items, t, onUse, onRemove, onClear }: Props) {
                 <span className="rch-ref">{shortRef(item.ref)}</span>
                 <span className="rch-meta">
                   {item.amount != null && <span className="rch-amt">{formatAmount(item.amount, item.currency)}</span>}
-                  <span>{when(item.checkedAt)}</span>
+                  <RelativeTime value={item.checkedAt} variant="relative" />
                 </span>
               </button>
               <button type="button" className="rch-remove" onClick={() => onRemove(item)} aria-label={t("verify.recent.remove", { ref: shortRef(item.ref) })}>

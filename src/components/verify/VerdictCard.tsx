@@ -14,6 +14,7 @@ import { publicJson, type Verdict } from "@/lib/verify/verdict";
 import { formatAmount, resultText } from "@/lib/verify/summary";
 import type { Translate } from "@/lib/i18n/translate";
 import { BankLogoByName } from "@/components/BankLogo";
+import { RelativeTime } from "@/components/RelativeTime";
 import {
   Icon,
   Copy01Icon,
@@ -41,14 +42,6 @@ function useCanShare(): boolean {
     () => typeof navigator !== "undefined" && typeof navigator.share === "function",
     () => false
   );
-}
-
-function prettyDate(raw: string): string {
-  if (!/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(raw)) return raw;
-  const d = new Date(raw);
-  if (Number.isNaN(d.getTime())) return raw;
-  // Receipt times are Ethiopian bank times: show them on the bank's clock.
-  return d.toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Africa/Addis_Ababa" });
 }
 
 function splitAmount(value: number): { whole: string; cents?: string } {
@@ -128,7 +121,7 @@ export function VerdictCard({ verdict, result, checkedAt, t, onAnother, onRetry 
     rows.push([t("verify.card.from"), party(v.from)]);
     rows.push([t("verify.card.to"), party(v.to)]);
   }
-  if (v.showDetails && v.date) rows.push([t("verify.card.date"), <span key="d" className="vc-num">{prettyDate(v.date)}</span>]);
+  if (v.showDetails && v.date) rows.push([t("verify.card.date"), <RelativeTime key="d" value={v.date} className="vc-num" />]);
   if (v.reference) rows.push([t("verify.card.reference"), <span key="r" className="vc-mono">{v.reference}</span>]);
   if (v.bank) rows.push([t("verify.card.bank"), <span key="b" className="vc-bank"><BankLogoByName code={v.bank.code} size={18} /><span>{v.bank.shortName}</span></span>, "vc-bank-row"]);
 
@@ -139,7 +132,16 @@ export function VerdictCard({ verdict, result, checkedAt, t, onAnother, onRetry 
           <span className="vc-dot" aria-hidden="true" />
           <h2 id="vc-title" className="vc-title" tabIndex={-1}>{v.title}</h2>
         </div>
-        <p className="vc-sub">{v.subtitle}</p>
+        <p className="vc-sub">
+          {v.liveSubtitle && v.checkedAt ? (
+            <>
+              {v.liveSubtitle}.{" "}
+              <RelativeTime value={v.checkedAt} variant="relative" template="time.checked" />
+            </>
+          ) : (
+            v.subtitle
+          )}
+        </p>
       </header>
 
       {amount && (

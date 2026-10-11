@@ -61,7 +61,7 @@ describe("fraud checks", () => {
   const mismatch: FraudCheck = { id: "amount", label: "Amount does not match", state: "mismatch", detail: "Expected 10,000 ETB." };
 
   it("a warn check keeps the card green and is listed", () => {
-    const v = presentVerdict(verified, { checks: [warn] });
+    const v = presentVerdict(verified, { checks: [warn], checkedAt: at });
     expect(v.tone).toBe("green");
     expect(v.checks).toEqual([warn]);
   });
