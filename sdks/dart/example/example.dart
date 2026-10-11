@@ -10,87 +10,44 @@ import 'package:cheki/cheki.dart';
 /// dart run example/example.dart
 /// ```
 void main() async {
+  // Defaults: 65 s per attempt (the server may take up to 60 s), at most one retry.
   final client = ChekiClient();
 
   try {
-    // 1. Check service health
-    print('=== Service Health ===');
+    print('=== Service Health (cached up to 5 min) ===');
     final health = await client.getHealth();
-    print('Status: ${health.status}');
-    print('Version: ${health.version}');
-    print('');
-
-    // 2. List supported banks
-    print('=== Supported Banks ===');
-    final banks = await client.getBanks();
-    for (final bank in banks) {
-      print('${bank.code.padRight(12)} ${bank.status.padRight(12)} ${bank.name}');
+    print('Status: ${health.status}, checked ${health.checkedAt}');
+    for (final b in health.banks) {
+      print('  ${b.id.padRight(10)} ${b.status.padRight(14)} ${b.latencyMs}ms');
     }
-    print('');
 
-    // 3. Verify a single receipt
-    print('=== Single Verification ===');
-    final result = await client.verify(
-      bank: 'cbe',
-      reference: 'RT123456789',
-      accountNumber: '1000123456789',
-    );
-
-    if (result.verified == true) {
-      print('✓ Receipt verified!');
-      print('  Sender:   ${result.senderName}');
-      print('  Receiver: ${result.receiverName}');
-      print('  Amount:   ${result.amount} ${result.currency}');
-      print('  Date:     ${result.date}');
-      print('  Source:   ${result.sourceUrl}');
-    } else {
-      print('✗ Verification failed: ${result.error}');
+    print('\n=== Supported Banks (id is the value to pass as bank) ===');
+    for (final bank in await client.getBanks()) {
+      print('${bank.id.padRight(12)} ${bank.status.padRight(15)} ${bank.name}');
     }
-    print('');
 
-    // 4. Verify using VerifyOptions
-    print('=== Verification via VerifyOptions ===');
-    final optsResult = await client.verify(
-      options: VerifyOptions(
-        bank: 'dashen',
-        reference: 'FT987654321',
-        accountNumber: '5021345678',
-      ),
-    );
-    print('Verified: ${optsResult.verified}');
-    print('Error:    ${optsResult.error}');
-    print('');
+    print('\n=== Single Verification ===');
+    final result = await client.verify(bank: 'cbe', reference: 'FT26140P01YB', accountNumber: '1000560536171');
+    if (result.isVerified) {
+      print('VERIFIED: ${result.senderName} sent ${result.amount} ${result.currency} to ${result.receiverName}');
+    } else if (result.decodedOnly) {
+      print('NOT VERIFIED: decoded from a QR code, the bank could not confirm it');
+    }
 
-    // 5. Batch verification
-    print('=== Batch Verification ===');
-    final batchResult = await client.verifyBatch([
-      BatchReceipt(
-        bank: 'cbe',
-        reference: 'RT111111111',
-        accountNumber: '1000123456789',
-      ),
-      BatchReceipt(
-        bank: 'dashen',
-        reference: 'FT222222222',
-        accountNumber: '5021345678',
-      ),
-      BatchReceipt(
-        bank: 'awash',
-        reference: 'TR333333333',
-        phoneNumber: '0912345678',
-      ),
+    print('\n=== Batch Verification (max ${ChekiClient.maxBatchSize}) ===');
+    final batch = await client.verifyBatch(const [
+      BatchReceipt(bank: 'cbe', reference: 'FT26140P01YB', accountNumber: '1000560536171'),
+      BatchReceipt(bank: 'telebirr', reference: 'CHQ0FJ403O'),
     ]);
-
-    print('Total:    ${batchResult.total}');
-    print('Verified: ${batchResult.verified}');
-    print('Failed:   ${batchResult.failed}');
-    for (final r in batchResult.results) {
-      print('  ${r.reference}: verified=${r.verified} error=${r.error}');
+    print('Verified ${batch.verified}/${batch.total}, failed ${batch.failed}');
+    for (final r in batch.results) {
+      print('  [${r.index}] ${r.isVerified ? 'verified' : 'not verified'} ${r.error ?? ''}');
     }
+  } on ChekiRateLimitException catch (e) {
+    print('Rate limited, retry in ${e.retryAfter?.inSeconds ?? 60}s');
   } on ChekiException catch (e) {
-    print('cheki error: $e');
-  } catch (e) {
-    print('unexpected error: $e');
+    // 422 not found, 404 unsupported bank, 502 bank unreachable (see e.fallbackUrl), ...
+    print('Not verified: $e');
   } finally {
     client.close();
   }
