@@ -1,23 +1,21 @@
-"""Command-line interface for ethio-receipt-verify.
+"""Command-line interface: ``cheki-verify`` (installed by ``pip install cheki``).
 
-Supports two verification modes:
+Uses the hosted cheki REST API by default. ``--direct`` runs the deprecated
+direct verifiers on your own machine instead.
 
-* ``--api``    - use the hosted cheki REST API (default for new users).
-* default     - direct verification, fetching bank endpoints locally
-                (advanced; subject to geo-blocking).
+Exit codes: 0 only when the bank confirmed the receipt (``verified``),
+1 when it did not or the request failed, 2 for usage errors.
 
 Examples::
 
-    # API client (recommended)
-    ethio-verify cbe FT26140P01YB --account 1000560536171 --api
-    ethio-verify telebirr DET8FJGUJ4 --api --json
+    cheki-verify cbe FT26140P01YB --account 1000560536171
+    cheki-verify telebirr DET8FJGUJ4 --json
+    cheki-verify boa --qr '<qr payload>'
+    cheki-verify --health
+    cheki-verify --list-banks
 
-    # Direct verification (advanced)
-    ethio-verify cbe FT26140P01YB --account 1000560536171
-
-    # Service health & supported banks (via API)
-    ethio-verify --health
-    ethio-verify --list-banks --api
+    # Deprecated: direct verification from this machine
+    cheki-verify cbe FT26140P01YB --account 1000560536171 --direct
 """
 
 from __future__ import annotations
@@ -25,28 +23,30 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import warnings
 from typing import Any
 
 from cheki import supported_banks, verify
-from cheki.client import DEFAULT_BASE_URL, ChekiClient
+from cheki.client import DEFAULT_BASE_URL, DEFAULT_TIMEOUT, ChekiClient
 from cheki.client_types import (
     ChekiClientError,
     ClientVerifyResult,
 )
 from cheki.errors import VerificationError
+from cheki.result import VerificationStatus
 
 
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="ethio-verify",
+        prog="cheki-verify",
         description=(
-            "Free, open-source Ethiopian bank/wallet receipt verification. "
-            "Use --api for the hosted cheki service (recommended) or the "
-            "default mode for direct endpoint verification (advanced)."
+            "Free, open-source Ethiopian bank/wallet receipt verification "
+            "through the hosted cheki API. Exits 0 only for a receipt the "
+            "bank confirmed."
         ),
     )
     parser.add_argument("bank", nargs="?", help="Bank/wallet code (e.g. cbe, telebirr, boa, mpesa)")
-    parser.add_argument("reference", nargs="?", help="Transaction reference number")
+    parser.add_argument("reference", nargs="?", help="Transaction reference number (optional with --qr)")
     parser.add_argument(
         "--account",
         dest="account_number",
@@ -65,7 +65,12 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--api",
         action="store_true",
-        help="Use the hosted cheki REST API instead of direct verification",
+        help="Use the hosted cheki REST API (the default; kept for compatibility)",
+    )
+    parser.add_argument(
+        "--direct",
+        action="store_true",
+        help="DEPRECATED: verify directly from this machine with the old Python parsers",
     )
     parser.add_argument(
         "--base-url",
@@ -82,8 +87,8 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--timeout",
         type=float,
-        default=30.0,
-        help="Per-request timeout in seconds (API mode, default: 30)",
+        default=DEFAULT_TIMEOUT,
+        help=f"Per-attempt timeout in seconds (default: {DEFAULT_TIMEOUT:g})",
     )
     parser.add_argument("--json", action="store_true", help="Output raw JSON instead of pretty text")
     parser.add_argument("--list-banks", action="store_true", help="List supported banks and exit")
@@ -94,17 +99,25 @@ def _build_parser() -> argparse.ArgumentParser:
 def _print_client_result(result: ClientVerifyResult, as_json: bool) -> int:
     if as_json:
         print(json.dumps(result.to_dict(), indent=2, ensure_ascii=False, default=str))
-        return 0
+        return 0 if result.is_verified else 1
 
     if not result.success:
         print(f"Verification failed: {result.error or 'unknown error'}", file=sys.stderr)
         if result.fallback_url:
             print(f"Fallback URL: {result.fallback_url}", file=sys.stderr)
+        if result.is_rate_limited and result.retry_after is not None:
+            print(f"Rate limited. Retry in {result.retry_after:g}s.", file=sys.stderr)
         return 1
+
+    if not result.is_verified:
+        if result.decoded_only:
+            print("NOT VERIFIED: decoded from the QR code, the bank could not confirm it.")
+        else:
+            print("NOT VERIFIED")
 
     print(f"Bank:        {result.bank or ''}")
     print(f"Reference:   {result.reference or ''}")
-    print(f"Verified:    {result.verified}")
+    print(f"Verified:    {result.is_verified}")
     if result.amount is not None:
         print(f"Amount:      {result.amount} {result.currency or ''}")
     if result.sender_name:
@@ -128,9 +141,6 @@ def main(argv: list[str] | None = None) -> int:
 
     # ── Service-level commands (API mode) ───────────────────────────
     if args.health:
-        if not args.api:
-            print("--health requires --api (the cheki REST API).", file=sys.stderr)
-            return 2
         client = ChekiClient(
             base_url=args.base_url, api_key=args.api_key, timeout=args.timeout
         )
@@ -145,17 +155,15 @@ def main(argv: list[str] | None = None) -> int:
             print(json.dumps(health.to_dict(), indent=2, ensure_ascii=False, default=str))
         else:
             print(f"Status:     {health.status}")
-            if health.version:
-                print(f"Version:    {health.version}")
-            if health.timestamp:
-                print(f"Timestamp:  {health.timestamp}")
-            for check in health.checks:
+            if health.checked_at:
+                print(f"Checked at: {health.checked_at}{' (cached)' if health.cached else ''}")
+            for check in health.banks:
                 latency = f" ({check.latency_ms}ms)" if check.latency_ms is not None else ""
-                print(f"  {check.name:<20} {check.status}{latency}")
+                print(f"  {check.id or check.name:<12} {check.status}{latency}")
         return 0 if health.is_ok else 1
 
     if args.list_banks:
-        if args.api:
+        if not args.direct:
             client = ChekiClient(
                 base_url=args.base_url, api_key=args.api_key, timeout=args.timeout
             )
@@ -176,28 +184,24 @@ def main(argv: list[str] | None = None) -> int:
                         suffix = f"  (requires account{f', {b.account_digits} digits' if b.account_digits else ''})"
                     elif b.requires_phone:
                         suffix = "  (requires phone)"
-                    print(f"{b.code:<12} {b.name:<30} [{status}]{suffix}")
+                    print(f"{b.id:<12} {b.name:<30} [{status}]{suffix}")
         else:
             for code, name in supported_banks().items():
                 print(f"{code}: {name}")
         return 0
 
     # ── Verification commands ───────────────────────────────────────
-    if not args.bank or not args.reference:
-        if args.qr_data and args.bank:
-            # QR-based verification may omit an explicit reference.
-            pass
-        else:
-            parser.error("the following arguments are required: bank, reference")
+    if not args.bank or not (args.reference or args.qr_data):
+        parser.error("the following arguments are required: bank, and reference or --qr")
 
-    if args.api:
+    if not args.direct:
         client = ChekiClient(
             base_url=args.base_url, api_key=args.api_key, timeout=args.timeout
         )
         try:
             result = client.verify(
                 bank=args.bank,
-                reference=args.reference,
+                reference=args.reference or "",
                 account_number=args.account_number,
                 phone_number=args.phone_number,
                 qr_data=args.qr_data,
@@ -209,7 +213,10 @@ def main(argv: list[str] | None = None) -> int:
             client.close()
         return _print_client_result(result, args.json)
 
-    # Direct verification (advanced).
+    # Direct verification (deprecated).
+    print("warning: --direct is deprecated and will be removed; it lacks the server's verification gate.", file=sys.stderr)
+    if not args.reference:
+        parser.error("--direct needs a reference (QR codes need the API)")
     kwargs: dict[str, Any] = {}
     if args.account_number:
         kwargs["account_number"] = args.account_number
@@ -217,7 +224,9 @@ def main(argv: list[str] | None = None) -> int:
         kwargs["phone_number"] = args.phone_number
 
     try:
-        result = verify(args.bank, args.reference, **kwargs)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", DeprecationWarning)
+            direct = verify(args.bank, args.reference, **kwargs)
     except VerificationError as exc:
         print(f"Verification failed: {exc}", file=sys.stderr)
         return 1
@@ -226,25 +235,25 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     if args.json:
-        print(json.dumps(result.to_dict(), indent=2, ensure_ascii=False, default=str))
+        print(json.dumps(direct.to_dict(), indent=2, ensure_ascii=False, default=str))
     else:
-        print(f"Bank:        {result.bank}")
-        print(f"Reference:   {result.reference}")
-        print(f"Status:      {result.status.value}")
-        print(f"Exists:      {result.exists}")
-        if result.amount is not None:
-            print(f"Amount:      {result.amount} {result.currency}")
-        if result.sender_name:
-            print(f"Sender:      {result.sender_name}")
-        if result.receiver_name:
-            print(f"Receiver:    {result.receiver_name}")
-        if result.transaction_date:
-            print(f"Date:        {result.transaction_date}")
-        if result.source_url:
-            print(f"Source:      {result.source_url}")
-        if result.message:
-            print(f"Message:     {result.message}")
-    return 0
+        print(f"Bank:        {direct.bank}")
+        print(f"Reference:   {direct.reference}")
+        print(f"Status:      {direct.status.value}")
+        print(f"Exists:      {direct.exists}")
+        if direct.amount is not None:
+            print(f"Amount:      {direct.amount} {direct.currency}")
+        if direct.sender_name:
+            print(f"Sender:      {direct.sender_name}")
+        if direct.receiver_name:
+            print(f"Receiver:    {direct.receiver_name}")
+        if direct.transaction_date:
+            print(f"Date:        {direct.transaction_date}")
+        if direct.source_url:
+            print(f"Source:      {direct.source_url}")
+        if direct.message:
+            print(f"Message:     {direct.message}")
+    return 0 if direct.status is VerificationStatus.VERIFIED else 1
 
 
 if __name__ == "__main__":
