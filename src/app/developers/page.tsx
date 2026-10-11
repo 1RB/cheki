@@ -50,7 +50,7 @@ export default function DevelopersPage() {
 
   const endpoints = [
     { method: "POST", path: "/api/verify", desc: "Verify a single receipt. Send bank code, reference, and (for CBE/BOA) account number." },
-    { method: "POST", path: "/api/verify/batch", desc: "Verify up to 50 receipts at once. Send an array of receipt objects." },
+    { method: "POST", path: "/api/verify/batch", desc: "Verify up to 20 receipts at once. Send an array of receipt objects." },
     { method: "GET", path: "/api/banks", desc: "List all supported banks and their verification status." },
     { method: "GET", path: "/api/health", desc: "Check API health and per-bank endpoint latency." },
     { method: "GET", path: "/api/receipt", desc: "Download the raw receipt file (PDF/HTML) from the bank endpoint." },
