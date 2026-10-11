@@ -12,9 +12,8 @@
 //
 //	client := cheki.NewClient()
 //	result, err := client.Verify(context.Background(), cheki.VerifyOptions{
-//	    Bank:          "cbe",
-//	    Reference:     "FT26140P01YB",
-//	    AccountNumber: "1000560536171",
+//	    Bank:      "cbe",
+//	    Reference: "https://mbreciept.cbe.com.et/fHCxExampleRcpt01",
 //	})
 //	if err != nil {
 //	    log.Fatal(err)
@@ -63,9 +62,14 @@ const (
 	retryBaseDelay = time.Second
 )
 
-// ReceiptDownloadBanks lists the banks /api/receipt can download, with the
-// number of trailing account digits each needs (0 when no account is needed).
+// ReceiptDownloadBanks lists the banks /api/receipt serves, with the number
+// of trailing account digits their legacy format needs (0 when none). For CBE
+// only an older FT reference (legacyCBEReference) needs the account; the
+// current format, a Receipt ID from a mbreciept.cbe.com.et link, needs none.
 var ReceiptDownloadBanks = map[string]int{"cbe": 8, "zemen": 0, "dashen": 0}
+
+// legacyCBEReference matches an older CBE FT reference (legacy format).
+var legacyCBEReference = regexp.MustCompile(`(?i)^FT[A-Za-z0-9]{8,12}$`)
 
 var safeReference = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$`)
 
@@ -228,9 +232,12 @@ func (c *Client) GetHealth(ctx context.Context) (*HealthStatus, error) {
 	return &status, nil
 }
 
-// GetReceiptURL returns the URL of GET /api/receipt, which downloads the
-// bank's receipt file. Only CBE (needs the account number, at least its last
-// 8 digits), Zemen and Dashen are supported. No request is made.
+// GetReceiptURL returns the URL of GET /api/receipt, which opens the bank's
+// own copy of a receipt. Supported: CBE, Dashen and Zemen. Lead with the
+// current format: a CBE Receipt ID or a Dashen FT Ref, which the server
+// answers with a redirect to the bank's own receipt page. An older CBE FT
+// reference (legacy) also needs the receiving account (at least its last 8
+// digits) and comes back as the bank's PDF. No request is made.
 func (c *Client) GetReceiptURL(bank, reference, accountNumber string) (string, error) {
 	id := strings.ToLower(strings.TrimSpace(bank))
 	digits, ok := ReceiptDownloadBanks[id]
@@ -244,10 +251,10 @@ func (c *Client) GetReceiptURL(bank, reference, accountNumber string) (string, e
 	q := url.Values{}
 	q.Set("bank", id)
 	q.Set("reference", ref)
-	if digits > 0 {
+	if digits > 0 && (id != "cbe" || legacyCBEReference.MatchString(ref)) {
 		acct := strings.NewReplacer(" ", "", "-", "").Replace(accountNumber)
 		if len(acct) < digits || strings.Trim(acct, "0123456789") != "" {
-			return "", fmt.Errorf("%w: %s needs the receiving account number (at least the last %d digits)", ErrInvalidInput, id, digits)
+			return "", fmt.Errorf("%w: an older %s FT reference needs the receiving account number (at least the last %d digits); a Receipt ID from the receipt link needs none", ErrInvalidInput, id, digits)
 		}
 		q.Set("account", acct)
 	}
