@@ -10,24 +10,25 @@ namespace Cheki;
 class BatchResult
 {
     public bool $success;
-
     public int $total;
-
+    /** Items with verified true. */
     public int $verified;
-
+    /** Everything else: errors and decoded-only QR results. */
     public int $failed;
-
-    /** @var VerifyResult[] */
+    /** Items served from the server cache. */
+    public int $cached;
+    /** @var VerifyResult[] In input order; each has $index set. */
     public array $results;
-
     public ?string $error;
-
     public ?int $httpStatus;
-
+    /** Seconds from the Retry-After header on a 429, when sent. */
+    public ?int $retryAfter = null;
+    /** @var array<string, mixed>|null */
     public ?array $raw;
 
     /**
      * @param VerifyResult[] $results
+     * @param array<string, mixed>|null $raw
      */
     public function __construct(
         bool $success,
@@ -37,7 +38,8 @@ class BatchResult
         array $results = [],
         ?string $error = null,
         ?int $httpStatus = null,
-        ?array $raw = null
+        ?array $raw = null,
+        int $cached = 0
     ) {
         $this->success    = $success;
         $this->total      = $total;
@@ -47,6 +49,7 @@ class BatchResult
         $this->error      = $error;
         $this->httpStatus = $httpStatus;
         $this->raw        = $raw;
+        $this->cached     = $cached;
     }
 
     /**
@@ -54,61 +57,63 @@ class BatchResult
      *
      * @param array<string, mixed> $data
      */
-    public static function fromResponse(array $data, ?int $httpStatus = null): self
+    public static function fromResponse(array $data, ?int $httpStatus = null, ?int $retryAfter = null): self
     {
         $results = [];
         if (isset($data['results']) && is_array($data['results'])) {
-            foreach ($data['results'] as $item) {
+            foreach (array_values($data['results']) as $i => $item) {
                 if (is_array($item)) {
-                    $results[] = VerifyResult::fromResponse($item);
+                    $r        = VerifyResult::fromResponse($item);
+                    $r->index = $i;
+                    $results[] = $r;
                 }
             }
         }
+        $verified = count(array_filter($results, fn (VerifyResult $r): bool => $r->isVerified()));
 
-        return new self(
-            success:    isset($data['success']) ? (bool) $data['success'] : false,
-            total:      isset($data['total']) ? (int) $data['total'] : count($results),
-            verified:   isset($data['verified']) ? (int) $data['verified'] : 0,
-            failed:     isset($data['failed']) ? (int) $data['failed'] : 0,
+        $batch = new self(
+            success:    ($data['success'] ?? false) === true,
+            total:      isset($data['total']) && is_int($data['total']) ? $data['total'] : count($results),
+            verified:   isset($data['verified']) && is_int($data['verified']) ? $data['verified'] : $verified,
+            failed:     isset($data['failed']) && is_int($data['failed']) ? $data['failed'] : count($results) - $verified,
             results:    $results,
-            error:      isset($data['error']) ? (string) $data['error'] : null,
+            error:      isset($data['error']) && is_scalar($data['error']) ? (string) $data['error'] : null,
             httpStatus: $httpStatus,
-            raw:        $data
+            raw:        $data,
+            cached:     isset($data['cached']) && is_int($data['cached']) ? $data['cached'] : 0
         );
+        $batch->retryAfter = $retryAfter;
+        return $batch;
     }
 
-    public static function error(string $message, ?int $httpStatus = null): self
+    public static function error(string $message, ?int $httpStatus = null, ?int $retryAfter = null): self
     {
-        return new self(
-            success:    false,
-            error:      $message,
-            httpStatus: $httpStatus
-        );
+        $batch             = new self(success: false, error: $message, httpStatus: $httpStatus);
+        $batch->retryAfter = $retryAfter;
+        return $batch;
     }
 
-    /**
-     * Convenience: iterate only verified results.
-     *
-     * @return VerifyResult[]
-     */
+    /** HTTP 429 for the whole batch. */
+    public function isRateLimited(): bool
+    {
+        return $this->httpStatus === 429;
+    }
+
+    /** HTTP 413 for the whole batch (body over 64 KB). */
+    public function isPayloadTooLarge(): bool
+    {
+        return $this->httpStatus === 413;
+    }
+
+    /** @return VerifyResult[] Only the items the bank confirmed. */
     public function getVerified(): array
     {
-        return array_values(array_filter(
-            $this->results,
-            fn (VerifyResult $r): bool => $r->isVerified()
-        ));
+        return array_values(array_filter($this->results, fn (VerifyResult $r): bool => $r->isVerified()));
     }
 
-    /**
-     * Convenience: iterate only failed results.
-     *
-     * @return VerifyResult[]
-     */
+    /** @return VerifyResult[] Everything not verified (errors and decoded-only results). */
     public function getFailed(): array
     {
-        return array_values(array_filter(
-            $this->results,
-            fn (VerifyResult $r): bool => !$r->isVerified()
-        ));
+        return array_values(array_filter($this->results, fn (VerifyResult $r): bool => !$r->isVerified()));
     }
 }
