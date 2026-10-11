@@ -1,103 +1,92 @@
 /// Data models returned by the cheki API.
+library;
 
-/// The result of a single receipt verification request.
+import 'dart:convert';
+
+double? _toDouble(Object? v) => v is num ? v.toDouble() : null;
+int? _toInt(Object? v) => v is num ? v.toInt() : null;
+String? _toStr(Object? v) => v is String ? v : null;
+
+/// The result of a verification: `POST /api/verify`, or one item of a batch.
 ///
-/// Mirrors the JSON object returned by `POST /api/verify`.
+/// [success] only means the request was processed. [verified] (or
+/// [isVerified]) is the ONLY success signal: a BOA QR code that could not be
+/// confirmed with the bank comes back with `success: true`,
+/// `verified: false` and [decodedOnly] `true`.
 class VerifyResult {
-  /// Whether the API request itself succeeded (HTTP-level success).
+  /// Whether the request was processed (false for failed batch items).
   final bool success;
 
-  /// Whether the receipt was verified as legitimate.
-  final bool? verified;
+  /// True only when the bank itself confirmed the receipt.
+  final bool verified;
 
-  /// The bank code associated with the receipt (e.g. `cbe`, `dashen`).
+  /// BOA QR only: decrypted but not confirmed with the bank. Never proof of payment.
+  final bool decodedOnly;
+
+  /// `/api/parse` only: parsed from caller-supplied text, never checked with the bank.
+  final bool parsed;
+
+  /// `/api/parse` only: `client-supplied`.
+  final String? source;
+
+  /// `/api/parse` only: a human label for the unverified result.
+  final String? label;
+
+  /// True when the server answered from its receipt cache.
+  final bool cached;
+
+  /// Bank name (human-readable).
   final String? bank;
 
-  /// The bank code (alternate field, same as [bank]).
+  /// Bank id (e.g. `cbe`).
   final String? bankCode;
-
-  /// The transaction reference number.
   final String? reference;
-
-  /// The source URL from which the receipt was fetched/verified.
   final String? sourceUrl;
-
-  /// The name of the sender on the verified receipt.
   final String? senderName;
-
-  /// The sender's account number.
   final String? senderAccount;
-
-  /// The name of the receiver on the verified receipt.
   final String? receiverName;
-
-  /// The receiver's account number.
   final String? receiverAccount;
-
-  /// The monetary amount of the transfer.
   final double? amount;
-
-  /// The currency code (e.g. `ETB`).
   final String? currency;
-
-  /// The date of the transaction (as reported by the bank).
   final String? date;
-
-  /// The bank branch where the transaction occurred.
   final String? branch;
-
-  /// The reason for failure or a description of the result.
   final String? reason;
+  final String? transactionType;
 
-  /// The verification duration in milliseconds.
+  /// Server processing time; absent on cache hits.
   final int? durationMs;
-
-  /// The invoice number associated with the transaction.
   final String? invoiceNumber;
-
-  /// The transaction status (e.g. `completed`, `pending`).
   final String? transactionStatus;
-
-  /// The settled amount for the transaction.
   final double? settledAmount;
-
-  /// The stamp duty applied to the transaction.
   final double? stampDuty;
-
-  /// The discount amount applied to the transaction.
   final double? discountAmount;
-
-  /// The service fee charged for the transaction.
   final double? serviceFee;
-
-  /// The VAT on the service fee.
   final double? serviceFeeVat;
-
-  /// The total amount paid.
   final double? totalPaid;
-
-  /// The transaction amount expressed in words.
   final String? amountInWords;
-
-  /// The payment mode (e.g. `online`, `branch`).
   final String? paymentMode;
-
-  /// The payment channel (e.g. `mobile`, `web`).
   final String? paymentChannel;
-
-  /// The bank account number associated with the payment.
   final String? bankAccountNumber;
-
-  /// The bank account name associated with the payment.
   final String? bankAccountName;
 
-  /// An error message if verification failed or the request was unsuccessful.
+  /// Error text (failed batch items).
   final String? error;
 
-  /// Constructs a [VerifyResult] from its fields.
+  /// Failed batch items: the HTTP status a single verify would have returned.
+  final int? status;
+
+  /// Position in the batch input (batch items only, set by the SDK).
+  final int? index;
+
+  /// Constructs a [VerifyResult].
   const VerifyResult({
     required this.success,
-    this.verified,
+    this.verified = false,
+    this.decodedOnly = false,
+    this.parsed = false,
+    this.source,
+    this.label,
+    this.cached = false,
     this.bank,
     this.bankCode,
     this.reference,
@@ -111,6 +100,7 @@ class VerifyResult {
     this.date,
     this.branch,
     this.reason,
+    this.transactionType,
     this.durationMs,
     this.invoiceNumber,
     this.transactionStatus,
@@ -126,509 +116,374 @@ class VerifyResult {
     this.bankAccountNumber,
     this.bankAccountName,
     this.error,
+    this.status,
+    this.index,
   });
 
+  /// True only when the bank confirmed the receipt. [success], [decodedOnly]
+  /// and [parsed] are not proof of payment.
+  bool get isVerified => success && verified;
+
   /// Creates a [VerifyResult] from a decoded JSON map.
-  factory VerifyResult.fromJson(Map<String, dynamic> json) {
+  factory VerifyResult.fromJson(Map<String, dynamic> json, {int? index}) {
     return VerifyResult(
-      success: json['success'] as bool? ?? false,
-      verified: json['verified'] as bool?,
-      bank: json['bank'] as String?,
-      bankCode: json['bankCode'] as String?,
-      reference: json['reference'] as String?,
-      sourceUrl: json['sourceUrl'] as String?,
-      senderName: json['senderName'] as String?,
-      senderAccount: json['senderAccount'] as String?,
-      receiverName: json['receiverName'] as String?,
-      receiverAccount: json['receiverAccount'] as String?,
-      amount: (json['amount'] as num?)?.toDouble(),
-      currency: json['currency'] as String?,
-      date: json['date'] as String?,
-      branch: json['branch'] as String?,
-      reason: json['reason'] as String?,
-      durationMs: json['durationMs'] as int?,
-      invoiceNumber: json['invoiceNumber'] as String?,
-      transactionStatus: json['transactionStatus'] as String?,
-      settledAmount: (json['settledAmount'] as num?)?.toDouble(),
-      stampDuty: (json['stampDuty'] as num?)?.toDouble(),
-      discountAmount: (json['discountAmount'] as num?)?.toDouble(),
-      serviceFee: (json['serviceFee'] as num?)?.toDouble(),
-      serviceFeeVat: (json['serviceFeeVat'] as num?)?.toDouble(),
-      totalPaid: (json['totalPaid'] as num?)?.toDouble(),
-      amountInWords: json['amountInWords'] as String?,
-      paymentMode: json['paymentMode'] as String?,
-      paymentChannel: json['paymentChannel'] as String?,
-      bankAccountNumber: json['bankAccountNumber'] as String?,
-      bankAccountName: json['bankAccountName'] as String?,
-      error: json['error'] as String?,
+      success: json['success'] == true,
+      verified: json['verified'] == true,
+      decodedOnly: json['decodedOnly'] == true,
+      parsed: json['parsed'] == true,
+      source: _toStr(json['source']),
+      label: _toStr(json['label']),
+      cached: json['cached'] == true,
+      bank: _toStr(json['bank']),
+      bankCode: _toStr(json['bankCode']),
+      reference: _toStr(json['reference']),
+      sourceUrl: _toStr(json['sourceUrl']),
+      senderName: _toStr(json['senderName']),
+      senderAccount: _toStr(json['senderAccount']),
+      receiverName: _toStr(json['receiverName']),
+      receiverAccount: _toStr(json['receiverAccount']),
+      amount: _toDouble(json['amount']),
+      currency: _toStr(json['currency']),
+      date: _toStr(json['date']),
+      branch: _toStr(json['branch']),
+      reason: _toStr(json['reason']),
+      transactionType: _toStr(json['transactionType']),
+      durationMs: _toInt(json['durationMs']),
+      invoiceNumber: _toStr(json['invoiceNumber']),
+      transactionStatus: _toStr(json['transactionStatus']),
+      settledAmount: _toDouble(json['settledAmount']),
+      stampDuty: _toDouble(json['stampDuty']),
+      discountAmount: _toDouble(json['discountAmount']),
+      serviceFee: _toDouble(json['serviceFee']),
+      serviceFeeVat: _toDouble(json['serviceFeeVat']),
+      totalPaid: _toDouble(json['totalPaid']),
+      amountInWords: _toStr(json['amountInWords']),
+      paymentMode: _toStr(json['paymentMode']),
+      paymentChannel: _toStr(json['paymentChannel']),
+      bankAccountNumber: _toStr(json['bankAccountNumber']),
+      bankAccountName: _toStr(json['bankAccountName']),
+      error: _toStr(json['error']),
+      status: _toInt(json['status']),
+      index: index,
     );
   }
 
-  /// Converts this result back to a JSON map.
+  /// Converts this result back to a JSON map (API field names).
   Map<String, dynamic> toJson() {
-    return {
+    final m = <String, dynamic>{
       'success': success,
-      if (verified != null) 'verified': verified,
-      if (bank != null) 'bank': bank,
-      if (bankCode != null) 'bankCode': bankCode,
-      if (reference != null) 'reference': reference,
-      if (sourceUrl != null) 'sourceUrl': sourceUrl,
-      if (senderName != null) 'senderName': senderName,
-      if (senderAccount != null) 'senderAccount': senderAccount,
-      if (receiverName != null) 'receiverName': receiverName,
-      if (receiverAccount != null) 'receiverAccount': receiverAccount,
-      if (amount != null) 'amount': amount,
-      if (currency != null) 'currency': currency,
-      if (date != null) 'date': date,
-      if (branch != null) 'branch': branch,
-      if (reason != null) 'reason': reason,
-      if (durationMs != null) 'durationMs': durationMs,
-      if (invoiceNumber != null) 'invoiceNumber': invoiceNumber,
-      if (transactionStatus != null) 'transactionStatus': transactionStatus,
-      if (settledAmount != null) 'settledAmount': settledAmount,
-      if (stampDuty != null) 'stampDuty': stampDuty,
-      if (discountAmount != null) 'discountAmount': discountAmount,
-      if (serviceFee != null) 'serviceFee': serviceFee,
-      if (serviceFeeVat != null) 'serviceFeeVat': serviceFeeVat,
-      if (totalPaid != null) 'totalPaid': totalPaid,
-      if (amountInWords != null) 'amountInWords': amountInWords,
-      if (paymentMode != null) 'paymentMode': paymentMode,
-      if (paymentChannel != null) 'paymentChannel': paymentChannel,
-      if (bankAccountNumber != null) 'bankAccountNumber': bankAccountNumber,
-      if (bankAccountName != null) 'bankAccountName': bankAccountName,
-      if (error != null) 'error': error,
+      'verified': verified,
+      if (decodedOnly) 'decodedOnly': true,
+      if (parsed) 'parsed': true,
+      'source': source,
+      'label': label,
+      if (cached) 'cached': true,
+      'bank': bank,
+      'bankCode': bankCode,
+      'reference': reference,
+      'sourceUrl': sourceUrl,
+      'senderName': senderName,
+      'senderAccount': senderAccount,
+      'receiverName': receiverName,
+      'receiverAccount': receiverAccount,
+      'amount': amount,
+      'currency': currency,
+      'date': date,
+      'branch': branch,
+      'reason': reason,
+      'transactionType': transactionType,
+      'durationMs': durationMs,
+      'invoiceNumber': invoiceNumber,
+      'transactionStatus': transactionStatus,
+      'settledAmount': settledAmount,
+      'stampDuty': stampDuty,
+      'discountAmount': discountAmount,
+      'serviceFee': serviceFee,
+      'serviceFeeVat': serviceFeeVat,
+      'totalPaid': totalPaid,
+      'amountInWords': amountInWords,
+      'paymentMode': paymentMode,
+      'paymentChannel': paymentChannel,
+      'bankAccountNumber': bankAccountNumber,
+      'bankAccountName': bankAccountName,
+      'error': error,
+      'status': status,
     };
+    m.removeWhere((_, v) => v == null);
+    return m;
   }
 
   @override
-  String toString() {
-    return 'VerifyResult(success: $success, verified: $verified, bank: $bank, '
-        'reference: $reference, senderName: $senderName, receiverName: '
-        '$receiverName, amount: $amount, currency: $currency, date: $date, '
-        'sourceUrl: $sourceUrl, error: $error)';
-  }
+  String toString() => 'VerifyResult(success: $success, verified: $verified, decodedOnly: $decodedOnly, '
+      'bank: $bank, reference: $reference, amount: $amount, currency: $currency, error: $error)';
 
   @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    return other is VerifyResult &&
-        other.success == success &&
-        other.verified == verified &&
-        other.bank == bank &&
-        other.bankCode == bankCode &&
-        other.reference == reference &&
-        other.sourceUrl == sourceUrl &&
-        other.senderName == senderName &&
-        other.senderAccount == senderAccount &&
-        other.receiverName == receiverName &&
-        other.receiverAccount == receiverAccount &&
-        other.amount == amount &&
-        other.currency == currency &&
-        other.date == date &&
-        other.branch == branch &&
-        other.reason == reason &&
-        other.durationMs == durationMs &&
-        other.invoiceNumber == invoiceNumber &&
-        other.transactionStatus == transactionStatus &&
-        other.settledAmount == settledAmount &&
-        other.stampDuty == stampDuty &&
-        other.discountAmount == discountAmount &&
-        other.serviceFee == serviceFee &&
-        other.serviceFeeVat == serviceFeeVat &&
-        other.totalPaid == totalPaid &&
-        other.amountInWords == amountInWords &&
-        other.paymentMode == paymentMode &&
-        other.paymentChannel == paymentChannel &&
-        other.bankAccountNumber == bankAccountNumber &&
-        other.bankAccountName == bankAccountName &&
-        other.error == error;
-  }
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is VerifyResult && other.index == index && jsonEncode(other.toJson()) == jsonEncode(toJson()));
 
   @override
-  int get hashCode => Object.hash(
-        success,
-        verified,
-        bank,
-        bankCode,
-        reference,
-        sourceUrl,
-        senderName,
-        senderAccount,
-        receiverName,
-        receiverAccount,
-        amount,
-        currency,
-        date,
-        branch,
-        reason,
-        durationMs,
-        invoiceNumber,
-        transactionStatus,
-        settledAmount,
-        stampDuty,
-        discountAmount,
-        serviceFee,
-        serviceFeeVat,
-        totalPaid,
-        amountInWords,
-        paymentMode,
-        paymentChannel,
-        bankAccountNumber,
-        bankAccountName,
-        error,
-      );
+  int get hashCode => Object.hash(index, jsonEncode(toJson()));
 }
 
-/// Information about a single bank supported by cheki.
-///
-/// Mirrors an element of the `banks` array returned by `GET /api/banks`.
+/// A supported bank or wallet from `GET /api/banks`.
 class BankInfo {
-  /// The short bank code used in API requests (e.g. `cbe`, `dashen`).
-  final String code;
+  /// Bank id, the value to pass as `bank` (e.g. `cbe`).
+  final String id;
 
-  /// The human-readable name of the bank.
+  /// Human-readable name.
   final String name;
+  final String? swift;
 
-  /// The current operational status of the bank integration.
-  ///
-  /// Common values: `live`, `in-development`.
-  final String status;
-
-  /// The type of financial institution (`bank` or `wallet`).
+  /// `bank`, `mobile` or `wallet`.
   final String? type;
 
-  /// Whether the bank requires an account number for verification.
+  /// `live` or `in-development`.
+  final String status;
   final bool requiresAccount;
 
-  /// The expected number of digits in the account number, if applicable.
+  /// Trailing account digits the bank needs, when it needs an account.
   final int? accountDigits;
 
-  /// Whether the bank requires a phone number for verification.
-  final bool? requiresPhone;
-
-  /// Whether QR-based verification is supported for this bank.
-  final bool? supportsQr;
-
-  /// The response type expected from this bank's verification endpoint.
-  final String? responseType;
-
-  /// The bank's verification endpoint URL.
+  /// Whether a payer phone number is required (defaults to false).
+  final bool requiresPhone;
   final String? endpoint;
-
-  /// Whether SSL verification is used for this bank's endpoint.
-  final bool? sslVerify;
-
-  /// Additional notes about this bank integration.
-  final String? notes;
-
-  /// The brand color associated with this bank.
   final String? color;
-
-  /// The initials or short abbreviation for this bank.
   final String? initials;
 
-  /// Constructs a [BankInfo] from its fields.
+  /// Constructs a [BankInfo].
   const BankInfo({
-    required this.code,
+    required this.id,
     required this.name,
     required this.status,
+    this.swift,
     this.type,
-    required this.requiresAccount,
+    this.requiresAccount = false,
     this.accountDigits,
-    this.requiresPhone,
-    this.supportsQr,
-    this.responseType,
+    this.requiresPhone = false,
     this.endpoint,
-    this.sslVerify,
-    this.notes,
     this.color,
     this.initials,
   });
 
-  /// Creates a [BankInfo] from a decoded JSON map.
+  /// Deprecated alias of [id].
+  @Deprecated('Use id')
+  String get code => id;
+
+  /// Creates a [BankInfo] from a decoded JSON map. Tolerates a missing id.
   factory BankInfo.fromJson(Map<String, dynamic> json) {
     return BankInfo(
-      code: json['code'] as String,
-      name: json['name'] as String,
-      status: json['status'] as String,
-      type: json['type'] as String?,
-      requiresAccount: json['requiresAccount'] as bool? ?? false,
-      accountDigits: json['accountDigits'] as int?,
-      requiresPhone: json['requiresPhone'] as bool?,
-      supportsQr: json['supportsQr'] as bool?,
-      responseType: json['responseType'] as String?,
-      endpoint: json['endpoint'] as String?,
-      sslVerify: json['sslVerify'] as bool?,
-      notes: json['notes'] as String?,
-      color: json['color'] as String?,
-      initials: json['initials'] as String?,
+      id: _toStr(json['id']) ?? _toStr(json['code']) ?? '',
+      name: _toStr(json['name']) ?? '',
+      status: _toStr(json['status']) ?? 'unknown',
+      swift: _toStr(json['swift']),
+      type: _toStr(json['type']),
+      requiresAccount: json['requiresAccount'] == true,
+      accountDigits: _toInt(json['accountDigits']),
+      requiresPhone: json['requiresPhone'] == true,
+      endpoint: _toStr(json['endpoint']),
+      color: _toStr(json['color']),
+      initials: _toStr(json['initials']),
     );
   }
 
   /// Converts this [BankInfo] back to a JSON map.
   Map<String, dynamic> toJson() {
-    return {
-      'code': code,
+    final m = <String, dynamic>{
+      'id': id,
       'name': name,
+      'swift': swift,
+      'type': type,
       'status': status,
-      if (type != null) 'type': type,
       'requiresAccount': requiresAccount,
-      if (accountDigits != null) 'accountDigits': accountDigits,
-      if (requiresPhone != null) 'requiresPhone': requiresPhone,
-      if (supportsQr != null) 'supportsQr': supportsQr,
-      if (responseType != null) 'responseType': responseType,
-      if (endpoint != null) 'endpoint': endpoint,
-      if (sslVerify != null) 'sslVerify': sslVerify,
-      if (notes != null) 'notes': notes,
-      if (color != null) 'color': color,
-      if (initials != null) 'initials': initials,
+      'accountDigits': accountDigits,
+      'requiresPhone': requiresPhone,
+      'endpoint': endpoint,
+      'color': color,
+      'initials': initials,
     };
+    m.removeWhere((_, v) => v == null);
+    return m;
   }
 
-  /// Whether this bank is live and available.
   bool get isLive => status == 'live';
-
-  /// Whether this bank is a bank (as opposed to a wallet).
   bool get isBank => type == 'bank';
-
-  /// Whether this bank is a wallet (as opposed to a bank).
+  bool get isMobile => type == 'mobile';
   bool get isWallet => type == 'wallet';
 
   @override
-  String toString() =>
-      'BankInfo(code: $code, name: $name, status: $status, type: $type, '
+  String toString() => 'BankInfo(id: $id, name: $name, status: $status, type: $type, '
       'requiresAccount: $requiresAccount)';
 
   @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    return other is BankInfo &&
-        other.code == code &&
-        other.name == name &&
-        other.status == status &&
-        other.type == type &&
-        other.requiresAccount == requiresAccount &&
-        other.accountDigits == accountDigits &&
-        other.requiresPhone == requiresPhone &&
-        other.supportsQr == supportsQr &&
-        other.responseType == responseType &&
-        other.endpoint == endpoint &&
-        other.sslVerify == sslVerify &&
-        other.notes == notes &&
-        other.color == color &&
-        other.initials == initials;
-  }
+  bool operator ==(Object other) =>
+      identical(this, other) || (other is BankInfo && jsonEncode(other.toJson()) == jsonEncode(toJson()));
 
   @override
-  int get hashCode => Object.hash(
-        code,
-        name,
-        status,
-        type,
-        requiresAccount,
-        accountDigits,
-        requiresPhone,
-        supportsQr,
-        responseType,
-        endpoint,
-        sslVerify,
-        notes,
-        color,
-        initials,
-      );
+  int get hashCode => jsonEncode(toJson()).hashCode;
 }
 
-/// The health status of the cheki service.
-///
-/// Mirrors the JSON returned by `GET /api/health`.
-class HealthStatus {
-  /// Whether the health check request succeeded.
-  final bool success;
-
-  /// The overall service status (e.g. `ok`, `degraded`, `down`).
-  final String status;
-
-  /// The API version string.
-  final String? version;
-
-  /// ISO timestamp of the health check.
-  final String? timestamp;
-
-  /// Individual health check entries.
-  final List<HealthCheck> checks;
-
-  /// Constructs a [HealthStatus] from its fields.
-  const HealthStatus({
-    required this.success,
-    required this.status,
-    this.version,
-    this.timestamp,
-    this.checks = const [],
-  });
-
-  /// Creates a [HealthStatus] from a decoded JSON map.
-  factory HealthStatus.fromJson(Map<String, dynamic> json) {
-    final checksRaw = json['checks'] as List?;
-    return HealthStatus(
-      success: json['success'] as bool? ?? false,
-      status: json['status'] as String? ?? 'unknown',
-      version: json['version'] as String?,
-      timestamp: json['timestamp'] as String?,
-      checks: checksRaw
-              ?.map((e) => HealthCheck.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          const [],
-    );
-  }
-
-  /// Converts this [HealthStatus] back to a JSON map.
-  Map<String, dynamic> toJson() {
-    return {
-      'success': success,
-      'status': status,
-      if (version != null) 'version': version,
-      if (timestamp != null) 'timestamp': timestamp,
-      'checks': checks.map((e) => e.toJson()).toList(),
-    };
-  }
-
-  @override
-  String toString() =>
-      'HealthStatus(success: $success, status: $status, version: $version, '
-      'timestamp: $timestamp, checks: $checks)';
-}
-
-/// A single health check entry within a [HealthStatus] response.
-class HealthCheck {
-  /// The name of the check (e.g. `database`, `upstream`).
+/// One bank's reachability in `GET /api/health`.
+class BankHealth {
+  final String id;
   final String name;
 
-  /// Whether this individual check passed.
-  final bool ok;
+  /// `reachable`, `unreachable`, `geo-blocked`, `no-parser` or `in-development`.
+  final String status;
+  final int latencyMs;
 
-  /// An optional message describing the check result.
-  final String? message;
-
-  /// Constructs a [HealthCheck] from its fields.
-  const HealthCheck({
+  /// Constructs a [BankHealth].
+  const BankHealth({
+    required this.id,
     required this.name,
-    required this.ok,
-    this.message,
+    required this.status,
+    required this.latencyMs,
   });
 
-  /// Creates a [HealthCheck] from a decoded JSON map.
-  factory HealthCheck.fromJson(Map<String, dynamic> json) {
-    return HealthCheck(
-      name: json['name'] as String? ?? 'unknown',
-      ok: json['ok'] as bool? ?? false,
-      message: json['message'] as String?,
+  factory BankHealth.fromJson(Map<String, dynamic> json) => BankHealth(
+        id: _toStr(json['id']) ?? '',
+        name: _toStr(json['name']) ?? '',
+        status: _toStr(json['status']) ?? '',
+        latencyMs: _toInt(json['latencyMs']) ?? 0,
+      );
+
+  Map<String, dynamic> toJson() => {'id': id, 'name': name, 'status': status, 'latencyMs': latencyMs};
+
+  bool get isReachable => status == 'reachable';
+
+  @override
+  String toString() => 'BankHealth(id: $id, status: $status, latencyMs: $latencyMs)';
+}
+
+/// `GET /api/health`: per-bank reachability, cached up to 5 minutes server-side.
+class HealthStatus {
+  /// `ok` when the service answered.
+  final String status;
+
+  /// When the probe ran (ISO 8601).
+  final String? checkedAt;
+
+  /// True when the server answered from its 5-minute cache.
+  final bool cached;
+  final List<BankHealth> banks;
+
+  /// Constructs a [HealthStatus].
+  const HealthStatus({
+    required this.status,
+    this.checkedAt,
+    this.cached = false,
+    this.banks = const [],
+  });
+
+  factory HealthStatus.fromJson(Map<String, dynamic> json) {
+    final raw = json['banks'];
+    return HealthStatus(
+      status: _toStr(json['status']) ?? 'unknown',
+      checkedAt: _toStr(json['checkedAt']),
+      cached: json['cached'] == true,
+      banks: raw is List ? raw.whereType<Map<String, dynamic>>().map(BankHealth.fromJson).toList() : const [],
     );
   }
 
-  /// Converts this [HealthCheck] back to a JSON map.
-  Map<String, dynamic> toJson() {
-    return {
-      'name': name,
-      'ok': ok,
-      if (message != null) 'message': message,
-    };
-  }
+  bool get isOk => status == 'ok';
+
+  Map<String, dynamic> toJson() => {
+        'status': status,
+        if (checkedAt != null) 'checkedAt': checkedAt,
+        'cached': cached,
+        'banks': banks.map((b) => b.toJson()).toList(),
+      };
 
   @override
-  String toString() => 'HealthCheck(name: $name, ok: $ok, message: $message)';
+  String toString() => 'HealthStatus(status: $status, checkedAt: $checkedAt, cached: $cached, banks: $banks)';
 }
 
-/// The result of a batch verification request.
-///
-/// Mirrors the JSON returned by `POST /api/verify/batch`.
+/// `POST /api/verify/batch`.
 class BatchResult {
-  /// Whether the batch request itself succeeded.
   final bool success;
-
-  /// Total number of receipts in the batch.
   final int total;
 
-  /// Number of receipts that were verified.
+  /// Items with `verified: true`.
   final int verified;
 
-  /// Number of receipts that failed verification.
+  /// Everything else: errors and decoded-only QR results.
   final int failed;
 
-  /// Per-receipt results, in the same order as the input.
+  /// Items served from the server cache.
+  final int cached;
+
+  /// Per-receipt results in input order (each has [VerifyResult.index]).
   final List<VerifyResult> results;
 
-  /// Constructs a [BatchResult] from its fields.
+  /// Constructs a [BatchResult].
   const BatchResult({
     required this.success,
     required this.total,
     required this.verified,
     required this.failed,
     required this.results,
+    this.cached = 0,
   });
 
-  /// Creates a [BatchResult] from a decoded JSON map.
   factory BatchResult.fromJson(Map<String, dynamic> json) {
-    final resultsRaw = json['results'] as List?;
+    final raw = json['results'];
+    final results = <VerifyResult>[];
+    if (raw is List) {
+      for (var i = 0; i < raw.length; i++) {
+        final item = raw[i];
+        if (item is Map<String, dynamic>) results.add(VerifyResult.fromJson(item, index: i));
+      }
+    }
+    final verifiedCount = results.where((r) => r.isVerified).length;
     return BatchResult(
-      success: json['success'] as bool? ?? false,
-      total: json['total'] as int? ?? 0,
-      verified: json['verified'] as int? ?? 0,
-      failed: json['failed'] as int? ?? 0,
-      results: resultsRaw
-              ?.map((e) => VerifyResult.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          const [],
+      success: json['success'] == true,
+      total: _toInt(json['total']) ?? results.length,
+      verified: _toInt(json['verified']) ?? verifiedCount,
+      failed: _toInt(json['failed']) ?? results.length - verifiedCount,
+      cached: _toInt(json['cached']) ?? 0,
+      results: results,
     );
   }
 
-  /// Converts this [BatchResult] back to a JSON map.
-  Map<String, dynamic> toJson() {
-    return {
-      'success': success,
-      'total': total,
-      'verified': verified,
-      'failed': failed,
-      'results': results.map((e) => e.toJson()).toList(),
-    };
-  }
+  Map<String, dynamic> toJson() => {
+        'success': success,
+        'total': total,
+        'verified': verified,
+        'failed': failed,
+        'cached': cached,
+        'results': results.map((e) => e.toJson()).toList(),
+      };
 
   @override
-  String toString() =>
-      'BatchResult(success: $success, total: $total, verified: $verified, '
-      'failed: $failed, results: $results)';
+  String toString() => 'BatchResult(success: $success, total: $total, verified: $verified, '
+      'failed: $failed, cached: $cached)';
 }
 
-/// A single receipt to verify in a batch request.
-///
-/// Used when building the payload for [ChekiClient.verifyBatch].
+/// A receipt to verify in [ChekiClient.verifyBatch].
 class BatchReceipt {
-  /// The bank code (e.g. `cbe`, `dashen`).
+  /// Bank id (e.g. `cbe`).
   final String bank;
 
-  /// The transaction reference number.
-  final String reference;
-
-  /// The account number, if required by the bank.
+  /// Reference or receipt link. Optional when [qrData] is given.
+  final String? reference;
   final String? accountNumber;
-
-  /// The phone number, if required by the bank.
   final String? phoneNumber;
+  final String? qrData;
 
   /// Constructs a [BatchReceipt].
   const BatchReceipt({
     required this.bank,
-    required this.reference,
+    this.reference,
     this.accountNumber,
     this.phoneNumber,
+    this.qrData,
   });
 
-  /// Converts this [BatchReceipt] to a JSON map suitable for the API.
-  Map<String, dynamic> toJson() {
-    return {
-      'bank': bank,
-      'reference': reference,
-      if (accountNumber != null) 'accountNumber': accountNumber,
-      if (phoneNumber != null) 'phoneNumber': phoneNumber,
-    };
-  }
+  Map<String, dynamic> toJson() => {
+        'bank': bank,
+        if (reference != null && reference!.isNotEmpty) 'reference': reference,
+        if (accountNumber != null && accountNumber!.isNotEmpty) 'accountNumber': accountNumber,
+        if (phoneNumber != null && phoneNumber!.isNotEmpty) 'phoneNumber': phoneNumber,
+        if (qrData != null && qrData!.isNotEmpty) 'qrData': qrData,
+      };
 }
