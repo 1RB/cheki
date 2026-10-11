@@ -46,12 +46,14 @@ export function HomePage() {
         <section className="container hp-hero">
           <div className="hp-hero-grid">
             <div className="hp-hero-copy">
-              <h1 className="hp-title"><T k="hero.title" /></h1>
+              <h1 className="hp-title">
+                <T k="hero.titleLead" /> <span className="hp-title-rest"><T k="hero.titleRest" /></span>
+              </h1>
               <p className="hp-lede"><T k="hero.subtitle" /></p>
               <ul className="hp-trust" aria-label="Why cheki">
-                <li>Checked against the bank&apos;s own record</li>
                 <li>{live.length} banks and wallets</li>
-                <li>Free and open source</li>
+                <li>Answers in seconds</li>
+                <li>Open source</li>
               </ul>
               <div className="hp-hero-desktop-extra">
                 <AgentPrompt />

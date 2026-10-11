@@ -128,10 +128,10 @@ export default async function BankPage({ params }: { params: Promise<{ code: str
             {bank.shortName.slice(0, 3)}
           </div>
           <div>
-            <p style={{ fontSize: "12px", fontWeight: 600, color: "var(--green-dark)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+            <p style={{ fontSize: "13px", fontWeight: 500, color: "var(--ink-3)" }}>
               {bank.type === "mobile" ? "Mobile wallet" : bank.type === "wallet" ? "Wallet" : "Bank verification"}
             </p>
-            <h1 style={{ fontSize: "clamp(24px, 4vw, 32px)", fontWeight: 800, letterSpacing: "-0.02em" }}>
+            <h1 style={{ fontSize: "clamp(24px, 4vw, 32px)", fontWeight: 700, letterSpacing: "-0.03em", lineHeight: 1.15 }}>
               {bank.shortName} Receipt Check
             </h1>
           </div>
@@ -298,7 +298,7 @@ export default async function BankPage({ params }: { params: Promise<{ code: str
               top: "calc(var(--nav-h) + 24px)", padding: "24px",
               borderRadius: "12px", background: "var(--surface)", border: "1px solid var(--border)",
             }}>
-              <p style={{ fontSize: "12px", fontWeight: 600, color: "var(--ink-3)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "16px" }}>Other supported providers</p>
+              <p style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink)", marginBottom: "16px" }}>Other supported providers</p>
               <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                 {otherBanks.map((b) => (
                   <a key={b.code} href={`/banks/${b.code}`} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "8px 12px", borderRadius: "8px", transition: "background-color 0.15s, color 0.15s, border-color 0.15s, transform 0.15s" }}>
