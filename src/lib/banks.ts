@@ -147,4 +147,9 @@ export interface VerifyResult {
   paymentChannel?: string;
   bankAccountNumber?: string;
   bankAccountName?: string;
+  /** BOA QR decoded but not confirmed with the bank (verified is false). */
+  decodedOnly?: boolean;
+  /** Read from content the user pasted (/api/parse); never bank-confirmed. */
+  parsed?: boolean;
+  source?: string;
 }
