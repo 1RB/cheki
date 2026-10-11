@@ -1,35 +1,130 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
 import { createPortal } from "react-dom";
-import { Icon, GithubIcon, Menu01Icon, Cancel01Icon, ArrowRight01Icon } from "@/components/Icon";
+import { Icon, GithubIcon, Menu01Icon, Cancel01Icon, ArrowRight01Icon, Search01Icon } from "@/components/Icon";
 import { useTranslation } from "@/lib/i18n/use-translation";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { ThemeToggle } from "@/components/motion/theme-toggle";
-import { CommandPalette, type CommandItem } from "@/components/motion/command-palette";
-import { banks } from "@/lib/banks";
-import { articles } from "@/lib/guides";
+
+// The palette (and its search index) loads on the first ⌘K or click only.
+const CommandPalette = dynamic(() => import("@/components/motion/command-palette"), { ssr: false });
+
+/**
+ * Mobile menu as a real modal: focus moves in on open and is kept inside,
+ * Escape closes it, focus returns to the toggle, and everything behind it is
+ * inert (not just covered).
+ */
+function MobileMenu({ links, onClose, t }: { links: { href: string; label: string }[]; onClose: () => void; t: (k: string) => string }) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const root = ref.current;
+    if (!root) return;
+    const siblings = Array.from(document.body.children).filter((el) => !el.contains(root));
+    siblings.forEach((el) => el.setAttribute("inert", ""));
+    const prev = { overflow: document.body.style.overflow, touch: document.body.style.touchAction };
+    document.body.style.overflow = "hidden";
+    document.body.style.touchAction = "none";
+    root.querySelector<HTMLElement>("a, button")?.focus();
+    return () => {
+      siblings.forEach((el) => el.removeAttribute("inert"));
+      document.body.style.overflow = prev.overflow;
+      document.body.style.touchAction = prev.touch;
+    };
+  }, []);
+
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      onClose();
+      return;
+    }
+    if (e.key !== "Tab" || !ref.current) return;
+    const focusable = Array.from(ref.current.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])'));
+    if (focusable.length === 0) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  };
+
+  return createPortal(
+    <div ref={ref} className="nav-mobile-menu" role="dialog" aria-modal="true" aria-label="Menu" onKeyDown={onKeyDown}>
+      <div className="nmm-head">
+        <Link href="/" onClick={onClose} className="nav-logo" prefetch={false}>
+          <span className="nav-logo-word">cheki</span>
+        </Link>
+        <button type="button" onClick={onClose} className="nav-icon-btn" aria-label="Close menu">
+          <Icon icon={Cancel01Icon} size={22} color="var(--ink)" />
+        </button>
+      </div>
+      <div className="nmm-body">
+        <div className="nmm-group">
+          {links.map((l) => (
+            <Link key={l.href} href={l.href} onClick={onClose} className="nmm-link" prefetch={false}>
+              {l.label}
+              <Icon icon={ArrowRight01Icon} size={18} color="var(--ink-3)" />
+            </Link>
+          ))}
+        </div>
+        <div className="nmm-group">
+          <div className="nmm-row">
+            <span>{t("language.switch")}</span>
+            <LanguageSwitcher />
+          </div>
+          <div className="nmm-row">
+            <span>Theme</span>
+            <ThemeToggle size={36} />
+          </div>
+          <a href="https://github.com/1RB/cheki" target="_blank" rel="noopener noreferrer" onClick={onClose} className="nmm-gh">
+            <Icon icon={GithubIcon} size={18} color="var(--ink)" />
+            GitHub
+          </a>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
 
 export function Nav() {
   const { t } = useTranslation();
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const toggleRef = useRef<HTMLButtonElement>(null);
+  const firstPath = useRef(pathname);
+
+  // After the first client-side navigation, pages fade in (see .t-page-enter).
+  useEffect(() => {
+    if (pathname !== firstPath.current) document.documentElement.dataset.nav = "1";
+  }, [pathname]);
+
+  const closeMenu = useCallback(() => {
+    setMobileOpen(false);
+    requestAnimationFrame(() => toggleRef.current?.focus());
+  }, []);
 
   useEffect(() => {
-    if (mobileOpen) {
-      document.body.style.overflow = "hidden";
-      document.body.style.touchAction = "none";
-      return () => {
-        document.body.style.overflow = "";
-        document.body.style.touchAction = "";
-      };
-    } else {
-      document.body.style.overflow = "";
-      document.body.style.touchAction = "";
-      document.body.style.overscrollBehavior = "";
-    }
-  }, [mobileOpen]);
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setPaletteOpen(true);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
   const links = [
     { href: "/", label: t("nav.verify") },
     { href: "/banks", label: t("nav.banks") },
@@ -39,164 +134,58 @@ export function Nav() {
     { href: "/compare", label: t("nav.compare") },
   ];
 
-  const commandItems: CommandItem[] = [
-    { id: "page-verify", href: "/", label: "Verify a receipt", group: "Pages" },
-    { id: "page-banks", href: "/banks", label: "All banks", group: "Pages" },
-    { id: "page-guides", href: "/guides", label: "All guides", group: "Pages" },
-    { id: "page-docs", href: "/docs", label: "API documentation", group: "Pages" },
-    { id: "page-compare", href: "/compare", label: "Compare services", group: "Pages" },
-    { id: "page-developers", href: "/developers", label: "Developers", group: "Pages" },
-    { id: "page-verify-index", href: "/verify", label: "Verify guides", group: "Pages" },
-    { id: "page-endpoints", href: "/endpoints", label: "Bank endpoint reference", group: "Pages" },
-    { id: "page-status", href: "/status", label: "Endpoint status", group: "Pages" },
-    ...banks.map((b) => ({
-      id: `bank-${b.code}`,
-      label: b.name,
-      description: b.status === "live" ? "Live" : "In development",
-      href: `/banks/${b.code}`,
-      group: "Banks",
-    })),
-    ...articles.map((a) => ({
-      id: `guide-${a.slug}`,
-      label: a.title,
-      description: a.excerpt,
-      href: `/guides/${a.slug}`,
-      group: "Guides",
-    })),
-  ];
   return (
     <>
-      <nav aria-label="Main" style={{
-        position: "sticky", top: 0, zIndex: 100,
-        background: "color-mix(in srgb, var(--bg) 92%, transparent)", backdropFilter: "blur(12px)",
-        borderBottom: "1px solid var(--border)", height: "var(--nav-h)",
-      }}>
-        <div className="container" style={{
-          height: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px",
-        }}>
-          {/* Left: logo + nav links */}
-          <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
-            <a href="/" style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
-              <span style={{
-                fontWeight: 800, fontSize: "20px", letterSpacing: "-0.03em", color: "var(--ink)",
-              }}>cheki</span>
-              <span style={{
-                fontSize: "11px", fontWeight: 600, color: "var(--green-dark)", border: "1px solid var(--green-light)",
-                padding: "2px 6px", borderRadius: "4px", background: "var(--green-light)",
-              }}>OSS</span>
-            </a>
-            <div className="nav-desktop" style={{ display: "flex", gap: "2px", alignItems: "center" }}>
+      <nav aria-label="Main" className="site-nav">
+        <div className="container nav-inner">
+          <div className="nav-left">
+            <Link href="/" className="nav-logo" prefetch={false}>
+              <span className="nav-logo-word">cheki</span>
+            </Link>
+            <div className="nav-desktop nav-links">
               {links.map((l) => {
                 const here = l.href === "/" ? pathname === "/" : pathname === l.href || pathname.startsWith(`${l.href}/`);
                 return (
-                  <a key={l.href} href={l.href} aria-current={here ? "page" : undefined} style={{
-                    padding: "6px 12px", fontSize: "14px", fontWeight: here ? 600 : 500,
-                    color: here ? "var(--ink)" : "var(--ink-2)",
-                    background: here ? "color-mix(in srgb, var(--border) 70%, transparent)" : "transparent",
-                    borderRadius: "6px", transition: "color 0.15s, background-color 0.15s",
-                  }}>{l.label}</a>
+                  <Link key={l.href} href={l.href} prefetch={false} aria-current={here ? "page" : undefined} className="nav-link">
+                    {l.label}
+                  </Link>
                 );
               })}
             </div>
           </div>
 
-          {/* Right: utilities */}
-          <div className="nav-desktop" style={{ display: "flex", gap: "4px", alignItems: "center", flexShrink: 0 }}>
-            <CommandPalette items={commandItems} />
+          <div className="nav-desktop nav-right">
+            <button type="button" className="nav-icon-btn" onClick={() => setPaletteOpen(true)} aria-label="Search (⌘K)" aria-haspopup="dialog">
+              <Icon icon={Search01Icon} size={17} color="var(--ink-3)" />
+            </button>
             <LanguageSwitcher />
             <ThemeToggle />
-            <a href="https://github.com/1RB/cheki" target="_blank" rel="noopener" style={{
-              padding: "6px 14px", fontSize: "14px", fontWeight: 600, color: "var(--bg)",
-              background: "var(--ink)", borderRadius: "6px", marginLeft: "4px",
-              display: "flex", alignItems: "center", gap: "6px",
-            }}>
-              <Icon icon={GithubIcon} size={14} color="var(--bg)" />
+            <a href="https://github.com/1RB/cheki" target="_blank" rel="noopener noreferrer" className="nav-gh">
+              <Icon icon={GithubIcon} size={15} color="var(--ink-2)" />
               GitHub
             </a>
           </div>
 
-          {/* Mobile toggle */}
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <div className="nav-mobile-only" style={{ display: "none" }}>
-              <ThemeToggle size={32} />
-            </div>
+          <div className="nav-mobile-actions">
+            <button type="button" className="nav-icon-btn nav-mobile-only" onClick={() => setPaletteOpen(true)} aria-label="Search" aria-haspopup="dialog">
+              <Icon icon={Search01Icon} size={20} color="var(--ink-2)" />
+            </button>
             <button
-              className="nav-mobile-toggle"
-              onClick={() => setMobileOpen(!mobileOpen)}
-              aria-label={mobileOpen ? "Close menu" : "Open menu"}
+              ref={toggleRef}
+              type="button"
+              className="nav-icon-btn nav-mobile-toggle"
+              onClick={() => setMobileOpen(true)}
+              aria-label="Open menu"
+              aria-haspopup="dialog"
               aria-expanded={mobileOpen}
-              style={{
-              background: "transparent", border: "none", cursor: "pointer", padding: "8px",
-              display: "none",
-            }}>
-              <Icon icon={mobileOpen ? Cancel01Icon : Menu01Icon} size={22} color="var(--ink)" />
+            >
+              <Icon icon={Menu01Icon} size={22} color="var(--ink)" />
             </button>
           </div>
         </div>
       </nav>
-      {mobileOpen && createPortal(
-        <div className="nav-mobile-menu" style={{
-          position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
-          background: "var(--bg)", zIndex: 200,
-          display: "flex", flexDirection: "column",
-          overflow: "hidden", isolation: "isolate",
-        }}>
-          {/* Menu header with logo + close */}
-          <div style={{
-            height: "var(--nav-h)",
-            display: "flex", alignItems: "center", justifyContent: "space-between",
-            padding: "0 16px",
-            borderBottom: "1px solid var(--border)",
-            flexShrink: 0,
-          }}>
-            <a href="/" onClick={() => setMobileOpen(false)} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <span style={{ fontWeight: 800, fontSize: "20px", letterSpacing: "-0.03em", color: "var(--ink)" }}>cheki</span>
-              <span style={{ fontSize: "11px", fontWeight: 600, color: "var(--green-dark)", border: "1px solid var(--green-light)", padding: "2px 6px", borderRadius: "4px", background: "var(--green-light)" }}>OSS</span>
-            </a>
-            <button onClick={() => setMobileOpen(false)} style={{
-              background: "transparent", border: "none", cursor: "pointer", padding: "8px",
-              display: "flex", alignItems: "center", justifyContent: "center",
-            }}>
-              <Icon icon={Cancel01Icon} size={22} color="var(--ink)" />
-            </button>
-          </div>
-          {/* Scrollable menu content */}
-          <div style={{
-            flex: 1,
-            padding: "24px",
-            display: "flex", flexDirection: "column", gap: "8px",
-            overflowY: "auto", overscrollBehavior: "contain",
-            WebkitOverflowScrolling: "touch",
-            touchAction: "pan-y",
-          }}>
-            {links.map((l) => (
-              <a key={l.href} href={l.href} onClick={() => setMobileOpen(false)} style={{
-                flexShrink: 0,
-                padding: "16px 20px", fontSize: "18px", fontWeight: 600, color: "var(--ink)",
-                borderRadius: "10px", background: "var(--surface)", border: "1px solid var(--border)",
-                display: "flex", alignItems: "center", justifyContent: "space-between",
-              }}>
-                {l.label}
-                <Icon icon={ArrowRight01Icon} size={18} color="var(--ink-3)" />
-              </a>
-            ))}
-            <div style={{ flexShrink: 0, padding: "16px 20px", borderRadius: "10px", background: "var(--surface)", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <span style={{ fontSize: "18px", fontWeight: 600, color: "var(--ink)" }}>{t("language.switch")}</span>
-              <LanguageSwitcher />
-            </div>
-            <a href="https://github.com/1RB/cheki" target="_blank" rel="noopener" onClick={() => setMobileOpen(false)} style={{
-              flexShrink: 0,
-              padding: "16px 20px", fontSize: "18px", fontWeight: 600, color: "var(--bg)",
-              background: "var(--ink)", borderRadius: "10px",
-              display: "flex", alignItems: "center", gap: "10px",
-            }}>
-              <Icon icon={GithubIcon} size={18} color="var(--bg)" />
-              GitHub
-            </a>
-          </div>
-        </div>,
-        document.body
-      )}
+      {mobileOpen && <MobileMenu links={links} onClose={closeMenu} t={t} />}
+      {paletteOpen && <CommandPalette onClose={() => setPaletteOpen(false)} />}
     </>
   );
 }
@@ -227,51 +216,47 @@ export function Footer() {
     { href: "https://github.com/1RB/cheki/tree/main/python", label: t("footer.python") },
   ];
   return (
-    <footer style={{ marginTop: "64px", borderTop: "1px solid var(--border)", background: "var(--surface-alt)" }}>
+    <footer style={{ marginTop: "64px", borderTop: "1px solid var(--border)", background: "var(--bg)" }}>
       <div className="container" style={{ padding: "40px 24px" }}>
         <div className="footer-grid" style={{
           display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "28px",
         }}>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
-              <span style={{ fontWeight: 800, fontSize: "18px", letterSpacing: "-0.03em" }}>cheki</span>
-              <span style={{
-                fontSize: "11px", fontWeight: 600, color: "var(--green-dark)", border: "1px solid var(--green-light)",
-                padding: "2px 6px", borderRadius: "4px", background: "var(--green-light)",
-              }}>OSS</span>
+              <span style={{ fontWeight: 750, fontSize: "18px", letterSpacing: "-0.035em" }}>cheki</span>
             </div>
             <p style={{ fontSize: "13px", color: "var(--ink-3)", lineHeight: 1.6, maxWidth: "280px" }}>
               {t("footer.tagline")}
             </p>
-            <a href="/guides/contribute-translations" style={{
+            <Link href="/guides/contribute-translations" prefetch={false} style={{
               display: "inline-flex", marginTop: "12px", fontSize: "13px", color: "var(--green-dark)", fontWeight: 600,
             }}>
               {t("language.contribute")}
-            </a>
+            </Link>
           </div>
           <div>
-            <p style={{ fontSize: "12px", fontWeight: 600, color: "var(--ink-3)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "12px" }}>{t("footer.banks")}</p>
+            <p style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink)", marginBottom: "12px" }}>{t("footer.banks")}</p>
             <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
               {bankLinks.map((l) => (
-                <a key={l.href} href={l.href} style={{ fontSize: "13px", color: "var(--ink-2)" }}>{l.label}</a>
+                <Link key={l.href} href={l.href} prefetch={false} style={{ fontSize: "13px", color: "var(--ink-2)" }}>{l.label}</Link>
               ))}
-              <a href="/banks" style={{ fontSize: "13px", color: "var(--green-dark)", fontWeight: 600 }}>{t("footer.banks")}</a>
+              <Link href="/banks" prefetch={false} style={{ fontSize: "13px", color: "var(--green-dark)", fontWeight: 600 }}>{t("footer.banks")}</Link>
             </div>
           </div>
           <div>
-            <p style={{ fontSize: "12px", fontWeight: 600, color: "var(--ink-3)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "12px" }}>{t("footer.guides")}</p>
+            <p style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink)", marginBottom: "12px" }}>{t("footer.guides")}</p>
             <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
               {guideLinks.map((l) => (
-                <a key={l.href} href={l.href} style={{ fontSize: "13px", color: "var(--ink-2)" }}>{l.label}</a>
+                <Link key={l.href} href={l.href} prefetch={false} style={{ fontSize: "13px", color: "var(--ink-2)" }}>{l.label}</Link>
               ))}
-              <a href="/guides" style={{ fontSize: "13px", color: "var(--green-dark)", fontWeight: 600 }}>{t("footer.allGuides")}</a>
+              <Link href="/guides" prefetch={false} style={{ fontSize: "13px", color: "var(--green-dark)", fontWeight: 600 }}>{t("footer.allGuides")}</Link>
             </div>
           </div>
           <div>
-            <p style={{ fontSize: "12px", fontWeight: 600, color: "var(--ink-3)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "12px" }}>{t("footer.resources")}</p>
+            <p style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink)", marginBottom: "12px" }}>{t("footer.resources")}</p>
             <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
               {resourceLinks.map((l) => (
-                <a key={l.href} href={l.href} style={{ fontSize: "13px", color: "var(--ink-2)" }}>{l.label}</a>
+                <Link key={l.href} href={l.href} prefetch={false} style={{ fontSize: "13px", color: "var(--ink-2)" }}>{l.label}</Link>
               ))}
             </div>
           </div>

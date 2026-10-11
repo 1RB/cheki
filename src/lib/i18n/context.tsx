@@ -46,6 +46,14 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   );
 }
 
+/**
+ * The active locale, or English outside the provider (components rendered on
+ * their own in tests, or in isolation). Never throws.
+ */
+export function useLocaleOrDefault(): Locale {
+  return useContext(I18nContext)?.locale ?? DEFAULT_LOCALE;
+}
+
 export function useI18n() {
   const ctx = useContext(I18nContext);
   if (!ctx) throw new Error("useI18n must be used within I18nProvider");

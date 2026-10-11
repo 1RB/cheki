@@ -57,7 +57,7 @@ export interface LegacyFormatDoc {
 
 export interface EndpointDoc {
   id: string;
-  /** Display label in the status table and card heading. Empty means the manifest shortName. */
+  /** Display label on /status rows and /endpoints panels. Empty means the manifest shortName. */
   label: string;
   inputNeeded: string;
   /** The contribute box asks for the full share link first. */

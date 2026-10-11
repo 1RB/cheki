@@ -38,22 +38,26 @@ export async function readVerifyResponse(resp: Response): Promise<VerifyResult> 
   const data: VerifyResult =
     body && typeof body === "object" && !Array.isArray(body) ? (body as VerifyResult) : { success: false };
 
+  // httpStatus and retryAfter are only set on failures, so the verdict can
+  // tell "we couldn't check" (429, 413, 5xx) from "the bank said no" (422).
   if (resp.status === 429) {
-    return { ...data, success: false, verified: false, error: rateLimitMessage(retryAfterSeconds(resp)) };
+    const retryAfter = retryAfterSeconds(resp);
+    return { ...data, success: false, verified: false, httpStatus: 429, retryAfter, error: rateLimitMessage(retryAfter) };
   }
   if (resp.status === 413) {
-    return { ...data, success: false, verified: false, error: TOO_LARGE_MESSAGE };
+    return { ...data, success: false, verified: false, httpStatus: 413, error: TOO_LARGE_MESSAGE };
   }
   if (!resp.ok) {
     return {
       ...data,
       success: false,
       verified: false,
+      httpStatus: resp.status,
       error: data.error || `The checker is unavailable right now (HTTP ${resp.status}). Try again shortly.`,
     };
   }
   if (body === null) {
-    return { success: false, verified: false, error: "Unexpected response from the checker. Try again shortly." };
+    return { success: false, verified: false, httpStatus: resp.status, error: "Unexpected response from the checker. Try again shortly." };
   }
   return data;
 }

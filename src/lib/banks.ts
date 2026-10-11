@@ -147,6 +147,12 @@ export interface VerifyResult {
   /** True when the API served this from the in-memory receipt cache. */
   cached?: boolean;
   bank?: string;
+  /** Manifest id of the bank that answered (the API sends it with every receipt). */
+  bankCode?: string;
+  /** Set by readVerifyResponse on a failed request: the HTTP status (0 = no response). */
+  httpStatus?: number;
+  /** Seconds to wait, from Retry-After, when httpStatus is 429. */
+  retryAfter?: number;
   reference?: string;
   sourceUrl?: string;
   verified?: boolean;

@@ -5,7 +5,8 @@ export default defineConfig({
   test: {
     globals: true,
     environment: "node",
-    include: ["tests/**/*.test.ts"],
+    include: ["tests/**/*.test.ts", "tests/**/*.test.tsx"],
+    css: false,
     coverage: {
       provider: "v8",
       reporter: ["text", "html"],
@@ -15,6 +16,8 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      // next/font/local is a compiler macro; tests that import layout.tsx get a stub.
+      "next/font/local": path.resolve(__dirname, "./tests/mocks/next-font-local.ts"),
     },
   },
 });

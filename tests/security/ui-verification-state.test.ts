@@ -41,31 +41,52 @@ describe("verificationState", () => {
   });
 });
 
-describe("HomePage labels", () => {
-  const src = readFileSync(join(__dirname, "..", "..", "src/components/HomePage.tsx"), "utf8");
+// The homepage checker is now split into src/components/verify/* and
+// src/lib/verify/*. Same invariants, retargeted to the new files.
+describe("verify panel labels", () => {
+  const read = (p: string) => readFileSync(join(__dirname, "..", "..", p), "utf8");
+  const panel = read("src/components/verify/VerifyPanel.tsx");
+  const card = read("src/components/verify/VerdictCard.tsx");
+  const batch = read("src/components/verify/BatchPanel.tsx");
+  const verdict = read("src/lib/verify/verdict.ts");
+  const history = read("src/lib/verify/history.ts");
+  const i18n = read("src/lib/i18n/translations.ts");
 
   it("no label or colour is keyed on `success` alone", () => {
-    expect(src).not.toMatch(/result\?\.success\s*\?/);
-    expect(src).not.toMatch(/r\.data\?\.success/);
-    expect(src).not.toMatch(/result && result\.success &&/);
+    for (const src of [panel, card, batch, verdict]) {
+      expect(src).not.toMatch(/result\?\.success\s*\?/);
+      expect(src).not.toMatch(/r\.data\?\.success/);
+      expect(src).not.toMatch(/result && result\.success &&/);
+    }
   });
 
-  it("the success toast and history save sit behind verificationState", () => {
-    const toastIdx = src.indexOf('title: "Receipt verified"');
-    expect(toastIdx).toBeGreaterThan(-1);
-    const before = src.slice(Math.max(0, toastIdx - 300), toastIdx);
-    expect(before).toMatch(/state === "verified"/);
-    expect(src).toMatch(/Decoded from QR, not confirmed with the bank/);
-    const saveIdx = src.indexOf('localStorage.setItem("cheki_history", JSON.stringify(newHistory))');
-    expect(src.slice(Math.max(0, saveIdx - 600), saveIdx)).toMatch(/if \(state === "verified"\)/);
+  it("the green verdict and the history save sit behind verificationState", () => {
+    // Green is produced in exactly one place, inside the verified branch.
+    const greens = [...verdict.matchAll(/tone: "green"/g)];
+    expect(greens).toHaveLength(1);
+    const before = verdict.slice(0, greens[0].index);
+    expect(before.slice(before.lastIndexOf('if (state === "'))).toMatch(/^if \(state === "verified"\)/);
+    expect(verdict).toMatch(/const state = verificationState\(result\)/);
+    expect(i18n).toMatch(/Decoded from QR, not confirmed with the bank/);
+    // History: the only writer refuses anything but a verified result.
+    const addIdx = history.indexOf("export function addVerified");
+    expect(history.slice(addIdx, addIdx + 500)).toMatch(/if \(verificationState\(result\) !== "verified"\) return list;/);
+    expect(panel).toMatch(/addVerified\(/);
+    expect(panel).not.toMatch(/localStorage\.setItem/);
+    // The card never picks a colour itself.
+    expect(card).not.toMatch(/var\(--green/);
   });
 
-  it("a batch image scan that throws still settles and frees its object URL", () => {
-    expect(src).toMatch(/scanImageMultiScale\(img\)\.then\(resolve, \(\) => resolve\(null\)\)/);
-    expect(src).toMatch(/\.finally\(\(\) => URL\.revokeObjectURL\(objectUrl\)\)/);
+  it("an image scan that throws still settles and frees its object URL", () => {
+    const qr = read("src/lib/qr/decode.ts");
+    const img = read("src/lib/image/prepare.ts");
+    expect(qr).toMatch(/catch \{\s*return null;\s*\}/);
+    expect(img).toMatch(/finally \{\s*URL\.revokeObjectURL\(url\);\s*\}/);
+    expect(batch).toMatch(/decodeQrFromImage\(files\[i\]\)/);
   });
 
   it("the inline bookmarklet escapes the API error before innerHTML", () => {
+    const src = read("src/components/verify/GeoFallback.tsx");
     expect(src).toMatch(/esc\(d\.error\|\|/);
     expect(src).not.toMatch(/'\+\(d\.error\|\|/);
   });
