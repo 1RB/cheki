@@ -329,6 +329,44 @@ class ClientBatchResult:
 
 
 @dataclass
+class ClientReceiptFormat:
+    """One receipt format of a bank, from ``GET /api/banks``.
+
+    A bank's formats come current first: lead with the first ``supported``
+    one and offer the rest as older receipts. ``status`` is ``"current"``, ``"legacy"``
+    (still works) or ``"deprecated"`` (links are only read for their
+    reference).
+    """
+
+    id: str = ""
+    status: str = ""
+    label: str = ""
+    #: What the format needs: "reference", "receiptId", "link", "account", "phone".
+    inputs: list[str] = field(default_factory=list)
+    account_digits: int | None = None
+    response_type: str = ""
+    #: False when cheki documents the format but can't check it yet.
+    supported: bool = False
+    #: "verified" (observed by cheki) or "inferred".
+    confidence: str = ""
+
+    @classmethod
+    def from_dict(cls, data: Mapping[str, Any]) -> "ClientReceiptFormat":
+        """Build a :class:`ClientReceiptFormat` from a decoded JSON object."""
+        inputs = data.get("inputs")
+        return cls(
+            id=str(data.get("id") or ""),
+            status=str(data.get("status") or ""),
+            label=str(data.get("label") or ""),
+            inputs=[str(i) for i in inputs] if isinstance(inputs, list) else [],
+            account_digits=_coerce_int(data.get("accountDigits")),
+            response_type=str(data.get("responseType") or ""),
+            supported=data.get("supported") is True,
+            confidence=str(data.get("confidence") or ""),
+        )
+
+
+@dataclass
 class ClientBankInfo:
     """Metadata for a single bank/wallet supported by cheki.
 
@@ -346,9 +384,12 @@ class ClientBankInfo:
     requires_account: bool = False
     account_digits: int | None = None
     requires_phone: bool = False
+    #: URL template of the bank's current format (informational).
     endpoint: str | None = None
     color: str | None = None
     initials: str | None = None
+    #: Receipt formats, current first (empty when the server is older than this SDK).
+    formats: list[ClientReceiptFormat] = field(default_factory=list)
     raw: dict[str, Any] = field(default_factory=dict, repr=False)
 
     @property
@@ -361,6 +402,8 @@ class ClientBankInfo:
         """Build a :class:`ClientBankInfo` from a decoded JSON object."""
         # The API exposes the identifier as ``id``; fall back to ``code``.
         code = data.get("id") or data.get("code") or ""
+        raw_formats = data.get("formats")
+        formats_list: list[Any] = raw_formats if isinstance(raw_formats, list) else []
         return cls(
             id=str(code),
             code=str(code),
@@ -374,6 +417,11 @@ class ClientBankInfo:
             endpoint=data.get("endpoint"),
             color=data.get("color"),
             initials=data.get("initials"),
+            formats=[
+                ClientReceiptFormat.from_dict(f)
+                for f in formats_list
+                if isinstance(f, Mapping)
+            ],
             raw=dict(data),
         )
 
@@ -392,6 +440,19 @@ class ClientBankInfo:
             "endpoint": self.endpoint,
             "color": self.color,
             "initials": self.initials,
+            "formats": [
+                {
+                    "id": f.id,
+                    "status": f.status,
+                    "label": f.label,
+                    "inputs": list(f.inputs),
+                    "accountDigits": f.account_digits,
+                    "responseType": f.response_type,
+                    "supported": f.supported,
+                    "confidence": f.confidence,
+                }
+                for f in self.formats
+            ],
         }
 
 
