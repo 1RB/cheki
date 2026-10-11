@@ -11,7 +11,8 @@
  */
 import { useState } from "react";
 import Link from "next/link";
-import type { VerifyResult } from "@/lib/banks";
+import { verificationState, type VerifyResult } from "@/lib/banks";
+import { readVerifyResponse } from "@/lib/verify-response";
 
 interface Props {
   code: string;
@@ -79,7 +80,9 @@ export function BankChecker({
             : { accountNumber: extra.trim() || undefined }),
         }),
       });
-      const data: VerifyResult = await resp.json();
+      // 429 (per-IP limit), 413 and non-JSON answers come back as
+      // success: false with a readable message.
+      const data: VerifyResult = await readVerifyResponse(resp);
       setResult(data);
       if (!data.success) setError(data.error || "Verification failed.");
     } catch {
@@ -94,6 +97,11 @@ export function BankChecker({
     border: "1px solid var(--border)", background: "var(--bg)", color: "var(--ink)",
     fontSize: "15px",
   };
+  const amberBox: React.CSSProperties = {
+    marginTop: "16px", padding: "12px 14px", borderRadius: "8px",
+    background: "var(--amber-light)", color: "var(--amber-text)", fontSize: "14px",
+  };
+  const state = verificationState(result);
   const label: React.CSSProperties = {
     display: "block", fontSize: "13px", fontWeight: 600, color: "var(--ink-2)", marginBottom: "6px",
   };
@@ -153,41 +161,63 @@ export function BankChecker({
         </button>
         <p style={{ fontSize: "12px", color: "var(--ink-3)", marginTop: "10px" }}>
           Free, no signup. Checked against {shortName}&apos;s own receipt record.{" "}
-          <Link href="/#verify" style={{ color: "var(--green-dark)" }}>Scan a QR code or photo instead</Link>
+          <Link href="/#verify" prefetch={false} style={{ color: "var(--green-dark)" }}>Scan a QR code or photo instead</Link>
         </p>
       </form>
 
       {error && (
         <p role="alert" style={{ marginTop: "16px", padding: "12px 14px", borderRadius: "8px", background: "var(--amber-light)", color: "var(--amber-text)", fontSize: "14px" }}>
           {error}
-          {result?.fallbackUrl && (
+          {result?.fallbackUrl && /^https:\/\//i.test(result.fallbackUrl) && (
             <> {" "}<a href={result.fallbackUrl} target="_blank" rel="noopener noreferrer">Open the official receipt</a></>
           )}
         </p>
       )}
 
-      {result?.success && result.verified === false && (
-        <p role="alert" style={{ marginTop: "16px", padding: "12px 14px", borderRadius: "8px", background: "var(--amber-light)", color: "var(--amber-text)", fontSize: "14px" }}>
+      {/* Only verificationState() === "verified" is green. decodedOnly and
+          parsed are amber; anything else that came back as success is still
+          "not verified". */}
+      {state === "decodedOnly" && (
+        <p role="alert" style={amberBox}>
+          <strong>Not confirmed with {shortName}.</strong> The details were decoded from the QR code, but {shortName}&apos;s own record could not be reached. Do not release goods on this receipt yet.
+        </p>
+      )}
+
+      {state === "parsed" && (
+        <p role="alert" style={amberBox}>
+          <strong>Not checked with {shortName}.</strong> These details were read from text you supplied, not from {shortName}&apos;s record.
+        </p>
+      )}
+
+      {result?.success && state === "none" && (
+        <p role="alert" style={amberBox}>
           <strong>Not verified.</strong> {shortName} returned a response, but it did not confirm this receipt. Do not release goods on this receipt yet.
         </p>
       )}
 
-      {result?.success && result.verified !== false && (
+      {result && state !== "none" && (
         <dl
           aria-live="polite"
           style={{
-            marginTop: "16px", padding: "16px", borderRadius: "8px", background: "var(--green-light)",
+            marginTop: "16px", padding: "16px", borderRadius: "8px",
+            background: state === "verified" ? "var(--green-light)" : "var(--amber-light)",
             display: "grid", gridTemplateColumns: "auto 1fr", gap: "6px 16px", fontSize: "14px",
           }}
         >
           <dt style={{ fontWeight: 600 }}>Status</dt>
-          <dd style={{ margin: 0, color: "var(--green-dark)", fontWeight: 700 }}>Found in {shortName}&apos;s records</dd>
+          <dd style={{ margin: 0, color: state === "verified" ? "var(--green-dark)" : "var(--amber-text)", fontWeight: 700 }}>
+            {state === "verified"
+              ? `Verified: found in ${shortName}'s records`
+              : state === "decodedOnly"
+                ? "Decoded from QR, not confirmed with the bank"
+                : "Parsed from your text, not checked"}
+          </dd>
           {result.amount != null && (<><dt style={{ fontWeight: 600 }}>Amount</dt><dd style={{ margin: 0 }}>{result.amount.toLocaleString()} {result.currency || "ETB"}</dd></>)}
           {result.senderName && (<><dt style={{ fontWeight: 600 }}>From</dt><dd style={{ margin: 0 }}>{result.senderName}</dd></>)}
           {result.receiverName && (<><dt style={{ fontWeight: 600 }}>To</dt><dd style={{ margin: 0 }}>{result.receiverName}</dd></>)}
           {result.date && (<><dt style={{ fontWeight: 600 }}>Date</dt><dd style={{ margin: 0 }}>{result.date}</dd></>)}
           {result.reference && (<><dt style={{ fontWeight: 600 }}>Reference</dt><dd style={{ margin: 0 }}><code>{result.reference}</code></dd></>)}
-          {result.sourceUrl && (<><dt style={{ fontWeight: 600 }}>Source</dt><dd style={{ margin: 0 }}><a href={result.sourceUrl} target="_blank" rel="noopener noreferrer">Official receipt</a></dd></>)}
+          {state === "verified" && result.sourceUrl && /^https:\/\//i.test(result.sourceUrl) && (<><dt style={{ fontWeight: 600 }}>Source</dt><dd style={{ margin: 0 }}><a href={result.sourceUrl} target="_blank" rel="noopener noreferrer">Official receipt</a></dd></>)}
         </dl>
       )}
     </section>
