@@ -282,7 +282,8 @@ src/
     CodeBlock.tsx           # Syntax-highlighted code blocks
     ContributeBox.tsx       # "Help us add <bank>" box for banks not live yet
     Icon.tsx                # Icon component
-    StatusPill.tsx          # Bank status pill
+    StatusDot.tsx           # Bank status: an 8px dot and a word
+    RelativeTime.tsx        # "11 Oct 2026, 14:32 · 3 hours ago" (shared minute clock)
     language-switcher.tsx   # i18n language switcher
     verify/
       VerifyPanel.tsx       # The receipt checker (homepage; locked to one bank on /banks/[code])

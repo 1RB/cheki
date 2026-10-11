@@ -1,114 +1,191 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Nav, Footer } from "@/components/Chrome";
-import { StatusPill, statusLabel } from "@/components/StatusPill";
+import { BankLogoByName } from "@/components/BankLogo";
+import { StatusDot } from "@/components/StatusDot";
+import { RelativeTime } from "@/components/RelativeTime";
+import { Chevron } from "@/components/reference/Chevron";
+import { StaleNote } from "@/components/reference/StaleNote";
 import { getEndpointRows } from "@/lib/manifest/endpoints";
-import { formatCheckedAt, getBankHealth, healthStatusFor, statusFile } from "@/lib/status-data";
-import type { HealthStatus } from "@/lib/health";
+import { primaryFormat } from "@/lib/manifest/formats";
+import { getBankHealth, healthStatusFor, statusFile } from "@/lib/status-data";
+import { bankState, legacyHealth, listNames, measuredFrom, stateMeaning, summarize, type BankState } from "@/lib/status-view";
+import { formatAbsolute, parseTimestamp } from "@/lib/time/relative";
+import "@/components/reference/reference.css";
 
 export const metadata: Metadata = {
   title: "Endpoint Status: Ethiopian Bank Receipt Checks",
-  description: "Daily health check of every bank receipt endpoint cheki uses: which are live, in development, degraded, or not checked from CI. Endpoint health only; it never verifies a receipt.",
+  description: "Can you check a receipt for your bank right now? A daily health check of every bank receipt endpoint cheki uses: working, down, or only reachable from Ethiopian networks. Endpoint health only; it never verifies a receipt.",
   alternates: { canonical: "/status" },
 };
 
-const ORDER: HealthStatus[] = ["degraded", "live", "not-checked", "in-development"];
+/** English absolute time, computed once on the server so hydration matches. */
+function abs(iso: string | undefined): string | undefined {
+  const p = parseTimestamp(iso);
+  return p ? formatAbsolute(p, "en") : undefined;
+}
+
+const ORDER: BankState[] = ["down", "geo", "working"];
+
+/** What to do instead, when the state calls for it. */
+function workaround(state: BankState, label: string): React.ReactNode {
+  if (state === "geo") {
+    return (
+      <p className="st-tip">
+        <strong>If a check can&apos;t reach {label}:</strong> the checker offers paste-first. Open the receipt on {label}&apos;s own page, copy its text and paste it back. Pasted text is read, not confirmed by the bank.
+      </p>
+    );
+  }
+  if (state === "down") {
+    return (
+      <p className="st-tip">
+        <strong>Until it&apos;s back:</strong> open the receipt link from {label}&apos;s SMS yourself and compare the amount, the receiver and the date before you hand over goods.
+      </p>
+    );
+  }
+  return null;
+}
 
 export default function StatusPage() {
+  const from = measuredFrom(statusFile.runner);
   // One row per bank (its current format); parser aliases are folded into their bank.
   const rows = getEndpointRows()
     .filter((r) => !r.doc.aliasOf)
-    .map((r) => ({ ...r, health: getBankHealth(r.bank.id), status: healthStatusFor(r.bank) }));
-  // Legacy formats are listed separately: their hosts going away is expected.
-  const legacyRows = getEndpointRows().flatMap((r) =>
-    (r.doc.legacy ?? []).map((l) => {
-      const health = getBankHealth(`${r.bank.id}:${l.formatId}`);
-      const format = r.bank.formats?.find((f) => f.id === l.formatId);
-      return { key: `${r.bank.id}:${l.formatId}`, bankId: r.bank.id, label: `${r.doc.label}: ${format?.label ?? l.formatId}`, health, status: (health?.status ?? "not-checked") as HealthStatus };
-    })
-  );
-  const counts = ORDER.map((s) => ({ s, n: rows.filter((r) => r.status === s).length })).filter((c) => c.n > 0);
-  const sorted = [...rows].sort((a, b) => ORDER.indexOf(a.status) - ORDER.indexOf(b.status));
+    .map((r) => {
+      const health = getBankHealth(r.bank.id);
+      const state = bankState(r.bank, healthStatusFor(r.bank));
+      return { ...r, health, state, format: primaryFormat(r.bank)?.label };
+    });
+  const live = rows.filter((r) => r.state !== "unsupported").sort((a, b) => ORDER.indexOf(a.state) - ORDER.indexOf(b.state));
+  const dev = rows.filter((r) => r.state === "unsupported");
+  const sum = summarize(rows.map((r) => r.state));
+  const down = live.filter((r) => r.state === "down").map((r) => r.doc.label);
+  const geo = live.filter((r) => r.state === "geo").map((r) => r.doc.label);
+  const sub = [
+    down.length > 0 ? `${listNames(down)} ${down.length === 1 ? "is" : "are"} down.` : sum.live > 0 ? "Every bank we can reach answered as expected." : "",
+    geo.length > 0 ? `${listNames(geo)} only answer${geo.length === 1 ? "s" : ""} Ethiopian networks, so we can't see ${geo.length === 1 ? "it" : "them"} from here.` : "",
+  ].filter(Boolean).join(" ");
 
   return (
     <>
       <Nav />
-      <main className="container" style={{ paddingTop: "48px", paddingBottom: "48px" }}>
-        <nav aria-label="Breadcrumb" style={{ fontSize: "13px", color: "var(--ink-3)", marginBottom: "16px" }}>
-          <Link href="/" style={{ color: "var(--ink-3)" }}>Home</Link>
-          <span style={{ margin: "0 6px" }}>/</span>
-          <span style={{ color: "var(--ink)" }}>Status</span>
+      <main className="container ref st">
+        <nav aria-label="Breadcrumb" className="ref-crumbs">
+          <Link href="/">Home</Link>
+          <span aria-hidden="true">/</span>
+          <span aria-current="page">Status</span>
         </nav>
-        <h1 style={{ fontSize: "clamp(28px, 5vw, 40px)", fontWeight: 800, letterSpacing: "-0.03em", marginBottom: "12px" }}>
-          Endpoint status
-        </h1>
-        <p style={{ color: "var(--ink-2)", fontSize: "17px", lineHeight: 1.6, maxWidth: "720px", marginBottom: "8px" }}>
-          Once a day, CI sends each bank a fake reference and checks that the error comes back in the shape we expect. A changed shape usually means the bank moved its endpoint.
-        </p>
-        <p style={{ color: "var(--ink-2)", fontSize: "15px", lineHeight: 1.6, maxWidth: "720px", marginBottom: "8px" }}>
-          This is about the endpoints, not about any receipt. <strong>Live</strong> means cheki checks receipts for that bank and its endpoint answered as expected; a receipt only counts as verified when the bank&apos;s own record confirms it. <strong>In development</strong> banks are not checked by cheki yet, whatever their endpoint does. For a fresher reachability snapshot, <code>GET /api/health</code> probes the live banks (cached for 5 minutes).
-        </p>
-        <p style={{ fontSize: "14px", color: "var(--ink-3)", marginBottom: "24px" }}>
-          Last recorded {formatCheckedAt(statusFile.generatedAt)} from {statusFile.runner}. CI runs daily and only records a new snapshot when a result changes.{" "}
-          {!statusFile.checkedGeoRestricted && "Geo-restricted endpoints only answer Ethiopian IPs, so CI does not check them. "}
-          Raw data: <a href="/status.json" style={{ color: "var(--green-dark)" }}>status.json</a>. Details per bank: <Link href="/endpoints" style={{ color: "var(--green-dark)" }}>endpoint reference</Link>.
-        </p>
+        <h1 className="ref-h1">Bank status</h1>
 
-        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginBottom: "24px" }}>
-          {counts.map((c) => (
-            <span key={c.s} style={{ display: "inline-flex", alignItems: "center", gap: "8px", fontSize: "14px", color: "var(--ink-2)" }}>
-              <StatusPill status={c.s} /> {c.n}
-            </span>
-          ))}
-        </div>
-
-        <div className="table-wrap">
-          <table>
-            <thead>
-              <tr><th>Bank</th><th>Status</th><th>What we saw</th><th>Unknown-reference response</th><th>Recorded</th></tr>
-            </thead>
-            <tbody>
-              {sorted.map((r) => (
-                <tr key={r.bank.id}>
-                  <td><Link href={`/endpoints#${r.bank.id}`} style={{ color: "var(--green-dark)", fontWeight: 600 }}>{r.doc.label}</Link></td>
-                  <td><StatusPill status={r.status} /></td>
-                  <td>{r.health?.detail ?? `${statusLabel(r.status)}. Not checked yet.`}</td>
-                  <td>{r.health?.observed ? <code style={{ wordBreak: "break-word" }}>{r.health.observed}</code> : "None"}</td>
-                  <td>{formatCheckedAt(r.health?.checkedAt)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {legacyRows.length > 0 && (
-          <section aria-labelledby="legacy-formats" style={{ marginTop: "32px" }}>
-            <h2 id="legacy-formats" style={{ fontSize: "20px", fontWeight: 800, marginBottom: "8px" }}>Legacy formats</h2>
-            <p style={{ fontSize: "14px", color: "var(--ink-3)", marginBottom: "12px" }}>
-              Older receipt formats cheki still accepts. Most receipts use each bank&apos;s current format above, so a legacy host going down does not mark the bank degraded.
+        {live.length === 0 ? (
+          <p className="st-empty">No status has been recorded yet. The daily check writes it to <a href="/status.json" className="ref-link">status.json</a>.</p>
+        ) : (
+          <>
+            <p className="st-answer" data-tone={sum.tone}>
+              <span className="st-answer-dot" aria-hidden="true" />
+              <span>{sum.working} of {sum.live} banks working</span>
             </p>
-            <div className="table-wrap">
-              <table>
-                <thead>
-                  <tr><th>Format</th><th>Status</th><th>What we saw</th><th>Unknown-reference response</th><th>Recorded</th></tr>
-                </thead>
-                <tbody>
-                  {legacyRows.map((r) => (
-                    <tr key={r.key}>
-                      <td><Link href={`/endpoints#${r.bankId}`} style={{ color: "var(--green-dark)", fontWeight: 600 }}>{r.label}</Link></td>
-                      <td><StatusPill status={r.status} /></td>
-                      <td>{r.health?.detail ?? "Not checked yet."}</td>
-                      <td>{r.health?.observed ? <code style={{ wordBreak: "break-word" }}>{r.health.observed}</code> : "None"}</td>
-                      <td>{formatCheckedAt(r.health?.checkedAt)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </section>
+            {sub && <p className="st-sub">{sub}</p>}
+            <p className="st-meta">
+              Measured daily from {from}, outside Ethiopia. Last change{" "}
+              <RelativeTime value={statusFile.generatedAt} absolute={abs(statusFile.generatedAt)} />
+              <StaleNote generatedAt={statusFile.generatedAt} />
+            </p>
+
+            <ul className="st-list" aria-label="Banks cheki checks">
+              {live.map((r) => {
+                const label = r.doc.label;
+                const older = legacyHealth(statusFile.banks, r.bank.id);
+                return (
+                  <li key={r.bank.id} id={r.bank.id}>
+                    <details className="st-row">
+                      <summary>
+                        <BankLogoByName code={r.bank.id} size={28} />
+                        <span className="st-name">
+                          <span className="st-bank">{label}</span>
+                          {r.format && <span className="st-format">{r.format}</span>}
+                        </span>
+                        <StatusDot state={r.state} />
+                        <Chevron />
+                      </summary>
+                      <div className="st-body ref-disclose">
+                        <p>{stateMeaning(r.state, label, from)}</p>
+                        {workaround(r.state, label)}
+                        <dl className="st-facts">
+                          {r.health?.detail && (
+                            <div><dt>What we saw</dt><dd>{r.health.detail}</dd></div>
+                          )}
+                          {r.health?.observed && (
+                            <div><dt>Unknown-reference response</dt><dd className="st-observed">{r.health.observed}</dd></div>
+                          )}
+                          <div>
+                            <dt>Recorded</dt>
+                            <dd>{r.health?.checkedAt ? <RelativeTime value={r.health.checkedAt} absolute={abs(r.health.checkedAt)} /> : "Not checked yet"}</dd>
+                          </div>
+                          {older.map((h) => {
+                            const fid = h.id.split(":")[1];
+                            const f = r.bank.formats?.find((x) => x.id === fid);
+                            const s: BankState = h.status === "degraded" ? "down" : h.status === "not-checked" ? "geo" : "working";
+                            return (
+                              <div key={h.id}>
+                                <dt>Older receipts</dt>
+                                <dd>{f?.label ?? fid}: <StatusDot state={s} quiet /></dd>
+                              </div>
+                            );
+                          })}
+                        </dl>
+                        <p className="st-links">
+                          <Link href={`/banks/${r.bank.id}`} prefetch={false}>Check a {label} receipt</Link>
+                          <Link href={`/endpoints#${r.bank.id}`} prefetch={false}>{label} endpoint reference</Link>
+                        </p>
+                      </div>
+                    </details>
+                  </li>
+                );
+              })}
+            </ul>
+          </>
         )}
+
+        {dev.length > 0 && (
+          <details className="st-more">
+            <summary>
+              <span>Not supported yet <span className="st-more-count">· {dev.length} banks</span></span>
+              <Chevron />
+            </summary>
+            <div className="ref-disclose">
+              <ul className="st-dev">
+                {dev.map((r) => (
+                  <li key={r.bank.id} id={r.bank.id}>
+                    <Link href={`/endpoints#${r.bank.id}`} prefetch={false}>
+                      <span>{r.doc.label}</span>
+                      <span>{/^https?:\/\//i.test(r.bank.endpointFormat ?? r.bank.endpoint) ? "Endpoint known" : "No endpoint yet"}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </details>
+        )}
+
+        <section className="st-method" aria-labelledby="how-measured">
+          <h2 id="how-measured" className="ref-h2">How this is measured</h2>
+          <p>
+            Once a day, CI sends each bank a fake reference and checks that the error comes back in the shape we expect. A changed shape usually means the bank moved its endpoint. The check runs from {from}, outside Ethiopia, so banks that only answer Ethiopian networks show as geo-restricted rather than working or down.
+          </p>
+          <p>
+            This is about the endpoints, not about any receipt. <strong>Working</strong> means cheki checks receipts for that bank and its endpoint answered as expected; a receipt only counts as verified when the bank&apos;s own record confirms it. <strong>In development</strong> banks are not checked by cheki yet, whatever their endpoint does.
+          </p>
+          <p>
+            CI records a new snapshot only when a result changes, so &ldquo;last change&rdquo; can be days old on a quiet week. There is no uptime history yet: each snapshot replaces the last. For a fresher reachability snapshot, <code>GET /api/health</code> probes the live banks (cached for 5 minutes).
+          </p>
+          <p>
+            Raw data: <a href="/status.json" className="ref-link">status.json</a>. Placeholders, error shapes and changelogs per bank: <Link href="/endpoints" className="ref-link">endpoint reference</Link>.
+          </p>
+        </section>
       </main>
       <Footer />
     </>
   );
 }
+
