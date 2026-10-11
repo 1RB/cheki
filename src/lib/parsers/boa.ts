@@ -15,10 +15,16 @@
  *     hasher   = SHA1
  *   Decrypted format: CSV-like string
  *     sourceAccount,sourceName,amount,reference,date,receiverAccount,receiverName
+ *
+ *   The key is public, so anyone can mint a QR payload. A decrypted QR is
+ *   therefore only a way to FIND the receipt (reference + receiver account
+ *   suffix); it never proves anything on its own. decryptQr always returns
+ *   verified: false, and the verifier looks the receipt up at BOA.
  */
 import { createDecipheriv, pbkdf2Sync } from "node:crypto";
 import { BaseParser } from "./base";
 import type { ParsedReceipt } from "../core/types";
+import { parseMoney } from "../core/money";
 
 const QR_PASSWORD = "ELqVy2g4pGWLUIKSa+1ijwpPy6eDxBFBLBPrJ24v/IA=";
 const QR_SALT = "salt";
@@ -36,12 +42,13 @@ export class BOAParser extends BaseParser {
   readonly requiresPhone = false;
 
   buildUrl(ref: string, account?: string): string {
-    const suffix = (account || "").slice(-5);
-    return `https://cs.bankofabyssinia.com/api/onlineSlip/getDetails/?id=${ref}${suffix}`;
+    const suffix = (account || "").replace(/\D/g, "").slice(-5);
+    return `https://cs.bankofabyssinia.com/api/onlineSlip/getDetails/?id=${encodeURIComponent(ref)}${suffix}`;
   }
 
   /**
    * Decrypt a BOA receipt QR code payload and parse the embedded CSV.
+   * The result is never verified: it is what the QR claims, not what BOA says.
    */
   decryptQr(qrData: string): ParsedReceipt {
     try {
@@ -63,19 +70,18 @@ export class BOAParser extends BaseParser {
     }
 
     const [senderAccount, senderName, amountStr, reference, date, receiverAccount, receiverName] = parts;
-    const amount = amountStr ? parseFloat(amountStr) : NaN;
+    const amount = parseMoney(amountStr);
 
     return {
-      verified: true,
+      verified: false,
       senderName,
       senderAccount,
       receiverName,
       receiverAccount,
-      amount: Number.isFinite(amount) ? amount : undefined,
+      amount,
       currency: "ETB",
       date,
       reference,
-      raw: csv.slice(0, 1000),
     };
   }
 
@@ -88,12 +94,8 @@ export class BOAParser extends BaseParser {
       }
 
       const row = body[0];
-      let amount: number | undefined;
       const amtRaw = row["Transferred Amount"];
-      if (amtRaw) {
-        const m = amtRaw.toString().replace(/[^0-9.]/g, "");
-        if (m) amount = parseFloat(m);
-      }
+      const amount = parseMoney(amtRaw == null ? undefined : String(amtRaw));
 
       return {
         verified: true,
