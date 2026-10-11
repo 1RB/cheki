@@ -1,97 +1,65 @@
 <?php
 
 /**
- * cheki PHP SDK - Basic usage example.
+ * cheki PHP SDK - basic usage.
  *
- * Run: php examples/basic.php
- * (Make sure ext-curl and ext-json are enabled in your PHP installation.)
+ * Run: php examples/basic.php   (needs ext-curl and ext-json)
  */
 
-require_once __DIR__ . '/../src/ChekiClient.php';
-require_once __DIR__ . '/../src/VerifyResult.php';
-require_once __DIR__ . '/../src/VerifyOptions.php';
-require_once __DIR__ . '/../src/Bank.php';
-require_once __DIR__ . '/../src/BatchResult.php';
-require_once __DIR__ . '/../src/HealthStatus.php';
+declare(strict_types=1);
+
+require_once __DIR__ . '/../tests/bootstrap.php'; // or vendor/autoload.php when installed with Composer
 
 use Cheki\ChekiClient;
-use Cheki\VerifyOptions;
+use Cheki\ChekiException;
 
-echo "═══════════════════════════════════════════\n";
-echo "  cheki PHP SDK - Basic Example\n";
-echo "═══════════════════════════════════════════\n\n";
-
-// --- 1. Create a client (default base URL: https://cheki.et)
+// Defaults: 65 s per attempt (the server may take up to 60 s), at most one retry.
 $client = new ChekiClient();
 
-// Or with custom options:
-// $client = new ChekiClient(
-//     (new VerifyOptions())
-//         ->withBaseUrl('https://cheki.et')
-//         ->withTimeout(15)
-// );
-
-// --- 2. Health check
-echo "→ Health check...\n";
-$health = $client->getHealth();
-echo "  Status:   " . ($health->status ?? 'unknown') . "\n";
-echo "  Version:  " . ($health->version ?? 'unknown') . "\n";
-echo "  Healthy:  " . ($health->isHealthy() ? 'yes' : 'no') . "\n\n";
-
-// --- 3. List supported banks
-echo "→ Supported banks...\n";
-$banks = $client->getBanks();
-foreach ($banks as $bank) {
-    $flag = $bank->requiresAccount ? ' [requires account]' : '';
-    echo "  • {$bank->code} - {$bank->name}{$flag}\n";
+// --- Health (cached up to 5 minutes server-side)
+try {
+    $health = $client->getHealth();
+    echo "Health: {$health->status} (checked {$health->checkedAt})\n";
+    foreach ($health->banks as $bank) {
+        echo "  {$bank->id}: {$bank->status} ({$bank->latencyMs} ms)\n";
+    }
+} catch (ChekiException $e) {
+    echo "Health check failed: {$e->getMessage()}\n";
 }
-echo "  Total: " . count($banks) . " banks\n\n";
 
-// --- 4. Verify a single receipt
-echo "→ Verifying a single receipt...\n";
-$result = $client->verify(
-    bank:          'cbe',
-    reference:     'RB1234567890',
-    accountNumber: '1000123456789'
-);
+// --- Supported banks ($bank->id is the value to pass to verify())
+try {
+    foreach ($client->getBanks() as $bank) {
+        $flag = $bank->requiresAccount ? ' [requires account]' : '';
+        echo "  {$bank->id} - {$bank->name} ({$bank->status}){$flag}\n";
+    }
+} catch (ChekiException $e) {
+    echo "Could not list banks: {$e->getMessage()}\n";
+}
+
+// --- One receipt. Only isVerified() means the bank confirmed it.
+$result = $client->verify(bank: 'cbe', reference: 'FT26140P01YB', accountNumber: '1000560536171');
 
 if ($result->isVerified()) {
-    echo "  ✅ Verified!\n";
-    echo "  Bank:          {$result->bank}\n";
-    echo "  Reference:     {$result->reference}\n";
-    echo "  Sender:        {$result->senderName}\n";
-    echo "  Receiver:      {$result->receiverName}\n";
-    echo "  Amount:        {$result->amount} {$result->currency}\n";
-    echo "  Date:          {$result->date}\n";
-    echo "  Source URL:    {$result->sourceUrl}\n";
+    echo "VERIFIED: {$result->senderName} sent {$result->amount} {$result->currency} to {$result->receiverName}\n";
+} elseif ($result->decodedOnly) {
+    echo "NOT VERIFIED: decoded from a QR code, the bank could not confirm it\n";
+} elseif ($result->isRateLimited()) {
+    echo "Rate limited. Retry in " . ($result->retryAfter ?? 60) . " s\n";
 } else {
-    echo "  ❌ Not verified";
-    if ($result->error) {
-        echo " - {$result->error}";
+    echo "NOT VERIFIED ({$result->httpStatus}): {$result->error}\n";
+    if ($result->fallbackUrl !== null) {
+        echo "Open the receipt directly: {$result->fallbackUrl}\n";
     }
-    echo "\n";
 }
-echo "\n";
 
-// --- 5. Verify a batch of receipts
-echo "→ Batch verification...\n";
+// --- Up to 20 receipts per batch
 $batch = $client->verifyBatch([
-    ['bank' => 'cbe',    'reference' => 'RB1234567890', 'accountNumber' => '1000123456789'],
-    ['bank' => 'dashen', 'reference' => 'TR9876543210'],
-    ['bank' => 'awash',  'reference' => 'AW5555555555', 'phoneNumber'   => '0911234567'],
+    ['bank' => 'cbe', 'reference' => 'FT26140P01YB', 'accountNumber' => '1000560536171'],
+    ['bank' => 'telebirr', 'reference' => 'CHQ0FJ403O'],
 ]);
-
-echo "  Total:    {$batch->total}\n";
-echo "  Verified: {$batch->verified}\n";
-echo "  Failed:   {$batch->failed}\n";
-
-foreach ($batch->results as $i => $r) {
-    $status = $r->isVerified() ? '✅' : '❌';
-    $ref    = $r->reference ?? 'unknown';
-    $err    = $r->error ? " ({$r->error})" : '';
-    echo "    [{$i}] {$status} {$r->bank} / {$ref}{$err}\n";
+echo "Batch: {$batch->verified}/{$batch->total} verified, {$batch->failed} not\n";
+foreach ($batch->results as $r) {
+    $state = $r->isVerified() ? 'verified' : ($r->decodedOnly ? 'decoded only' : 'not verified: ' . $r->error);
+    echo "  [{$r->index}] {$state}\n";
 }
-
-echo "\n═══════════════════════════════════════════\n";
-echo "  Done.\n";
-echo "═══════════════════════════════════════════\n";
