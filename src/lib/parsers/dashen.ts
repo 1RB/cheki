@@ -16,6 +16,12 @@
  */
 import { BaseParser } from "./base";
 import type { ParsedReceipt } from "../core/types";
+import { removeScriptsAndStyles, TAG_RE } from "../core/html";
+import { parseMoney } from "../core/money";
+
+/** Shown when Dashen answers 400/404: it has no receipt for this reference. */
+export const DASHEN_NOT_FOUND =
+  "Dashen has no receipt for this reference. Use the FT Ref (e.g. B22WDTI2619100WH), not the longer Transaction Ref.";
 
 export class DashenParser extends BaseParser {
   readonly bankId = "dashen";
@@ -24,6 +30,9 @@ export class DashenParser extends BaseParser {
   readonly requiresAccount = false;
   readonly accountDigits?: number = undefined;
   readonly requiresPhone = false;
+  /** receipts.dashenbanksc.com answers an unknown reference with HTTP 400 JSON "Transaction not found". */
+  protected override readonly notFoundStatuses: readonly number[] = [400, 404];
+  protected override readonly notFoundMessage = DASHEN_NOT_FOUND;
 
   buildUrl(ref: string): string {
     return `https://receipts.dashenbanksc.com/receipt/${encodeURIComponent(ref.trim())}`;
@@ -36,18 +45,20 @@ export class DashenParser extends BaseParser {
     return DashenParser.parsePdfText(DashenParser.htmlToText(raw));
   }
 
-  /** Flatten the receipt HTML into the same single-line text the PDF yields. */
+  /**
+   * Flatten the receipt HTML into the same single-line text the PDF yields.
+   * Linear time: uses the shared helpers, not `<[^>]+>` / lazy `<script>`
+   * regexes, which are quadratic on stray "<" or unclosed tags (ReDoS).
+   */
   static htmlToText(html: string): string {
-    return html
-      .replace(/<script[\s\S]*?<\/script>/gi, " ")
-      .replace(/<style[\s\S]*?<\/style>/gi, " ")
-      .replace(/<[^>]+>/g, " ")
+    return removeScriptsAndStyles(html)
+      .replace(TAG_RE, " ")
       .replace(/&nbsp;/g, " ")
-      .replace(/&amp;/g, "&")
       .replace(/&#39;|&apos;/g, "'")
       .replace(/&quot;/g, '"')
       .replace(/&lt;/g, "<")
       .replace(/&gt;/g, ">")
+      .replace(/&amp;/g, "&")
       .replace(/\s+/g, " ")
       .trim();
   }
@@ -113,8 +124,8 @@ export class DashenParser extends BaseParser {
     let amount: number | undefined;
     const amountRaw = values["Transaction Amount"];
     if (amountRaw) {
-      const m = amountRaw.match(/ETB\s*([0-9,]+\.\d{2})/);
-      if (m) amount = parseFloat(m[1].replace(/,/g, ""));
+      const etb = amountRaw.indexOf("ETB");
+      amount = etb === -1 ? undefined : parseMoney(amountRaw.slice(etb + 3));
     }
 
     return {
