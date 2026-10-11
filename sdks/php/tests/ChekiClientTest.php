@@ -123,6 +123,11 @@ final class ChekiClientTest extends TestCase
         self::assertSame('cbe', $banks[0]->code);
         self::assertSame(8, $banks[0]->accountDigits);
         self::assertFalse($banks[0]->requiresPhone);
+        // Formats come current first: CBE leads with the Receipt ID, the FT reference is legacy.
+        self::assertFalse($banks[0]->requiresAccount);
+        self::assertSame(['current', 'legacy'], array_map(static fn ($f) => $f->status, $banks[0]->formats));
+        self::assertSame(['receiptId'], $banks[0]->formats[0]->inputs);
+        self::assertSame(8, $banks[0]->formats[1]->accountDigits);
         self::assertTrue($banks[1]->isMobile());
         self::assertTrue($banks[2]->requiresPhone);
     }
@@ -222,19 +227,30 @@ final class ChekiClientTest extends TestCase
     public function testReceiptUrl(): void
     {
         $c = $this->client(self::fx('health'));
-        self::assertSame(
-            'https://api.test/api/receipt?bank=cbe&reference=FT26140P01YB&account=1000560536171',
-            $c->getReceiptUrl('cbe', 'FT26140P01YB', '1000 5605 36171')
-        );
-        self::assertSame('https://api.test/api/receipt?bank=zemen&reference=ZB123', $c->getReceiptUrl('Zemen', 'ZB123'));
-        foreach ([['telebirr', 'X1', null], ['zemen', '../admin', null], ['zemen', 'a/b', null], ['cbe', 'FT1', null], ['cbe', 'FT1', '1234']] as [$bank, $ref, $acct]) {
-            try {
-                $c->getReceiptUrl($bank, $ref, $acct);
-                self::fail("expected rejection for {$bank} {$ref}");
-            } catch (\InvalidArgumentException) {
-                self::addToAssertionCount(1);
+        $cases = self::$contract['receiptUrlCases'];
+        self::assertGreaterThan(5, count($cases));
+        foreach ($cases as $case) {
+            $acct = $case['account'] ?? null;
+            if (!empty($case['error'])) {
+                try {
+                    $c->getReceiptUrl($case['bank'], $case['reference'], $acct);
+                    self::fail("expected rejection for {$case['name']}");
+                } catch (\InvalidArgumentException) {
+                    self::addToAssertionCount(1);
+                }
+                continue;
             }
+            $url = $c->getReceiptUrl($case['bank'], $case['reference'], $acct);
+            $parts = parse_url($url);
+            self::assertSame('https://api.test/api/receipt', $parts['scheme'] . '://' . $parts['host'] . $parts['path'], $case['name']);
+            parse_str($parts['query'] ?? '', $query);
+            ksort($query);
+            $want = $case['query'];
+            ksort($want);
+            self::assertSame($want, $query, $case['name']);
         }
+        // Current format first: a CBE Receipt ID needs no account.
+        self::assertSame('https://api.test/api/receipt?bank=cbe&reference=fHCxExampleRcpt01', $c->getReceiptUrl('cbe', 'fHCxExampleRcpt01'));
     }
 
     public function testParseRetryAfter(): void
