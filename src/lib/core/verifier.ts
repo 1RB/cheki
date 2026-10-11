@@ -21,7 +21,7 @@ import { getParser, type RegisteredParser } from "../parsers/registry";
 import { getBank, suggestBank } from "../manifest/loader";
 import { detectBankFromUrl, isUrl, looksLikeUrl } from "../adapters/url-detector";
 import { CBEParser } from "../parsers/cbe";
-import { DashenParser } from "../parsers/dashen";
+import { DashenParser, DASHEN_NOT_FOUND } from "../parsers/dashen";
 import { BOAParser } from "../parsers/boa";
 import { ZemenParser } from "../parsers/zemen";
 import { verificationGate, gateFailureMessage } from "./gate";
@@ -272,28 +272,50 @@ export class Verifier {
     contentType: string
   ): Promise<Result<ParsedReceipt, ChekiError>> {
     const id = manifestEntry.id.toLowerCase();
-    const pdfParsers: Record<string, { extract: (b: Buffer) => Promise<string>; parse: (t: string) => ParsedReceipt; hint: string }> = {
+    // PDF banks. `htmlOk` banks (Dashen) normally answer with an HTML receipt
+    // page that parser.parse() reads below; a PDF from them (legacy host) is
+    // still text-extracted here. Either way the result goes through the gate.
+    const pdfParsers: Record<
+      string,
+      { extract: (b: Buffer) => Promise<string>; parse: (t: string) => ParsedReceipt; hint: string; htmlOk?: boolean }
+    > = {
       cbe: { extract: CBEParser.extractPdfText, parse: CBEParser.parsePdfText, hint: "The reference or account may be incorrect." },
-      dashen: { extract: DashenParser.extractPdfText, parse: DashenParser.parsePdfText, hint: "Check the reference number." },
+      dashen: { extract: DashenParser.extractPdfText, parse: DashenParser.parsePdfText, hint: "Check the FT Ref.", htmlOk: true },
       zemen: { extract: ZemenParser.extractPdfText, parse: ZemenParser.parsePdfText, hint: "Check the reference number." },
     };
     const pdf = Object.hasOwn(pdfParsers, id) ? pdfParsers[id] : undefined;
 
     if (pdf) {
       const buf = Buffer.isBuffer(data) ? data : Buffer.from(data);
-      if (!buf.toString("ascii", 0, 4).includes("%PDF")) {
+      const isPdf = buf.toString("ascii", 0, 4).includes("%PDF");
+      if (isPdf) {
+        const parsed = pdf.parse(await pdf.extract(buf));
+        if (!parsed.verified) {
+          return err({
+            kind: "EXTRACTION_ERROR",
+            bank: manifestEntry.name,
+            message: `Could not parse the receipt PDF. ${pdf.hint}`,
+          });
+        }
+        return ok(parsed);
+      }
+      if (!pdf.htmlOk) {
         return err({
           kind: "EXTRACTION_ERROR",
           bank: manifestEntry.name,
           message: `The bank did not return a valid receipt PDF. ${pdf.hint}`,
         });
       }
-      const parsed = pdf.parse(await pdf.extract(buf));
+    }
+
+    if (id === "dashen") {
+      const parsed = parser.parse(data, contentType);
       if (!parsed.verified) {
+        const text = typeof data === "string" ? data : data.toString("utf8");
         return err({
           kind: "EXTRACTION_ERROR",
           bank: manifestEntry.name,
-          message: `Could not parse the receipt PDF. ${pdf.hint}`,
+          message: /transaction not found/i.test(text.slice(0, 4096)) ? DASHEN_NOT_FOUND : "Could not read the Dashen receipt. Check the FT Ref.",
         });
       }
       return ok(parsed);
