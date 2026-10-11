@@ -19,6 +19,31 @@ describe("EBirrParser", () => {
       expect(parser.buildUrl("  nib/abc123  ")).toBe("https://receipt.ebirr.com/nib/abc123");
     });
 
+    it("never fetches a user-supplied URL as is (SSRF)", () => {
+      for (const bad of [
+        "http:/127.0.0.1:18123/internal",
+        "http:127.0.0.1:18080/a",
+        "http:\\\\evil.com\\x",
+        "//evil.com/nib/abc123",
+        "https://evil.example/nib/abc123",
+        "https://receipt.ebirr.com.evil.example/nib/abc123",
+        "https://user@receipt.ebirr.com/nib/abc123",
+        "https://receipt.ebirr.com:8443/nib/abc123",
+        "HTTP://127.0.0.1/x",
+        "javascript:alert(1)",
+        "nib/abc123?x=1",
+        "nib/../admin",
+        "unknown/abc123",
+      ]) {
+        expect(() => parser.buildUrl(bad), bad).toThrow();
+        expect(parser.normalizeReference(bad).ok, bad).toBe(false);
+      }
+    });
+
+    it("rebuilds a pasted link on the fixed host", () => {
+      expect(parser.normalizeReference("https://receipt.ebirr.com/NIB/abc123")).toEqual({ ok: true, value: "nib/abc123" });
+    });
+
     it("handles kaafimf tenant", () => {
       expect(parser.buildUrl("kaafimf/test123")).toBe("https://receipt.ebirr.com/kaafimf/test123");
     });
@@ -62,6 +87,7 @@ describe("EBirrParser", () => {
           <div>Sender: ALICE</div>
           <div>Receiver: BOB</div>
           <div>Amount: 1,200 ETB</div>
+          <div>Date: 2026-06-19</div>
         </body></html>
       `;
       const result = parser.parse(receiptHtml, "text/html");
@@ -69,6 +95,17 @@ describe("EBirrParser", () => {
       expect(result.senderName).toBe("ALICE");
       expect(result.receiverName).toBe("BOB");
       expect(result.amount).toBe(1200);
+    });
+
+    it("does not verify a page with a single field", () => {
+      // "To: support desk" used to be enough, because "to" is a receiver alias.
+      const html = "<html><body><p>Welcome to our site, please log in</p><p>To: support desk</p></body></html>";
+      expect(parser.parse(html, "text/html").verified).toBe(false);
+    });
+
+    it("does not verify without an amount", () => {
+      const html = "<div>Sender: ALICE</div><div>Receiver: BOB</div><div>Date: 2026-06-19</div>";
+      expect(parser.parse(html, "text/html").verified).toBe(false);
     });
 
     it("handles empty HTML", () => {
