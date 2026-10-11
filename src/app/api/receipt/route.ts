@@ -18,7 +18,12 @@ export const dynamic = "force-dynamic";
  *   - Only allowlisted bank hosts are fetched (safeFetch), with a size cap.
  *   - The filename is fixed and the response is private.
  */
-type Builder = { build: (ref: string, account?: string) => string; accountDigits?: number };
+type Builder = {
+  build: (ref: string, account?: string) => string;
+  accountDigits?: number;
+  /** Statuses that mean "no receipt for this reference" (answered as 404). */
+  notFound?: readonly number[];
+};
 
 const BANK_ENDPOINTS = new Map<string, Builder>([
   [
@@ -29,9 +34,10 @@ const BANK_ENDPOINTS = new Map<string, Builder>([
     },
   ],
   ["zemen", { build: (ref) => `https://share.zemenbank.com/rt/${encodeURIComponent(ref)}/pdf` }],
+  // Dashen moved to an HTML receipt page; an unknown FT Ref answers HTTP 400.
   [
     "dashen",
-    { build: (ref) => `https://api.dashensuperapp.com/receipts/Within-Dashen-Transfer-${encodeURIComponent(ref)}.pdf` },
+    { build: (ref) => `https://receipts.dashenbanksc.com/receipt/${encodeURIComponent(ref)}`, notFound: [400, 404] },
   ],
 ]);
 
@@ -75,7 +81,8 @@ export async function GET(request: NextRequest) {
     });
 
     if (resp.status !== 200) {
-      return fail(`Bank returned status ${resp.status}.`, resp.status === 404 ? 404 : 502);
+      const notFound = (builder.notFound ?? [404]).includes(resp.status);
+      return fail(notFound ? "Receipt not found." : `Bank returned status ${resp.status}.`, notFound ? 404 : 502);
     }
 
     const isPdf = resp.body.subarray(0, 5).toString("ascii").startsWith("%PDF");

@@ -6,7 +6,8 @@
  *   - apps.cbe.com.et:100/?id={ref}{acct}  → CBE legacy
  *   - transactioninfo.ethiotelecom.et/...  → Telebirr
  *   - cs.bankofabyssinia.com/...            → BOA
- *   - receipt.dashensuperapp.com/...        → Dashen
+ *   - receipts.dashenbanksc.com/receipt/... → Dashen
+ *   - receipt.dashensuperapp.com/...        → Dashen (legacy)
  *   - awashpay.awashbank.com:8225/-{ref}   → Awash
  *   - share.zemenbank.com/rt/{ref}/pdf      → Zemen
  *   - m-pesabusiness.safaricom.et/...       → M-Pesa
@@ -96,8 +97,11 @@ export function detectBankFromUrl(input: string): DetectedReceipt | null {
     }
 
     // Dashen: https://api.dashensuperapp.com/receipts/Within-Dashen-Transfer-{REF}.pdf
-    //          https://receipt.dashensuperapp.com/receipt/{REFERENCE}
-    if (hostIs(host, "dashensuperapp.com")) {
+    //          https://receipt.dashensuperapp.com/receipt/{REFERENCE}  (legacy)
+    //          https://receipts.dashenbanksc.com/receipt/{FT_REF}         (current)
+    // Only the reference is taken; the verifier rebuilds the URL on the
+    // manifest host, so the pasted host is never fetched.
+    if (hostIs(host, "dashensuperapp.com", "dashenbanksc.com")) {
       const parts = url.pathname.split("/").filter(Boolean);
       const last = parts[parts.length - 1] || "";
       // PDF filename: Within-Dashen-Transfer-{REF}.pdf

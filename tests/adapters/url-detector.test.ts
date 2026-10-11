@@ -60,6 +60,13 @@ describe("detectBankFromUrl", () => {
     expect(result!.accountNumber).toBe("67890");
   });
 
+  it("detects Dashen receipt URLs on receipts.dashenbanksc.com", () => {
+    const result = detectBankFromUrl("https://receipts.dashenbanksc.com/receipt/B22WDTI2619100WH");
+    expect(result).not.toBeNull();
+    expect(result!.bank).toBe("dashen");
+    expect(result!.reference).toBe("B22WDTI2619100WH");
+  });
+
   it("detects Dashen legacy receipt URLs", () => {
     const result = detectBankFromUrl("https://receipt.dashensuperapp.com/receipt/ABC123");
     expect(result).not.toBeNull();

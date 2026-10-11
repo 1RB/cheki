@@ -1,32 +1,66 @@
 /**
  * Dashen Bank parser.
  *
- * Endpoint: https://receipt.dashensuperapp.com/receipt/{ref}
- * Response: PDF with structured text
- * Requires: only the transaction reference number (no account needed)
+ * Endpoint: https://receipts.dashenbanksc.com/receipt/{ref}
+ * Response: HTML receipt page (the "Download Receipt" button renders a PDF
+ *           client-side with html2pdf; the server only returns HTML).
+ *           Unknown references return HTTP 400 with a JSON body
+ *           ("Transaction not found").
+ * Requires: only the FT Ref / Transaction Reference (e.g. B22WDTI2619100WH).
+ *           The app's long "Transaction Ref" / Transfer Reference
+ *           (WDTI5186142501962751085) is NOT accepted by the endpoint.
+ *
+ * History: until mid-2026 receipts lived at receipt.dashensuperapp.com as
+ * PDFs. That host now returns 502, which is why Dashen checks broke.
+ * parsePdfText is kept for PDFs users upload or paste.
  */
 import { BaseParser } from "./base";
 import type { ParsedReceipt } from "../core/types";
+import { removeScriptsAndStyles, TAG_RE } from "../core/html";
+import { parseMoney } from "../core/money";
+
+/** Shown when Dashen answers 400/404: it has no receipt for this reference. */
+export const DASHEN_NOT_FOUND =
+  "Dashen has no receipt for this reference. Use the FT Ref (e.g. B22WDTI2619100WH), not the longer Transaction Ref.";
 
 export class DashenParser extends BaseParser {
   readonly bankId = "dashen";
   readonly bankName = "Dashen Bank";
-  readonly responseType = "pdf" as const;
+  readonly responseType = "html" as const;
   readonly requiresAccount = false;
   readonly accountDigits?: number = undefined;
   readonly requiresPhone = false;
+  /** receipts.dashenbanksc.com answers an unknown reference with HTTP 400 JSON "Transaction not found". */
+  protected override readonly notFoundStatuses: readonly number[] = [400, 404];
+  protected override readonly notFoundMessage = DASHEN_NOT_FOUND;
 
   buildUrl(ref: string): string {
-    return `https://receipt.dashensuperapp.com/receipt/${encodeURIComponent(ref)}`;
+    return `https://receipts.dashenbanksc.com/receipt/${encodeURIComponent(ref.trim())}`;
   }
 
   parse(data: string | Buffer, _contentType: string): ParsedReceipt {
-    const buf = Buffer.isBuffer(data) ? data : Buffer.from(data);
-    if (!buf.toString("ascii", 0, 4).includes("%PDF")) {
-      return { verified: false };
-    }
-    // PDF parsing is async; verifier calls extractPdfText + parseDashenPdfText separately.
-    return { verified: false };
+    const raw = Buffer.isBuffer(data) ? data.toString("utf8") : data;
+    // PDFs need async text extraction; the verifier handles that path.
+    if (raw.startsWith("%PDF")) return { verified: false };
+    return DashenParser.parsePdfText(DashenParser.htmlToText(raw));
+  }
+
+  /**
+   * Flatten the receipt HTML into the same single-line text the PDF yields.
+   * Linear time: uses the shared helpers, not `<[^>]+>` / lazy `<script>`
+   * regexes, which are quadratic on stray "<" or unclosed tags (ReDoS).
+   */
+  static htmlToText(html: string): string {
+    return removeScriptsAndStyles(html)
+      .replace(TAG_RE, " ")
+      .replace(/&nbsp;/g, " ")
+      .replace(/&#39;|&apos;/g, "'")
+      .replace(/&quot;/g, '"')
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&amp;/g, "&")
+      .replace(/\s+/g, " ")
+      .trim();
   }
 
   static parsePdfText(text: string): ParsedReceipt {
@@ -43,8 +77,10 @@ export class DashenParser extends BaseParser {
       "Service Type:",
       "Narrative:",
       "Receiver Name:",
-      "Receiver Account Number:",
+      "Beneficiary Bank Name:",
+      "Institution Name:",
       "Instituton Name:",
+      "Receiver Account Number:",
       "Transaction Reference:",
       "Transfer Reference:",
       "Transaction Date:",
@@ -62,17 +98,22 @@ export class DashenParser extends BaseParser {
       "Total",
     ];
 
+    // Each value runs from the end of its label to the start of the nearest
+    // label that follows it in the text, whatever order the receipt uses.
+    // (The HTML receipt puts Beneficiary Bank / Institution between Receiver
+    // Name and Receiver Account, unlike the old PDF.)
+    const found = labels
+      .map((label) => ({ label, idx: text.indexOf(label) }))
+      .filter((f) => f.idx !== -1)
+      .sort((a, b) => a.idx - b.idx);
     const values: Record<string, string> = {};
-    for (let i = 0; i < labels.length; i++) {
-      const label = labels[i];
-      const startIdx = text.indexOf(label);
-      if (startIdx === -1) continue;
-      const valueStart = startIdx + label.length;
+    for (let i = 0; i < found.length; i++) {
+      const { label, idx } = found[i];
+      const valueStart = idx + label.length;
       let valueEnd = text.length;
-      for (let j = i + 1; j < labels.length; j++) {
-        const nextIdx = text.indexOf(labels[j], valueStart);
-        if (nextIdx !== -1) {
-          valueEnd = nextIdx;
+      for (let j = i + 1; j < found.length; j++) {
+        if (found[j].idx >= valueStart) {
+          valueEnd = found[j].idx;
           break;
         }
       }
@@ -83,8 +124,8 @@ export class DashenParser extends BaseParser {
     let amount: number | undefined;
     const amountRaw = values["Transaction Amount"];
     if (amountRaw) {
-      const m = amountRaw.match(/ETB\s*([0-9,]+\.\d{2})/);
-      if (m) amount = parseFloat(m[1].replace(/,/g, ""));
+      const etb = amountRaw.indexOf("ETB");
+      amount = etb === -1 ? undefined : parseMoney(amountRaw.slice(etb + 3));
     }
 
     return {

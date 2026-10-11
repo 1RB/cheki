@@ -5,6 +5,7 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
 import { Verifier } from "@/lib";
 import { getParser } from "@/lib/parsers/registry";
+import { getBank } from "@/lib/manifest/loader";
 import "@/lib/parsers";
 
 afterEach(() => {
@@ -98,10 +99,21 @@ describe("reference validation and encoding (review M1)", () => {
       for (const reference of evil) {
         const r = await v.verify({ ...b, reference });
         expect(r.ok, `${b.bank} ${reference}`).toBe(false);
-        if (!r.ok) expect(["REF_ERROR", "MISSING_INPUT"], `${b.bank} ${reference}`).toContain(r.error.kind);
+        // In-development banks (Zemen, CBE Birr) are refused before input checks.
+        const kinds = getBank(b.bank)?.status === "live" ? ["REF_ERROR", "MISSING_INPUT"] : ["BANK_NOT_SUPPORTED"];
+        if (!r.ok) expect(kinds, `${b.bank} ${reference}`).toContain(r.error.kind);
       }
     }
     expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it("every parser's own reference check rejects them too, live or in development", () => {
+    for (const b of banks) {
+      const parser = getParser(b.bank)!;
+      for (const reference of evil) {
+        expect(parser.normalizeReference(reference).ok, `${b.bank} ${reference}`).toBe(false);
+      }
+    }
   });
 
   it("requires a digits-only account suffix", async () => {
