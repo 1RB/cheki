@@ -38,7 +38,9 @@ try {
 }
 
 // --- One receipt. Only isVerified() means the bank confirmed it.
-$result = $client->verify(bank: 'cbe', reference: 'FT26140P01YB', accountNumber: '1000560536171');
+// CBE: the receipt link or Receipt ID. Older FT-only receipts (legacy) also need
+// the account: verify(bank: 'cbe', reference: 'FT26140P01YB', accountNumber: '1000560536171').
+$result = $client->verify(bank: 'cbe', reference: 'https://mbreciept.cbe.com.et/fHCxExampleRcpt01');
 
 if ($result->isVerified()) {
     echo "VERIFIED: {$result->senderName} sent {$result->amount} {$result->currency} to {$result->receiverName}\n";
@@ -55,7 +57,7 @@ if ($result->isVerified()) {
 
 // --- Up to 20 receipts per batch
 $batch = $client->verifyBatch([
-    ['bank' => 'cbe', 'reference' => 'FT26140P01YB', 'accountNumber' => '1000560536171'],
+    ['bank' => 'cbe', 'reference' => 'https://mbreciept.cbe.com.et/fHCxExampleRcpt01'],
     ['bank' => 'telebirr', 'reference' => 'CHQ0FJ403O'],
 ]);
 echo "Batch: {$batch->verified}/{$batch->total} verified, {$batch->failed} not\n";
