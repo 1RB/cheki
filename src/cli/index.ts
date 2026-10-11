@@ -10,6 +10,7 @@
  *   cheki health                                     Check endpoint health
  */
 import { Verifier, getAllBanks, errorToMessage, type BankManifestEntry } from "../lib";
+import { cliVerdict } from "./verdict";
 
 async function main() {
   const args = process.argv.slice(2);
@@ -98,7 +99,8 @@ Examples:
     }
 
     const r = result.value;
-    console.log("\n  Receipt verified\n");
+    const verdict = cliVerdict(r);
+    console.log(`\n  ${verdict.headline}\n`);
     console.log(`  Bank:       ${r.bank}`);
     console.log(`  Reference:  ${r.reference}`);
     if (r.senderName) console.log(`  Sender:     ${r.senderName}`);
@@ -112,7 +114,7 @@ Examples:
     console.log(`  Source:     ${r.sourceUrl}`);
     if (r.durationMs) console.log(`  Duration:   ${r.durationMs}ms`);
     console.log("");
-    process.exit(0);
+    process.exit(verdict.exitCode);
   }
 
   if (command === "verify-qr") {
@@ -133,7 +135,8 @@ Examples:
     }
 
     const r = result.value;
-    console.log("\n  Receipt verified from QR code\n");
+    const verdict = cliVerdict(r);
+    console.log(`\n  ${verdict.headline}${verdict.exitCode === 0 ? " (looked up at the bank from the QR code)" : ""}\n`);
     console.log(`  Bank:       ${r.bank}`);
     console.log(`  Reference:  ${r.reference}`);
     if (r.senderName) console.log(`  Sender:     ${r.senderName}`);
@@ -145,7 +148,7 @@ Examples:
     console.log(`  Source:     ${r.sourceUrl}`);
     if (r.durationMs) console.log(`  Duration:   ${r.durationMs}ms`);
     console.log("");
-    process.exit(0);
+    process.exit(verdict.exitCode);
   }
 
   console.error(`Unknown command: ${command}. Run 'cheki --help' for usage.`);
