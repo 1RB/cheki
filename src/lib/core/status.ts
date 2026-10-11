@@ -5,7 +5,7 @@
 export type StatusTone = "success" | "failure" | "unknown";
 
 const FAILURE_RE =
-  /\b(fail(?:ed|ure|s)?|unsuccessful|revers(?:ed|al|e)|pending|cancel(?:l)?ed|cancel(?:l)?ation|declined|rejected|expired|refunded|error|timed?\s?out|in\s+progress|processing|on\s+hold|initiated|incomplete|not\s+(?:completed|successful|paid)|voided?)\b/i;
+  /\b(fail(?:ed|ure|s)?|unsuccessful|revers(?:ed|al|e)|pending|cancel(?:l)?ed|cancel(?:l)?ation|declined|rejected|expired|refunded|error|timed?\s?out|in\s+progress|processing|on\s+hold|initiated|incomplete|not\s+(?:completed|successful|paid)|voided?|charge\s?backs?|disputed?|suspended|rolled\s?back|returned|bounced)\b/i;
 
 const SUCCESS_RE =
   /^(?:completed?|success(?:ful)?|succeeded|paid|done|approved|settled|confirmed|posted|ok|transaction\s+(?:completed|successful))\.?$/i;
