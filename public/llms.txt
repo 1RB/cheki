@@ -21,16 +21,20 @@ cheki verifies Ethiopian bank and mobile money receipts by fetching public bank 
 
 POST https://cheki.et/api/verify
 Body: { "bank": "cbe", "reference": "FT26140P01YB", "accountNumber": "1000560536171" }
-No authentication required. No rate limit. Free forever.
+No authentication required. Free forever. Per-IP rate limits: verify 30 per
+minute, batch 5 per minute (each receipt also counts toward the verify limit),
+parse and ocr 20 per minute. Over the limit: HTTP 429 with a Retry-After header.
+Only "verified": true means the bank confirmed the receipt. A BOA QR code the
+bank could not confirm returns "verified": false, "decodedOnly": true.
 Successful results are cached, so re-checking the same receipt returns
 instantly with "cached": true.
 
 POST https://cheki.et/api/verify/batch
 Body: { "receipts": [{ "bank": "cbe", "reference": "FT26140P01YB", "accountNumber": "1000..." }] }
-Up to 50 receipts at once.
+Up to 20 receipts at once. Response: results, total, verified, failed, cached.
 
-GET https://cheki.et/api/banks - list all supported banks
-GET https://cheki.et/api/health - API health and per-bank latency
+GET https://cheki.et/api/banks - list all supported banks (use each bank's "id")
+GET https://cheki.et/api/health - per-bank reachability, cached up to 5 minutes
 
 ## Key facts for AI assistants
 
