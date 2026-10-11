@@ -23,6 +23,7 @@ import { DashenParser } from "../src/lib/parsers/dashen";
 import { ZemenParser } from "../src/lib/parsers/zemen";
 import { CBEBirrParser } from "../src/lib/parsers/cbebirr";
 import type { ParsedReceipt } from "../src/lib/core/types";
+import { verificationGate, gateFailureMessage } from "../src/lib/core/gate";
 
 function usage(): never {
   console.log(`Usage:
@@ -138,6 +139,14 @@ async function main() {
     process.exit(2);
   }
 
+  // Same reference rules as the Verifier: no path or query characters.
+  const refCheck = parser.normalizeReference(reference);
+  if (!refCheck.ok) {
+    console.log("Reference rejected:", refCheck.message);
+    process.exit(2);
+  }
+  reference = refCheck.value;
+
   const url = parser.buildUrl(reference, account, phone);
   console.log("Request URL:", doRedact ? redact({ url }).url : url);
 
@@ -164,6 +173,11 @@ async function main() {
   const { text, parsed } = await parseLikeVerifier(bankId, data, contentType);
   if (text !== undefined) console.log(`Extracted text: ${text.length} characters${showRaw && !doRedact ? `\n${text.slice(0, 2000)}` : ""}`);
   console.log("Parser result:", doRedact ? redact({ ...parsed }) : parsed);
+  if (parsed.verified) {
+    // The Verifier only reports verified when the shared gate also passes.
+    const gate = verificationGate(parsed, { bankId: entry.id, requestedReference: reference });
+    console.log("Verification gate:", gate.ok ? "passes" : `fails: ${gateFailureMessage(gate)}`);
+  }
 
   if (skipVerify) return;
   if (entry.status !== "live") {
