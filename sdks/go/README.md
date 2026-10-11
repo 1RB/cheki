@@ -1,6 +1,6 @@
 # cheki Go SDK
 
-Go client for the [cheki](https://cheki.et) receipt verification API: verify Ethiopian bank transfer receipts from CBE, Telebirr, BOA, Dashen, M-Pesa, Awash, Siinqee and eBirr (the live banks; `GetBanks` lists the current set).
+Go client for the [cheki](https://cheki.et) receipt verification API: verify Ethiopian bank transfer receipts from CBE, Telebirr, BOA, Dashen, M-Pesa (beta: not yet confirmed with a real receipt), Awash, Siinqee and eBirr (the live banks; `GetBanks` lists the current set).
 
 ```bash
 go get github.com/1RB/cheki/sdks/go
