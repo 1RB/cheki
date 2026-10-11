@@ -5,10 +5,10 @@ build-backend = "hatchling.build"
 [project]
 name = "cheki"
 version = "1.4.1"
-description = "Free, open-source Ethiopian bank/wallet receipt verification. 10 live banks: CBE, Telebirr, BOA, M-Pesa, Dashen, Awash, Zemen, CBE Birr, Siinqee, eBirr."
+description = "Python client for the cheki API: free, open-source Ethiopian bank/wallet receipt verification (CBE, Telebirr, BOA, M-Pesa, Dashen, Awash, Siinqee, eBirr)."
 readme = "README.md"
 license = {text = "MIT"}
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 authors = [
     {name = "1RB", email = "contact@1rb.dev"}
 ]
@@ -18,10 +18,10 @@ classifiers = [
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
 ]
 dependencies = [
     "requests>=2.28.0",
@@ -35,6 +35,9 @@ dev = [
     "pytest-cov>=4.0.0",
     "responses>=0.23.0",
     "reportlab>=4.0.0",
+    "ruff>=0.6.0",
+    "mypy>=1.10",
+    "types-requests",
 ]
 
 [project.scripts]
@@ -51,3 +54,20 @@ packages = ["cheki"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 120
+
+[tool.ruff.lint]
+# Errors and likely bugs only; style is not enforced on the legacy parsers.
+select = ["E9", "F", "B"]
+ignore = ["B904"]
+
+[tool.mypy]
+python_version = "3.10"
+# The API client is typed and checked; the deprecated direct parsers are not.
+files = ["cheki/client.py", "cheki/client_types.py", "cheki/registry.py", "cheki/_version.py"]
+follow_imports = "silent"
+ignore_missing_imports = true
+warn_unused_ignores = true
