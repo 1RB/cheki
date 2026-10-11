@@ -163,12 +163,12 @@ export const seoPages: SeoPage[] = [
     faq: [
       { q: "How do I verify an M-Pesa Ethiopia receipt?", a: "Select M-Pesa Ethiopia, paste your transaction number, and click Verify. cheki fetches the receipt from Safaricom's API and returns the result." },
       { q: "Why does M-Pesa verification sometimes fail?", a: "M-Pesa's endpoint (m-pesabusiness.safaricom.et) blocks requests from non-Kenyan/Ethiopian IPs. cheki attempts to bypass this with direct IP connections, but if it fails, we provide a fallback link." },
-      { q: "Do I need an account number for M-Pesa?", a: "No. M-Pesa only requires the transaction number (trxNo). The API returns sender name, receiver name, amount, and currency." },
+      { q: "Do I need an account number for M-Pesa?", a: "No. M-Pesa only requires the transaction number (trxNo). The API returns the receipt as a PDF (inside a JSON response) with the payer, receiver, amount and date. M-Pesa support is in beta until a real receipt confirms cheki's parser." },
     ],
     sections: [
       {
         heading: "How M-Pesa receipt verification works",
-        body: "M-Pesa Ethiopia (operated by Safaricom) publishes transaction receipts via a JSON API at https://m-pesabusiness.safaricom.et/api/receipt/getReceipt?trxNo={TRANSACTION_ID}. The response includes sender name, receiver name, amount, currency, and transaction date.",
+        body: "M-Pesa Ethiopia (operated by Safaricom) publishes transaction receipts through an API at https://m-pesabusiness.safaricom.et/api/receipt/getReceipt?trxNo={TRANSACTION_ID}. The JSON response carries the receipt as a base64-encoded PDF, which cheki decodes and reads for the payer, receiver, amount and transaction date. M-Pesa support is in beta: this layout comes from other open-source verifiers and has not yet been confirmed with a real receipt.",
       },
       {
         heading: "M-Pesa geo-blocking",
@@ -205,7 +205,7 @@ export const seoPages: SeoPage[] = [
           "Dashen: HTML receipt from receipts.dashenbanksc.com",
           "Telebirr: HTML receipt from transactioninfo.ethiotelecom.et",
           "BOA: JSON from cs.bankofabyssinia.com",
-          "M-Pesa: JSON from m-pesabusiness.safaricom.et",
+          "M-Pesa (beta): a PDF inside a JSON response from m-pesabusiness.safaricom.et",
           "All endpoints are public and require no authentication",
         ],
       },
@@ -264,7 +264,7 @@ export const seoPages: SeoPage[] = [
     slug: "ethiopian-bank-receipt-formats",
     title: "Ethiopian Bank Receipt Formats: Complete Reference | cheki",
     h1: "Ethiopian Bank Receipt Formats",
-    metaDescription: "Complete technical reference for Ethiopian bank receipt formats: CBE Receipt ID (JSON), Telebirr HTML, BOA JSON, Dashen HTML, M-Pesa. Current and legacy endpoint URLs and field mappings.",
+    metaDescription: "Complete technical reference for Ethiopian bank receipt formats: CBE Receipt ID (JSON), Telebirr HTML, BOA JSON, Dashen HTML, M-Pesa PDF-in-JSON (beta). Current and legacy endpoint URLs and field mappings.",
     keywords: ["ethiopian bank receipt format", "cbe receipt format", "telebirr receipt format", "boa receipt json", "ethiopian payment receipt structure"],
     intent: "informational",
     faq: [
@@ -287,7 +287,7 @@ export const seoPages: SeoPage[] = [
       },
       {
         heading: "M-Pesa receipt format",
-        body: "M-Pesa Ethiopia (Safaricom) publishes receipts as JSON. The endpoint is https://m-pesabusiness.safaricom.et/api/receipt/getReceipt?trxNo={TRANSACTION_ID}. The JSON response contains: senderName, receiverName, amount, currency, transactionDate, and transactionId.",
+        body: "M-Pesa Ethiopia (Safaricom) answers with JSON that carries the receipt as a base64-encoded PDF: {responseCode, responseDescription, base64Data}. The endpoint is https://m-pesabusiness.safaricom.et/api/receipt/getReceipt?trxNo={TRANSACTION_ID}. The PDF has the transaction ID, payer and receiver names and numbers, the settled amount, fees and total, and the payment date. Inferred from other open-source verifiers; M-Pesa is in beta until a real receipt confirms it.",
       },
     ],
     cta: { text: "Try the API", href: "/docs" },
