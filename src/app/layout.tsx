@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import "./globals.css";
+import { LIVE_BANK_COUNT, liveBankList } from "@/lib/bank-counts";
 import { I18nProvider } from "@/lib/i18n/context";
 
 const SITE_URL = "https://cheki.et";
@@ -12,7 +13,7 @@ export const metadata: Metadata = {
     template: "%s | cheki",
   },
   description:
-    "Check CBE, Telebirr, BOA, Dashen, Awash, M-Pesa, Zemen and eBirr receipts in seconds against each bank's own record. Free, no signup, open-source API.",
+    `Check ${liveBankList("short")} receipts in seconds against each bank's own record. Free, no signup, open-source API.`,
   applicationName: "cheki",
   category: "finance",
   creator: "cheki open source",
@@ -37,7 +38,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Check Ethiopian Bank Receipts Free | cheki",
     description:
-      "Check CBE, Telebirr and 8 more Ethiopian bank and wallet receipts in seconds. Free, no signup, open source.",
+      `Check CBE, Telebirr and ${LIVE_BANK_COUNT - 2} more Ethiopian bank and wallet receipts in seconds. Free, no signup, open source.`,
     type: "website",
     siteName: "cheki",
     locale: "en_US",
@@ -47,7 +48,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Check Ethiopian Bank Receipts Free | cheki",
     description:
-      "Check CBE, Telebirr and 8 more Ethiopian bank and wallet receipts in seconds. Free, no signup, open source.",
+      `Check CBE, Telebirr and ${LIVE_BANK_COUNT - 2} more Ethiopian bank and wallet receipts in seconds. Free, no signup, open source.`,
   },
   robots: {
     index: true,
@@ -114,7 +115,7 @@ const ldWebapp = {
   featureList: [
     "Real-time receipt verification",
     "QR code scanning",
-    "Batch verification up to 50 receipts",
+    "Batch verification up to 20 receipts",
     "REST API with no authentication",
     "TypeScript, Python, Dart, PHP, and Go SDKs",
     "Self-hosting with Docker",
