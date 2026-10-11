@@ -78,7 +78,7 @@ export const articles: Article[] = [
         ],
       },
 
-      { type: "callout", variant: "warning", title: "Old system decommissioned", text: "The old endpoint (apps.cbe.com.et:100) has been shut down by CBE. FT reference + account verification no longer works. Only mbreciept.cbe.com.et links can be verified now." },
+      { type: "callout", variant: "warning", title: "Old system: legacy, often unreachable", text: "The old endpoint (apps.cbe.com.et:100) is CBE's legacy receipt system. links.et reports apps.cbe.com.et unreachable since July 2026, and it often does not answer cheki either, though it has answered at times (October 2026). cheki still tries an FT reference + account, but the mbreciept.cbe.com.et link is the reliable way to verify." },
 
       { type: "heading", text: "How to scan a CBE QR code with cheki" },
       {
@@ -102,12 +102,12 @@ export const articles: Article[] = [
       { type: "text", text: "CBE's server validates tokens cryptographically. If you submit an old FT reference to the new API, it rejects it with \"Security Alert: Invalid or tampered legacy token!\" This is intentional. The new system prevents receipt enumeration. With the old system, anyone could guess FT references and pull receipts. With tokens, you can only verify receipts that were explicitly shared with you." },
       { type: "text", text: "CBE has already shipped a v2 token format. Newer receipts use URLs like https://mbreciept.cbe.com.et/v2-hfHCxFU3NsED8vFiF7hS, which carry the v2- prefix. The v2 payload is 15 bytes (vs v1's 13) and uses a different layout. Both v1 and v2 tokens work on the same API endpoint. cheki passes the full token through unchanged, so both formats work automatically." },
       { type: "callout", variant: "info", title: "Can you generate a token from an FT reference?", text: "No. The payload is encrypted with a server-side secret. There is no public endpoint to convert FT references to tokens, and the CBE mobile app generates tokens server-side at share-time. If you only have an FT reference, you cannot construct a valid mbreciept URL." },
-      { type: "callout", variant: "warning", title: "Legacy endpoint status", text: "The old CBE receipt endpoint (apps.cbe.com.et:100) is decommissioned. It no longer accepts connections. If you have an old FT reference and account suffix, there is no way to verify it through cheki or any other public tool. Ask the sender for the new mbreciept.cbe.com.et link instead." },
+      { type: "callout", variant: "warning", title: "Legacy endpoint status", text: "The old CBE receipt endpoint (apps.cbe.com.et:100) is a legacy format. links.et reports apps.cbe.com.et unreachable since July 2026, and it often does not answer cheki either, though it has answered at times (October 2026). cheki still tries an old FT reference and account suffix, and tells you plainly when CBE does not answer. The reliable fix is to ask the sender for the mbreciept.cbe.com.et link." },
     ],
     faq: [
-      { q: "Can I still use the old CBE receipt system with FT reference and account number?", a: "No. CBE decommissioned the old endpoint (apps.cbe.com.et:100) in mid-2026. FT references alone cannot be verified anymore. Ask the sender to share the mbreciept.cbe.com.et link from the CBE app instead. It works with a single tap in cheki." },
+      { q: "Can I still use the old CBE receipt system with FT reference and account number?", a: "cheki still accepts it as a legacy format: enter the FT reference and the last 8 digits of the receiving account. CBE's old endpoint (apps.cbe.com.et:100) is often unreachable, so if the check fails, ask the sender to share the mbreciept.cbe.com.et link from the CBE app. It works with a single tap in cheki." },
       { q: "Do I need the CBE app to scan QR codes?", a: "No. cheki has a built-in QR scanner that uses your phone's camera. Open cheki.et, tap the camera icon, and point at the QR code on the receipt." },
-      { q: "What if the CBE receipt link doesn't work?", a: "The mbreciept.cbe.com.et service may occasionally be down. If the link returns a 502 or timeout, try again later. There is no fallback for old FT references. The legacy endpoint has been permanently shut down." },
+      { q: "What if the CBE receipt link doesn't work?", a: "The mbreciept.cbe.com.et service may occasionally be down. If the link returns a 502 or timeout, try again later. An old FT reference + account is a legacy fallback, but that endpoint is often unreachable too." },
     ],
     related: ["free-receipt-verification-no-api-key", "ethiopian-bank-receipt-formats", "payment-fraud-ethiopia"],
     seo: {
@@ -137,7 +137,7 @@ export const articles: Article[] = [
         headers: ["Bank", "Public endpoint", "Format", "Cost"],
         rows: [
           ["CBE (new)", "Mb.cbe.com.et/api/v1/transactions/public/transaction-detail/{id}", "JSON", "Free"],
-          ["CBE (old)", "apps.cbe.com.et:100/?id={ref}{account}", "PDF", "Free"],
+          ["CBE (legacy)", "apps.cbe.com.et:100/?id={ref}{account}", "PDF", "Free"],
           ["Telebirr", "transactioninfo.ethiotelecom.et/receipt/{ref}", "HTML", "Free"],
           ["BOA", "cs.bankofabyssinia.com/api/onlineSlip/getDetails/?id={ref}{acct}", "JSON", "Free"],
           ["Dashen", "receipts.dashenbanksc.com/receipt/{ref}", "HTML", "Free"],
@@ -166,7 +166,7 @@ export const articles: Article[] = [
         type: "steps",
         items: [
           { title: "Go to cheki.et", text: "No signup, no login, no account creation. Just open the page and start verifying." },
-          { title: "Paste your receipt reference or URL", text: "Type an FT reference for CBE, a transaction ID for Telebirr, or paste a full receipt URL. cheki auto-detects the bank." },
+          { title: "Paste your receipt reference or URL", text: "Paste the CBE receipt link (or its Receipt ID), a transaction ID for Telebirr, or any full receipt URL. cheki auto-detects the bank. An older CBE receipt with only an FT reference also needs the last 8 digits of the receiving account." },
           { title: "Click Verify", text: "cheki fetches the receipt from the bank's public endpoint and shows you the result in 1-3 seconds." },
           { title: "Review the data", text: "You'll see the sender name, receiver name, amount, date, and source URL. Copy the JSON if you need it for your records." },
         ],
@@ -174,7 +174,7 @@ export const articles: Article[] = [
 
       { type: "heading", text: "Using the free API" },
       { type: "text", text: "If you're a developer, cheki provides a free REST API with no authentication:" },
-      { type: "code", lang: "bash", code: 'curl -X POST https://cheki.et/api/verify \\\n  -H "Content-Type: application/json" \\\n  -d \'{"bank":"cbe","reference":"FT26140P01YB","accountNumber":"1000560536171"}\'' },
+      { type: "code", lang: "bash", code: 'curl -X POST https://cheki.et/api/verify \\\n  -H "Content-Type: application/json" \\\n  -d \'{"bank":"cbe","reference":"https://mbreciept.cbe.com.et/fHCxExampleRcpt01"}\'' },
       { type: "text", text: "No API key header. No Bearer token. Just POST and get JSON back. Requests are rate limited per IP: verify 30 per minute, batch 5 per minute, parse and OCR 20 per minute each. Over the limit you get a 429 with a Retry-After header." },
       { type: "text", text: "Compare this to check.et, which requires a business account, an API key generation step, and Authorization headers:" },
       { type: "code", lang: "bash", code: '# check.et requires all this:\nexport CHECK_ET_API_KEY=chk_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\ncurl -X POST https://api.check.et/api/v1/verify \\\n  -H "Authorization: Bearer $CHECK_ET_API_KEY" \\\n  -H "Content-Type: application/json" \\\n  -d \'{"bank":"cbe","transaction_number":"FT26140P01YB","account_number":"1000560536171"}\'' },
@@ -302,7 +302,7 @@ export const articles: Article[] = [
           ["Geo-blocked", "No"],
         ],
       },
-      { type: "heading", text: "Old system (apps.cbe.com.et)" },
+      { type: "heading", text: "Legacy system (apps.cbe.com.et, older receipts)" },
       {
         type: "table",
         headers: ["Field", "Value"],
@@ -522,8 +522,8 @@ export const articles: Article[] = [
         type: "table",
         headers: ["Field", "Value"],
         rows: [
-          ["URL format", "https://apps.cbebirr.com.et/receipt/{REFERENCE}?phone={PAYER_PHONE}"],
-          ["Response format", "HTML"],
+          ["URL format", "https://cbepay1.cbe.com.et/aureceipt?TID={REFERENCE}&PH={PAYER_PHONE}"],
+          ["Response format", "PDF for real receipts (reported by other verifiers; an unknown reference returns an empty HTML viewer). In development in cheki"],
           ["Input needed", "Transaction reference + payer phone number"],
           ["Account number required", "No (phone instead)"],
           ["Geo-blocked", "No"],
@@ -608,7 +608,7 @@ export const articles: Article[] = [
     faq: [
       { q: "Are these bank endpoints official APIs?", a: "These are public endpoints that the banks use for their own receipt sharing systems. They are not documented official APIs, but they are publicly accessible without authentication. cheki, check.et, and verify.et all use these same endpoints." },
       { q: "Can the banks change or remove these endpoints?", a: "Yes. If a bank changes their endpoint, cheki needs to update its parser. Because cheki is open source, anyone can submit a fix. This is an advantage over closed services like check.et." },
-      { q: "Which banks require an account number?", a: "CBE (old system) requires the last 8 digits of the receiving account. BOA requires the last 5 digits. All other banks only need the transaction reference. The new CBE system (mbreciept) does not require an account number." },
+      { q: "Which banks require an account number?", a: "BOA requires the last 5 digits of the receiving account. CBE's current receipts (the mbreciept link or Receipt ID) need no account number; only an older CBE receipt with just an FT reference needs the last 8 digits. CBE Birr needs the payer's phone. All other banks only need the receipt link or reference." },
     ],
     related: ["cbe-receipt-qr-code", "self-hosting-docker-guide", "payment-verification-api-guide"],
     seo: {
@@ -892,7 +892,7 @@ export const articles: Article[] = [
       { type: "text", text: "The most common use case: verify one receipt at a time." },
       { type: "code", lang: "bash", code: 'curl -X POST https://cheki.et/api/verify \\\n  -H "Content-Type: application/json" \\\n  -d \'{\n    "bank": "cbe",\n    "reference": "FT26140P01YB",\n    "accountNumber": "1000560536171"\n  }\'' },
       { type: "text", text: "Response:" },
-      { type: "code", lang: "json", code: '{\n  "success": true,\n  "verified": true,\n  "bank": "Commercial Bank of Ethiopia",\n  "reference": "FT26140P01YB",\n  "amount": 20000,\n  "currency": "ETB",\n  "senderName": "Mr Mohammed Abdulwasi Reshid",\n  "senderAccount": "1****1685",\n  "receiverName": "SAMI ADIL ZEKARIA",\n  "receiverAccount": "1000560536171",\n  "date": "5/20/2026 7:29:00 PM",\n  "sourceUrl": "https://apps.cbe.com.et:100/?id=FT26140P01YB60536171"\n}' },
+      { type: "code", lang: "json", code: '{\n  "success": true,\n  "verified": true,\n  "bank": "Commercial Bank of Ethiopia",\n  "reference": "FT26140P01YB",\n  "amount": 20000,\n  "currency": "ETB",\n  "senderName": "Mr Mohammed Abdulwasi Reshid",\n  "senderAccount": "1****1685",\n  "receiverName": "SAMI ADIL ZEKARIA",\n  "receiverAccount": "1000560536171",\n  "date": "5/20/2026 7:29:00 PM",\n  "sourceUrl": "https://mbreciept.cbe.com.et/fHCxExampleRcpt01"\n}' },
 
       { type: "heading", text: "URL-based verification" },
       { type: "text", text: "If you have a receipt URL (e.g. from a QR code or shared link), you can skip the bank field. cheki auto-detects the bank from the URL:" },
@@ -900,7 +900,7 @@ export const articles: Article[] = [
 
       { type: "heading", text: "Batch verification" },
       { type: "text", text: "For end-of-day reconciliation, verify up to 20 receipts in a single request (5 are checked at a time, and each one counts against the per-IP verify limit):" },
-      { type: "code", lang: "bash", code: 'curl -X POST https://cheki.et/api/verify/batch \\\n  -H "Content-Type: application/json" \\\n  -d \'{\n    "receipts": [\n      {"bank": "cbe", "reference": "FT26140P01YB", "accountNumber": "1000560536171"},\n      {"bank": "telebirr", "reference": "DET8FJGUJ4"},\n      {"bank": "boa", "reference": "AB12345678", "accountNumber": "12345"}\n    ]\n  }\'' },
+      { type: "code", lang: "bash", code: 'curl -X POST https://cheki.et/api/verify/batch \\\n  -H "Content-Type: application/json" \\\n  -d \'{\n    "receipts": [\n      {"bank": "cbe", "reference": "https://mbreciept.cbe.com.et/fHCxExampleRcpt01"},\n      {"bank": "telebirr", "reference": "DET8FJGUJ4"},\n      {"bank": "boa", "reference": "AB12345678", "accountNumber": "12345"}\n    ]\n  }\'' },
 
       { type: "heading", text: "JavaScript integration" },
       { type: "code", lang: "javascript", code: "class ChekiAPI {\n  constructor(baseUrl = 'https://cheki.et') {\n    this.baseUrl = baseUrl;\n  }\n\n  async verify(bank, reference, accountNumber) {\n    const res = await fetch(`${this.baseUrl}/api/verify`, {\n      method: 'POST',\n      headers: { 'Content-Type': 'application/json' },\n      body: JSON.stringify({ bank, reference, accountNumber })\n    });\n    return res.json();\n  }\n\n  async verifyUrl(url) {\n    const res = await fetch(`${this.baseUrl}/api/verify`, {\n      method: 'POST',\n      headers: { 'Content-Type': 'application/json' },\n      body: JSON.stringify({ reference: url })\n    });\n    return res.json();\n  }\n\n  async batchVerify(receipts) {\n    const res = await fetch(`${this.baseUrl}/api/verify/batch`, {\n      method: 'POST',\n      headers: { 'Content-Type': 'application/json' },\n      body: JSON.stringify({ receipts })\n    });\n    return res.json();\n  }\n}\n\n// Usage\nconst cheki = new ChekiAPI();\nconst result = await cheki.verify('cbe', 'FT26140P01YB', '1000560536171');\nif (result.verified && result.amount === expectedAmount) {\n  console.log('Payment confirmed:', result.amount, result.currency);\n}" },
@@ -1038,7 +1038,7 @@ export const articles: Article[] = [
   {
     slug: "how-to-verify-cbe-receipt",
     title: "How to Verify a CBE Receipt (Step by Step)",
-    description: "Complete guide to verifying Commercial Bank of Ethiopia receipts. Both the new mbreciept QR system and the old FT reference + account method. Free with cheki.",
+    description: "Complete guide to verifying Commercial Bank of Ethiopia receipts: the Receipt ID / mbreciept link first, and the legacy FT reference + account method for older receipts. Free with cheki.",
     category: "bank",
     bankCode: "cbe",
     excerpt: "Two ways to verify CBE receipts: the new QR/URL system and the classic FT reference + account method. Both are free with cheki.",
@@ -1059,9 +1059,9 @@ export const articles: Article[] = [
       },
       { type: "callout", variant: "tip", title: "Easiest method", text: "The new system doesn't require an account number. Just paste the link or scan the QR code. The API returns masked account numbers for privacy." },
 
-      { type: "heading", text: "Method 2: Classic CBE receipt (FT reference + account), no longer available" },
-      { type: "text", text: "CBE decommissioned the old PDF endpoint (apps.cbe.com.et:100) in mid-2026. The FT reference + account method no longer works. If a customer only has an FT reference and no receipt link, ask them to open their CBE app, find the transaction, and tap Share to get the mbreciept.cbe.com.et link." },
-      { type: "callout", variant: "warning", title: "Legacy method unavailable", text: "The old apps.cbe.com.et:100 endpoint is permanently shut down. cheki shows a clear error message if you try to verify with an FT reference. The only working method is the mbreciept link." },
+      { type: "heading", text: "Older receipts: FT reference + account (legacy)" },
+      { type: "text", text: "Older receipts only show an FT reference. cheki still accepts the FT reference plus the last 8 digits of the receiving account, read from CBE's old PDF endpoint (apps.cbe.com.et:100). links.et reports apps.cbe.com.et unreachable since July 2026, and it often does not answer cheki either, though it has answered at times (October 2026), so if the check fails, ask the customer to open their CBE app, find the transaction, and tap Share to get the mbreciept.cbe.com.et link." },
+      { type: "callout", variant: "warning", title: "Legacy method: not reliable", text: "The old apps.cbe.com.et:100 endpoint often does not answer. cheki shows a clear message when it fails and points you to the receipt link, which is the reliable method." },
 
       { type: "heading", text: "What information do you need?" },
       {
@@ -1069,7 +1069,7 @@ export const articles: Article[] = [
         headers: ["Method", "Required info", "Example"],
         rows: [
           ["New (URL/QR)", "Receipt link or QR scan", "https://mbreciept.cbe.com.et/fHCxyV4mg5pRIwEkJO"],
-          ["Classic (FT ref)", "No longer works: endpoint decommissioned", "N/A"],
+          ["Legacy (FT ref, older receipts)", "FT reference + last 8 digits of the receiving account (endpoint often unreachable)", "FT26140P01YB + 60536171"],
         ],
       },
 
@@ -1094,7 +1094,7 @@ curl -X POST https://cheki.et/api/verify \\
       { type: "callout", variant: "info", title: "Free verification", text: "cheki is free for CBE receipt verification. check.et charges 499 ETB/month for the same data after 200 free verifications." },
     ],
     faq: [
-      { q: "Do I need the account number for the new CBE system?", a: "No. The new mbreciept system only requires the short URL or QR code. The old FT reference method (which required account digits) has been decommissioned by CBE." },
+      { q: "Do I need the account number for the new CBE system?", a: "No. The new mbreciept system only requires the short URL, its Receipt ID or the QR code. Only the legacy FT reference method needs account digits." },
       { q: "Can I verify CBE receipts from outside Ethiopia?", a: "Yes. The Mb.cbe.com.et API is accessible globally. Unlike Telebirr and M-Pesa, CBE is not geo-blocked." },
       { q: "How fast is CBE verification?", a: "The JSON API typically responds in 0.5-2 seconds, fast enough for real-time counter verification." },
     ],
