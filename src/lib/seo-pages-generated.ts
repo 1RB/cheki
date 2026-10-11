@@ -16,7 +16,10 @@
 
 import type { SeoPage } from "./seo-pages";
 import { banks, type Bank } from "./banks";
-import { LIVE_BANK_COUNT, liveBankList } from "./bank-counts";
+import { LIVE_BANK_COUNT, liveBankList, liveProviders } from "./bank-counts";
+
+/** Live bank ids for API copy ("cbe, telebirr, ..."), from the manifest. */
+const liveBankIds = liveProviders.map((b) => b.id).join(", ");
 
 // ─── Helpers ──────────────────────────────────────────────────────
 
@@ -313,7 +316,7 @@ const apiEndpointPages: SeoPage[] = [
     keywords: ["receipt verification api", "verify receipt endpoint", "post api verify", "cheki api", "ethiopian receipt api endpoint"],
     intent: "transactional",
     faq: [
-      { q: "What does POST /api/verify do?", a: "It verifies a single Ethiopian bank receipt. You send a JSON body with the bank code, reference number, and (for some banks) the account number. The endpoint fetches the receipt from the bank's public URL, parses it, and returns structured JSON with sender name, receiver name, amount, date, and the source URL." },
+      { q: "What does POST /api/verify do?", a: "It verifies a single Ethiopian bank receipt. You send a JSON body with the bank id, reference number, and (for some banks) the account number. The endpoint fetches the receipt from the bank's public URL, parses it, and returns structured JSON with sender name, receiver name, amount, date, and the source URL." },
       { q: "Do I need an API key for /api/verify?", a: "No. cheki's API requires no authentication. No API key, no bearer token, no OAuth. Just POST with a JSON content type and the receipt details." },
       { q: "What's the rate limit?", a: "Requests are rate limited per IP: /api/verify 30 per minute, /api/verify/batch 5 per minute, /api/parse and /api/ocr 20 per minute each. Over the limit you get a 429 with a Retry-After header. For bulk verification, use POST /api/verify/batch to verify up to 20 receipts in a single request." },
     ],
@@ -324,9 +327,9 @@ const apiEndpointPages: SeoPage[] = [
       },
       {
         heading: "Request format",
-        body: "Send a POST request with Content-Type: application/json. The body must contain the bank code (e.g. 'cbe', 'telebirr', 'boa'), the transaction reference number, and for banks that require it, the account number.",
+        body: "Send a POST request with Content-Type: application/json. The body must contain the bank id (e.g. 'cbe', 'telebirr', 'boa'; the id field from GET /api/banks), the transaction reference number, and for banks that require it, the account number.",
         bullets: [
-          "bank (required): bank code: cbe, telebirr, boa, mpesa, dashen, awash, zemen, cbebirr, siinqee",
+          `bank (required unless the reference is a receipt link): bank id; live banks: ${liveBankIds}`,
           "reference (required): transaction reference number (e.g. FT26140P01YB)",
           "accountNumber (conditional): last 8 digits for CBE, last 5 for BOA, not required for Telebirr/M-Pesa",
         ],
@@ -376,37 +379,38 @@ const apiEndpointPages: SeoPage[] = [
     slug: "bank-listing-api-endpoint",
     title: "GET /api/banks - List Supported Banks | cheki",
     h1: "Bank Listing API",
-    metaDescription: "GET /api/banks: list all supported Ethiopian banks and wallets. Returns bank codes, names, endpoint URLs, and verification requirements. Free, no auth.",
+    metaDescription: "GET /api/banks: list all supported Ethiopian banks and wallets. Returns bank ids, names, endpoint URLs, and verification requirements. Free, no auth.",
     keywords: ["ethiopian bank list api", "supported banks api", "cheki banks endpoint", "bank codes ethiopia", "bank listing api"],
     intent: "transactional",
     faq: [
-      { q: "What does GET /api/banks return?", a: "A JSON array of all supported banks and wallets. Each bank object includes: code, name, shortName, type (bank/wallet/mobile), requiresAccount, accountDigits, endpoint, responseType, and status (live/soon)." },
+      { q: "What does GET /api/banks return?", a: "A JSON object { banks: [...] } listing every bank and wallet, live or in development. Each bank has id (the value to send as bank), name, type (bank, wallet or mobile), status (live or in-development), requiresAccount, endpoint, color and initials, plus swift, accountDigits and requiresPhone when they apply." },
       { q: "How many banks are supported?", a: `cheki currently supports ${LIVE_BANK_COUNT} live banks and wallets: ${liveBankList()}. New banks are added as their public endpoints are discovered.` },
-      { q: "Can I use this to auto-detect which bank a reference belongs to?", a: "Yes. The response includes refPrefixes for each bank (e.g. CBE references start with 'FT'). You can use this to automatically route verification requests to the correct bank." },
+      { q: "Can I use this to auto-detect which bank a reference belongs to?", a: "Not from this endpoint: it does not return reference formats. If you have the receipt link (from a QR code or a shared receipt), send it as the reference without a bank and cheki detects the bank from the link." },
     ],
     sections: [
       {
         heading: "Endpoint specification",
-        body: "GET /api/banks: Returns a list of all supported banks and wallets. No parameters, no authentication. The response is a JSON array of bank objects with full metadata including endpoint URLs, response types, and verification requirements.",
+        body: "GET /api/banks: Returns a list of all supported banks and wallets. No parameters, no authentication. The response is a JSON object with a banks array; each entry carries its id, status, endpoint URL and verification requirements. Only banks with status live can be verified; the others answer 404 from /api/verify.",
       },
       {
         heading: "Bank object fields",
-        body: "Each bank in the response array contains:",
+        body: "Each entry in banks contains:",
         bullets: [
-          "code: short identifier (cbe, telebirr, boa, mpesa, etc.)",
+          "id: short identifier to send as bank (cbe, telebirr, boa, mpesa, etc.)",
           "name: full bank name",
-          "shortName: abbreviated name for UI display",
           "type: 'bank', 'wallet', or 'mobile'",
-          "requiresAccount: whether account number is needed for verification",
-          "accountDigits: how many digits of the account are required",
-          "endpoint: the bank's receipt endpoint domain",
-          "responseType: 'pdf', 'json', or 'html'",
-          "status: 'live' or 'soon'",
+          "status: 'live' or 'in-development'",
+          "requiresAccount: whether an account number is needed for verification",
+          "accountDigits: how many trailing digits of the account are required (omitted when not needed)",
+          "requiresPhone: true when a payer phone number is needed (omitted otherwise)",
+          "swift: the bank's SWIFT code, when it has one",
+          "endpoint: the bank's receipt URL pattern",
+          "color and initials: for UI display",
         ],
       },
       {
-        heading: "Auto-detection use case",
-        body: "The bank listing includes reference number prefixes for each bank. For example, CBE references start with 'FT', Telebirr references have a different format. Developers can use this metadata to auto-detect which bank a reference number belongs to, then route the verification request accordingly without asking the user to select a bank.",
+        heading: "Building a bank picker",
+        body: "Show the live banks in your bank picker and use each bank's requiresAccount, accountDigits and requiresPhone to decide which extra field to ask for. When you have a receipt link instead of a reference, you can skip the picker: send the link as the reference and cheki detects the bank from it.",
       },
     ],
     cta: { text: "Read full API docs", href: "/docs" },
@@ -415,11 +419,11 @@ const apiEndpointPages: SeoPage[] = [
     slug: "receipt-health-check-api",
     title: "GET /api/health - Bank Endpoint Health Check | cheki",
     h1: "Bank Endpoint Health Check API",
-    metaDescription: "GET /api/health: check the status and latency of all Ethiopian bank receipt endpoints. See which banks are up, down, or geo-blocked. Free, no auth.",
+    metaDescription: "GET /api/health: check the status and latency of all Ethiopian bank receipt endpoints. See which banks are reachable, unreachable, or geo-blocked. Free, no auth.",
     keywords: ["bank endpoint health", "ethiopian bank status api", "receipt endpoint check", "bank api health", "cheki health check"],
     intent: "transactional",
     faq: [
-      { q: "What does GET /api/health return?", a: "A JSON object with the health status of each supported bank endpoint. For each bank, it returns: status (up/down/blocked), latencyMs (response time in milliseconds), and lastChecked timestamp. This tells you which banks are currently reachable from cheki's servers." },
+      { q: "What does GET /api/health return?", a: "A JSON object with status, checkedAt (an ISO timestamp), cached, and a banks array. Each bank entry has id, name, status (reachable, unreachable, geo-blocked, in-development or no-parser) and latencyMs. This tells you which banks are currently reachable from cheki's servers." },
       { q: "Why would a bank endpoint be down?", a: "Bank endpoints can be temporarily down for maintenance, or they can be geo-blocked (Telebirr and M-Pesa block non-Ethiopian IPs). The health check tells you which endpoints are currently accessible so you can handle failures gracefully." },
       { q: "How often is the health check updated?", a: "Results are cached for 5 minutes, on the server and at the CDN, so polling more often than that returns the same snapshot. Concurrent calls share one probe of the bank endpoints." },
     ],
@@ -430,14 +434,14 @@ const apiEndpointPages: SeoPage[] = [
       },
       {
         heading: "Response structure",
-        body: "The response is a JSON object keyed by bank code. Each bank has a status field ('up', 'down', 'blocked'), a latencyMs field (response time in milliseconds), and a lastChecked timestamp. This data is useful for monitoring dashboards and for gracefully handling endpoint failures in your integration.",
+        body: "The response has a top-level status, a checkedAt ISO timestamp, a cached flag, and a banks array. Each entry has id, name, status ('reachable', 'unreachable', 'geo-blocked', or 'in-development' and 'no-parser' for banks that are not checked) and latencyMs (response time in milliseconds). This data is useful for monitoring dashboards and for gracefully handling endpoint failures in your integration.",
       },
       {
         heading: "Integration patterns",
         body: "Use the health check to build resilient integrations:",
         bullets: [
           "Check health before batch verification to skip banks that are down",
-          "Display real-time bank status on your dashboard",
+          "Display current bank status on your dashboard (refreshed at most every 5 minutes)",
           "Set up alerts when a bank endpoint goes down",
           "Automatically fall back to manual verification when a bank is geo-blocked",
         ],
@@ -616,28 +620,28 @@ const developerPages: SeoPage[] = [
     keywords: ["typescript receipt sdk", "ethiopian receipt sdk", "cheki typescript", "receipt verification npm", "bank receipt npm package"],
     intent: "transactional",
     faq: [
-      { q: "How do I install the cheki TypeScript SDK?", a: "The SDK is included in the cheki monorepo on GitHub. Clone the repo and import the SDK from the /sdk/typescript directory. Alternatively, you can copy the single-file SDK into your project. No npm install needed; it's a lightweight fetch wrapper." },
-      { q: "Can I use the SDK in the browser?", a: "Yes. The SDK uses the fetch API and works in both Node.js and the browser. However, browser-based calls to cheki's API are subject to CORS. For production use, we recommend calling the API from your backend." },
-      { q: "Does the SDK handle errors?", a: "Yes. The SDK throws typed errors for common scenarios: receipt not found, geo-blocked endpoint, invalid reference format, and network errors. Each error has a code and message that you can use for user-facing error handling." },
+      { q: "How do I install the cheki TypeScript SDK?", a: "Run npm install cheki-verify, then import { Cheki } from \"cheki-verify\". It has no runtime dependencies; it uses the platform's fetch (Node.js 18+)." },
+      { q: "Can I use the SDK in the browser?", a: "Call it from your server. The hosted API does not send CORS headers on the verify routes, so browser calls to cheki.et are blocked. Your backend also keeps your users' requests under its own per-IP rate limit (verify: 30 per minute)." },
+      { q: "Does the SDK handle errors?", a: "Yes. Any non-2xx response throws ChekiAPIError with the HTTP status, the server's error text and, for geo-blocked banks, a fallbackUrl. 429 throws ChekiRateLimitError (with the Retry-After seconds) and 413 throws ChekiPayloadTooLargeError. Bad input throws ChekiValidationError before any request, and network failures and timeouts throw ChekiNetworkError and ChekiTimeoutError. A receipt the bank does not have is a 422 ChekiAPIError." },
     ],
     sections: [
       {
         heading: "SDK overview",
-        body: "The cheki TypeScript SDK is a lightweight wrapper around the REST API. It provides typed methods for single verification, batch verification, bank listing, and health checking. The SDK is zero-dependency (uses native fetch) and works in both Node.js and browser environments.",
+        body: "The cheki TypeScript SDK (npm: cheki-verify) is a typed wrapper around the REST API with methods for single verification, batch verification, bank listing, health checks and receipt download links. It has no runtime dependencies (it uses native fetch), waits up to 65 seconds per attempt, and retries a network error, 5xx or 429 at most once. It is tested against the same API contract fixtures as every other cheki SDK.",
       },
       {
         heading: "Quick start",
-        body: "Import the ChekiAPI class, create an instance with the base URL, and call verify with the bank code, reference, and optional account number. The SDK returns a typed response with all receipt fields. Error handling is done with try/catch.",
+        body: "Import the Cheki class (the base URL defaults to https://cheki.et), create an instance, and call verify with the bank id, the reference and, for CBE or BOA, { accountNumber }. Treat the receipt as paid only when isVerified(result) is true: a 200 response can still be unverified, such as a BOA QR code the bank could not confirm (decodedOnly). API errors throw, so wrap calls in try/catch.",
       },
       {
         heading: "Available methods",
-        body: "The SDK exposes four methods matching the REST API endpoints:",
+        body: "The Cheki class has four API methods and one URL helper:",
         bullets: [
-          "verify(bank, reference, accountNumber?): verify a single receipt",
-          "verifyUrl(url): verify by receipt URL (auto-detects bank)",
-          "verifyBatch(receipts): verify up to 20 receipts in one request",
-          "listBanks(): get all supported banks with metadata",
-          "healthCheck(): check endpoint status and latency",
+          "verify(bank, reference, options?): verify one receipt; options take accountNumber, phoneNumber or qrData. A receipt link can be passed as the reference",
+          "verifyBatch(receipts): verify up to 20 receipts in one request (checked before sending); returns results, total, verified, failed and cached",
+          "getBanks(): all supported banks and wallets; each bank's id is the value to pass as bank",
+          "getHealth(): per-bank reachability (cached by the server for up to 5 minutes)",
+          "getReceiptUrl(bank, reference, accountNumber?): builds the /api/receipt download link for CBE, Zemen and Dashen (no request is made)",
         ],
       },
     ],
@@ -651,27 +655,27 @@ const developerPages: SeoPage[] = [
     keywords: ["python receipt verification", "ethiopian receipt python", "cheki python", "receipt verification pip", "bank receipt python library"],
     intent: "transactional",
     faq: [
-      { q: "How do I install the cheki Python library?", a: "Install it with pip install cheki. It uses the requests library for HTTP calls." },
-      { q: "Does the Python library support PDF parsing?", a: "Yes. The Python library includes PDF text extraction for CBE receipts using pdfminer.six or unpdf. It handles the full pipeline: fetch the PDF from CBE's endpoint, extract text, parse fields, and return structured data." },
-      { q: "Can I use the Python library without the API?", a: "Yes. The Python library can fetch receipts directly from bank endpoints without going through cheki's API. This is useful for self-hosting or for running verification on an Ethiopian server to bypass geo-blocking." },
+      { q: "How do I install the cheki Python library?", a: "Install it with pip install cheki (Python 3.10+). It uses the requests library for HTTP calls and also installs the cheki-verify command-line tool." },
+      { q: "Does the Python library parse receipts itself?", a: "No. ChekiClient calls the cheki API, which fetches the receipt from the bank, parses it and applies the verification gate on the server. You get structured fields back (amount, sender, receiver, date) without parsing anything locally." },
+      { q: "Can I use the Python library without the API?", a: "The old direct mode, which fetched banks from your own machine, is deprecated: its parsers lack the server's verification gate and hardening, and it will be removed in the next major version. If you cannot use the hosted API, self-host the cheki server (on an Ethiopian IP if you need the geo-blocked banks) and point ChekiClient at it." },
     ],
     sections: [
       {
         heading: "Python library overview",
-        body: "The cheki Python library provides a clean Pythonic interface for verifying Ethiopian bank receipts. It supports direct endpoint access (bypassing the API), PDF parsing for CBE, JSON parsing for BOA and M-Pesa, and HTML parsing for Telebirr.",
+        body: "The cheki Python library is a client for the cheki REST API. ChekiClient has verify, verify_batch (up to 20 receipts), get_banks, get_health and get_receipt_url. Each attempt waits up to 65 seconds, and a network error, 5xx or 429 is retried at most once, after Retry-After when the server sends one.",
       },
       {
         heading: "Quick start",
-        body: "Install the library from the cheki monorepo, import the ChekiAPI class, and call verify with the bank code and reference number. The library returns a Python dict with all receipt fields. For direct endpoint access (without the API), use the DirectVerifier class.",
+        body: "pip install cheki, then use ChekiClient as a context manager and call verify with the bank id, the reference and, for CBE or BOA, account_number. verify returns a result for API errors too instead of raising, so check result.is_verified: it is the only success signal. A BOA QR code the bank could not confirm comes back with decoded_only set and is not verified.",
       },
       {
-        heading: "Direct verification vs API verification",
-        body: "The library supports two modes:",
+        heading: "API client first",
+        body: "Since the API hardening, the library is an API client first:",
         bullets: [
-          "API mode: calls cheki's REST API (requires internet access to cheki.et)",
-          "Direct mode: fetches receipts directly from bank endpoints (bypasses cheki's API)",
-          "Direct mode is useful for self-hosting on an Ethiopian IP to bypass geo-blocking",
-          "Both modes return the same structured data format",
+          "ChekiClient: calls cheki.et or your self-hosted server; verification and the fail-closed gate run on the server",
+          "Errors: result.http_status, result.error, result.is_rate_limited and result.retry_after; result.fallback_url for geo-blocked banks",
+          "CLI: cheki-verify cbe FT26140P01YB --account 1000560536171 calls the API and exits 0 only when the receipt is verified",
+          "Direct mode (from cheki import verify) is deprecated and will be removed in the next major version",
         ],
       },
     ],
@@ -686,7 +690,7 @@ const developerPages: SeoPage[] = [
     intent: "commercial",
     faq: [
       { q: "How much does cheki cost for businesses?", a: "Nothing. cheki is 100% free for businesses of any size. No per-verification fee, no monthly subscription, no API key, and no monthly cap; only a per-IP rate limit (30 checks per minute) applies. check.et charges 499 ETB/month after 200 verifications. cheki has no such limit." },
-      { q: "Can I integrate cheki into my POS system?", a: "Yes. cheki provides a REST API and SDKs for TypeScript and Python. You can integrate receipt verification into any POS, e-commerce, or accounting system. The API requires no authentication, so integration takes minutes, not days." },
+      { q: "Can I integrate cheki into my POS system?", a: "Yes. cheki provides a REST API and SDKs for TypeScript, Python, Go, PHP and Dart. You can integrate receipt verification into any POS, e-commerce, or accounting system. The API requires no authentication, so integration takes minutes, not days." },
       { q: "What about batch verification for end-of-day reconciliation?", a: "Use POST /api/verify/batch to verify up to 20 receipts in a single API call. This is designed for end-of-day reconciliation: submit all the day's receipts, get results in seconds, and match them against your orders." },
     ],
     sections: [
