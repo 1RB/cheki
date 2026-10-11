@@ -7,30 +7,33 @@
     "type": "bank",
     "status": "live",
     "parser": "cbe",
-    "responseType": "pdf",
-    "requiresAccount": true,
-    "accountLabel": "Receiving account number",
+    "responseType": "json",
+    "requiresAccount": false,
+    "accountLabel": "Receiving account number (older FT receipts only)",
     "accountDigits": 8,
-    "endpoint": "https://apps.cbe.com.et:100/?id={ref}{account}",
-    "endpointFormat": "https://apps.cbe.com.et:100/?id={REFERENCE}{LAST_8_DIGITS_OF_ACCOUNT}",
-    "sslVerify": false,
+    "endpoint": "https://mb.cbe.com.et/api/v1/transactions/public/transaction-detail/{ref}",
+    "endpointFormat": "https://mbreciept.cbe.com.et/{RECEIPT_ID}",
+    "sslVerify": true,
     "color": "#502878",
     "initials": "CBE",
-    "notes": "Legacy PDF system. New API at mb.cbe.com.et uses receipt IDs.",
+    "notes": "Current: Receipt ID / mbreciept.cbe.com.et link, read through the mb.cbe.com.et JSON API. Legacy: FT reference + last 8 digits of the receiving account on apps.cbe.com.et:100 (PDF), still tried but often unreachable.",
     "refPattern": {
-      "source": "^FT",
+      "source": "^(FT|fHCx|v\\d{1,2}-)",
       "flags": "i"
     },
     "refPrefixes": [
-      "FT"
+      "fHCx",
+      "v2-",
+      "FT (older receipts)"
     ],
-    "description": "Commercial Bank of Ethiopia (CBE) is the largest bank in Ethiopia and the most common settlement rail for Ethiopian businesses. CBE receipts are published as public PDF documents accessible via a URL combining the FT transaction reference and the last 8 digits of the receiving account number.",
-    "referenceFormat": "FT followed by 10 alphanumeric characters (e.g. FT26140P01YB)",
-    "referenceExample": "FT26140P01YB",
+    "description": "Commercial Bank of Ethiopia (CBE) is the largest bank in Ethiopia and the most common settlement rail for Ethiopian businesses. New CBE receipts carry a Receipt ID, shared from the CBE app as a mbreciept.cbe.com.et link or QR code, which cheki checks against CBE's own record without an account number. Older receipts that only show an FT reference still work with the last 8 digits of the receiving account.",
+    "referenceFormat": "Receipt ID from the mbreciept.cbe.com.et link or QR code (e.g. fHCxyV4mg5pRIwEkJO, or v2-... on newer receipts). Older receipts: FT followed by 10 letters and digits (e.g. FT26140P01YB) plus the last 8 digits of the receiving account.",
+    "referenceExample": "https://mbreciept.cbe.com.et/fHCxyV4mg5pRIwEkJO",
     "howToVerify": [
-      "Get the FT reference number from the customer's receipt (starts with FT)",
-      "Get the last 8 digits of your receiving CBE account number",
-      "cheki fetches the official PDF from CBE's public endpoint and extracts payment data"
+      "Ask for the receipt link or QR code from the CBE app (mbreciept.cbe.com.et/...), or copy its Receipt ID",
+      "Paste the link or Receipt ID into cheki. No account number is needed",
+      "cheki reads the receipt from CBE's own record and shows the sender, receiver, amount and date",
+      "Older receipt with only an FT reference? Add the last 8 digits of the receiving account"
     ],
     "useCases": [
       "Retail counters confirming in-person CBE transfers",
@@ -40,35 +43,133 @@
     ],
     "faq": [
       {
-        "q": "What is a CBE FT reference number?",
-        "a": "The FT reference is a unique transaction identifier assigned by CBE to every transfer. It appears on the customer's receipt and starts with the letters FT followed by 10 alphanumeric characters, such as FT26140P01YB."
+        "q": "What is a CBE Receipt ID?",
+        "a": "New CBE receipts are shared from the CBE app as a link like https://mbreciept.cbe.com.et/fHCxyV4mg5pRIwEkJO, also printed as a QR code. The last part of the link is the Receipt ID. cheki checks it against CBE's own record."
       },
       {
-        "q": "Can I verify CBE with only the reference number?",
-        "a": "No. CBE's public receipt endpoint requires both the FT reference and the last 8 digits of the receiving account number. This is a security measure to prevent receipt enumeration. cheki asks for both fields when CBE is selected."
+        "q": "Do I need an account number to verify a CBE receipt?",
+        "a": "Not for new receipts. The Receipt ID or receipt link is enough. Only older receipts that show just an FT reference need the last 8 digits of the receiving account."
+      },
+      {
+        "q": "Can I still verify an older CBE FT reference?",
+        "a": "cheki still tries it: enter the FT reference (e.g. FT26140P01YB) and the last 8 digits of the receiving account. CBE's older receipt host is often unreachable, so if that check fails, ask the sender for the receipt link from the CBE app."
       },
       {
         "q": "Does CBE charge for receipt verification?",
-        "a": "No. The CBE receipt endpoint is a public URL that returns a PDF. Anyone can access it for free. check.et and verify.et charge you for hitting this same URL."
-      },
-      {
-        "q": "Why does cheki need my account number?",
-        "a": "CBE's receipt URL is constructed as the FT reference concatenated with the last 8 digits of the receiving account. Without the account digits, the URL returns a 404. cheki only uses the last 8 digits and never stores the full account number."
+        "a": "No. CBE's receipt pages are public. cheki reads them for free; check.et and verify.et charge for the same lookup."
       }
     ],
     "seo": {
-      "title": "CBE Receipt Check: Verify FT Reference Online Free",
-      "description": "Check a Commercial Bank of Ethiopia receipt by FT reference or mbreciept link. Confirm sender, receiver, amount and date against CBE's own record. Free, no signup.",
+      "title": "CBE Receipt Check: Verify a CBE Receipt Online Free",
+      "description": "Check a Commercial Bank of Ethiopia receipt by its Receipt ID or mbreciept link, or an older FT reference. Confirm sender, receiver, amount and date against CBE's own record. Free, no signup.",
       "keywords": [
         "cbe receipt check",
         "CBE receipt verification",
+        "mbreciept cbe",
+        "CBE receipt ID",
         "verify CBE transaction",
         "FT reference number",
         "Commercial Bank of Ethiopia receipt",
-        "CBE payment check",
-        "ethiopian bank receipt verify"
+        "CBE payment check"
       ]
-    }
+    },
+    "formats": [
+      {
+        "id": "cbe-receipt-id",
+        "status": "current",
+        "label": "Receipt ID or mbreciept.cbe.com.et link",
+        "parser": "cbe-new",
+        "endpoint": "https://mb.cbe.com.et/api/v1/transactions/public/transaction-detail/{ref}",
+        "link": "https://mbreciept.cbe.com.et/{ref}",
+        "linkHosts": [
+          "mbreciept.cbe.com.et",
+          "mb.cbe.com.et"
+        ],
+        "inputs": [
+          {
+            "name": "receiptId",
+            "label": "Receipt ID or receipt link",
+            "example": "https://mbreciept.cbe.com.et/fHCxyV4mg5pRIwEkJO"
+          }
+        ],
+        "refPattern": {
+          "source": "^(?![Ff][Tt][A-Za-z0-9]{8,12}$)(?:v\\d{1,2}-)?[A-Za-z0-9]{10,64}$",
+          "flags": ""
+        },
+        "responseType": "json",
+        "headers": {
+          "X-App-ID": "d1292e42-7400-49de-a2d3-9731caa4c819",
+          "X-App-Version": "0a01980b-9859-1369-8198-59f403820000",
+          "Origin": "https://mbreciept.cbe.com.et",
+          "Referer": "https://mbreciept.cbe.com.et/"
+        },
+        "receiptPage": "redirect",
+        "since": "2026-06",
+        "confidence": "verified",
+        "evidence": "mb.cbe.com.et answered an unknown token with HTTP 500 application/problem+json 'Invalid or tampered legacy token' (cheki, 2026-10-11). verify.et calls this the Receipt ID and says it replaces the FT reference on new CBE receipts; links.et routes plain mbreciept tokens to the same JSON API.",
+        "notes": "Shared from the CBE app as a link or QR code. Tokens look like fHCx... (v1) or v2-... (v2). No account number is needed. The API needs the CBE web app's X-App-ID/X-App-Version headers."
+      },
+      {
+        "id": "cbe-ft-pdf",
+        "status": "legacy",
+        "label": "FT reference + last 8 digits of the receiving account",
+        "parser": "cbe",
+        "endpoint": "https://apps.cbe.com.et:100/?id={ref}{account}",
+        "link": "https://apps.cbe.com.et:100/?id={ref}{account}",
+        "linkHosts": [
+          "apps.cbe.com.et"
+        ],
+        "inputs": [
+          {
+            "name": "reference",
+            "label": "FT reference",
+            "example": "FT26140P01YB"
+          },
+          {
+            "name": "account",
+            "label": "Receiving account (last 8 digits)",
+            "digits": 8
+          }
+        ],
+        "refPattern": {
+          "source": "^FT[A-Za-z0-9]{8,12}$",
+          "flags": "i"
+        },
+        "responseType": "pdf",
+        "receiptPage": "pdf",
+        "replacedBy": "cbe-receipt-id",
+        "confidence": "inferred",
+        "evidence": "Status inferred: links.et reports apps.cbe.com.et unreachable since July 2026; cheki's egress could not connect on 2026-10-11 (CONNECT 502), while a repo probe on 2026-10-10 got the 404 'You Are Not Allowed to See This Data' page. Not proven shut down, so cheki still tries it.",
+        "notes": "Older receipts and SMS that only show an FT reference. Also reached from dashed mbreciept links (mbreciept.cbe.com.et/FT...-12345678), which carry the FT reference and the 8-digit suffix (link shape inferred from links.et).",
+        "missingHint": "This looks like an older CBE FT reference. Paste the receipt link or Receipt ID from the CBE app, or add the last 8 digits of the receiving account."
+      }
+    ],
+    "endpointHistory": [
+      {
+        "date": "2026-06-18",
+        "formatId": "cbe-receipt-id",
+        "change": "cheki added CBE share-link receipts (mbreciept.cbe.com.et, read through the mb.cbe.com.et JSON API).",
+        "source": "cheki commit e61ca2b"
+      },
+      {
+        "date": "2026-07",
+        "formatId": "cbe-ft-pdf",
+        "change": "links.et reports the apps.cbe.com.et:100 PDF host unreachable since July 2026 and resolves CBE receipts through the JSON host.",
+        "source": "https://links.et/docs/providers"
+      },
+      {
+        "date": "2026-10-10",
+        "formatId": "cbe-ft-pdf",
+        "change": "Repo probe: apps.cbe.com.et:100 answered an unknown id with HTTP 404 'You Are Not Allowed to See This Data'.",
+        "source": "cheki probe, Oregon US"
+      },
+      {
+        "date": "2026-10-11",
+        "formatId": "cbe-ft-pdf",
+        "change": "cheki leads with the Receipt ID; FT reference + account is kept as a legacy format. cheki's egress could not connect to apps.cbe.com.et:100.",
+        "source": "cheki probe"
+      }
+    ]
   },
   {
     "id": "telebirr",
@@ -143,7 +244,30 @@
         "telebirr payment verify",
         "ethiopian mobile money verification"
       ]
-    }
+    },
+    "formats": [
+      {
+        "id": "telebirr-receipt-html",
+        "status": "current",
+        "label": "Transaction number",
+        "parser": "telebirr",
+        "endpoint": "https://transactioninfo.ethiotelecom.et/receipt/{ref}",
+        "link": "https://transactioninfo.ethiotelecom.et/receipt/{ref}",
+        "linkHosts": [
+          "transactioninfo.ethiotelecom.et"
+        ],
+        "inputs": [
+          {
+            "name": "reference",
+            "label": "Transaction number",
+            "example": "DET8FJGUJ4"
+          }
+        ],
+        "responseType": "html",
+        "confidence": "verified",
+        "evidence": "Live cheki parser. Geo-blocked: not probed from CI."
+      }
+    ]
   },
   {
     "id": "boa",
@@ -226,7 +350,35 @@
         "BOA inter-bank transfer verify",
         "BOA AES QR decryption"
       ]
-    }
+    },
+    "formats": [
+      {
+        "id": "boa-online-slip-json",
+        "status": "current",
+        "label": "Reference + last 5 digits of the receiving account",
+        "parser": "boa",
+        "endpoint": "https://cs.bankofabyssinia.com/api/onlineSlip/getDetails/?id={ref}{account}",
+        "linkHosts": [
+          "cs.bankofabyssinia.com"
+        ],
+        "inputs": [
+          {
+            "name": "reference",
+            "label": "Reference",
+            "example": "FT252003JZPP"
+          },
+          {
+            "name": "account",
+            "label": "Receiving account (last 5 digits)",
+            "digits": 5
+          }
+        ],
+        "responseType": "json",
+        "confidence": "verified",
+        "evidence": "Unknown reference answers HTTP 200 JSON 'Invalid reference number' (cheki, 2026-10-10). links.et reads the same endpoint.",
+        "notes": "Inter-bank transfers are checked from the receipt QR code, which names the reference and account."
+      }
+    ]
   },
   {
     "id": "mpesa",
@@ -243,7 +395,7 @@
     "geoBlocked": true,
     "color": "#00A651",
     "initials": "MP",
-    "notes": "Geo-blocked from non-Kenyan/Ethiopian IPs.",
+    "notes": "Geo-blocked from non-Ethiopian IPs. Other verifiers read the answer as a JSON envelope carrying a base64 PDF (inferred); cheki's parser is not confirmed with a real receipt.",
     "refPattern": {
       "source": "^[A-Z]{2}\\d{6}",
       "flags": "i"
@@ -290,7 +442,29 @@
         "M-Pesa payment check",
         "ethiopian mobile money verification"
       ]
-    }
+    },
+    "formats": [
+      {
+        "id": "mpesa-getreceipt",
+        "status": "current",
+        "label": "Transaction number",
+        "parser": "mpesa",
+        "endpoint": "https://m-pesabusiness.safaricom.et/api/receipt/getReceipt?trxNo={ref}",
+        "linkHosts": [
+          "m-pesabusiness.safaricom.et"
+        ],
+        "inputs": [
+          {
+            "name": "reference",
+            "label": "Transaction number",
+            "example": "SE12345678"
+          }
+        ],
+        "responseType": "json",
+        "confidence": "inferred",
+        "evidence": "Geo-blocked, not probed. Vixen878/verifier-api and links.et (source tag mpesa-pdf) read the answer as a JSON envelope {responseCode, base64Data} carrying a PDF; cheki's parser reads flat JSON fields and has not been confirmed with a real receipt."
+      }
+    ]
   },
   {
     "id": "dashen",
@@ -307,7 +481,7 @@
     "sslVerify": true,
     "color": "#0066B3",
     "initials": "DB",
-    "notes": "Verified 2026-10-10 on receipts.dashenbanksc.com (HTML; unknown refs return HTTP 400 JSON 'Transaction not found'). Use the FT Ref (e.g. B22WDTI2619100WH). The long app 'Transaction Ref' (WDTI.../OBTI...) is rejected. The old receipt.dashensuperapp.com PDF host returns 502.",
+    "notes": "Current: receipts.dashenbanksc.com/receipt/{FT Ref} (HTML; an unknown ref answers HTTP 400 JSON 'Transaction not found'). Deprecated: receipt.dashensuperapp.com / api.dashensuperapp.com PDFs (502 since 2026-10-10); old links are still read for their FT Ref.",
     "description": "Dashen Bank publishes every transfer receipt as a public web page. cheki reads it with only the FT Ref, for both within-Dashen and other-bank transfers.",
     "referenceFormat": "16-character FT Ref shown in the Dashen app (also labelled Transaction Reference on the web receipt), e.g. B22WDTI2619100WH. Do not use the longer Transaction Ref / Transfer Reference.",
     "referenceExample": "B22WDTI2619100WH",
@@ -345,7 +519,72 @@
         "Dashen payment check",
         "ethiopian bank receipt verify"
       ]
-    }
+    },
+    "formats": [
+      {
+        "id": "dashen-receipts-html",
+        "status": "current",
+        "label": "FT Ref",
+        "parser": "dashen",
+        "endpoint": "https://receipts.dashenbanksc.com/receipt/{ref}",
+        "link": "https://receipts.dashenbanksc.com/receipt/{ref}",
+        "linkHosts": [
+          "receipts.dashenbanksc.com"
+        ],
+        "inputs": [
+          {
+            "name": "reference",
+            "label": "FT Ref",
+            "example": "B22WDTI2619100WH"
+          }
+        ],
+        "refPattern": {
+          "source": "^[A-Za-z0-9]{16}$",
+          "flags": ""
+        },
+        "responseType": "html",
+        "receiptPage": "redirect",
+        "confidence": "verified",
+        "evidence": "HTML receipt parsed from a real receipt (cheki, 2026-10-10); an unknown FT Ref answers HTTP 400 application/json 'Transaction not found' (cheki, 2026-10-11).",
+        "notes": "The FT Ref is 16 letters and digits. The app's longer Transaction Ref / Transfer Reference (WDTI..., OBTI...) is rejected."
+      },
+      {
+        "id": "dashen-superapp-pdf",
+        "status": "deprecated",
+        "label": "Dashen Super App receipt link",
+        "link": "https://receipt.dashensuperapp.com/receipt/{ref}",
+        "linkHosts": [
+          "receipt.dashensuperapp.com",
+          "api.dashensuperapp.com"
+        ],
+        "inputs": [
+          {
+            "name": "link",
+            "label": "Old receipt link"
+          }
+        ],
+        "responseType": "pdf",
+        "deprecatedAt": "2026-10-10",
+        "replacedBy": "dashen-receipts-html",
+        "confidence": "verified",
+        "evidence": "receipt.dashensuperapp.com answered 502 Bad Gateway (cheki, 2026-10-10).",
+        "notes": "Never fetched. Old links (receipt.dashensuperapp.com/receipt/{ref}, api.dashensuperapp.com/receipts/Within-Dashen-Transfer-{ref}.pdf) are still recognised: cheki reads the FT Ref from them and checks it on receipts.dashenbanksc.com."
+      }
+    ],
+    "endpointHistory": [
+      {
+        "date": "2026-10-10",
+        "formatId": "dashen-receipts-html",
+        "change": "Moved from receipt.dashensuperapp.com (PDF, now 502) to receipts.dashenbanksc.com (HTML). The FT Ref is the only accepted reference.",
+        "source": "cheki probe"
+      },
+      {
+        "date": "2026-10-11",
+        "formatId": "dashen-receipts-html",
+        "change": "/api/receipt redirects to Dashen's own receipt page instead of proxying its HTML.",
+        "source": "cheki"
+      }
+    ]
   },
   {
     "id": "awash",
@@ -415,7 +654,30 @@
         "Awash share link",
         "Awash receipt URL"
       ]
-    }
+    },
+    "formats": [
+      {
+        "id": "awash-share-link",
+        "status": "current",
+        "label": "Share link from the SMS",
+        "parser": "awash",
+        "endpoint": "https://awashpay.awashbank.com:8225/-{ref}",
+        "link": "https://awashpay.awashbank.com:8225/-{ref}",
+        "linkHosts": [
+          "awashpay.awashbank.com"
+        ],
+        "inputs": [
+          {
+            "name": "link",
+            "label": "Share link",
+            "example": "https://awashpay.awashbank.com:8225/-2KDL95Z0NR-4U61O6"
+          }
+        ],
+        "responseType": "html",
+        "confidence": "verified",
+        "evidence": "Unknown token answers HTTP 200 HTML 'Receipt not found' (cheki, 2026-10-10). links.et reads the same host."
+      }
+    ]
   },
   {
     "id": "zemen",
@@ -462,7 +724,30 @@
         "Zemen payment check",
         "ethiopian bank receipt verify"
       ]
-    }
+    },
+    "formats": [
+      {
+        "id": "zemen-share-pdf",
+        "status": "current",
+        "label": "Share link",
+        "parser": "zemen",
+        "endpoint": "https://share.zemenbank.com/rt/{ref}/pdf",
+        "link": "https://share.zemenbank.com/rt/{ref}/pdf",
+        "linkHosts": [
+          "share.zemenbank.com"
+        ],
+        "inputs": [
+          {
+            "name": "link",
+            "label": "Share link"
+          }
+        ],
+        "responseType": "pdf",
+        "receiptPage": "pdf",
+        "confidence": "inferred",
+        "evidence": "Unknown token answers HTTP 404 JSON (cheki, 2026-10-10). links.et describes a 24-character token and a PDF; not confirmed with a real receipt."
+      }
+    ]
   },
   {
     "id": "cbebirr",
@@ -513,7 +798,48 @@
         "CBE Birr payment check",
         "ethiopian mobile wallet verify"
       ]
-    }
+    },
+    "formats": [
+      {
+        "id": "cbebirr-aureceipt",
+        "status": "current",
+        "label": "Receipt number + payer phone",
+        "parser": "cbebirr",
+        "endpoint": "https://cbepay1.cbe.com.et/aureceipt?TID={ref}&PH={phone}",
+        "link": "https://cbepay1.cbe.com.et/aureceipt?TID={ref}&PH={phone}",
+        "linkHosts": [
+          "cbepay1.cbe.com.et",
+          "cbepay2.cbe.com.et"
+        ],
+        "inputs": [
+          {
+            "name": "reference",
+            "label": "Receipt number"
+          },
+          {
+            "name": "phone",
+            "label": "Payer phone (2519XXXXXXXX)"
+          }
+        ],
+        "responseType": "pdf",
+        "confidence": "inferred",
+        "evidence": "A miss returns an empty Telerik ReportViewer HTML shell (cheki, 2026-10-10); the endpoint timed out from cheki's egress on 2026-10-11. Real receipts are read as a PDF by Vixen878/verifier-api and links.et (cbebirr-pdf). Same URL either way, so this is not a host move; cheki's parser accepts PDF or HTML."
+      }
+    ],
+    "endpointHistory": [
+      {
+        "date": "2026-10-10",
+        "formatId": "cbebirr-aureceipt",
+        "change": "Unknown TID/PH returns HTTP 200 with an empty Telerik ReportViewer shell.",
+        "source": "cheki probe"
+      },
+      {
+        "date": "2026-10-11",
+        "formatId": "cbebirr-aureceipt",
+        "change": "Request timed out from cheki's egress.",
+        "source": "cheki probe"
+      }
+    ]
   },
   {
     "id": "siinqee",
@@ -530,7 +856,7 @@
     "sslVerify": true,
     "color": "#006A4E",
     "initials": "SQ",
-    "notes": "Routed through eBirr platform. Siinqee does not have a standalone receipt endpoint.",
+    "notes": "Supported through the eBirr route (receipt.ebirr.com/siinqee/{token}), which answered 404 on 2026-10-10. links.et reports Siinqee Bank receipts on receipts.siinqeebank.com:871 (PDF, inferred, not supported yet).",
     "description": "Siinqee Bank is an Ethiopian microfinance institution turned bank. Siinqee receipts are available via a public endpoint.",
     "referenceFormat": "Alphanumeric transaction reference",
     "referenceExample": "SQ12345678",
@@ -557,7 +883,61 @@
         "verify Siinqee transaction",
         "ethiopian bank receipt verify"
       ]
-    }
+    },
+    "formats": [
+      {
+        "id": "siinqee-bank-pdf",
+        "status": "current",
+        "label": "Siinqee Bank receipt link",
+        "linkHosts": [
+          "receipts.siinqeebank.com"
+        ],
+        "inputs": [
+          {
+            "name": "link",
+            "label": "Receipt link"
+          }
+        ],
+        "responseType": "pdf",
+        "confidence": "inferred",
+        "evidence": "links.et lists receipts.siinqeebank.com:871 (PDF) for Siinqee Bank and says each receipt allows about five views in total; it showed Siinqee unavailable on 2026-10-11. Not tested by cheki and not supported yet.",
+        "notes": "Not fetched. Needs a real receipt link and a parser that respects the view limit."
+      },
+      {
+        "id": "siinqee-ebirr",
+        "status": "legacy",
+        "label": "eBirr receipt link (receipt.ebirr.com/siinqee/...)",
+        "parser": "siinqee",
+        "endpoint": "https://receipt.ebirr.com/siinqee/{ref}",
+        "link": "https://receipt.ebirr.com/siinqee/{ref}",
+        "linkHosts": [
+          "receipt.ebirr.com"
+        ],
+        "inputs": [
+          {
+            "name": "link",
+            "label": "eBirr receipt link"
+          }
+        ],
+        "responseType": "html",
+        "confidence": "inferred",
+        "evidence": "The siinqee route answered HTTP 404 'Cannot GET' on 2026-10-10, unlike other eBirr tenants. links.et reads Siinqee's wallet (COOPay) receipts at receipt.ebirr.com/coopay/."
+      }
+    ],
+    "endpointHistory": [
+      {
+        "date": "2026-10-10",
+        "formatId": "siinqee-ebirr",
+        "change": "receipt.ebirr.com/siinqee/... answered HTTP 404 'Cannot GET'.",
+        "source": "cheki probe"
+      },
+      {
+        "date": "2026-10-11",
+        "formatId": "siinqee-bank-pdf",
+        "change": "links.et lists Siinqee Bank receipts on receipts.siinqeebank.com:871 (PDF). Recorded as inferred, not supported.",
+        "source": "https://links.et/docs/providers"
+      }
+    ]
   },
   {
     "id": "ebirr",
@@ -620,7 +1000,30 @@
         "KAAFI microfinance receipt",
         "ebirr.com receipt check"
       ]
-    }
+    },
+    "formats": [
+      {
+        "id": "ebirr-tenant-link",
+        "status": "current",
+        "label": "Receipt link (tenant/token)",
+        "parser": "ebirr",
+        "endpoint": "https://receipt.ebirr.com/{tenant}/{token}",
+        "link": "https://receipt.ebirr.com/{tenant}/{token}",
+        "linkHosts": [
+          "receipt.ebirr.com"
+        ],
+        "inputs": [
+          {
+            "name": "link",
+            "label": "Receipt link or tenant/token",
+            "example": "https://receipt.ebirr.com/nib/XXXXXXXXXXXX"
+          }
+        ],
+        "responseType": "html",
+        "confidence": "verified",
+        "evidence": "Unknown tokens answer HTTP 200 'Not Found Page' (cheki, 2026-10-10). links.et reads the same host for COOPay and Kaafi."
+      }
+    ]
   },
   {
     "id": "nib",
@@ -662,7 +1065,29 @@
         "verify Nib Bank",
         "Nib Bank eBirr"
       ]
-    }
+    },
+    "formats": [
+      {
+        "id": "ebirr-nib",
+        "status": "current",
+        "label": "eBirr receipt link",
+        "parser": "nib",
+        "endpoint": "https://receipt.ebirr.com/nib/{token}",
+        "link": "https://receipt.ebirr.com/nib/{token}",
+        "linkHosts": [
+          "receipt.ebirr.com"
+        ],
+        "inputs": [
+          {
+            "name": "link",
+            "label": "eBirr receipt link"
+          }
+        ],
+        "responseType": "html",
+        "confidence": "inferred",
+        "evidence": "The nib tenant route exists on receipt.ebirr.com (cheki, 2026-10-10); the receipt layout is not confirmed with a real receipt."
+      }
+    ]
   },
   {
     "id": "wegagen",
@@ -703,7 +1128,29 @@
         "verify Wegagen",
         "Wegagen eBirr"
       ]
-    }
+    },
+    "formats": [
+      {
+        "id": "ebirr-wegagen",
+        "status": "current",
+        "label": "eBirr receipt link",
+        "parser": "wegagen",
+        "endpoint": "https://receipt.ebirr.com/wegagen/{token}",
+        "link": "https://receipt.ebirr.com/wegagen/{token}",
+        "linkHosts": [
+          "receipt.ebirr.com"
+        ],
+        "inputs": [
+          {
+            "name": "link",
+            "label": "eBirr receipt link"
+          }
+        ],
+        "responseType": "html",
+        "confidence": "inferred",
+        "evidence": "The wegagen tenant route exists on receipt.ebirr.com (cheki, 2026-10-10); the receipt layout is not confirmed with a real receipt."
+      }
+    ]
   },
   {
     "id": "ahadu",
@@ -744,7 +1191,46 @@
         "verify Ahadu",
         "Ahadu eBirr"
       ]
-    }
+    },
+    "formats": [
+      {
+        "id": "ebirr-ahadu",
+        "status": "current",
+        "label": "eBirr receipt link",
+        "parser": "ahadu",
+        "endpoint": "https://receipt.ebirr.com/ahadu/{token}",
+        "link": "https://receipt.ebirr.com/ahadu/{token}",
+        "linkHosts": [
+          "receipt.ebirr.com"
+        ],
+        "inputs": [
+          {
+            "name": "link",
+            "label": "eBirr receipt link"
+          }
+        ],
+        "responseType": "html",
+        "confidence": "inferred",
+        "evidence": "The ahadu tenant route exists on receipt.ebirr.com (cheki, 2026-10-10); the receipt layout is not confirmed with a real receipt."
+      },
+      {
+        "id": "ahadu-bank-pdf",
+        "status": "current",
+        "label": "Ahadu Bank receipt link",
+        "linkHosts": [
+          "receipt.ahadubank.com"
+        ],
+        "inputs": [
+          {
+            "name": "link",
+            "label": "Receipt link"
+          }
+        ],
+        "responseType": "pdf",
+        "confidence": "inferred",
+        "evidence": "links.et lists receipt.ahadubank.com (PDF). Not tested by cheki and not supported yet."
+      }
+    ]
   },
   {
     "id": "kaafi",
@@ -786,7 +1272,29 @@
         "Kaafi Ebirr",
         "KAAFI microfinance receipt"
       ]
-    }
+    },
+    "formats": [
+      {
+        "id": "ebirr-kaafimf",
+        "status": "current",
+        "label": "eBirr receipt link",
+        "parser": "kaafi",
+        "endpoint": "https://receipt.ebirr.com/kaafimf/{token}",
+        "link": "https://receipt.ebirr.com/kaafimf/{token}",
+        "linkHosts": [
+          "receipt.ebirr.com"
+        ],
+        "inputs": [
+          {
+            "name": "link",
+            "label": "eBirr receipt link"
+          }
+        ],
+        "responseType": "html",
+        "confidence": "inferred",
+        "evidence": "The kaafimf tenant route exists on receipt.ebirr.com (cheki, 2026-10-10); the receipt layout is not confirmed with a real receipt."
+      }
+    ]
   },
   {
     "id": "abay",
@@ -825,7 +1333,26 @@
         "verify Abay Bank",
         "Abay Bank transaction"
       ]
-    }
+    },
+    "formats": [
+      {
+        "id": "abay-reported",
+        "status": "current",
+        "label": "Receipt link",
+        "linkHosts": [
+          "abaymobile.com.et"
+        ],
+        "inputs": [
+          {
+            "name": "link",
+            "label": "Receipt link"
+          }
+        ],
+        "responseType": "html",
+        "confidence": "inferred",
+        "evidence": "links.et lists abaymobile.com.et (HTML). Not tested by cheki and not supported yet."
+      }
+    ]
   },
   {
     "id": "addis",
@@ -863,7 +1390,8 @@
         "Addis International Bank receipt",
         "verify Addis Bank"
       ]
-    }
+    },
+    "formats": []
   },
   {
     "id": "amhara",
@@ -901,7 +1429,27 @@
         "Amhara Bank receipt",
         "verify Amhara Bank"
       ]
-    }
+    },
+    "formats": [
+      {
+        "id": "amhara-reported",
+        "status": "current",
+        "label": "Receipt link",
+        "linkHosts": [
+          "receipt.amharabank.com.et",
+          "transaction.amharabank.com.et"
+        ],
+        "inputs": [
+          {
+            "name": "link",
+            "label": "Receipt link"
+          }
+        ],
+        "responseType": "json",
+        "confidence": "inferred",
+        "evidence": "links.et lists receipt.amharabank.com.et, transaction.amharabank.com.et (JSON). Not tested by cheki and not supported yet."
+      }
+    ]
   },
   {
     "id": "berhan",
@@ -939,7 +1487,26 @@
         "Berhan International Bank receipt",
         "verify Berhan Bank"
       ]
-    }
+    },
+    "formats": [
+      {
+        "id": "berhan-reported",
+        "status": "current",
+        "label": "Receipt link",
+        "linkHosts": [
+          "transactioninfo.berhanonline.et"
+        ],
+        "inputs": [
+          {
+            "name": "link",
+            "label": "Receipt link"
+          }
+        ],
+        "responseType": "pdf",
+        "confidence": "inferred",
+        "evidence": "links.et lists transactioninfo.berhanonline.et (PDF). Not tested by cheki and not supported yet."
+      }
+    ]
   },
   {
     "id": "bunna",
@@ -977,7 +1544,8 @@
         "Bunna International Bank receipt",
         "verify Bunna Bank"
       ]
-    }
+    },
+    "formats": []
   },
   {
     "id": "enat",
@@ -1015,7 +1583,8 @@
         "Enat Bank receipt",
         "verify Enat Bank"
       ]
-    }
+    },
+    "formats": []
   },
   {
     "id": "global",
@@ -1053,7 +1622,8 @@
         "Global Bank Ethiopia receipt",
         "verify Global Bank"
       ]
-    }
+    },
+    "formats": []
   },
   {
     "id": "lion",
@@ -1092,7 +1662,8 @@
         "verify Lion Bank",
         "Anbessa Bank receipt"
       ]
-    }
+    },
+    "formats": []
   },
   {
     "id": "oromia",
@@ -1130,7 +1701,26 @@
         "Oromia International Bank receipt",
         "verify Oromia Bank"
       ]
-    }
+    },
+    "formats": [
+      {
+        "id": "oromia-reported",
+        "status": "current",
+        "label": "Receipt link",
+        "linkHosts": [
+          "obinfo.oromiabank.com"
+        ],
+        "inputs": [
+          {
+            "name": "link",
+            "label": "Receipt link"
+          }
+        ],
+        "responseType": "pdf",
+        "confidence": "inferred",
+        "evidence": "links.et lists obinfo.oromiabank.com (PDF). Not tested by cheki and not supported yet."
+      }
+    ]
   },
   {
     "id": "hibret",
@@ -1169,7 +1759,8 @@
         "verify Hibret Bank",
         "United Bank Ethiopia receipt"
       ]
-    }
+    },
+    "formats": []
   },
   {
     "id": "zamzam",
@@ -1208,7 +1799,26 @@
         "verify ZamZam Bank",
         "Islamic bank Ethiopia receipt"
       ]
-    }
+    },
+    "formats": [
+      {
+        "id": "zamzam-reported",
+        "status": "current",
+        "label": "Receipt link",
+        "linkHosts": [
+          "receipt.zamzambank.com.et"
+        ],
+        "inputs": [
+          {
+            "name": "link",
+            "label": "Receipt link"
+          }
+        ],
+        "responseType": "json",
+        "confidence": "inferred",
+        "evidence": "links.et lists receipt.zamzambank.com.et (JSON). Not tested by cheki and not supported yet."
+      }
+    ]
   },
   {
     "id": "hijra",
@@ -1247,7 +1857,8 @@
         "verify Hijra Bank",
         "Islamic bank Ethiopia receipt"
       ]
-    }
+    },
+    "formats": []
   },
   {
     "id": "shabelle",
@@ -1285,7 +1896,8 @@
         "Shabelle Bank receipt",
         "verify Shabelle Bank"
       ]
-    }
+    },
+    "formats": []
   },
   {
     "id": "goh",
@@ -1323,7 +1935,8 @@
         "Goh Betoch Bank receipt",
         "verify Goh Betoch"
       ]
-    }
+    },
+    "formats": []
   },
   {
     "id": "tsedey",
@@ -1361,7 +1974,8 @@
         "Tsedey Bank receipt",
         "verify Tsedey Bank"
       ]
-    }
+    },
+    "formats": []
   },
   {
     "id": "gadaa",
@@ -1399,7 +2013,8 @@
         "Gadaa Bank receipt",
         "verify Gadaa Bank"
       ]
-    }
+    },
+    "formats": []
   },
   {
     "id": "rammis",
@@ -1437,7 +2052,8 @@
         "Rammis Bank receipt",
         "verify Rammis Bank"
       ]
-    }
+    },
+    "formats": []
   },
   {
     "id": "cbe-new",
@@ -1449,14 +2065,17 @@
     "responseType": "json",
     "requiresAccount": false,
     "requiresPhone": false,
-    "endpoint": "https://Mb.cbe.com.et/api/v1/transactions/public/transaction-detail/{ref}",
-    "sslVerify": false,
+    "endpoint": "https://mb.cbe.com.et/api/v1/transactions/public/transaction-detail/{ref}",
+    "sslVerify": true,
     "headers": {
       "X-App-ID": "d1292e42-7400-49de-a2d3-9731caa4c819",
-      "X-App-Version": "0a01980b-9859-1369-8198-59f403820000"
+      "X-App-Version": "0a01980b-9859-1369-8198-59f403820000",
+      "Origin": "https://mbreciept.cbe.com.et",
+      "Referer": "https://mbreciept.cbe.com.et/"
     },
     "color": "#502878",
     "initials": "CBE",
-    "notes": "New QR-based receipt sharing system."
+    "notes": "Parser alias for CBE's current format (Receipt ID). bank=cbe with a Receipt ID or mbreciept link uses it automatically; bank=cbe-new keeps working for older integrations.",
+    "formats": []
   }
 ]
