@@ -8,11 +8,18 @@
  *
  * Deliberately small: reference + (account | phone) -> POST /api/verify.
  * Photo/QR/batch/fallback flows stay on the homepage checker, linked below.
+ *
+ * Format-aware: the field leads with the bank's current format (the first
+ * supported entry of its manifest `formats`). Older formats sit in a collapsed "Older receipt?" note;
+ * typing an older reference (a CBE FT reference) opens it and asks for the
+ * field that format needs.
  */
 import { useState } from "react";
 import Link from "next/link";
 import { verificationState, type VerifyResult } from "@/lib/banks";
 import { readVerifyResponse } from "@/lib/verify-response";
+import type { ReceiptFormat } from "@/lib/core/types";
+import { formatAccountDigits, formatNeeds, matchesFormat, primaryFormat, secondaryFormats, supportedFormats } from "@/lib/manifest/formats";
 
 interface Props {
   code: string;
@@ -22,6 +29,8 @@ interface Props {
   accountLabel?: string;
   accountDigits?: number;
   requiresPhone?: boolean;
+  /** Manifest formats, current first. */
+  formats?: ReceiptFormat[];
 }
 
 export function BankChecker({
@@ -32,6 +41,7 @@ export function BankChecker({
   accountLabel,
   accountDigits,
   requiresPhone,
+  formats = [],
 }: Props) {
   const [reference, setReference] = useState("");
   const [extra, setExtra] = useState("");
@@ -39,29 +49,51 @@ export function BankChecker({
   const [result, setResult] = useState<VerifyResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const needsExtra = requiresAccount || requiresPhone;
+  const bankFormats = { formats };
+  const primary = primaryFormat(bankFormats);
+  // Older formats only: a newer format cheki cannot read yet is documented on /endpoints, not offered here.
+  const older = secondaryFormats(bankFormats).filter((f) => f.status !== "current");
+  const trimmed = reference.trim();
   // A full receipt link already identifies the receipt (account suffix or
   // token included), so the second field is only required for bare references.
-  const isLink = /^https?:\/\//i.test(reference.trim());
+  const isLink = /^https?:\/\//i.test(trimmed);
+  // The format this input belongs to: the first supported one whose pattern
+  // matches, else the primary (current) one.
+  const active =
+    (trimmed && !isLink ? supportedFormats(bankFormats).find((f) => matchesFormat(f, trimmed)) : undefined) ?? primary;
+  const activeIsOlder = Boolean(active && primary && active !== primary);
+  const [olderOpen, setOlderOpen] = useState(false);
+  const showOlder = olderOpen || activeIsOlder;
+
+  const wantsAccount = active ? formatNeeds(active, "account") : requiresAccount;
+  const wantsPhone = active ? formatNeeds(active, "phone") : Boolean(requiresPhone);
+  const needsExtra = wantsAccount || wantsPhone;
+  const digits = formatAccountDigits(active) ?? accountDigits;
   const extraRequired = Boolean(needsExtra) && !isLink;
-  const extraLabel = requiresPhone
+  const extraLabel = wantsPhone
     ? "Payer phone number"
-    : accountLabel || `Receiving account (last ${accountDigits ?? 8} digits)`;
-  const extraPlaceholder = requiresPhone ? "2519XXXXXXXX" : "e.g. 60536171";
+    : activeIsOlder
+      ? `Receiving account (last ${digits ?? 8} digits)`
+      : accountLabel || `Receiving account (last ${digits ?? 8} digits)`;
+  const extraPlaceholder = wantsPhone ? "2519XXXXXXXX" : `Last ${digits ?? 8} digits`;
+  const mainLabel = primary?.inputs[0]?.label
+    ? `${shortName} ${primary.inputs[0].label}`
+    : `${shortName} transaction reference or receipt link`;
+  const mainExample = primary?.inputs[0]?.example || referenceExample;
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!reference.trim()) return;
     if (extraRequired) {
-      const digits = extra.replace(/\D/g, "");
-      if (requiresPhone && !/^(251|0)?9\d{8}$/.test(digits)) {
+      const typed = extra.replace(/\D/g, "");
+      if (wantsPhone && !/^(251|0)?9\d{8}$/.test(typed)) {
         setResult(null);
         setError(`Enter the payer's phone number (2519XXXXXXXX). ${shortName} needs it to find the receipt.`);
         return;
       }
-      if (!requiresPhone && digits.length < (accountDigits ?? 5)) {
+      if (!wantsPhone && typed.length < (digits ?? 5)) {
         setResult(null);
-        setError(`Enter at least the last ${accountDigits ?? 5} digits of the receiving account. ${shortName} needs them to find the receipt.`);
+        setError(`Enter at least the last ${digits ?? 5} digits of the receiving account. ${shortName} needs them to find the receipt.`);
         return;
       }
     }
@@ -75,9 +107,11 @@ export function BankChecker({
         body: JSON.stringify({
           bank: code,
           reference: reference.trim(),
-          ...(requiresPhone
+          ...(wantsPhone
             ? { phoneNumber: extra.trim() || undefined }
-            : { accountNumber: extra.trim() || undefined }),
+            : wantsAccount
+              ? { accountNumber: extra.trim() || undefined }
+              : {}),
         }),
       });
       // 429 (per-IP limit), 413 and non-JSON answers come back as
@@ -117,14 +151,14 @@ export function BankChecker({
     >
       <form onSubmit={onSubmit}>
         <div style={{ marginBottom: "14px" }}>
-          <label htmlFor="cheki-ref" style={label}>{shortName} transaction reference or receipt link</label>
+          <label htmlFor="cheki-ref" style={label}>{mainLabel}</label>
           <input
             id="cheki-ref"
             name="reference"
             style={field}
             value={reference}
             onChange={(e) => setReference(e.target.value)}
-            placeholder={referenceExample ? `e.g. ${referenceExample}` : "Transaction reference"}
+            placeholder={mainExample ? `e.g. ${mainExample}` : "Transaction reference"}
             autoComplete="off"
             spellCheck={false}
             required
@@ -137,7 +171,7 @@ export function BankChecker({
             </label>
             <input
               id="cheki-extra"
-              name={requiresPhone ? "phone" : "account"}
+              name={wantsPhone ? "phone" : "account"}
               style={field}
               value={extra}
               onChange={(e) => setExtra(e.target.value)}
@@ -147,6 +181,26 @@ export function BankChecker({
               required={extraRequired}
             />
           </div>
+        )}
+        {older.length > 0 && (
+          <details
+            open={showOlder}
+            onToggle={(e) => setOlderOpen((e.currentTarget as HTMLDetailsElement).open)}
+            style={{ marginBottom: "14px", fontSize: "13px", color: "var(--ink-2)" }}
+          >
+            <summary style={{ cursor: "pointer", fontWeight: 600 }}>Older receipt?</summary>
+            <ul style={{ margin: "8px 0 0", paddingLeft: "18px", lineHeight: 1.6 }}>
+              {older.map((f) => (
+                <li key={f.id}>
+                  {f.status === "deprecated"
+                    ? `Old ${f.label}s still work: paste the link and cheki checks the receipt on ${shortName}'s current receipt page.`
+                    : f.parser
+                      ? `${f.label}: type ${f.inputs[0]?.example ? `it (e.g. ${f.inputs[0].example})` : "it"} in the field above${formatNeeds(f, "account") ? " and add the account digits" : ""}. This uses ${shortName}'s older receipt service, which may not answer.`
+                      : `${f.label}: not supported yet.`}
+                </li>
+              ))}
+            </ul>
+          </details>
         )}
         <button
           type="submit"
