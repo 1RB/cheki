@@ -1,72 +1,43 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+/**
+ * Language: English / አማርኛ (every locale in translations.ts). One component
+ * for the desktop header (compact: "EN" / "አማ" codes, full names as the
+ * accessible names) and the mobile menu (full native names). Built on
+ * SegmentedControl, like the theme control: radiogroup semantics, keyboard,
+ * and a selection drawn in CSS from html[data-locale], which an inline <head>
+ * script sets before first paint.
+ *
+ * It replaced an "EN ⌄" pill with a custom dropdown: the dropdown overlapped
+ * the rows below it in the menu, Escape closed the whole menu instead of the
+ * dropdown, the options had no selected state for assistive tech, the
+ * accessible name "Language" hid the visible "EN", and the current locale was
+ * marked in brand green.
+ */
 import { useTranslation } from "@/lib/i18n/use-translation";
-import { Icon, Globe02Icon, ChevronDownIcon, CheckmarkCircle01Icon } from "@/components/Icon";
+import { translations, type Locale } from "@/lib/i18n/translations";
+import { SegmentedControl } from "@/components/segmented-control";
 
-export function LanguageSwitcher() {
+/** Short codes for the compact header control. Native script for Amharic. */
+const SHORT: Record<Locale, string> = { en: "EN", am: "አማ" };
+
+export function LanguageSwitcher({ variant = "compact", labelledBy }: { variant?: "full" | "compact"; labelledBy?: string }) {
   const { t, locale, setLocale, locales } = useTranslation();
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handle = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    };
-    if (open) {
-      document.addEventListener("mousedown", handle);
-      return () => document.removeEventListener("mousedown", handle);
-    }
-  }, [open]);
-
+  // Native names come from each locale's own strings, so they read the same in every UI language.
+  const options = locales.map((code) => ({
+    value: code,
+    label: translations[code].language[code],
+    short: SHORT[code] ?? code.toUpperCase(),
+    lang: code,
+  }));
   return (
-    <div ref={ref} style={{ position: "relative" }}>
-      <button
-        onClick={() => setOpen(!open)}
-        aria-label={t("language.switch")}
-        aria-expanded={open}
-        style={{
-          display: "flex", alignItems: "center", gap: "6px",
-          padding: "5px 10px", borderRadius: "20px", border: "1px solid var(--border)",
-          background: "var(--surface)", color: "var(--ink-2)", fontSize: "12px", fontWeight: 700,
-          cursor: "pointer", transition: "background-color 0.15s, color 0.15s, border-color 0.15s, transform 0.15s", letterSpacing: "0.02em", lineHeight: 1,
-        }}
-      >
-        <Icon icon={Globe02Icon} size={14} color="var(--ink-3)" strokeWidth={1.6} />
-        {locale.toUpperCase()}
-        <Icon icon={ChevronDownIcon} size={12} color="var(--ink-3)" />
-      </button>
-
-      {open && (
-        <div style={{
-          position: "absolute", top: "calc(100% + 6px)", right: 0,
-          minWidth: "150px", background: "var(--surface)", border: "1px solid var(--border)",
-          borderRadius: "10px", boxShadow: "0 8px 24px rgba(0,0,0,0.08)", padding: "4px",
-          zIndex: 200,
-        }}>
-          {locales.map((code) => {
-            const active = locale === code;
-            return (
-              <button
-                key={code}
-                onClick={() => { setLocale(code); setOpen(false); }}
-                style={{
-                  display: "flex", alignItems: "center", justifyContent: "space-between",
-                  width: "100%", padding: "8px 10px", borderRadius: "6px", border: "none",
-                  background: active ? "var(--green-light)" : "transparent",
-                  cursor: "pointer", fontSize: "13px", color: "var(--ink)",
-                  fontWeight: active ? 600 : 400, textAlign: "left",
-                }}
-              >
-                <span>{t(`language.${code}`)}</span>
-                {active && <Icon icon={CheckmarkCircle01Icon} size={14} color="var(--green)" />}
-              </button>
-            );
-          })}
-        </div>
-      )}
-    </div>
+    <SegmentedControl
+      options={options}
+      value={locale}
+      onChange={(next) => setLocale(next)}
+      label={t("language.switch")}
+      labelledBy={labelledBy}
+      compact={variant === "compact"}
+    />
   );
 }

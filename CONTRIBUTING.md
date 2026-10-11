@@ -303,6 +303,21 @@ Tests are in `tests/` and cover:
 - Parser registry
 - Security hardening (`tests/security`)
 - The SDK contract (`tests/contract`): `sdks/fixtures/api-contract.json` must match what the route handlers send
+- Mobile invariants (`tests/ui/mobile-invariants.test.ts`): source-level rules for phones, listed below
+
+### UI changes on phones
+
+Check new UI at 360, 390 and 430px wide, light and dark, with touch emulation. The rules below are enforced by `tests/ui/mobile-invariants.test.ts`; the rest is a checklist.
+
+- Form controls are 16px on touch screens (a single `@media (pointer: coarse)` rule in `globals.css`), otherwise iOS Safari zooms on focus. Never set a smaller inline `fontSize` on an input, select or textarea.
+- Grid tracks are `minmax(0, 1fr)`, never a bare `1fr`: a bare track grows to its widest nowrap child and pushes the card past its edge.
+- Touch targets are 44px. When a control should look smaller, keep the visual and grow the hit area with a centred `::after` (see breadcrumbs and the code Copy button).
+- Inline code wraps at normal break points (`overflow-wrap: anywhere`), never `word-break: break-all`.
+- Anchors clear the sticky nav through `html { scroll-padding-top }`; don't add per-element `scroll-margin-top`.
+- Text on `var(--ink)` uses `var(--bg)`, not `#fff`: ink is near-white in dark mode.
+- Fixed full-screen surfaces pad for `env(safe-area-inset-bottom)`.
+- No horizontal page scroll: `document.documentElement.scrollWidth` must equal `innerWidth`.
+- Settings controls: theme (`ThemeControl`, store in `src/lib/theme.ts`) and language (`LanguageSwitcher`, store in `src/lib/i18n/locale-store.ts`) are both built on `SegmentedControl` (`src/components/segmented-control.tsx`): a radiogroup used compact in the header and full in the menu, where the whole row is tappable. Their selection is drawn in CSS from `html[data-theme-pref]` / `html[data-locale]`, set by plain inline `<script>`s in `layout.tsx` before first paint. Light / Dark / System is saved in `localStorage` (`cheki-theme`) and System follows the OS live; the locale is saved as `cheki-locale` (it is not in the URL). Don't add another toggle or dropdown, and don't move those scripts to `next/script` (its `beforeInteractive` waits for the runtime and flashes the wrong palette). A new locale needs its `html[data-locale="…"]` rules in `globals.css` (a test checks).
 
 ### Smoke test and deploys
 

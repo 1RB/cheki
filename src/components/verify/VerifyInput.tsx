@@ -191,6 +191,11 @@ export function VerifyInput({
         {!lockedBank && (
           <div className="vi-select-wrap">
             <label htmlFor={`${id}-bank`} className="sr-only">{t("verify.bankSelect")}</label>
+            {/* The visible face is 13px text; the real select sits on top,
+                transparent and 16px, so iOS never zooms when it opens. */}
+            <span className="vi-select-face" aria-hidden="true">
+              {(overrideBank && liveBanks.find((b) => b.code === overrideBank)?.shortName) || t("verify.autoDetect")}
+            </span>
             <select id={`${id}-bank`} className="vi-select" value={overrideBank} onChange={(e) => onOverride(e.target.value)}>
               <option value="">{t("verify.autoDetect")}</option>
               {liveBanks.map((b) => (

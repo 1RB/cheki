@@ -231,7 +231,7 @@ export default function ComparePage() {
               </div>
               <p style={{ fontSize: "13px", color: "var(--ink-3)", marginBottom: "16px" }}>{c.tagline}</p>
               <p style={{ fontSize: "13px", color: "var(--ink-2)", marginBottom: "16px" }}>{c.pricing}</p>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: "16px" }}>
                 <div>
                   <p style={{ fontSize: "12px", fontWeight: 700, color: "var(--green-dark)", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.04em" }}>Strengths</p>
                   <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>

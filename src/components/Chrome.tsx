@@ -8,10 +8,16 @@ import { createPortal } from "react-dom";
 import { Icon, GithubIcon, Menu01Icon, Cancel01Icon, ArrowRight01Icon, Search01Icon } from "@/components/Icon";
 import { useTranslation } from "@/lib/i18n/use-translation";
 import { LanguageSwitcher } from "@/components/language-switcher";
-import { ThemeToggle } from "@/components/motion/theme-toggle";
+import { ThemeControl } from "@/components/theme-control";
+import { selectNextInRow } from "@/components/segmented-control";
 
 // The palette (and its search index) loads on the first ⌘K or click only.
 const CommandPalette = dynamic(() => import("@/components/motion/command-palette"), { ssr: false });
+
+function onSettingRowClick(e: React.MouseEvent<HTMLDivElement>) {
+  if ((e.target as HTMLElement).closest('[role="radiogroup"]')) return;
+  selectNextInRow(e.currentTarget);
+}
 
 /**
  * Mobile menu as a real modal: focus moves in on open and is kept inside,
@@ -77,13 +83,15 @@ function MobileMenu({ links, onClose, t }: { links: { href: string; label: strin
           ))}
         </div>
         <div className="nmm-group">
-          <div className="nmm-row">
-            <span>{t("language.switch")}</span>
-            <LanguageSwitcher />
+          {/* Settings rows: the whole row is tappable. The options fill the
+              row's height, and a tap on the label selects the next option. */}
+          <div className="nmm-row nmm-row--setting" onClick={onSettingRowClick}>
+            <span id="nmm-lang-label">{t("language.switch")}</span>
+            <LanguageSwitcher variant="full" labelledBy="nmm-lang-label" />
           </div>
-          <div className="nmm-row">
-            <span>Theme</span>
-            <ThemeToggle size={36} />
+          <div className="nmm-row nmm-row--setting" onClick={onSettingRowClick}>
+            <span id="nmm-theme-label">{t("theme.label")}</span>
+            <ThemeControl labelledBy="nmm-theme-label" />
           </div>
           <a href="https://github.com/1RB/cheki" target="_blank" rel="noopener noreferrer" onClick={onClose} className="nmm-gh">
             <Icon icon={GithubIcon} size={18} color="var(--ink)" />
@@ -158,8 +166,8 @@ export function Nav() {
             <button type="button" className="nav-icon-btn" onClick={() => setPaletteOpen(true)} aria-label="Search (⌘K)" aria-haspopup="dialog">
               <Icon icon={Search01Icon} size={17} color="var(--ink-3)" />
             </button>
-            <LanguageSwitcher />
-            <ThemeToggle />
+            <LanguageSwitcher variant="compact" />
+            <ThemeControl variant="compact" />
             <a href="https://github.com/1RB/cheki" target="_blank" rel="noopener noreferrer" className="nav-gh">
               <Icon icon={GithubIcon} size={15} color="var(--ink-2)" />
               GitHub
@@ -217,9 +225,9 @@ export function Footer() {
   ];
   return (
     <footer style={{ marginTop: "64px", borderTop: "1px solid var(--border)", background: "var(--bg)" }}>
-      <div className="container" style={{ padding: "40px 24px" }}>
+      <div className="container" style={{ padding: "40px 24px calc(40px + env(safe-area-inset-bottom, 0px))" }}>
         <div className="footer-grid" style={{
-          display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "28px",
+          display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: "28px",
         }}>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
@@ -228,45 +236,43 @@ export function Footer() {
             <p style={{ fontSize: "13px", color: "var(--ink-3)", lineHeight: 1.6, maxWidth: "280px" }}>
               {t("footer.tagline")}
             </p>
-            <Link href="/guides/contribute-translations" prefetch={false} style={{
-              display: "inline-flex", marginTop: "12px", fontSize: "13px", color: "var(--green-dark)", fontWeight: 600,
-            }}>
+            <Link href="/guides/contribute-translations" prefetch={false} className="footer-link footer-link--more footer-translate">
               {t("language.contribute")}
             </Link>
           </div>
           <div>
             <p style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink)", marginBottom: "12px" }}>{t("footer.banks")}</p>
-            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            <div className="footer-links">
               {bankLinks.map((l) => (
-                <Link key={l.href} href={l.href} prefetch={false} style={{ fontSize: "13px", color: "var(--ink-2)" }}>{l.label}</Link>
+                <Link key={l.href} href={l.href} prefetch={false} className="footer-link">{l.label}</Link>
               ))}
-              <Link href="/banks" prefetch={false} style={{ fontSize: "13px", color: "var(--green-dark)", fontWeight: 600 }}>{t("footer.banks")}</Link>
+              <Link href="/banks" prefetch={false} className="footer-link footer-link--more">{t("footer.banks")}</Link>
             </div>
           </div>
           <div>
             <p style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink)", marginBottom: "12px" }}>{t("footer.guides")}</p>
-            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            <div className="footer-links">
               {guideLinks.map((l) => (
-                <Link key={l.href} href={l.href} prefetch={false} style={{ fontSize: "13px", color: "var(--ink-2)" }}>{l.label}</Link>
+                <Link key={l.href} href={l.href} prefetch={false} className="footer-link">{l.label}</Link>
               ))}
-              <Link href="/guides" prefetch={false} style={{ fontSize: "13px", color: "var(--green-dark)", fontWeight: 600 }}>{t("footer.allGuides")}</Link>
+              <Link href="/guides" prefetch={false} className="footer-link footer-link--more">{t("footer.allGuides")}</Link>
             </div>
           </div>
           <div>
             <p style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink)", marginBottom: "12px" }}>{t("footer.resources")}</p>
-            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            <div className="footer-links">
               {resourceLinks.map((l) => (
-                <Link key={l.href} href={l.href} prefetch={false} style={{ fontSize: "13px", color: "var(--ink-2)" }}>{l.label}</Link>
+                <Link key={l.href} href={l.href} prefetch={false} className="footer-link">{l.label}</Link>
               ))}
             </div>
           </div>
         </div>
         <div style={{ marginTop: "28px", paddingTop: "20px", borderTop: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
-          <p style={{ fontSize: "12px", color: "var(--ink-3)" }}>{t("footer.legal")}</p>
-          <div style={{ display: "flex", gap: "16px" }}>
-            <a href="/docs" style={{ fontSize: "12px", color: "var(--ink-3)" }}>{t("footer.apiDocs")}</a>
-            <a href="https://github.com/1RB/cheki" target="_blank" rel="noopener" style={{ fontSize: "12px", color: "var(--ink-3)" }}>{t("footer.github")}</a>
-            <a href="https://github.com/1RB/cheki/tree/main/python" target="_blank" rel="noopener" style={{ fontSize: "12px", color: "var(--ink-3)" }}>{t("footer.python")}</a>
+          <p className="footer-legal-link">{t("footer.legal")}</p>
+          <div className="footer-legal-links">
+            <a href="/docs" className="footer-legal-link">{t("footer.apiDocs")}</a>
+            <a href="https://github.com/1RB/cheki" target="_blank" rel="noopener" className="footer-legal-link">{t("footer.github")}</a>
+            <a href="https://github.com/1RB/cheki/tree/main/python" target="_blank" rel="noopener" className="footer-legal-link">{t("footer.python")}</a>
           </div>
         </div>
       </div>

@@ -1,9 +1,10 @@
 import type { Metadata, Viewport } from "next";
-import Script from "next/script";
 import localFont from "next/font/local";
 import "./globals.css";
 import { LIVE_BANK_COUNT, liveBankList } from "@/lib/bank-counts";
 import { I18nProvider } from "@/lib/i18n/context";
+import { THEME_INIT_SCRIPT } from "@/lib/theme";
+import { LOCALE_INIT_SCRIPT } from "@/lib/i18n/locale-store";
 
 const SITE_URL = "https://cheki.et";
 
@@ -151,7 +152,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={inter.variable}>
+    <html lang="en" className={inter.variable} suppressHydrationWarning>
       <head>
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ldOrganization) }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ldWebsite) }} />
@@ -167,11 +168,11 @@ export default function RootLayout({
           ::view-transition-old(root) { z-index: 1; }
           ::view-transition-new(root) { z-index: 9999; }
         `}</style>
-        <Script
-          id="cheki-theme-init"
-          strategy="beforeInteractive"
-          dangerouslySetInnerHTML={{ __html: `(function(){try{var s=localStorage.getItem('cheki-theme');var d=window.matchMedia('(prefers-color-scheme: dark)').matches;var t=s||((d?'dark':'light'));document.documentElement.setAttribute('data-theme',t);}catch(e){}})();` }}
-        />
+        {/* Theme and language-control state before first paint. A plain inline script, not next/script:
+            beforeInteractive defers inline code to the Next runtime, so a
+            stored theme that differed from the OS flashed the wrong palette. */}
+        <script id="cheki-theme-init" dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+        <script id="cheki-locale-init" dangerouslySetInnerHTML={{ __html: LOCALE_INIT_SCRIPT }} />
       </head>
       <body>
         <I18nProvider>{children}</I18nProvider>

@@ -46,6 +46,9 @@ import {
   Delete02Icon,
   Tick02Icon,
   ArrowUpRight01Icon,
+  Sun03Icon,
+  Moon02Icon,
+  ComputerIcon,
 } from "@hugeicons/core-free-icons";
 
 interface IconProps {
@@ -70,4 +73,5 @@ export {
   ContainerIcon, FileCheckIcon, Money01Icon, Cancel01Icon,
   Share08Icon, PrinterIcon, RefreshIcon, Clock01Icon, WifiDisconnected01Icon,
   CancelCircleIcon, Delete02Icon, Tick02Icon, ArrowUpRight01Icon,
+  Sun03Icon, Moon02Icon, ComputerIcon,
 };

@@ -315,7 +315,7 @@ function EndpointHeader({
             fontSize: "16px",
             fontFamily: "var(--mono)",
             color: "var(--ink)",
-            wordBreak: "break-all",
+            overflowWrap: "anywhere",
             minWidth: 0,
             fontWeight: 600,
           }}
@@ -585,7 +585,7 @@ docker-compose up -d
             className="docs-layout"
             style={{
               display: "grid",
-              gridTemplateColumns: "1fr",
+              gridTemplateColumns: "minmax(0, 1fr)",
               gap: "32px",
             }}
           >

@@ -228,9 +228,9 @@ a { color: inherit; text-decoration: none; }
 }
 
 /* grid utilities - mobile first */
-.grid-2 { display: grid; grid-template-columns: 1fr; gap: 16px; }
-.grid-3 { display: grid; grid-template-columns: 1fr; gap: 14px; }
-.grid-4 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.grid-2 { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+.grid-3 { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+.grid-4 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 
 /* sticky only on desktop (≥900px) — on mobile it causes text overlap */
 .sticky-desktop { position: static; }
@@ -239,22 +239,22 @@ a { color: inherit; text-decoration: none; }
 }
 
 @media (min-width: 640px) {
-  .grid-2 { grid-template-columns: 1fr 1fr; }
-  .grid-3 { grid-template-columns: repeat(2, 1fr); }
+  .grid-2 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .grid-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
 }
 
 @media (min-width: 900px) {
-  .grid-2 { grid-template-columns: 1fr 1fr; gap: 24px; }
-  .grid-3 { grid-template-columns: repeat(3, 1fr); gap: 18px; }
-  .grid-4 { grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .grid-2 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; }
+  .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+  .grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
 
 }
 
 /* hero grid - mobile: stacked, desktop: side by side */
-.hero-grid { grid-template-columns: 1fr !important; gap: 24px !important; }
+.hero-grid { grid-template-columns: minmax(0, 1fr) !important; gap: 24px !important; }
 @media (min-width: 900px) {
-  .hero-grid { grid-template-columns: 1fr 1fr !important; gap: 48px !important; }
+  .hero-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important; gap: 48px !important; }
 }
 /* hero spacing */
 .hero-copy h1 { margin-bottom: 12px; }
@@ -267,7 +267,7 @@ a { color: inherit; text-decoration: none; }
 /* TOC sidebar: hidden on mobile (shown above article), right column on desktop */
 .toc-sidebar { display: none; }
 @media (min-width: 900px) {
-  .two-col { grid-template-columns: 1fr 280px; gap: 40px; align-items: start; }
+  .two-col { grid-template-columns: minmax(0, 1fr) 280px; gap: 40px; align-items: start; }
   .toc-sidebar { display: block; order: 2 !important; position: sticky; top: calc(var(--nav-h) + 24px); max-height: calc(100vh - var(--nav-h) - 48px); overflow-y: auto; }
   .two-col > article { order: 1 !important; }
 }
@@ -285,7 +285,7 @@ a { color: inherit; text-decoration: none; }
 /* Docs sidebar layout */
 .docs-sidebar { display: none; }
 @media (min-width: 900px) {
-  .docs-layout { grid-template-columns: 220px 1fr !important; gap: 40px !important; align-items: start; }
+  .docs-layout { grid-template-columns: 220px minmax(0, 1fr) !important; gap: 40px !important; align-items: start; }
   .docs-sidebar { display: block; order: 1; position: sticky; top: calc(var(--nav-h) + 24px); max-height: calc(100vh - var(--nav-h) - 48px); overflow-y: auto; }
   .docs-main { order: 2; max-width: 720px; }
 }
@@ -307,18 +307,18 @@ a { color: inherit; text-decoration: none; }
 }
 
 /* footer grid */
-.footer-grid { grid-template-columns: 1fr !important; gap: 24px !important; }
+.footer-grid { grid-template-columns: minmax(0, 1fr) !important; gap: 24px !important; }
 @media (min-width: 640px) {
-  .footer-grid { grid-template-columns: 1fr 1fr !important; }
+  .footer-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important; }
 }
 @media (min-width: 900px) {
-  .footer-grid { grid-template-columns: 2fr 1fr 1fr 1fr 1fr !important; gap: 20px !important; }
+  .footer-grid { grid-template-columns: 2fr minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) !important; gap: 20px !important; }
 }
 
 /* guides grid: masonry-style with featured card */
 .guides-grid {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
   gap: 14px;
 }
 .guides-grid .guide-card-featured {
@@ -326,7 +326,7 @@ a { color: inherit; text-decoration: none; }
 }
 @media (min-width: 640px) {
   .guides-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .guides-grid .guide-card-featured {
     grid-column: span 2;
@@ -334,7 +334,7 @@ a { color: inherit; text-decoration: none; }
 }
 @media (min-width: 900px) {
   .guides-grid {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 18px;
   }
   .guides-grid .guide-card-featured {
@@ -390,7 +390,7 @@ a { color: inherit; text-decoration: none; }
 .nav-mobile-actions { display: flex; align-items: center; gap: 2px; }
 /* Empty on desktop; without this it is a third space-between item and
    pulls the right-hand group ~120px off the container edge. */
-@media (min-width: 769px) { .nav-mobile-actions { display: none; } }
+@media (min-width: 1024px) { .nav-mobile-actions { display: none; } }
 .nav-mobile-menu {
   position: fixed; inset: 0; z-index: 200; background: var(--bg);
   flex-direction: column; overflow: hidden; isolation: isolate;
@@ -402,7 +402,7 @@ a { color: inherit; text-decoration: none; }
 /* One surface, hairline-separated rows (same language as the verdict),
    instead of a stack of bordered boxes. */
 .nmm-body {
-  flex: 1; padding: 16px 16px 32px; display: flex; flex-direction: column; gap: 16px;
+  flex: 1; padding: 16px 16px calc(32px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: 16px;
   overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y;
   animation: nmm-in var(--dur-slow) var(--ease-out) both;
 }
@@ -418,6 +418,60 @@ a { color: inherit; text-decoration: none; }
 .nmm-group > * + * { box-shadow: inset 0 1px 0 var(--border); }
 .nmm-gh { justify-content: flex-start; gap: 10px; }
 @media (prefers-reduced-motion: reduce) { .nmm-body { animation: none; } }
+
+/* ── Segmented control: theme (Light / Dark / System) and language
+   (English / አማርኛ). src/components/segmented-control.tsx.
+   A radiogroup. The selected option's raised surface and ink label are drawn
+   from html[data-theme-pref] / html[data-locale], which inline <head> scripts
+   set before first paint, so the control is right before hydration. Selection is
+   shown by surface and ink-vs-ink-3 type, not colour. Options are sized to
+   their labels so English and Amharic both fit a 360px menu row. */
+.tc {
+  display: inline-flex; align-items: center; flex: 0 1 auto; min-width: 0;
+  padding: 3px; border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--ink) 6%, transparent);
+}
+.tc-opt {
+  position: relative; isolation: isolate; display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+  min-height: 0; height: 38px; padding: 0 10px; border: none; border-radius: var(--radius-full);
+  background: transparent; color: var(--ink-3); font: inherit; font-size: 13px; font-weight: 550; line-height: 1;
+  white-space: nowrap; cursor: pointer; -webkit-tap-highlight-color: transparent;
+  transition: color var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
+}
+/* The raised surface of the selected option: opacity/transform only. */
+.tc-opt::before {
+  content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit;
+  background: var(--surface); box-shadow: inset 0 0 0 1px var(--border), var(--shadow-sm);
+  opacity: 0; transform: scale(0.94);
+  transition: opacity var(--dur-fast) var(--ease-out), transform var(--dur-base) var(--ease-out);
+}
+[data-theme="dark"] .tc-opt::before { background: color-mix(in srgb, var(--ink) 12%, var(--surface)); }
+html[data-theme-pref="light"] .tc-opt[data-v="light"],
+html[data-theme-pref="dark"] .tc-opt[data-v="dark"],
+html[data-theme-pref="system"] .tc-opt[data-v="system"],
+html[data-locale="en"] .tc-opt[data-v="en"],
+html[data-locale="am"] .tc-opt[data-v="am"] { color: var(--ink); }
+html[data-theme-pref="light"] .tc-opt[data-v="light"]::before,
+html[data-theme-pref="dark"] .tc-opt[data-v="dark"]::before,
+html[data-theme-pref="system"] .tc-opt[data-v="system"]::before,
+html[data-locale="en"] .tc-opt[data-v="en"]::before,
+html[data-locale="am"] .tc-opt[data-v="am"]::before { opacity: 1; transform: none; }
+.tc-opt:active { transform: scale(0.98); }
+@media (hover: hover) { .tc-opt:hover { color: var(--ink-2); } }
+/* Header: icons only, 32px like the other header controls; 44px on touch. */
+.tc--compact .tc-opt { width: 30px; height: 26px; padding: 0; }
+.tc--compact .tc-opt--text { width: auto; min-width: 30px; padding: 0 8px; font-size: 12px; }
+@media (pointer: coarse) { .tc--compact .tc-opt { width: 40px; height: 38px; } .tc--compact .tc-opt--text { width: auto; min-width: 40px; } }
+/* Menu settings rows: both 44px controls share the right edge, and each
+   option's hit area grows to the full 52px row height. */
+.nmm-row--setting { gap: 12px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.nmm-row--setting > span { flex-shrink: 0; }
+.nmm-row--setting .tc-opt::after { content: ""; position: absolute; left: 0; right: 0; top: -7px; bottom: -7px; }
+@media (max-width: 374px) { .nmm-row--setting .tc-opt { padding: 0 8px; } }
+@media (prefers-reduced-motion: reduce) {
+  .tc-opt, .tc-opt::before { transition: none; }
+  .tc-opt:active { transform: none; }
+}
 
 /* ── ⌘K palette ── */
 .cp-root { position: fixed; inset: 0; z-index: 300; }
@@ -450,7 +504,9 @@ a { color: inherit; text-decoration: none; }
 .nav-mobile-only { display: none !important; }
 .nav-mobile-menu { display: flex !important; }
 
-@media (max-width: 768px) {
+/* The full header (six links, search, language, theme, GitHub) needs ~950px;
+   from 769px it overlapped the right-hand group, so tablets get the menu. */
+@media (max-width: 1023px) {
   .nav-desktop { display: none !important; }
   .nav-mobile-toggle { display: flex !important; align-items: center; }
   .nav-mobile-only { display: flex !important; align-items: center; }
@@ -569,7 +625,10 @@ a { color: inherit; text-decoration: none; }
   padding: 2px 6px;
   border-radius: 4px;
   border: 1px solid var(--border);
-  word-break: break-all;
+  /* Wrap at normal break points first; split a token only when it alone is
+     wider than the line (break-all split "reference": and 10-char IDs). */
+  word-break: normal;
+  overflow-wrap: anywhere;
 }
 
 /* tables - mobile scroll. The scrollbar is the ONLY affordance that says
@@ -848,3 +907,42 @@ html[data-nav] .t-page-enter {
    only a measure. */
 .bank-check { max-width: 640px; margin-bottom: 40px; }
 .bank-check-foot { margin-top: 12px; padding: 0 4px; font-size: 13px; color: var(--ink-3); line-height: 1.5; }
+
+/* ── Mobile polish (touch) ─────────────────────────────────────────────
+   44px targets without moving layout, 16px form text so iOS Safari never
+   zooms on focus, and safe-area padding for fixed surfaces.
+   tests/ui/mobile-invariants.test.ts guards these rules. */
+
+/* iOS zooms into any focused control under 16px. Every text control is
+   16px on touch screens, whatever its desktop size. */
+@media (pointer: coarse) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+  select, textarea { font-size: 16px !important; }
+}
+
+/* Footer: one column of 21px links becomes two columns of 44px rows. */
+.footer-links { display: flex; flex-direction: column; gap: 6px; }
+.footer-link { font-size: 13px; color: var(--ink-2); }
+.footer-link--more { color: var(--green-dark); font-weight: 600; }
+.footer-translate { display: inline-flex; margin-top: 12px; }
+.footer-legal-links { display: flex; gap: 16px; }
+.footer-legal-link { font-size: 12px; color: var(--ink-3); }
+@media (pointer: coarse) {
+  .footer-links { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 16px; }
+  .footer-link, .footer-legal-link { display: inline-flex; align-items: center; min-height: 44px; }
+  .footer-translate { margin-top: 4px; }
+  .footer-legal-links { gap: 20px; }
+}
+@media (pointer: coarse) and (min-width: 641px) { .footer-links { grid-template-columns: minmax(0, 1fr); } }
+
+/* Small visual controls keep their size; the hit area grows to 44px. */
+@media (pointer: coarse) {
+  nav[aria-label="Breadcrumb"] a, .ep-head h2 a, .code-copy-btn { position: relative; }
+  nav[aria-label="Breadcrumb"] a::after, .ep-head h2 a::after, .code-copy-btn::after {
+    content: ""; position: absolute; left: -4px; right: -4px; top: 50%; height: 44px; transform: translateY(-50%);
+  }
+}
+
+/* Every in-page anchor (#faq, #cbe, the verdict) lands below the sticky
+   nav, not under it. One rule instead of per-element scroll-margin. */
+html { scroll-padding-top: calc(var(--nav-h) + 16px); }

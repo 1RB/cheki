@@ -15,6 +15,12 @@ export const translations = {
       switch: "Language",
       contribute: "Help translate",
     },
+    theme: {
+      label: "Theme",
+      light: "Light",
+      dark: "Dark",
+      system: "System",
+    },
     hero: {
       title: "Verify Ethiopian receipts for free",
       titleLead: "Verify an Ethiopian receipt",
@@ -273,6 +279,12 @@ export const translations = {
       am: "አማርኛ",
       switch: "ቋንቋ",
       contribute: "በትርጉም ይተባበሩ",
+    },
+    theme: {
+      label: "ገጽታ",
+      light: "ብሩህ",
+      dark: "ጨለማ",
+      system: "ሲስተም",
     },
     hero: {
       title: "የኢትዮጵያ ደረሰኞችን በነፃ ያረጋግጡ",

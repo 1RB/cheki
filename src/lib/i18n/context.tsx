@@ -1,11 +1,8 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { translations, type Locale } from "./translations";
-
-const STORAGE_KEY = "cheki-locale";
-const DEFAULT_LOCALE: Locale = "en";
-const VALID_LOCALES = Object.keys(translations) as Locale[];
+import { DEFAULT_LOCALE, LOCALES, LOCALE_STORAGE_KEY, parseLocale, readStoredLocale, storeLocale } from "./locale-store";
 
 interface I18nContextValue {
   locale: Locale;
@@ -15,32 +12,43 @@ interface I18nContextValue {
 
 const I18nContext = createContext<I18nContextValue | null>(null);
 
+function applyLocale(locale: Locale) {
+  const root = document.documentElement;
+  root.lang = locale;
+  root.setAttribute("data-locale", locale);
+}
+
 export function I18nProvider({ children }: { children: ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>(DEFAULT_LOCALE);
+  const restored = useRef(false);
 
+  // Declared before the restore effect on purpose: on mount it is skipped, so
+  // <html> never flips to English for a frame before the stored locale lands.
   useEffect(() => {
-    const stored = typeof window !== "undefined" ? window.localStorage.getItem(STORAGE_KEY) : null;
-    if (stored && VALID_LOCALES.includes(stored as Locale)) {
-      setLocale(stored as Locale);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (typeof document !== "undefined") {
-      document.documentElement.lang = locale;
-    }
+    if (restored.current) applyLocale(locale);
   }, [locale]);
 
-  const setLocale = (next: Locale) => {
-    if (!VALID_LOCALES.includes(next)) return;
+  useEffect(() => {
+    restored.current = true;
+    const stored = readStoredLocale();
+    if (stored === DEFAULT_LOCALE) applyLocale(stored);
+    else setLocaleState(stored);
+    // Another tab switched language.
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === null || e.key === LOCALE_STORAGE_KEY) setLocaleState(parseLocale(e.newValue ?? readStoredLocale()));
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
+
+  const setLocale = useCallback((next: Locale) => {
+    if (!LOCALES.includes(next)) return;
     setLocaleState(next);
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem(STORAGE_KEY, next);
-    }
-  };
+    storeLocale(next);
+  }, []);
 
   return (
-    <I18nContext.Provider value={{ locale, setLocale, locales: VALID_LOCALES }}>
+    <I18nContext.Provider value={{ locale, setLocale, locales: LOCALES }}>
       {children}
     </I18nContext.Provider>
   );
