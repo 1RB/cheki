@@ -1,6 +1,6 @@
 {
     "name": "cheki/cheki",
-    "description": "PHP SDK for cheki, a free Ethiopian receipt verification API: CBE, Telebirr, BOA, M-Pesa, Dashen, Awash, Zemen, CBE Birr, Siinqee, eBirr.",
+    "description": "PHP SDK for cheki, a free Ethiopian receipt verification API: CBE, Telebirr, BOA, M-Pesa, Dashen, Awash, Siinqee, eBirr.",
     "type": "library",
     "homepage": "https://cheki.et",
     "license": "MIT",
