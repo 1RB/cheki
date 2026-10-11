@@ -8,7 +8,18 @@
 #   - the wght axis limited to 400-800, the weights the CSS uses,
 #   - Basic Latin + Latin-1, general punctuation, arrows, the euro sign and a
 #     few symbols (check, cross, minus, trademark),
-#   - no hinting, no OpenType features beyond kern/liga/calt/tnum.
+#   - no hinting; OpenType features kern (GPOS pair kerning), calt
+#     (contextual alternates), liga, tnum (tabular figures: amounts, times)
+#     and case. Keep kern and calt: dropping them is what makes small bold
+#     labels look unevenly tracked.
+#
+# Checked Oct 2026 (PR #35 design pass): the subset's GPOS still carries the
+# full kern lookup, and it renders identically to the 352 KB original. The
+# uneven spacing seen in headless screenshots came from Linux Chromium's
+# default font-render-hinting (FreeType rounds hinted advances to whole
+# pixels); with --font-render-hinting=none, which is how macOS, iOS, Android
+# and Windows lay text out (fractional advances), spacing is even. The site
+# CSS also stopped adding positive letter-spacing to small bold text.
 # It is loaded with next/font/local (display: optional) in src/app/layout.tsx.
 #
 # Requires fonttools and brotli:  pip install fonttools brotli

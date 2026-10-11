@@ -55,7 +55,7 @@ interface IconProps {
   strokeWidth?: number;
 }
 
-export function Icon({ icon, size = 20, color = "currentColor", strokeWidth = 1.8 }: IconProps) {
+export function Icon({ icon, size = 20, color = "currentColor", strokeWidth = 1.5 }: IconProps) {
   return <HugeiconsIcon icon={icon} size={size} color={color} strokeWidth={strokeWidth} />;
 }
 

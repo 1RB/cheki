@@ -1,102 +1,145 @@
 @import "tailwindcss";
 
+/* ── Design tokens ──────────────────────────────────────────────────────
+   Calm and warm: an off-white canvas with true-white surfaces, near-black
+   ink and warm greys. Hierarchy comes from type, weight and space, never from
+   hue. Colour is semantic and small (a status dot, a short word); the one
+   brand accent is the green primary action. Surfaces are a 1px hairline at
+   ~8% ink plus a very soft layered shadow, never a heavy border and a heavy
+   shadow together. Every text pair is AA (tests/ux-invariants.test.ts). */
 :root {
-  --bg: #faf9f6;
+  --bg: #faf9f7;
   --surface: #ffffff;
-  --surface-alt: #f5f2ec;
-  --receipt-bg: #f8f6f0;
-  --ink: #1a1a1a;
-  --ink-2: #555;
-  --ink-3: #6b6b6b;
+  --surface-alt: #f3f1ee;
+  --receipt-bg: #f8f6f2;
+  --ink: #1c1a17;
+  --ink-2: #56524d;
+  --ink-3: #6e6963;
   --green: #16a34a;
   --green-dark: #0a7b43;
-  --green-light: #dcfce7;
+  --green-light: #e7f6ec;
   --red: #dc2626;
-  --red-light: #fef2f2;
+  --red-light: #fdf1f0;
   /* Text-safe red: --red is a border/indicator red and fails 4.5:1 on light
      backgrounds (#dc2626 on #ffffff = 4.44). Anything rendered as type uses
      --red-text. */
   --red-text: #b91c1c;
-  --amber: #f59e0b;
+  --amber: #e08a0b;
   --amber-text: #92400e;
-  --amber-light: #fffbeb;
+  --amber-light: #fdf6e8;
   /* CTA surfaces: white on --green is 3.29:1 in light mode, so the button
      background darkens to --green-dark. The dark scheme flips it back to
-     --green with --bg text (9.28:1). Text on a filled CTA is always
-     --*-cta-fg, never a literal #fff. */
+     --green with --bg text. Text on a filled CTA is always --*-cta-fg, never
+     a literal #fff. */
   --green-cta: var(--green-dark);
   --green-cta-fg: #ffffff;
   --red-cta: var(--red-text);
   --red-cta-fg: #ffffff;
-  --border: #e5e2dc;
-  --dotted: #d4d0c8;
+  /* Neutral filled action (after a result the primary is "Verify another":
+     an action, not a status, so it does not borrow the verdict's green). */
+  --ink-cta: #1c1a17;
+  --ink-cta-fg: #faf9f7;
+  --border: rgba(28, 25, 23, 0.09);
+  --border-strong: rgba(28, 25, 23, 0.16);
+  --dotted: #d9d5ce;
+  --ring: rgba(10, 123, 67, 0.55);
+  --shadow-sm: 0 1px 2px rgba(28, 25, 23, 0.04);
+  --shadow-md: 0 1px 2px rgba(28, 25, 23, 0.04), 0 8px 24px rgba(28, 25, 23, 0.05);
+  --shadow-lg: 0 1px 2px rgba(28, 25, 23, 0.05), 0 24px 64px rgba(28, 25, 23, 0.14);
   --mono: "JetBrains Mono", "IBM Plex Mono", "Roboto Mono", ui-monospace, monospace;
   --sans: var(--font-inter, "Inter"), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --nav-h: 56px;
   --code-bg: #24292e;
   --code-text: #e1e4e8;
-  --invert-bg: #1a1a1a;
-  --invert-text: #faf9f6;
+  --invert-bg: #1c1a17;
+  --invert-text: #faf9f7;
+}
+
+/* Scale tokens: identical in both schemes, so they live outside the colour
+   blocks (the two dark blocks must stay key-for-key equal). 4px grid;
+   radii are concentric (inner = outer - padding). */
+:root {
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
+  --space-5: 20px; --space-6: 24px; --space-8: 32px; --space-10: 40px; --space-12: 48px;
+  --radius-xs: 6px; --radius-sm: 8px; --radius-md: 12px; --radius-lg: 16px; --radius-xl: 20px; --radius-full: 999px;
+  --text-xs: 12px; --text-sm: 13px; --text-base: 15px; --text-md: 17px; --text-lg: 20px;
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-fast: 120ms; --dur-base: 180ms; --dur-slow: 240ms;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #0c0d10;
-    --surface: #16181d;
-    --surface-alt: #1c1f26;
-    --receipt-bg: #131519;
-    --ink: #e8e6e3;
-    --ink-2: #9a9a9a;
-    --ink-3: #8b8f98;
-    --green: #2ddb6a;
-    --green-dark: #20b854;
-    --green-light: rgba(45, 219, 106, 0.1);
-    --red: #f0556a;
-    --red-light: rgba(240, 85, 106, 0.08);
-    --red-text: var(--red);
-    --amber: #f5b049;
-    --amber-text: #f5b049;
-    --amber-light: rgba(245, 176, 73, 0.08);
-    --green-cta: var(--green);
-    --green-cta-fg: var(--bg);
-    --red-cta: var(--red);
-    --red-cta-fg: var(--bg);
-    --border: #262932;
-    --dotted: #2a2e38;
-    --code-bg: #0a0c10;
-    --code-text: #b4b9c4;
-    --invert-bg: #16181d;
-    --invert-text: #e8e6e3;
+    --bg: #131211;
+    --surface: #1b1a18;
+    --surface-alt: #24221f;
+    --receipt-bg: #181715;
+    --ink: #edebe7;
+    --ink-2: #aca69f;
+    --ink-3: #958f88;
+    --green: #3dd37a;
+    --green-dark: #3dd37a;
+    --green-light: rgba(61, 211, 122, 0.1);
+    --red: #f0606f;
+    --red-light: rgba(240, 96, 111, 0.1);
+    --red-text: #f0606f;
+    --amber: #f2ac45;
+    --amber-text: #f2ac45;
+    --amber-light: rgba(242, 172, 69, 0.1);
+    --green-cta: #34a868;
+    --green-cta-fg: #131211;
+    --red-cta: #f0606f;
+    --red-cta-fg: #131211;
+    --ink-cta: #edebe7;
+    --ink-cta-fg: #131211;
+    --border: rgba(255, 250, 240, 0.08);
+    --border-strong: rgba(255, 250, 240, 0.15);
+    --dotted: #34312d;
+    --ring: rgba(61, 211, 122, 0.6);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.2);
+    --shadow-lg: 0 1px 2px rgba(0, 0, 0, 0.4), 0 24px 64px rgba(0, 0, 0, 0.5);
+    --code-bg: #0e0d0c;
+    --code-text: #c9c4bc;
+    --invert-bg: #1b1a18;
+    --invert-text: #edebe7;
   }
 }
 
 [data-theme="dark"] {
-  --bg: #0c0d10;
-  --surface: #16181d;
-  --surface-alt: #1c1f26;
-  --receipt-bg: #131519;
-  --ink: #e8e6e3;
-  --ink-2: #9a9a9a;
-  --ink-3: #8b8f98;
-  --green: #2ddb6a;
-  --green-dark: #20b854;
-  --green-light: rgba(45, 219, 106, 0.1);
-  --red: #f0556a;
-  --red-light: rgba(240, 85, 106, 0.08);
-  --red-text: var(--red);
-  --amber: #f5b049;
-  --amber-text: #f5b049;
-  --amber-light: rgba(245, 176, 73, 0.08);
-  --green-cta: var(--green);
-  --green-cta-fg: var(--bg);
-  --red-cta: var(--red);
-  --red-cta-fg: var(--bg);
-  --border: #262932;
-  --dotted: #2a2e38;
-  --code-bg: #0a0c10;
-  --code-text: #b4b9c4;
-  --invert-bg: #16181d;
-  --invert-text: #e8e6e3;
+  --bg: #131211;
+  --surface: #1b1a18;
+  --surface-alt: #24221f;
+  --receipt-bg: #181715;
+  --ink: #edebe7;
+  --ink-2: #aca69f;
+  --ink-3: #958f88;
+  --green: #3dd37a;
+  --green-dark: #3dd37a;
+  --green-light: rgba(61, 211, 122, 0.1);
+  --red: #f0606f;
+  --red-light: rgba(240, 96, 111, 0.1);
+  --red-text: #f0606f;
+  --amber: #f2ac45;
+  --amber-text: #f2ac45;
+  --amber-light: rgba(242, 172, 69, 0.1);
+  --green-cta: #34a868;
+  --green-cta-fg: #131211;
+  --red-cta: #f0606f;
+  --red-cta-fg: #131211;
+  --ink-cta: #edebe7;
+  --ink-cta-fg: #131211;
+  --border: rgba(255, 250, 240, 0.08);
+  --border-strong: rgba(255, 250, 240, 0.15);
+  --dotted: #34312d;
+  --ring: rgba(61, 211, 122, 0.6);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.2);
+  --shadow-lg: 0 1px 2px rgba(0, 0, 0, 0.4), 0 24px 64px rgba(0, 0, 0, 0.5);
+  --code-bg: #0e0d0c;
+  --code-text: #c9c4bc;
+  --invert-bg: #1b1a18;
+  --invert-text: #edebe7;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -110,19 +153,29 @@ html, body {
   font-family: var(--sans);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* Kerning and contextual alternates on explicitly (the subset keeps the
+     kern/calt lookups); optimizeLegibility is not needed for them. */
+  font-kerning: normal;
+  font-feature-settings: "kern" 1, "calt" 1;
   text-rendering: optimizeLegibility;
   max-width: 100%;
   overflow-x: clip;
 }
 
 input, select, button, textarea { font-family: inherit; }
-input:focus, select:focus, textarea:focus { outline: none; border-color: var(--green) !important; }
-/* Keyboard users still need a ring — border-color alone is a 1px indicator. */
+input:focus, select:focus, textarea:focus { outline: none; }
+/* One focus ring everywhere: 2px, offset, in the accent at ~55%. Visible on
+   both canvases, quieter than a solid green outline. */
 input:focus-visible, select:focus-visible, textarea:focus-visible,
-button:focus-visible, a:focus-visible {
-  outline: 2px solid var(--green);
+button:focus-visible, a:focus-visible, summary:focus-visible, [tabindex]:focus-visible {
+  outline: 2px solid var(--ring);
   outline-offset: 2px;
 }
+/* Balance headings (cheap: Chromium caps it at a few lines). text-wrap:
+   pretty is applied only where a widow would show (hero lede, verdict
+   sub-line), not to every paragraph: it costs layout time on long pages. */
+h1, h2, h3 { text-wrap: balance; }
 /* Theme swaps must not be smeared by per-property colour transitions.
    Set on <html> for exactly one frame by theme-toggle (the View Transitions
    path handles this itself; this covers the fallback / reduced-motion path). */
@@ -144,6 +197,16 @@ select {
 select option { background: var(--surface); color: var(--ink); }
 
 a { color: inherit; text-decoration: none; }
+/* Links inside running text are underlined (a hairline at 35% of the link
+   colour): colour alone is not enough next to the warm secondary grey, and
+   an underline is the calmer signal anyway. Classed links (buttons, cards,
+   rows) style themselves. */
+:where(p, li, dd, td) a:not([class]) {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  text-decoration-color: color-mix(in srgb, currentColor 35%, transparent);
+}
 
 /* layout containers */
 .container { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
@@ -241,22 +304,6 @@ a { color: inherit; text-decoration: none; }
   .footer-grid { grid-template-columns: 2fr 1fr 1fr 1fr 1fr !important; gap: 20px !important; }
 }
 
-/* price compare: stack on mobile, inline on desktop */
-.price-compare { flex-direction: column !important; }
-.price-compare > div { borderRight: none !important; borderBottom: 1px solid #fecaca; }
-.price-compare > div:last-child { borderBottom: none !important; }
-@media (min-width: 640px) {
-  .price-compare { flex-direction: row !important; }
-  .price-compare > div { borderRight: 1px solid #fecaca !important; borderBottom: none !important; }
-  .price-compare > div:last-child { borderRight: none !important; }
-}
-
-/* guide list item hover */
-.guide-list-item { transition: background 0.1s; }@media (hover: hover) {
-
-.guide-list-item:hover { background: var(--surface); }
-}
-
 /* guides grid: masonry-style with featured card */
 .guides-grid {
   display: grid;
@@ -306,29 +353,33 @@ a { color: inherit; text-decoration: none; }
 .nav-inner { height: 100%; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .nav-left { display: flex; align-items: center; gap: 20px; min-width: 0; }
 .nav-logo { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; flex-shrink: 0; text-decoration: none; }
-.nav-logo-word { font-weight: 800; font-size: 20px; letter-spacing: -0.03em; color: var(--ink); }
-.nav-oss {
-  font-size: 11px; font-weight: 600; color: var(--green-dark); padding: 2px 6px; border-radius: 4px;
-  background: var(--green-light); border: 1px solid var(--green-light);
-}
+.nav-logo-word { font-weight: 750; font-size: 20px; letter-spacing: -0.035em; color: var(--ink); }
 .nav-links { gap: 2px; align-items: center; }
 .nav-link {
-  padding: 6px 12px; font-size: 14px; font-weight: 500; color: var(--ink-2); border-radius: 6px;
-  transition: color 0.15s, background-color 0.15s; text-decoration: none;
+  padding: 6px 12px; font-size: 14px; font-weight: 500; color: var(--ink-2); border-radius: var(--radius-sm);
+  transition: color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out); text-decoration: none;
 }
-.nav-link:hover { color: var(--ink); }
-.nav-link[aria-current="page"] { font-weight: 600; color: var(--ink); background: color-mix(in srgb, var(--border) 70%, transparent); }
+@media (hover: hover) { .nav-link:hover { color: var(--ink); } }
+.nav-link[aria-current="page"] { color: var(--ink); background: var(--border); }
 .nav-right { gap: 4px; align-items: center; flex-shrink: 0; }
+/* GitHub is a quiet secondary: the page has one filled action (Check). */
 .nav-gh {
-  display: flex; align-items: center; gap: 6px; margin-left: 4px; padding: 6px 14px; border-radius: 6px;
-  font-size: 14px; font-weight: 600; color: var(--bg); background: var(--ink); text-decoration: none;
+  display: flex; align-items: center; gap: 6px; margin-left: 4px; height: 32px; padding: 0 12px; border-radius: var(--radius-sm);
+  font-size: 13px; font-weight: 550; color: var(--ink); background: var(--surface); text-decoration: none;
+  box-shadow: inset 0 0 0 1px var(--border), var(--shadow-sm);
+  transition: background-color var(--dur-fast) var(--ease-out);
 }
+@media (hover: hover) { .nav-gh:hover { background: var(--surface-alt); } }
 .nav-icon-btn {
   width: 44px; height: 44px; display: inline-flex; align-items: center; justify-content: center;
-  border: none; border-radius: 10px; background: transparent; cursor: pointer; flex-shrink: 0;
+  border: none; border-radius: var(--radius-md); background: transparent; cursor: pointer; flex-shrink: 0;
+  transition: background-color var(--dur-fast) var(--ease-out);
 }
-.nav-icon-btn:hover { background: var(--surface-alt); }
+@media (hover: hover) { .nav-icon-btn:hover { background: var(--border); } }
 .nav-mobile-actions { display: flex; align-items: center; gap: 2px; }
+/* Empty on desktop; without this it is a third space-between item and
+   pulls the right-hand group ~120px off the container edge. */
+@media (min-width: 769px) { .nav-mobile-actions { display: none; } }
 .nav-mobile-menu {
   position: fixed; inset: 0; z-index: 200; background: var(--bg);
   flex-direction: column; overflow: hidden; isolation: isolate;
@@ -337,41 +388,51 @@ a { color: inherit; text-decoration: none; }
   height: var(--nav-h); flex-shrink: 0; display: flex; align-items: center; justify-content: space-between;
   padding: 0 16px; border-bottom: 1px solid var(--border);
 }
+/* One surface, hairline-separated rows (same language as the verdict),
+   instead of a stack of bordered boxes. */
 .nmm-body {
-  flex: 1; padding: 20px 16px 32px; display: flex; flex-direction: column; gap: 8px;
+  flex: 1; padding: 16px 16px 32px; display: flex; flex-direction: column; gap: 16px;
   overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y;
+  animation: nmm-in var(--dur-slow) var(--ease-out) both;
+}
+@keyframes nmm-in { from { opacity: 0; transform: translateY(6px); } }
+.nmm-group {
+  display: flex; flex-direction: column; border-radius: var(--radius-lg); background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--border), var(--shadow-sm); overflow: hidden;
 }
 .nmm-link, .nmm-row, .nmm-gh {
-  flex-shrink: 0; min-height: 56px; padding: 0 18px; border-radius: 12px; display: flex; align-items: center;
-  justify-content: space-between; font-size: 17px; font-weight: 600; text-decoration: none;
+  flex-shrink: 0; min-height: 52px; padding: 0 16px; display: flex; align-items: center;
+  justify-content: space-between; font-size: 16px; font-weight: 550; text-decoration: none; color: var(--ink);
 }
-.nmm-link, .nmm-row { color: var(--ink); background: var(--surface); border: 1px solid var(--border); }
-.nmm-gh { justify-content: flex-start; gap: 10px; color: var(--bg); background: var(--ink); }
+.nmm-group > * + * { box-shadow: inset 0 1px 0 var(--border); }
+.nmm-gh { justify-content: flex-start; gap: 10px; }
+@media (prefers-reduced-motion: reduce) { .nmm-body { animation: none; } }
 
 /* ── ⌘K palette ── */
 .cp-root { position: fixed; inset: 0; z-index: 300; }
-.cp-backdrop { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.42); }
+.cp-backdrop { position: absolute; inset: 0; background: rgba(20, 18, 16, 0.32); animation: cp-fade var(--dur-base) var(--ease-out) both; }
+@keyframes cp-fade { from { opacity: 0; } }
 .cp {
   position: absolute; top: 12vh; left: 50%; transform: translateX(-50%);
   width: calc(100vw - 24px); max-width: 580px; max-height: 70vh; display: flex; flex-direction: column;
-  background: var(--surface); border: 1px solid var(--border); border-radius: 16px; overflow: hidden;
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.2); animation: cp-in 150ms ease-out both;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-xl); overflow: hidden;
+  box-shadow: var(--shadow-lg); animation: cp-in var(--dur-base) var(--ease-out) both;
 }
-@keyframes cp-in { from { opacity: 0; transform: translate(-50%, 4px); } to { opacity: 1; transform: translate(-50%, 0); } }
+@keyframes cp-in { from { opacity: 0; transform: translate(-50%, 6px) scale(0.985); } to { opacity: 1; transform: translate(-50%, 0); } }
 .cp-search { display: flex; align-items: center; gap: 10px; padding: 6px 6px 6px 16px; border-bottom: 1px solid var(--border); }
 .cp-input { flex: 1; min-width: 0; height: 48px; border: none; background: transparent; color: var(--ink); font-size: 16px; }
 .cp-input:focus-visible { outline: none; }
 .cp-close { width: 44px; height: 44px; border: none; border-radius: 10px; background: transparent; color: var(--ink-3); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
 .cp-list { list-style: none; overflow-y: auto; padding: 6px; flex: 1; }
-.cp-group { display: block; padding: 10px 12px 4px; font-size: 11px; font-weight: 650; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-3); }
-.cp-option { display: flex; flex-direction: column; justify-content: center; min-height: 44px; padding: 8px 12px; border-radius: 10px; cursor: pointer; }
-.cp-option[aria-selected="true"] { background: var(--surface-alt); box-shadow: inset 2px 0 0 var(--green); }
+.cp-group { display: block; padding: 12px 12px 4px; font-size: 12px; font-weight: 500; color: var(--ink-3); }
+.cp-option { display: flex; flex-direction: column; justify-content: center; min-height: 44px; padding: 8px 12px; border-radius: var(--radius-md); cursor: pointer; }
+.cp-option[aria-selected="true"] { background: var(--surface-alt); }
 .cp-label { font-size: 14px; font-weight: 500; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cp-desc { font-size: 12px; color: var(--ink-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cp-empty { padding: 28px 12px; text-align: center; color: var(--ink-3); font-size: 14px; }
 .cp-foot { padding: 10px 16px; border-top: 1px solid var(--border); font-size: 11px; color: var(--ink-3); display: flex; gap: 10px; }
 .cp-foot kbd { font-family: var(--mono); font-size: 11px; padding: 1px 5px; border-radius: 4px; background: var(--surface-alt); border: 1px solid var(--border); }
-@media (prefers-reduced-motion: reduce) { .cp { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .cp, .cp-backdrop { animation: none; } }
 
 .nav-desktop { display: flex !important; }
 .nav-mobile-toggle { display: none !important; }
@@ -384,19 +445,9 @@ a { color: inherit; text-decoration: none; }
   .nav-mobile-only { display: flex !important; align-items: center; }
 }
 
-/* hide on mobile */
-.hide-mobile { display: flex; }
-@media (max-width: 640px) {
-  .hide-mobile { display: none; }
-}
-
 /* animations */
 @keyframes spin { to { transform: rotate(360deg); } }
 
-@starting-style {
-  .fade-up { opacity: 0; transform: translateY(12px); }
-  .fade-in { opacity: 0; }
-}
 .spin { animation: spin 0.8s linear infinite; }
 
 /* prose styles for article content */
@@ -573,15 +624,15 @@ details {
   margin-bottom: 10px;
   padding: 0;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   background: var(--surface);
   overflow: hidden;
   transition: border-color 0.15s;
 }@media (hover: hover) {
 
-details:hover { border-color: var(--green); }
+details:hover { border-color: var(--border-strong); }
 }
-details[open] { border-color: var(--green); border-bottom-left-radius: 10px; border-bottom-right-radius: 10px; }
+details[open] { border-color: var(--border-strong); }
 
 details summary {
   font-weight: 600;
@@ -613,7 +664,7 @@ details summary::after {
 }
 details[open] summary::after {
   transform: rotate(180deg);
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20' fill='none'%3E%3Cpath d='M5 8l5 5 5-5' stroke='%2316a34a' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20' fill='none'%3E%3Cpath d='M5 8l5 5 5-5' stroke='%23888' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
 }
 details[open] summary {
   border-bottom: 1px solid var(--border);
@@ -630,15 +681,16 @@ details > p, details > div {
 }
 
 /* Press feedback. A control that does not move under the finger reads as
-   dead. 0.96 over 150ms is the smallest change that still registers. */
+   dead; 0.98 registers without making a full-width button lurch. Release is
+   the same short ease-out, so a press can be interrupted mid-way. */
 button:not(:disabled):active,
 [role="button"]:not(:disabled):active,
 a.button:active,
 .btn:active {
-  transform: scale(0.96);
+  transform: scale(0.98);
 }
 button, [role="button"], a.button, .btn {
-  transition: transform 150ms ease-out;
+  transition: transform var(--dur-fast) var(--ease-out);
 }
 @media (prefers-reduced-motion: reduce) {
   button:not(:disabled):active,
@@ -667,271 +719,14 @@ button, [role="button"], a.button, .btn {
   overflow-wrap: break-word;
 }
 
-/* ============================================================
-   transitions.dev - motion system
-   Semantic CSS custom properties + transition classes.
-   Adapted for cheki (Next.js App Router, React 19).
-   Every snippet respects prefers-reduced-motion.
-   ============================================================ */
+/* ── Motion ──────────────────────────────────────────────────────────
+   Tokens: --ease-out, --dur-fast/base/slow (top of file). The old
+   transitions.dev snippet library (digit pop, success check, modal,
+   dropdown, page slide, shake...) had no users and was render-blocking
+   bytes; only the route fade remains. */
 
-/* --- :root custom properties (consolidated from transitions.dev) --- */
-:root {
-  /* Card resize */
-  --resize-dur: 300ms;
-  --resize-ease: cubic-bezier(0.22, 1, 0.36, 1);
-  /* Number pop-in */
-  --digit-dur: 500ms;
-  --digit-distance: 8px;
-  --digit-stagger: 70ms;
-  --digit-blur: 2px;
-  --digit-ease: cubic-bezier(0.23, 1, 0.32, 1);
-  --digit-dir-x: 0;
-  --digit-dir-y: 1;
-  /* Text states swap */
-  --text-swap-dur: 200ms;
-  --text-swap-translate-y: 8px;
-  --text-swap-blur: 2px;
-  --text-swap-ease: ease-out;
-  /* Menu dropdown */
-  --dropdown-open-dur: 250ms;
-  --dropdown-close-dur: 150ms;
-  --dropdown-pre-scale: 0.97;
-  --dropdown-closing-scale: 0.99;
-  --dropdown-ease: cubic-bezier(0.22, 1, 0.36, 1);
-  /* Modal open / close */
-  --modal-open-dur: 250ms;
-  --modal-close-dur: 150ms;
-  --modal-scale: 0.96;
-  --modal-scale-close: 0.96;
-  --modal-ease: cubic-bezier(0.22, 1, 0.36, 1);
-  /* Panel reveal */
-  --panel-open-dur: 400ms;
-  --panel-close-dur: 350ms;
-  --panel-translate-y: 100px;
-  --panel-blur: 2px;
-  --panel-ease: cubic-bezier(0.22, 1, 0.36, 1);
-  /* Page side-by-side */
-  --page-slide-dur: 200ms;
-  --page-fade-dur: 200ms;
-  --page-slide-distance: 8px;
-  --page-blur: 3px;
-  --page-stagger: 0ms;
-  --page-exit-enabled: 1;
-  --page-slide-ease: cubic-bezier(0.22, 1, 0.36, 1);
-  --page-fade-ease: cubic-bezier(0.22, 1, 0.36, 1);
-  /* Icon swap */
-  --icon-swap-dur: 200ms;
-  --icon-swap-blur: 2px;
-  --icon-swap-start-scale: 0.25;
-  --icon-swap-ease: ease-in-out;
-  /* Success check */
-  --check-opacity-dur: 550ms;
-  --check-rotate-dur: 550ms;
-  --check-rotate-from: 80deg;
-  --check-bob-dur: 450ms;
-  --check-y-amount: 40px;
-  --check-blur-dur: 500ms;
-  --check-blur-from: 10px;
-  --check-path-dur: 550ms;
-  --check-path-delay: 80ms;
-  --check-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
-  --check-ease-opacity: cubic-bezier(0.22, 1, 0.36, 1);
-  --check-ease-rotate: cubic-bezier(0.22, 1, 0.36, 1);
-  --check-ease-bob: cubic-bezier(0.22, 1, 0.36, 1);
-  --check-ease-path: cubic-bezier(0.22, 1, 0.36, 1);
-  /* Error state shake */
-  --shake-distance: 6px;
-  --shake-overshoot: 4px;
-  --shake-dur-a: 80ms;
-  --shake-dur-b: 60ms;
-  --shake-ease: cubic-bezier(0.22, 1, 0.36, 1);
-  --revert-hold: 3000ms;
-  --revert-dur: 280ms;
-}
-
-/* --- 01 Card resize --- */
-.t-resize {
-  transition:
-    width  var(--resize-dur) var(--resize-ease),
-    height var(--resize-dur) var(--resize-ease);
-  will-change: width, height;
-}
-@media (prefers-reduced-motion: reduce) {
-  .t-resize { transition: none !important; }
-}
-
-/* --- 02 Number pop-in --- */
-@keyframes t-digit-pop-in {
-  0%   {
-    transform: translate(
-      calc(var(--digit-distance) * var(--digit-dir-x)),
-      calc(var(--digit-distance) * var(--digit-dir-y))
-    );
-    opacity: 0;
-    filter: blur(var(--digit-blur));
-  }
-  100% { transform: translate(0, 0); opacity: 1; filter: blur(0); }
-}
-.t-digit-group {
-  display: inline-flex;
-  align-items: baseline;
-}
-.t-digit {
-  display: inline-block;
-  will-change: transform, opacity, filter;
-}
-.t-digit-group.is-animating .t-digit {
-  animation: t-digit-pop-in var(--digit-dur) var(--digit-ease) both;
-}
-.t-digit-group.is-animating .t-digit[data-stagger="1"] {
-  animation-delay: var(--digit-stagger);
-}
-.t-digit-group.is-animating .t-digit[data-stagger="2"] {
-  animation-delay: calc(var(--digit-stagger) * 2);
-}
-@media (prefers-reduced-motion: reduce) {
-  .t-digit-group .t-digit { animation: none !important; }
-}
-
-/* --- 04 Text states swap --- */
-.t-text-swap {
-  display: inline-block;
-  transform: translateY(0);
-  filter: blur(0);
-  opacity: 1;
-  transition:
-    transform var(--text-swap-dur) var(--text-swap-ease),
-    filter    var(--text-swap-dur) var(--text-swap-ease),
-    opacity   var(--text-swap-dur) var(--text-swap-ease);
-  will-change: transform, filter, opacity;
-}
-.t-text-swap.is-exit {
-  transform: translateY(calc(var(--text-swap-translate-y) * -1));
-  filter: blur(var(--text-swap-blur));
-  opacity: 0;
-}
-.t-text-swap.is-enter-start {
-  transform: translateY(var(--text-swap-translate-y));
-  filter: blur(var(--text-swap-blur));
-  opacity: 0;
-  transition: none;
-}
-/* React mount-based enter animation (used with key prop for state swaps) */
-@keyframes t-text-swap-enter {
-  from {
-    transform: translateY(var(--text-swap-translate-y));
-    filter: blur(var(--text-swap-blur));
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    filter: blur(0);
-    opacity: 1;
-  }
-}
-.t-text-swap-enter {
-  display: inline-block;
-  animation: t-text-swap-enter var(--text-swap-dur) var(--text-swap-ease) both;
-  will-change: transform, filter, opacity;
-}
-@media (prefers-reduced-motion: reduce) {
-  .t-text-swap, .t-text-swap-enter { transition: none !important; animation: none !important; }
-}
-
-/* --- 05 Menu dropdown --- */
-.t-dropdown {
-  transform-origin: top left;
-  transform: scale(var(--dropdown-pre-scale));
-  opacity: 0;
-  pointer-events: none;
-  transition:
-    transform var(--dropdown-open-dur) var(--dropdown-ease),
-    opacity   var(--dropdown-open-dur) var(--dropdown-ease);
-  will-change: transform, opacity;
-}
-.t-dropdown[data-origin="top-right"]     { transform-origin: top right; }
-.t-dropdown[data-origin="top-center"]    { transform-origin: top center; }
-.t-dropdown[data-origin="bottom-left"]   { transform-origin: bottom left; }
-.t-dropdown[data-origin="bottom-center"] { transform-origin: bottom center; }
-.t-dropdown[data-origin="bottom-right"]  { transform-origin: bottom right; }
-.t-dropdown.is-open {
-  transform: scale(1);
-  opacity: 1;
-  pointer-events: auto;
-}
-.t-dropdown.is-closing {
-  transform: scale(var(--dropdown-closing-scale));
-  opacity: 0;
-  pointer-events: none;
-  transition:
-    transform var(--dropdown-close-dur) var(--dropdown-ease),
-    opacity   var(--dropdown-close-dur) var(--dropdown-ease);
-}
-@media (prefers-reduced-motion: reduce) {
-  .t-dropdown { transition: none !important; }
-}
-
-/* --- 06 Modal open / close --- */
-.t-modal {
-  transform-origin: center;
-  transform: scale(var(--modal-scale));
-  opacity: 0;
-  pointer-events: none;
-  transition:
-    transform var(--modal-open-dur) var(--modal-ease),
-    opacity   var(--modal-open-dur) var(--modal-ease);
-  will-change: transform, opacity;
-}
-.t-modal.is-open {
-  transform: scale(1);
-  opacity: 1;
-  pointer-events: auto;
-}
-.t-modal.is-closing {
-  transform: scale(var(--modal-scale-close));
-  opacity: 0;
-  pointer-events: none;
-  transition:
-    transform var(--modal-close-dur) var(--modal-ease),
-    opacity   var(--modal-close-dur) var(--modal-ease);
-}
-@media (prefers-reduced-motion: reduce) {
-  .t-modal { transition: none !important; }
-}
-
-/* --- 08 Page side-by-side (original) + page enter (Next.js adapted) --- */
-.t-page-slide {
-  position: relative;
-}
-.t-page-slide .t-page[data-page-id="1"] {
-  --t-page-from-x: calc(var(--page-slide-distance) * -1);
-}
-.t-page-slide .t-page[data-page-id="2"] {
-  --t-page-from-x: var(--page-slide-distance);
-}
-.t-page-slide .t-page {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  pointer-events: none;
-  transform: translateX(calc(var(--t-page-from-x, 0px) * var(--page-exit-enabled)));
-  filter: blur(calc(var(--page-blur) * var(--page-exit-enabled)));
-  transition:
-    opacity   var(--page-fade-dur)  var(--page-fade-ease),
-    transform var(--page-slide-dur) var(--page-slide-ease),
-    filter    var(--page-slide-dur) var(--page-slide-ease);
-  will-change: opacity, transform, filter;
-}
-.t-page-slide[data-page="1"] .t-page[data-page-id="1"],
-.t-page-slide[data-page="2"] .t-page[data-page-id="2"] {
-  opacity: 1;
-  pointer-events: auto;
-  transform: translateX(0);
-  filter: blur(0);
-  transition-delay: var(--page-stagger);
-}
-/* Next.js App Router page enter - template.tsx wraps each route */
-/* Opacity only, and only after a client-side navigation (html[data-nav] is
+/* Next.js App Router page enter - template.tsx wraps each route.
+   Opacity only, and only after a client-side navigation (html[data-nav] is
    set by the Nav). The first paint of a page is never held back by it, and no
    transform or filter is left on the wrapper (which would trap position:fixed
    descendants). */
@@ -940,148 +735,10 @@ button, [role="button"], a.button, .btn {
   to { opacity: 1; }
 }
 html[data-nav] .t-page-enter {
-  animation: t-page-enter 180ms ease-out backwards;
+  animation: t-page-enter var(--dur-base) var(--ease-out) backwards;
 }
 @media (prefers-reduced-motion: reduce) {
-  .t-page-slide .t-page,
-  .t-page-enter { transition: none !important; animation: none !important; }
-}
-
-/* --- 09 Icon swap --- */
-.t-icon-swap {
-  position: relative;
-  display: inline-grid;
-}
-.t-icon-swap .t-icon {
-  grid-area: 1 / 1;
-  transition:
-    opacity   var(--icon-swap-dur) var(--icon-swap-ease),
-    filter    var(--icon-swap-dur) var(--icon-swap-ease),
-    transform var(--icon-swap-dur) var(--icon-swap-ease);
-  will-change: opacity, filter, transform;
-}
-.t-icon-swap[data-state="a"] .t-icon[data-icon="a"],
-.t-icon-swap[data-state="b"] .t-icon[data-icon="b"] {
-  opacity: 1;
-  filter: blur(0);
-  transform: scale(1);
-}
-.t-icon-swap[data-state="a"] .t-icon[data-icon="b"],
-.t-icon-swap[data-state="b"] .t-icon[data-icon="a"] {
-  opacity: 0;
-  filter: blur(var(--icon-swap-blur));
-  transform: scale(var(--icon-swap-start-scale));
-}
-@media (prefers-reduced-motion: reduce) {
-  .t-icon-swap .t-icon { transition: none !important; }
-}
-
-/* --- 10 Success check --- */
-.t-success-check {
-  display: inline-block;
-  transform-origin: center;
-  opacity: 0;
-  will-change: transform, opacity, filter;
-}
-.t-success-check svg { display: block; overflow: visible; }
-.t-success-check svg path {
-  stroke-dasharray: 20;
-  stroke-dashoffset: 20;
-}
-.t-success-check[data-state="in"] {
-  animation:
-    t-check-fade   var(--check-opacity-dur) var(--check-ease-opacity) forwards,
-    t-check-rotate var(--check-rotate-dur)  var(--check-ease-rotate)  forwards,
-    t-check-blur   var(--check-blur-dur)    var(--check-ease-out)     forwards,
-    t-check-bob    var(--check-bob-dur)     var(--check-ease-bob)     forwards;
-}
-.t-success-check[data-state="in"] svg path {
-  animation: t-check-draw var(--check-path-dur) var(--check-ease-path) var(--check-path-delay, 0ms) forwards;
-}
-@keyframes t-check-fade { from { opacity: 0; } to { opacity: 1; } }
-@keyframes t-check-rotate {
-  from { transform: rotate(var(--check-rotate-from)); }
-  to   { transform: rotate(0deg); }
-}
-@keyframes t-check-blur {
-  from { filter: blur(var(--check-blur-from)); }
-  to   { filter: blur(0); }
-}
-@keyframes t-check-bob {
-  from { translate: 0 var(--check-y-amount); }
-  to   { translate: 0 0; }
-}
-@keyframes t-check-draw { to { stroke-dashoffset: 0; } }
-@media (prefers-reduced-motion: reduce) {
-  .t-success-check { animation: none !important; opacity: 1; }
-  .t-success-check svg path { animation: none !important; stroke-dashoffset: 0 !important; }
-}
-
-/* --- 12 Error state shake --- */
-.t-input {
-  transition: border-color 150ms ease-out;
-  will-change: transform;
-}
-.t-input.is-error {
-  transition: border-color var(--revert-dur, 280ms) ease-out;
-}
-.t-error-msg {
-  opacity: 0;
-  visibility: hidden;
-  transition:
-    opacity    var(--revert-dur, 280ms) ease-out,
-    visibility 0s linear var(--revert-dur, 280ms);
-}
-.t-input-wrap.is-error .t-error-msg {
-  opacity: 1;
-  visibility: visible;
-  transition:
-    opacity    var(--revert-dur, 280ms) ease-out,
-    visibility 0s linear 0s;
-}
-.t-input.is-shaking {
-  animation: t-input-shake calc(
-      var(--shake-dur-a) * 2 + var(--shake-dur-b) * 2
-    ) linear;
-}
-@keyframes t-input-shake {
-  0%      { transform: translateX(0);                                 animation-timing-function: var(--shake-ease); }
-  28.57%  { transform: translateX(var(--shake-distance));             animation-timing-function: var(--shake-ease); }
-  57.14%  { transform: translateX(calc(var(--shake-distance) * -1)); animation-timing-function: var(--shake-ease); }
-  78.57%  { transform: translateX(var(--shake-overshoot));            animation-timing-function: var(--shake-ease); }
-  100%    { transform: translateX(0); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .t-input, .t-shake { animation: none !important; transform: none !important; }
-}
-
-/* --- Skeleton loader + content reveal --- */
-@keyframes t-skeleton-pulse {
-  0%, 100% { opacity: 1; }
-  50%      { opacity: 0.4; }
-}
-.t-skeleton {
-  background: var(--surface-alt);
-  animation: t-skeleton-pulse 1.5s ease-in-out infinite;
-  border-radius: 6px;
-}
-.t-skeleton-line {
-  height: 14px;
-  margin-bottom: 8px;
-}
-.t-skeleton-line:last-child {
-  width: 60%;
-  margin-bottom: 0;
-}
-@keyframes t-reveal {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-.t-reveal {
-  animation: t-reveal var(--panel-open-dur) var(--panel-ease) both;
-}
-@media (prefers-reduced-motion: reduce) {
-  .t-skeleton, .t-reveal { animation: none !important; }
+  .t-page-enter { animation: none !important; }
 }
 
 /* ============================================================
@@ -1173,16 +830,12 @@ html[data-nav] .t-page-enter {
   border: 1px solid var(--border);
   background: var(--surface-alt);
   color: var(--ink-2);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
+  font-size: 12px;
+  font-weight: 500;
 }
 
 /* ── Checker on /banks/[code] ── */
-.bank-check {
-  max-width: 680px; margin-bottom: 40px; padding: 20px; border-radius: 16px;
-  background: var(--surface); border: 1px solid var(--border);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03), 0 18px 40px -28px rgba(0, 0, 0, 0.18);
-}
-.bank-check-foot { margin-top: 12px; font-size: 12px; color: var(--ink-3); line-height: 1.5; }
-@media (min-width: 640px) { .bank-check { padding: 24px; } }
+/* The checker brings its own surfaces (input, then verdict); the section is
+   only a measure. */
+.bank-check { max-width: 640px; margin-bottom: 40px; }
+.bank-check-foot { margin-top: 12px; padding: 0 4px; font-size: 13px; color: var(--ink-3); line-height: 1.5; }

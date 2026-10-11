@@ -62,31 +62,34 @@ function MobileMenu({ links, onClose, t }: { links: { href: string; label: strin
       <div className="nmm-head">
         <Link href="/" onClick={onClose} className="nav-logo" prefetch={false}>
           <span className="nav-logo-word">cheki</span>
-          <span className="nav-oss">OSS</span>
         </Link>
         <button type="button" onClick={onClose} className="nav-icon-btn" aria-label="Close menu">
           <Icon icon={Cancel01Icon} size={22} color="var(--ink)" />
         </button>
       </div>
       <div className="nmm-body">
-        {links.map((l) => (
-          <Link key={l.href} href={l.href} onClick={onClose} className="nmm-link" prefetch={false}>
-            {l.label}
-            <Icon icon={ArrowRight01Icon} size={18} color="var(--ink-3)" />
-          </Link>
-        ))}
-        <div className="nmm-row">
-          <span>{t("language.switch")}</span>
-          <LanguageSwitcher />
+        <div className="nmm-group">
+          {links.map((l) => (
+            <Link key={l.href} href={l.href} onClick={onClose} className="nmm-link" prefetch={false}>
+              {l.label}
+              <Icon icon={ArrowRight01Icon} size={18} color="var(--ink-3)" />
+            </Link>
+          ))}
         </div>
-        <div className="nmm-row">
-          <span>Theme</span>
-          <ThemeToggle size={36} />
+        <div className="nmm-group">
+          <div className="nmm-row">
+            <span>{t("language.switch")}</span>
+            <LanguageSwitcher />
+          </div>
+          <div className="nmm-row">
+            <span>Theme</span>
+            <ThemeToggle size={36} />
+          </div>
+          <a href="https://github.com/1RB/cheki" target="_blank" rel="noopener noreferrer" onClick={onClose} className="nmm-gh">
+            <Icon icon={GithubIcon} size={18} color="var(--ink)" />
+            GitHub
+          </a>
         </div>
-        <a href="https://github.com/1RB/cheki" target="_blank" rel="noopener noreferrer" onClick={onClose} className="nmm-gh">
-          <Icon icon={GithubIcon} size={18} color="var(--bg)" />
-          GitHub
-        </a>
       </div>
     </div>,
     document.body
@@ -138,7 +141,6 @@ export function Nav() {
           <div className="nav-left">
             <Link href="/" className="nav-logo" prefetch={false}>
               <span className="nav-logo-word">cheki</span>
-              <span className="nav-oss">OSS</span>
             </Link>
             <div className="nav-desktop nav-links">
               {links.map((l) => {
@@ -159,7 +161,7 @@ export function Nav() {
             <LanguageSwitcher />
             <ThemeToggle />
             <a href="https://github.com/1RB/cheki" target="_blank" rel="noopener noreferrer" className="nav-gh">
-              <Icon icon={GithubIcon} size={14} color="var(--bg)" />
+              <Icon icon={GithubIcon} size={15} color="var(--ink-2)" />
               GitHub
             </a>
           </div>
@@ -214,18 +216,14 @@ export function Footer() {
     { href: "https://github.com/1RB/cheki/tree/main/python", label: t("footer.python") },
   ];
   return (
-    <footer style={{ marginTop: "64px", borderTop: "1px solid var(--border)", background: "var(--surface-alt)" }}>
+    <footer style={{ marginTop: "64px", borderTop: "1px solid var(--border)", background: "var(--bg)" }}>
       <div className="container" style={{ padding: "40px 24px" }}>
         <div className="footer-grid" style={{
           display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "28px",
         }}>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
-              <span style={{ fontWeight: 800, fontSize: "18px", letterSpacing: "-0.03em" }}>cheki</span>
-              <span style={{
-                fontSize: "11px", fontWeight: 600, color: "var(--green-dark)", border: "1px solid var(--green-light)",
-                padding: "2px 6px", borderRadius: "4px", background: "var(--green-light)",
-              }}>OSS</span>
+              <span style={{ fontWeight: 750, fontSize: "18px", letterSpacing: "-0.035em" }}>cheki</span>
             </div>
             <p style={{ fontSize: "13px", color: "var(--ink-3)", lineHeight: 1.6, maxWidth: "280px" }}>
               {t("footer.tagline")}
@@ -237,7 +235,7 @@ export function Footer() {
             </Link>
           </div>
           <div>
-            <p style={{ fontSize: "12px", fontWeight: 600, color: "var(--ink-3)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "12px" }}>{t("footer.banks")}</p>
+            <p style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink)", marginBottom: "12px" }}>{t("footer.banks")}</p>
             <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
               {bankLinks.map((l) => (
                 <Link key={l.href} href={l.href} prefetch={false} style={{ fontSize: "13px", color: "var(--ink-2)" }}>{l.label}</Link>
@@ -246,7 +244,7 @@ export function Footer() {
             </div>
           </div>
           <div>
-            <p style={{ fontSize: "12px", fontWeight: 600, color: "var(--ink-3)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "12px" }}>{t("footer.guides")}</p>
+            <p style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink)", marginBottom: "12px" }}>{t("footer.guides")}</p>
             <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
               {guideLinks.map((l) => (
                 <Link key={l.href} href={l.href} prefetch={false} style={{ fontSize: "13px", color: "var(--ink-2)" }}>{l.label}</Link>
@@ -255,7 +253,7 @@ export function Footer() {
             </div>
           </div>
           <div>
-            <p style={{ fontSize: "12px", fontWeight: 600, color: "var(--ink-3)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "12px" }}>{t("footer.resources")}</p>
+            <p style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink)", marginBottom: "12px" }}>{t("footer.resources")}</p>
             <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
               {resourceLinks.map((l) => (
                 <Link key={l.href} href={l.href} prefetch={false} style={{ fontSize: "13px", color: "var(--ink-2)" }}>{l.label}</Link>
