@@ -1,6 +1,7 @@
 "use client";
 
 import { Nav, Footer } from "@/components/Chrome";
+import { LIVE_BANK_COUNT } from "@/lib/bank-counts";
 import { useTranslation } from "@/lib/i18n/use-translation";
 import { Icon, ArrowRight01Icon } from "@/components/Icon";
 
@@ -280,7 +281,7 @@ export default function ComparePage() {
           ))}
         </div>
         <p style={{ marginTop: "16px", fontSize: "14px", color: "var(--ink-2)" }}>
-          cheki combines these approaches: a web UI, REST API, batch verification, TypeScript SDK, Python library, Docker, 10 live banks, guide pages, and BOA QR decryption. All free and open source.
+          cheki combines these approaches: a web UI, REST API, batch verification, TypeScript SDK, Python library, Docker, {LIVE_BANK_COUNT} live banks, guide pages, and BOA QR decryption. All free and open source.
         </p>
       </main>
       <Footer />
