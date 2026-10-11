@@ -17,7 +17,7 @@ export class DashenParser extends BaseParser {
   readonly requiresPhone = false;
 
   buildUrl(ref: string): string {
-    return `https://receipt.dashensuperapp.com/receipt/${ref}`;
+    return `https://receipt.dashensuperapp.com/receipt/${encodeURIComponent(ref)}`;
   }
 
   parse(data: string | Buffer, _contentType: string): ParsedReceipt {

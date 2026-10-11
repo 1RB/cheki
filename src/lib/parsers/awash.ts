@@ -8,21 +8,19 @@
  * Awash app. The visible numeric Transaction ID on the mobile receipt is NOT the
  * same token and cannot be used directly. Users must paste the share URL.
  *
- * SSL verification is disabled because the endpoint uses a self-signed or
- * otherwise non-publicly-trusted certificate on port 8225.
+ * TLS is verified normally. The port 8225 endpoint serves a complete,
+ * publicly trusted chain (*.awashbank.com, DigiCert Global G2 TLS RSA SHA256
+ * 2020 CA1, checked Oct 2026), so the old certificate-verification bypass
+ * was unnecessary and has been removed. Fetches go through the shared
+ * BaseParser client (host allowlist, size cap, deadline, no 4xx retries).
  */
-import * as https from "node:https";
 import { BaseParser } from "./base";
-import type { ParsedReceipt, Result, HttpResult } from "../core/types";
-import { ok, err } from "../core/types";
-
-const BROWSER_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36";
+import type { ParsedReceipt } from "../core/types";
+import { removeScriptsAndStyles, TAG_RE } from "../core/html";
 
 function htmlToText(html: string): string[] {
-  return html
-    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
-    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
-    .replace(/<[^>]+>/g, "\n")
+  return removeScriptsAndStyles(html)
+    .replace(TAG_RE, "\n")
     .replace(/&nbsp;/g, " ")
     .replace(/&amp;/g, "&")
     .replace(/&lt;/g, "<")
@@ -101,63 +99,9 @@ export class AwashParser extends BaseParser {
   readonly requiresAccount = false;
   readonly accountDigits?: number = undefined;
   readonly requiresPhone = false;
-  readonly sslVerify = false;
 
   buildUrl(ref: string, _account?: string, _phone?: string): string {
-    return `https://awashpay.awashbank.com:8225/-${ref}`;
-  }
-
-  /**
-   * Override fetch to disable SSL verification for the Awash endpoint.
-   */
-  async fetchReceipt(
-    ref: string,
-    account?: string,
-    phone?: string,
-    options?: { fallbackUrl?: string }
-  ): Promise<Result<HttpResult>> {
-    const url = this.buildUrl(ref, account, phone);
-
-    for (let attempt = 0; attempt <= 2; attempt++) {
-      try {
-        const data = await new Promise<string>((resolve, reject) => {
-          const req = https.get(
-            url,
-            {
-              headers: { "User-Agent": BROWSER_UA, Accept: "text/html,*/*" },
-              rejectUnauthorized: false,
-              timeout: 15000,
-            },
-            (res) => {
-              let chunks = "";
-              res.on("data", (c) => (chunks += c.toString()));
-              res.on("end", () => resolve(chunks));
-            }
-          );
-          req.on("error", reject);
-          req.on("timeout", () => req.destroy(new Error("timeout")));
-        });
-
-        const contentType = "text/html";
-        return ok({ status: 200, data, contentType });
-      } catch (e) {
-        if (attempt === 2) {
-          return err({
-            kind: "ENDPOINT_ERROR" as const,
-            bank: this.bankName,
-            message: `Failed to reach Awash: ${e instanceof Error ? e.message : String(e)}`,
-            fallbackUrl: options?.fallbackUrl,
-          });
-        }
-        await new Promise((r) => setTimeout(r, 1000 * Math.pow(2, attempt)));
-      }
-    }
-
-    return err({
-      kind: "ENDPOINT_ERROR" as const,
-      bank: this.bankName,
-      message: "Failed to reach Awash after 3 attempts.",
-    });
+    return `https://awashpay.awashbank.com:8225/-${encodeURIComponent(ref)}`;
   }
 
   parse(data: string | Buffer, _contentType: string): ParsedReceipt {

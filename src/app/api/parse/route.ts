@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getParser } from "@/lib/parsers/registry";
 import "@/lib/parsers"; // Register all parsers
 import type { ParsedReceipt, Receipt } from "@/lib/core/types";
+import { limiters, rateLimited } from "@/lib/rate-limit";
+import { readJsonCapped, bodyErrorResponse } from "@/lib/http/read-body";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -24,7 +26,13 @@ const CORS_HEADERS = {
  *
  * This bypasses geo-blocking entirely because cheki's server never contacts
  * the bank. The user's browser is the one that fetched the receipt.
+ *
+ * Because the content comes from the caller, the result is NEVER verified:
+ * anyone can type a receipt. The response says `verified: false`,
+ * `parsed: true`, `source: "client-supplied"`, and the UI labels it
+ * "Parsed from your text".
  */
+const MAX_BODY_BYTES = 256 * 1024;
 export async function OPTIONS() {
   return new Response(null, { status: 204, headers: CORS_HEADERS });
 }
@@ -75,14 +83,23 @@ function wrapPlainText(text: string, bankCode: string): string {
 }
 
 export async function POST(request: NextRequest) {
+  const limited = rateLimited(limiters.parse, request.headers, 1, CORS_HEADERS);
+  if (limited) return limited;
+
   try {
-    const body = await request.json();
-    const { bank, html, content, url } = body as {
-      bank?: string;
-      html?: string;
-      content?: string;
-      url?: string;
-    };
+    let body: Record<string, unknown>;
+    try {
+      body = await readJsonCapped<Record<string, unknown>>(request, MAX_BODY_BYTES);
+    } catch (e) {
+      const be = bodyErrorResponse(e);
+      if (be) return NextResponse.json({ success: false, error: be.error }, { status: be.status, headers: CORS_HEADERS });
+      throw e;
+    }
+    const str = (v: unknown) => (typeof v === "string" ? v : undefined);
+    const bank = str(body?.bank);
+    const html = str(body?.html);
+    const content = str(body?.content);
+    const url = str(body?.url)?.slice(0, 500);
 
     // Accept both `html` and `content` fields (content is used by the paste flow)
     const rawData = html || content;
@@ -151,9 +168,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Return the full parsed receipt with all fields (including Telebirr-specific)
-    const receipt: Receipt & Partial<ParsedReceipt> = {
-      verified: true,
+    // Return the full parsed receipt with all fields (including Telebirr-specific).
+    // verified is always false here: the content came from the caller, not the bank.
+    const receipt: Receipt & Partial<ParsedReceipt> & { parsed: true; source: "client-supplied"; label: string } = {
+      verified: false,
+      parsed: true,
+      source: "client-supplied",
+      label: "Parsed from your text, not checked with the bank",
       bank: parser.bankName,
       bankCode: bankCode,
       reference: parsed.reference || "unknown",
@@ -164,7 +185,7 @@ export async function POST(request: NextRequest) {
       amount: parsed.amount,
       currency: parsed.currency || "ETB",
       date: parsed.date,
-      sourceUrl: url || "(via paste/bookmarklet)",
+      sourceUrl: url && /^https:\/\/[^/\\\s]+/i.test(url) ? url : "(via paste/bookmarklet)",
       durationMs: 0,
       // Telebirr / wallet-specific fields
       invoiceNumber: parsed.invoiceNumber,
@@ -187,12 +208,9 @@ export async function POST(request: NextRequest) {
       { success: true, ...receipt },
       { headers: CORS_HEADERS }
     );
-  } catch (e) {
+  } catch {
     return NextResponse.json(
-      {
-        success: false,
-        error: e instanceof Error ? e.message : "Internal server error.",
-      },
+      { success: false, error: "Internal server error." },
       { status: 500, headers: CORS_HEADERS }
     );
   }

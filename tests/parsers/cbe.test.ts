@@ -56,14 +56,21 @@ Reason / Type of service screen done via Mobile`;
       expect(result.verified).toBe(false);
     });
 
-    it("handles missing fields gracefully", () => {
+    it("extracts what it can but does not verify a PDF with missing fields", () => {
+      // This used to assert verified=true: the bank name plus one line was
+      // enough. An error page on the CBE host would pass the same way.
       const minimal = `Commercial Bank of Ethiopia
 PayerJohn Doe`;
       const result = CBEParser.parsePdfText(minimal);
-      expect(result.verified).toBe(true);
+      expect(result.verified).toBe(false);
       expect(result.senderName).toBe("John Doe");
       expect(result.amount).toBeUndefined();
       expect(result.date).toBeUndefined();
+    });
+
+    it("does not verify on the bank name alone", () => {
+      const result = CBEParser.parsePdfText("Commercial Bank of Ethiopia\nsome error page");
+      expect(result.verified).toBe(false);
     });
   });
 });

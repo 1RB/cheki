@@ -11,6 +11,8 @@
  */
 import { BaseParser } from "./base";
 import type { ParsedReceipt } from "../core/types";
+import { removeScriptsAndStyles, TAG_RE } from "../core/html";
+import { parseMoney } from "../core/money";
 
 export class CBEBirrParser extends BaseParser {
   readonly bankId = "cbebirr";
@@ -55,11 +57,7 @@ export class CBEBirrParser extends BaseParser {
     const receiverAccount = fields["receiver account"] || fields["beneficiary account"] || fields["to account"];
     const phone = fields["phone"] || fields["mobile"] || fields["phone number"] || fields["payer phone"];
 
-    let amount: number | undefined;
-    if (amountStr) {
-      const m = amountStr.replace(/[^0-9.]/g, "");
-      if (m) amount = parseFloat(m);
-    }
+    const amount = parseMoney(amountStr);
 
     // Must have at least some transaction data to be verified
     if (!senderName && !receiverName && !amount) {
@@ -72,7 +70,7 @@ export class CBEBirrParser extends BaseParser {
       receiverName,
       senderAccount: senderAccount || phone,
       receiverAccount,
-      amount: Number.isFinite(amount) ? amount : undefined,
+      amount,
       currency: "ETB",
       date,
       reference,
@@ -84,15 +82,13 @@ export class CBEBirrParser extends BaseParser {
   }
 
   private stripHtml(html: string): string {
-    return html
-      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
-      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
+    return removeScriptsAndStyles(html)
       .replace(/<br\s*\/?>/gi, "\n")
-      .replace(/<\/td>\s*<td[^>]*>/gi, ":\t")
+      .replace(/<\/td>\s*<td[^<>]*>/gi, ":\t")
       .replace(/<\/tr>/gi, "\n")
       .replace(/<\/div>/gi, "\n")
       .replace(/<\/p>/gi, "\n")
-      .replace(/<[^>]+>/g, " ")
+      .replace(TAG_RE, " ")
       .replace(/&nbsp;/g, " ")
       .replace(/&amp;/g, "&")
       .replace(/&lt;/g, "<")

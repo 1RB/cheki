@@ -17,7 +17,7 @@ export class ZemenParser extends BaseParser {
   readonly requiresPhone = false;
 
   buildUrl(ref: string): string {
-    return `https://share.zemenbank.com/rt/${ref}/pdf`;
+    return `https://share.zemenbank.com/rt/${encodeURIComponent(ref)}/pdf`;
   }
 
   parse(data: string | Buffer, _contentType: string): ParsedReceipt {

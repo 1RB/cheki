@@ -6,6 +6,7 @@ import {
   Check,
   Info,
   LoaderCircle,
+  TriangleAlert,
   X,
   type LucideIcon,
 } from "lucide-react";
@@ -35,7 +36,7 @@ import { EASE_OUT } from "@/lib/ease";
    AnimatePresence, status morph.
    ────────────────────────────────────────────────────────────── */
 
-export type ToastStatus = "neutral" | "info" | "loading" | "success" | "error";
+export type ToastStatus = "neutral" | "info" | "loading" | "success" | "warning" | "error";
 export type ToastPosition =
   | "top-left"
   | "top-center"
@@ -106,6 +107,7 @@ const STATUS_ICON: Record<ToastStatus, LucideIcon> = {
   info: Info,
   loading: LoaderCircle,
   success: Check,
+  warning: TriangleAlert,
   error: AlertCircle,
 };
 
@@ -115,6 +117,7 @@ const STATUS_FG: Record<ToastStatus, string> = {
   info: "var(--ink)",
   loading: "var(--ink)",
   success: "var(--green)",
+  warning: "var(--amber-text)",
   error: "var(--red)",
 };
 
@@ -124,6 +127,7 @@ const STATUS_BG: Record<ToastStatus, string> = {
   info: "var(--surface-alt)",
   loading: "var(--surface-alt)",
   success: "var(--green-light)",
+  warning: "var(--amber-light)",
   error: "var(--red-light)",
 };
 

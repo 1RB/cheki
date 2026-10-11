@@ -114,21 +114,22 @@ describe("detectBankFromUrl", () => {
     const result = detectBankFromUrl("https://receipt.ebirr.com/siinqee/SQ12345678");
     expect(result).not.toBeNull();
     expect(result!.bank).toBe("siinqee");
-    expect(result!.reference).toBe("SQ12345678");
+    // tenant/token is kept so the parser can rebuild the URL on the fixed host
+    expect(result!.reference).toBe("siinqee/SQ12345678");
   });
 
   it("maps a named eBirr tenant to its own bank", () => {
     const result = detectBankFromUrl("https://receipt.ebirr.com/nib/abc123def");
     expect(result).not.toBeNull();
     expect(result!.bank).toBe("nib");
-    expect(result!.reference).toBe("abc123def");
+    expect(result!.reference).toBe("nib/abc123def");
   });
 
-  it("falls back to eBirr for a tenant cheki does not name", () => {
-    const result = detectBankFromUrl("https://receipt.ebirr.com/somewhere/abc123def");
-    expect(result).not.toBeNull();
-    expect(result!.bank).toBe("ebirr");
-    expect(result!.reference).toBe("abc123def");
+  it("rejects an eBirr tenant cheki does not know (tenant allowlist)", () => {
+    // It used to fall back to bank "ebirr" with the tenant dropped, which
+    // could never verify. Unknown issuers are now rejected outright.
+    expect(detectBankFromUrl("https://receipt.ebirr.com/somewhere/abc123def")).toBeNull();
+    expect(detectBankFromUrl("https://receipt.ebirr.com/constructor/abc123def")).toBeNull();
   });
 
   it("returns null for unknown URLs", () => {
