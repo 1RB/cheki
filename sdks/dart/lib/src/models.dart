@@ -247,9 +247,15 @@ class BankInfo {
 
   /// Whether a payer phone number is required (defaults to false).
   final bool requiresPhone;
+
+  /// URL template of the bank's current format (informational).
   final String? endpoint;
   final String? color;
   final String? initials;
+
+  /// Receipt formats, current first. Lead with the first `supported` one; the
+  /// rest are older receipts. Empty when the server is older than this SDK.
+  final List<ReceiptFormat> formats;
 
   /// Constructs a [BankInfo].
   const BankInfo({
@@ -264,6 +270,7 @@ class BankInfo {
     this.endpoint,
     this.color,
     this.initials,
+    this.formats = const [],
   });
 
   /// Deprecated alias of [id].
@@ -284,6 +291,9 @@ class BankInfo {
       endpoint: _toStr(json['endpoint']),
       color: _toStr(json['color']),
       initials: _toStr(json['initials']),
+      formats: json['formats'] is List
+          ? (json['formats'] as List).whereType<Map<String, dynamic>>().map(ReceiptFormat.fromJson).toList()
+          : const [],
     );
   }
 
@@ -301,6 +311,7 @@ class BankInfo {
       'endpoint': endpoint,
       'color': color,
       'initials': initials,
+      'formats': formats.map((f) => f.toJson()).toList(),
     };
     m.removeWhere((_, v) => v == null);
     return m;
@@ -486,4 +497,70 @@ class BatchReceipt {
         if (phoneNumber != null && phoneNumber!.isNotEmpty) 'phoneNumber': phoneNumber,
         if (qrData != null && qrData!.isNotEmpty) 'qrData': qrData,
       };
+}
+
+/// One receipt format of a bank, from `GET /api/banks`.
+class ReceiptFormat {
+  final String id;
+
+  /// `current`, `legacy` (still works) or `deprecated` (links are only read
+  /// for their reference).
+  final String status;
+  final String label;
+
+  /// What the format needs: `reference`, `receiptId`, `link`, `account`, `phone`.
+  final List<String> inputs;
+
+  /// Trailing account digits, when the format needs an account.
+  final int? accountDigits;
+  final String responseType;
+
+  /// False when cheki documents the format but can't check it yet.
+  final bool supported;
+
+  /// `verified` (observed by cheki) or `inferred`.
+  final String confidence;
+
+  /// Constructs a [ReceiptFormat].
+  const ReceiptFormat({
+    required this.id,
+    required this.status,
+    this.label = '',
+    this.inputs = const [],
+    this.accountDigits,
+    this.responseType = '',
+    this.supported = false,
+    this.confidence = '',
+  });
+
+  /// Creates a [ReceiptFormat] from a decoded JSON map.
+  factory ReceiptFormat.fromJson(Map<String, dynamic> json) => ReceiptFormat(
+        id: _toStr(json['id']) ?? '',
+        status: _toStr(json['status']) ?? '',
+        label: _toStr(json['label']) ?? '',
+        inputs: json['inputs'] is List ? (json['inputs'] as List).whereType<String>().toList() : const [],
+        accountDigits: _toInt(json['accountDigits']),
+        responseType: _toStr(json['responseType']) ?? '',
+        supported: json['supported'] == true,
+        confidence: _toStr(json['confidence']) ?? '',
+      );
+
+  /// Converts this [ReceiptFormat] back to a JSON map.
+  Map<String, dynamic> toJson() {
+    final m = <String, dynamic>{
+      'id': id,
+      'status': status,
+      'label': label,
+      'inputs': inputs,
+      'accountDigits': accountDigits,
+      'responseType': responseType,
+      'supported': supported,
+      'confidence': confidence,
+    };
+    m.removeWhere((_, v) => v == null);
+    return m;
+  }
+
+  bool get isCurrent => status == 'current';
+  bool get isLegacy => status == 'legacy';
 }
