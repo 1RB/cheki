@@ -18,8 +18,9 @@ const EXTRA_HOSTS = [
   "mb.cbe.com.et",
   // eBirr white-label receipts (Siinqee, Nib, Wegagen, ...).
   "receipt.ebirr.com",
-  // Dashen legacy PDF download host used by /api/receipt.
-  "api.dashensuperapp.com",
+  // Dashen's receipt host (receipts.dashenbanksc.com) comes from the manifest.
+  // The legacy dashensuperapp.com hosts are not fetched: links to them are
+  // only read for their reference and rebuilt on the manifest host.
 ];
 
 let cached: Set<string> | null = null;
