@@ -218,7 +218,7 @@
   color: var(--ink); font-weight: 600; font-size: 14px; text-decoration: none; cursor: grab; user-select: none;
   background: var(--surface); box-shadow: 0 0 0 1px var(--border-strong), var(--shadow-sm);
 }
-.gf-bm-row .vc-btn--small { min-height: 36px; align-self: auto; }
+.gf-bm-row .vc-btn--small { min-height: 44px; align-self: auto; }
 .gf-bm::before {
   content: ""; width: 10px; height: 14px; flex-shrink: 0; background: var(--ink-3);
   clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 72%, 0 100%);
@@ -362,7 +362,7 @@
 .vc-btn--icon { width: 44px; padding: 0; }
 .vc-btn--text { flex: 0 0 auto; background: transparent; }
 .vc-btn--icon > svg { color: var(--ink); }
-.vc-btn--small { min-height: 36px; font-size: 13px; padding: 0 12px; align-self: flex-start; box-shadow: inset 0 0 0 1px var(--border); }
+.vc-btn--small { min-height: 44px; font-size: 13px; padding: 0 12px; align-self: flex-start; box-shadow: inset 0 0 0 1px var(--border); }
 .vc-btn-label { transition: opacity var(--dur-fast) var(--ease-out); }
 
 /* Footer rows: the official receipt and the raw details. */

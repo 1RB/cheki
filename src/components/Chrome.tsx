@@ -217,9 +217,9 @@ export function Footer() {
   ];
   return (
     <footer style={{ marginTop: "64px", borderTop: "1px solid var(--border)", background: "var(--bg)" }}>
-      <div className="container" style={{ padding: "40px 24px" }}>
+      <div className="container" style={{ padding: "40px 24px calc(40px + env(safe-area-inset-bottom, 0px))" }}>
         <div className="footer-grid" style={{
-          display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "28px",
+          display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: "28px",
         }}>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
@@ -228,45 +228,43 @@ export function Footer() {
             <p style={{ fontSize: "13px", color: "var(--ink-3)", lineHeight: 1.6, maxWidth: "280px" }}>
               {t("footer.tagline")}
             </p>
-            <Link href="/guides/contribute-translations" prefetch={false} style={{
-              display: "inline-flex", marginTop: "12px", fontSize: "13px", color: "var(--green-dark)", fontWeight: 600,
-            }}>
+            <Link href="/guides/contribute-translations" prefetch={false} className="footer-link footer-link--more footer-translate">
               {t("language.contribute")}
             </Link>
           </div>
           <div>
             <p style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink)", marginBottom: "12px" }}>{t("footer.banks")}</p>
-            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            <div className="footer-links">
               {bankLinks.map((l) => (
-                <Link key={l.href} href={l.href} prefetch={false} style={{ fontSize: "13px", color: "var(--ink-2)" }}>{l.label}</Link>
+                <Link key={l.href} href={l.href} prefetch={false} className="footer-link">{l.label}</Link>
               ))}
-              <Link href="/banks" prefetch={false} style={{ fontSize: "13px", color: "var(--green-dark)", fontWeight: 600 }}>{t("footer.banks")}</Link>
+              <Link href="/banks" prefetch={false} className="footer-link footer-link--more">{t("footer.banks")}</Link>
             </div>
           </div>
           <div>
             <p style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink)", marginBottom: "12px" }}>{t("footer.guides")}</p>
-            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            <div className="footer-links">
               {guideLinks.map((l) => (
-                <Link key={l.href} href={l.href} prefetch={false} style={{ fontSize: "13px", color: "var(--ink-2)" }}>{l.label}</Link>
+                <Link key={l.href} href={l.href} prefetch={false} className="footer-link">{l.label}</Link>
               ))}
-              <Link href="/guides" prefetch={false} style={{ fontSize: "13px", color: "var(--green-dark)", fontWeight: 600 }}>{t("footer.allGuides")}</Link>
+              <Link href="/guides" prefetch={false} className="footer-link footer-link--more">{t("footer.allGuides")}</Link>
             </div>
           </div>
           <div>
             <p style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink)", marginBottom: "12px" }}>{t("footer.resources")}</p>
-            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            <div className="footer-links">
               {resourceLinks.map((l) => (
-                <Link key={l.href} href={l.href} prefetch={false} style={{ fontSize: "13px", color: "var(--ink-2)" }}>{l.label}</Link>
+                <Link key={l.href} href={l.href} prefetch={false} className="footer-link">{l.label}</Link>
               ))}
             </div>
           </div>
         </div>
         <div style={{ marginTop: "28px", paddingTop: "20px", borderTop: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
-          <p style={{ fontSize: "12px", color: "var(--ink-3)" }}>{t("footer.legal")}</p>
-          <div style={{ display: "flex", gap: "16px" }}>
-            <a href="/docs" style={{ fontSize: "12px", color: "var(--ink-3)" }}>{t("footer.apiDocs")}</a>
-            <a href="https://github.com/1RB/cheki" target="_blank" rel="noopener" style={{ fontSize: "12px", color: "var(--ink-3)" }}>{t("footer.github")}</a>
-            <a href="https://github.com/1RB/cheki/tree/main/python" target="_blank" rel="noopener" style={{ fontSize: "12px", color: "var(--ink-3)" }}>{t("footer.python")}</a>
+          <p className="footer-legal-link">{t("footer.legal")}</p>
+          <div className="footer-legal-links">
+            <a href="/docs" className="footer-legal-link">{t("footer.apiDocs")}</a>
+            <a href="https://github.com/1RB/cheki" target="_blank" rel="noopener" className="footer-legal-link">{t("footer.github")}</a>
+            <a href="https://github.com/1RB/cheki/tree/main/python" target="_blank" rel="noopener" className="footer-legal-link">{t("footer.python")}</a>
           </div>
         </div>
       </div>
