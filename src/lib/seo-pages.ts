@@ -11,6 +11,7 @@
  *   4. "free receipt verification ethiopia" - comparison pages
  *   5. "[bank] receipt format" - technical reference pages
  */
+import { LIVE_BANK_COUNT, liveBankList } from "./bank-counts";
 
 export interface SeoPage {
   slug: string;
@@ -42,8 +43,8 @@ export const seoPages: SeoPage[] = [
     faq: [
       { q: "How do I verify a CBE receipt?", a: "Select Commercial Bank of Ethiopia, paste your FT reference number (e.g. FT26140P01YB), enter the last 8 digits of the receiving account, and click Verify. cheki fetches the receipt from CBE's public endpoint and shows you the result in 2-10 seconds." },
       { q: "Do I need the account number to verify CBE?", a: "Yes. CBE's receipt endpoint requires the FT reference plus the last 8 digits of the receiving account number. Without the account number, the endpoint returns no data." },
-      { q: "Is CBE receipt verification free?", a: "Yes, cheki is completely free with no limits. check.et charges 499 ETB/month after 200 verifications. cheki uses the same public CBE endpoint but charges nothing." },
-      { q: "Can I verify CBE receipts in bulk?", a: "Yes. Use the POST /api/verify/batch endpoint to verify up to 50 CBE receipts in a single API call. Perfect for end-of-day reconciliation." },
+      { q: "Is CBE receipt verification free?", a: "Yes, cheki is completely free with no quota. check.et charges 499 ETB/month after 200 verifications. cheki uses the same public CBE endpoint but charges nothing." },
+      { q: "Can I verify CBE receipts in bulk?", a: "Yes. Use the POST /api/verify/batch endpoint to verify up to 20 CBE receipts in a single API call. Perfect for end-of-day reconciliation." },
     ],
     sections: [
       {
@@ -89,7 +90,7 @@ export const seoPages: SeoPage[] = [
       { q: "How do I verify a Telebirr receipt?", a: "Select Telebirr, paste your transaction reference number, and click Verify. cheki fetches the receipt from Telebirr's public endpoint and shows you the result instantly." },
       { q: "Why does Telebirr verification sometimes fail?", a: "Telebirr's endpoint (transactioninfo.ethiotelecom.et) blocks requests from non-Ethiopian IP addresses. If cheki's server can't reach it, we provide a direct link for you to open the receipt yourself. Self-hosting cheki on an Ethiopian IP bypasses this restriction." },
       { q: "Do I need an account number for Telebirr?", a: "No. Telebirr only requires the transaction reference number. The receipt is returned as an HTML page with payer name, receiver name, amount, and date." },
-      { q: "Is Telebirr receipt verification free?", a: "Yes. cheki verifies Telebirr receipts for free with no limits. The same endpoint is used by check.et which charges 499 ETB/month after 200 checks." },
+      { q: "Is Telebirr receipt verification free?", a: "Yes. cheki verifies Telebirr receipts for free with no quota. The same endpoint is used by check.et which charges 499 ETB/month after 200 checks." },
     ],
     sections: [
       {
@@ -182,12 +183,12 @@ export const seoPages: SeoPage[] = [
     slug: "free-receipt-verification-ethiopia",
     title: "Free Receipt Verification Ethiopia - No API Key, No Signup | cheki",
     h1: "Free Ethiopian Receipt Verification",
-    metaDescription: "Verify any Ethiopian bank or mobile wallet receipt for free. CBE, Telebirr, BOA, M-Pesa, Dashen, Awash, and more. No API key, no signup, no limits.",
+    metaDescription: "Verify any Ethiopian bank or mobile wallet receipt for free. CBE, Telebirr, BOA, M-Pesa, Dashen, Awash, and more. No API key, no signup, no quota.",
     keywords: ["free receipt verification ethiopia", "ethiopian receipt check free", "verify payment ethiopia", "receipt verification addis ababa", "bank receipt check ethiopia"],
     intent: "commercial",
     faq: [
-      { q: "Is receipt verification really free?", a: "Yes. cheki is 100% free with no limits. No signup, no API key, no credit card. You can verify unlimited receipts. check.et charges 499 ETB/month after 200 verifications. verify.et charges $20-40/month." },
-      { q: "Which banks are supported?", a: "cheki supports 10 live banks and wallets: CBE, CBE Birr, Telebirr, Bank of Abyssinia, M-Pesa, Dashen Bank, Awash Bank, Zemen Bank, Siinqee Bank, and eBirr. All use public endpoints published by the banks themselves." },
+      { q: "Is receipt verification really free?", a: "Yes. cheki is 100% free with no monthly cap. No signup, no API key, no credit card. The only limit is a per-IP rate limit (30 checks per minute). check.et charges 499 ETB/month after 200 verifications. verify.et charges $20-40/month." },
+      { q: "Which banks are supported?", a: `cheki supports ${LIVE_BANK_COUNT} live banks and wallets: ${liveBankList()}. All use public endpoints published by the banks themselves.` },
       { q: "How is this different from check.et?", a: "check.et charges 499 ETB/month for the same data. cheki uses the exact same bank endpoints but is free and open source. check.et also requires a business account and API key. cheki requires nothing." },
       { q: "Can I use this for my business?", a: "Yes. cheki is MIT licensed. You can use the API, self-host with Docker, or integrate the TypeScript/Python SDK into your existing systems. No restrictions." },
     ],
@@ -299,7 +300,7 @@ export const seoPages: SeoPage[] = [
     keywords: ["cheki vs check.et", "check.et alternative", "verify.et alternative", "qbirr alternative", "tinaverify comparison", "free receipt verification ethiopia", "best receipt verification service"],
     intent: "commercial",
     faq: [
-      { q: "Is cheki really free?", a: "Yes. cheki is 100% free, open source (MIT), and has no limits. check.et charges 499 ETB/month after 200 verifications. verify.et charges $20-40/month. qbirr charges 500-8,000 ETB/month. tinaverify charges 3K-8K ETB per 90 days." },
+      { q: "Is cheki really free?", a: "Yes. cheki is 100% free, open source (MIT), and has no quota. check.et charges 499 ETB/month after 200 verifications. verify.et charges $20-40/month. qbirr charges 500-8,000 ETB/month. tinaverify charges 3K-8K ETB per 90 days." },
       { q: "Do they all use the same data?", a: "Yes. All six services (cheki, check.et, verify.et, qbirr, tinaverify, tally) verify receipts by fetching the same public bank endpoints. The data is identical. The difference is pricing, features, and transparency." },
       { q: "Can I self-host check.et, verify.et, qbirr, or tinaverify?", a: "No. All of them are closed-source. cheki is the only one that is open source and includes Docker support for self-hosting on your own infrastructure." },
       { q: "What about qbirr and tinaverify?", a: "qbirr is a developer-first API launched June 2026 with 7 banks and an Ethiopian relay for geo-blocked banks. tinaverify is a mobile-first product with published iOS and Android apps focused on the cashier workflow. Both charge for the same public data that cheki provides for free." },
@@ -313,7 +314,7 @@ export const seoPages: SeoPage[] = [
         heading: "Pricing at a glance",
         body: "",
         bullets: [
-          "cheki: free forever, unlimited verifications",
+          "cheki: free forever, no monthly cap",
           "check.et: 499 ETB/mo (200 free one-time)",
           "verify.et: $20-40/mo USD (200 free one-time)",
           "qbirr: 500-8,000 ETB/mo (50 free/month)",
@@ -328,7 +329,7 @@ export const seoPages: SeoPage[] = [
           "Open source (MIT license)",
           "Self-hosting with Docker",
           "No signup, no API key",
-          "Batch verification (50 at once)",
+          "Batch verification (20 at once)",
           "BOA QR code AES decryption",
           "Receipt source URL shown to user",
         ],
@@ -339,20 +340,20 @@ export const seoPages: SeoPage[] = [
 
   {
     slug: "ethiopian-receipt-api-free",
-    title: "Free Ethiopian Receipt API - No Auth, No Limits | cheki",
+    title: "Free Ethiopian Receipt API - No Auth, No Quota | cheki",
     h1: "Free Ethiopian Receipt Verification API",
-    metaDescription: "Free REST API for verifying Ethiopian bank receipts. No API key, no signup, no rate limit. CBE, Telebirr, BOA, M-Pesa. TypeScript SDK and Python library included.",
+    metaDescription: "Free REST API for verifying Ethiopian bank receipts. No API key, no signup, per-IP rate limits. CBE, Telebirr, BOA, M-Pesa. TypeScript SDK and Python library included.",
     keywords: ["ethiopian receipt api", "free receipt api ethiopia", "cbe api", "telebirr api", "bank verification api ethiopia", "receipt verification rest api"],
     intent: "transactional",
     faq: [
       { q: "Do I need an API key?", a: "No. cheki's API requires no authentication. Just POST to /api/verify with the bank code, reference, and account number." },
-      { q: "Is there a rate limit?", a: "No. cheki has no rate limits. You can verify as many receipts as you want. For batch verification, use POST /api/verify/batch to verify up to 50 receipts at once." },
+      { q: "Is there a rate limit?", a: "Yes, per IP: /api/verify 30 per minute, /api/verify/batch 5 per minute, /api/parse and /api/ocr 20 per minute each. Over the limit you get a 429 with a Retry-After header. For batch verification, use POST /api/verify/batch to verify up to 20 receipts at once." },
       { q: "Is there a TypeScript SDK?", a: "Yes. cheki includes a TypeScript SDK that you can import and use in any Node.js or browser project. There's also a Python library and a CLI tool." },
     ],
     sections: [
       {
         heading: "API overview",
-        body: "cheki provides a free REST API for verifying Ethiopian bank receipts. No API key, no signup, no rate limit. The API supports single verification, batch verification (up to 50 at once), bank listing, and health checking.",
+        body: "cheki provides a free REST API for verifying Ethiopian bank receipts. No API key, no signup; requests are rate limited per IP. The API supports single verification, batch verification (up to 20 at once), bank listing, and health checking.",
       },
       {
         heading: "Quick start",
@@ -363,7 +364,7 @@ export const seoPages: SeoPage[] = [
         body: "",
         bullets: [
           "POST /api/verify: verify a single receipt",
-          "POST /api/verify/batch: verify up to 50 receipts in parallel",
+          "POST /api/verify/batch: verify up to 20 receipts, 5 at a time",
           "GET /api/banks: list all supported banks",
           "GET /api/health: check endpoint health and latency",
           "GET /api/receipt: download the original receipt file",
