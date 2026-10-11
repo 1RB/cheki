@@ -74,7 +74,7 @@ export default function DevelopersPage() {
           Verify any Ethiopian payment with one POST
         </h1>
         <p style={{ color: "var(--ink-2)", fontSize: "17px", maxWidth: "600px", marginBottom: "32px" }}>
-          No API key. No signup. No rate limit. The cheki API is free and open source. Just POST to /api/verify.
+          No API key. No signup. The cheki API is free and open source. Just POST to /api/verify. Requests are rate limited per IP: verify 30 per minute, batch 5 per minute, parse and ocr 20 per minute each, counted per server instance. Over the limit you get a 429 with a Retry-After header.
         </p>
 
         {/* Code examples with interactive tabs */}
