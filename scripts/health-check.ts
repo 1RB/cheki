@@ -13,8 +13,8 @@
 import { writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import https from "node:https";
-import http from "node:http";
 import { buildProbeTargets, evaluate, isoNow, type ObservedResponse, type StatusFile } from "../src/lib/health";
+import { assertAllowedUrl } from "../src/lib/security/hosts";
 
 const TIMEOUT_MS = 20000;
 const MAX_BODY = 64 * 1024;
@@ -22,33 +22,49 @@ const UA = "Mozilla/5.0 (compatible; cheki-health-check; +https://cheki.et/statu
 
 function request(url: string, headers: Record<string, string> = {}): Promise<ObservedResponse> {
   return new Promise((resolvePromise, reject) => {
+    // Same allowlist as the verifier: only manifest receipt hosts.
+    assertAllowedUrl(url);
     const u = new URL(url);
-    const lib = u.protocol === "http:" ? http : https;
-    const req = lib.request(
+    const req = https.request(
       {
         hostname: u.hostname,
-        port: u.port || (u.protocol === "http:" ? 80 : 443),
+        port: u.port || 443,
         path: u.pathname + u.search,
         method: "GET",
         headers: { "User-Agent": UA, Accept: "*/*", ...headers },
-        // Several bank endpoints (CBE port 100, Awash 8225) serve certificates
-        // that do not verify. The probe only sends fake references.
-        rejectUnauthorized: false,
+        // TLS is verified, as it is for real checks (/api/verify, /api/health).
+        // A certificate error here means real checks fail too, so it should
+        // show up as degraded.
       },
       (res) => {
         const chunks: Buffer[] = [];
         let size = 0;
-        res.on("data", (c: Buffer) => {
-          if (size < MAX_BODY) chunks.push(c);
-          size += c.length;
-        });
-        res.on("end", () =>
+        let settled = false;
+        const finish = () => {
+          if (settled) return;
+          settled = true;
           resolvePromise({
             status: res.statusCode ?? 0,
             contentType: String(res.headers["content-type"] ?? ""),
-            body: Buffer.concat(chunks).toString("utf8"),
-          }),
-        );
+            body: Buffer.concat(chunks).subarray(0, MAX_BODY).toString("utf8"),
+          });
+        };
+        res.on("data", (c: Buffer) => {
+          chunks.push(c);
+          size += c.length;
+          // Only the first MAX_BODY bytes matter; stop downloading the rest.
+          if (size >= MAX_BODY) {
+            finish();
+            res.destroy();
+          }
+        });
+        res.on("end", finish);
+        res.on("error", (e) => {
+          if (!settled) {
+            settled = true;
+            reject(e);
+          }
+        });
       },
     );
     req.on("error", reject);
