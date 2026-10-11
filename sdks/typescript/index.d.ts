@@ -161,6 +161,8 @@ export interface BankInfo {
     swift?: string;
     type: "bank" | "mobile" | "wallet";
     status: "live" | "in-development";
+    /** Live, but the parser has not yet been confirmed with a real receipt (M-Pesa as of 2.0). Absent when false. */
+    beta?: boolean;
     requiresAccount: boolean;
     /** How many trailing account digits the bank needs, when it needs an account. */
     accountDigits?: number;
@@ -183,7 +185,8 @@ export interface ReceiptFormatInfo {
     inputs: string[];
     /** Trailing account digits, when the format needs an account. */
     accountDigits?: number;
-    responseType: "pdf" | "html" | "json" | (string & {});
+    /** "pdf-in-json": a JSON envelope carrying the receipt as a base64 PDF (M-Pesa). */
+    responseType: "pdf" | "html" | "json" | "pdf-in-json" | (string & {});
     /** False when cheki documents the format but cannot check it yet. */
     supported: boolean;
     /** "verified" (observed by cheki) or "inferred" (from another source). */
