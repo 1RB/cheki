@@ -3,19 +3,20 @@ import {
   MAX_BODY_BYTES,
   MAX_MULTIPART_BYTES,
   PAUSED_MESSAGE,
-  RateLimiter,
-  clientIp,
   formatTelegramMessage,
   sendTelegramMessage,
   sendTelegramPhoto,
   sniffImageType,
   validateContribution,
 } from "@/lib/contribute";
+import { clientIp, limiters } from "@/lib/rate-limit";
+import { BodyTooLargeError, readFormDataCapped, readTextCapped } from "@/lib/http/read-body";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const limiter = new RateLimiter(5, 10 * 60 * 1000);
+// Shared limiter (5 per 10 minutes per IP, per instance) and shared key logic.
+const limiter = limiters.contribute;
 
 const SEND_FAILED = "We could not pass your receipt on right now. Nothing was saved. Try again later.";
 
@@ -34,14 +35,16 @@ interface Parsed {
  */
 async function readBody(request: NextRequest): Promise<Parsed | NextResponse> {
   const contentType = request.headers.get("content-type") ?? "";
-  const declared = Number(request.headers.get("content-length") ?? "0");
+  const tooLarge = () => fail("That screenshot is too large. Crop it and try again.", 413);
 
   if (contentType.startsWith("multipart/form-data")) {
-    if (declared > MAX_MULTIPART_BYTES) return fail("That screenshot is too large. Crop it and try again.", 413);
+    // The cap applies to the stream, so a chunked upload with no (or a
+    // lying) Content-Length still stops at MAX_MULTIPART_BYTES.
     let form: FormData;
     try {
-      form = await request.formData();
-    } catch {
+      form = await readFormDataCapped(request, MAX_MULTIPART_BYTES);
+    } catch (e) {
+      if (e instanceof BodyTooLargeError) return tooLarge();
       return fail("Send the form again.", 400);
     }
     const body: Record<string, unknown> = {};
@@ -53,7 +56,7 @@ async function readBody(request: NextRequest): Promise<Parsed | NextResponse> {
 
     const file = form.get("image");
     if (file && typeof file !== "string") {
-      if (file.size > MAX_MULTIPART_BYTES) return fail("That screenshot is too large. Crop it and try again.", 413);
+      if (file.size > MAX_MULTIPART_BYTES) return tooLarge();
       const bytes = new Uint8Array(await file.arrayBuffer());
       // Trust the bytes, not the declared type: anything that is not a real
       // JPEG, PNG or WebP fails validation as an unsupported type.
@@ -63,9 +66,14 @@ async function readBody(request: NextRequest): Promise<Parsed | NextResponse> {
     return { body };
   }
 
+  let raw: string;
   try {
-    const raw = await request.text();
-    if (raw.length > MAX_BODY_BYTES) return fail("Submission too large.", 413);
+    raw = await readTextCapped(request, MAX_BODY_BYTES);
+  } catch (e) {
+    if (e instanceof BodyTooLargeError) return fail("Submission too large.", 413);
+    return fail("Send a JSON body.", 400);
+  }
+  try {
     return { body: JSON.parse(raw) };
   } catch {
     return fail("Send a JSON body.", 400);
@@ -87,6 +95,13 @@ export async function POST(request: NextRequest) {
     const missing = [!token && "TELEGRAM_BOT_TOKEN", !chatId && "TELEGRAM_CONTRIB_CHAT_ID"].filter(Boolean).join(", ");
     console.error(`[contribute] submissions disabled: missing ${missing}`);
     return fail(PAUSED_MESSAGE, 503);
+  }
+
+  // Browsers mark cross-site requests; any site could otherwise make its
+  // visitors post here (a CORS "simple" request) and spread spam over many
+  // IPs. Non-browser clients send no Sec-Fetch-Site and are unaffected.
+  if (request.headers.get("sec-fetch-site") === "cross-site") {
+    return fail("Submit from the cheki.et form.", 403);
   }
 
   const retryAfter = limiter.check(clientIp(request.headers));
