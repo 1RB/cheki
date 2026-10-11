@@ -585,7 +585,7 @@ docker-compose up -d
             className="docs-layout"
             style={{
               display: "grid",
-              gridTemplateColumns: "1fr",
+              gridTemplateColumns: "minmax(0, 1fr)",
               gap: "32px",
             }}
           >

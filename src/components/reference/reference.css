@@ -101,7 +101,7 @@ details[open] > summary .ref-chev { transform: rotate(180deg); }
 .st-more > summary::-webkit-details-marker { display: none; }
 .st-more-count { font-weight: 450; color: var(--ink-3); }
 .st-dev { list-style: none; padding: 0 4px 16px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; }
-@media (min-width: 640px) { .st-dev { grid-template-columns: 1fr 1fr; column-gap: 24px; } }
+@media (min-width: 640px) { .st-dev { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 24px; } }
 .st-dev a, .st-dev .st-dev-link { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; font-size: 14px; color: var(--ink); border-bottom: 1px solid var(--border); }
 .st-dev a span:last-child { font-size: 13px; color: var(--ink-3); }
 
