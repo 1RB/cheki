@@ -11,5 +11,5 @@ import { isStale } from "@/lib/status-view";
 export function StaleNote({ generatedAt }: { generatedAt: string }) {
   const now = useNow();
   if (now === 0 || !isStale(generatedAt, now)) return null;
-  return <span className="st-stale"> · Status may be stale</span>;
+  return <span className="st-stale"> · may be stale</span>;
 }

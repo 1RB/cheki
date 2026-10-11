@@ -9,7 +9,7 @@ import { StaleNote } from "@/components/reference/StaleNote";
 import { getEndpointRows } from "@/lib/manifest/endpoints";
 import { primaryFormat } from "@/lib/manifest/formats";
 import { getBankHealth, healthStatusFor, statusFile } from "@/lib/status-data";
-import { bankState, legacyHealth, listNames, measuredFrom, stateMeaning, summarize, type BankState } from "@/lib/status-view";
+import { bankState, legacyHealth, measuredFrom, stateMeaning, summarize, type BankState } from "@/lib/status-view";
 import { formatAbsolute, parseTimestamp } from "@/lib/time/relative";
 import "@/components/reference/reference.css";
 
@@ -61,10 +61,15 @@ export default function StatusPage() {
   const sum = summarize(rows.map((r) => r.state));
   const down = live.filter((r) => r.state === "down").map((r) => r.doc.label);
   const geo = live.filter((r) => r.state === "geo").map((r) => r.doc.label);
-  const sub = [
-    down.length > 0 ? `${listNames(down)} ${down.length === 1 ? "is" : "are"} down.` : sum.live > 0 ? "Every bank we can reach answered as expected." : "",
-    geo.length > 0 ? `${listNames(geo)} only answer${geo.length === 1 ? "s" : ""} Ethiopian networks, so we can't see ${geo.length === 1 ? "it" : "them"} from here.` : "",
-  ].filter(Boolean).join(" ");
+  // Names never break inside themselves ("M-Pesa" at its hyphen).
+  const names = (list: string[]) =>
+    list.flatMap((n, i) => [i === 0 ? null : i === list.length - 1 ? " and " : ", ", <span key={n} className="st-nowrap">{n}</span>]);
+  const sub = (
+    <>
+      {down.length > 0 ? <>{names(down)} {down.length === 1 ? "is" : "are"} down. </> : sum.live > 0 ? "Every bank we can reach answered as expected. " : null}
+      {geo.length > 0 ? <>{names(geo)} only answer{geo.length === 1 ? "s" : ""} Ethiopian networks, so we can&apos;t see {geo.length === 1 ? "it" : "them"} from here.</> : null}
+    </>
+  );
 
   return (
     <>
@@ -85,10 +90,10 @@ export default function StatusPage() {
               <span className="st-answer-dot" aria-hidden="true" />
               <span>{sum.working} of {sum.live} banks working</span>
             </p>
-            {sub && <p className="st-sub">{sub}</p>}
-            <p className="st-meta">
-              Measured daily from {from}, outside Ethiopia. Last change{" "}
-              <RelativeTime value={statusFile.generatedAt} absolute={abs(statusFile.generatedAt)} />
+            <p className="st-sub">{sub}</p>
+            <p className="st-meta">Measured daily from {from}, outside Ethiopia.</p>
+            <p className="st-meta st-when">
+              Last change <RelativeTime value={statusFile.generatedAt} absolute={abs(statusFile.generatedAt)} />
               <StaleNote generatedAt={statusFile.generatedAt} />
             </p>
 
@@ -157,7 +162,7 @@ export default function StatusPage() {
               <ul className="st-dev">
                 {dev.map((r) => (
                   <li key={r.bank.id} id={r.bank.id}>
-                    <Link href={`/endpoints#${r.bank.id}`} prefetch={false}>
+                    <Link href={`/endpoints#${r.bank.id}`} prefetch={false} className="st-dev-link">
                       <span>{r.doc.label}</span>
                       <span>{/^https?:\/\//i.test(r.bank.endpointFormat ?? r.bank.endpoint) ? "Endpoint known" : "No endpoint yet"}</span>
                     </Link>

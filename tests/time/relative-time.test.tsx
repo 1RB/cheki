@@ -35,7 +35,8 @@ describe("RelativeTime", () => {
     vi.useFakeTimers({ now: T0 + 3 * 60 * 60_000 });
     const { container } = render(<RelativeTime value="2026-10-11T14:32:00+03:00" />);
     expect(container.textContent).toBe("11 Oct 2026, 14:32 · 3 hours ago");
-    act(() => { vi.advanceTimersByTime(60 * 60_000); });
+    // The shared timer fires 50 ms after each minute boundary.
+    act(() => { vi.advanceTimersByTime(60 * 60_000 + 100); });
     expect(container.textContent).toBe("11 Oct 2026, 14:32 · 4 hours ago");
   });
 
@@ -43,7 +44,7 @@ describe("RelativeTime", () => {
     vi.useFakeTimers({ now: T0 + 5_000 });
     const { container } = render(<RelativeTime value={new Date(T0)} variant="relative" template="time.checked" />);
     expect(container.textContent).toBe("Checked just now");
-    act(() => { vi.advanceTimersByTime(2 * 60_000); });
+    act(() => { vi.advanceTimersByTime(2 * 60_000 + 100); });
     expect(container.textContent).toBe("Checked 2 minutes ago");
   });
 

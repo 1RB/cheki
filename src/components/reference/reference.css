@@ -34,13 +34,14 @@
 .ref-chev { flex-shrink: 0; width: 20px; height: 20px; color: var(--ink-3); transition: transform var(--dur-base) var(--ease-out); }
 details[open] > summary .ref-chev { transform: rotate(180deg); }
 
-/* Reset the global <details> card look inside these pages. */
-.ref details { margin: 0; border: 0; border-radius: 0; background: transparent; overflow: visible; }
-.ref details[open] { border: 0; }
-.ref details summary { padding: 0; font-size: inherit; font-weight: inherit; }
-.ref details summary::after { content: none; }
-.ref details[open] summary { border-bottom: 0; }
-@media (hover: hover) { .ref details summary:hover { background: transparent; } }
+/* Reset the global <details> card look inside these pages. Zero
+   specificity (:where), so each component's own rules win. */
+:where(.ref) details { margin: 0; border: 0; border-radius: 0; background: transparent; overflow: visible; }
+:where(.ref) details[open] { border: 0; }
+:where(.ref) details summary { padding: 0; font-size: inherit; font-weight: inherit; }
+:where(.ref) details summary::after { content: none; }
+:where(.ref) details[open] summary { border-bottom: 0; }
+@media (hover: hover) { :where(.ref) details summary:hover { background: transparent; } }
 .ref-disclose { padding: 0; }
 
 @keyframes ref-open { from { opacity: 0; transform: translateY(-4px); } }
@@ -60,8 +61,11 @@ details[open] > summary .ref-chev { transform: rotate(180deg); }
 .st-sub { margin-top: 8px; font-size: 16px; line-height: 1.55; color: var(--ink-2); max-width: 60ch; }
 /* Two lines reserved on narrow screens: the relative time and the stale
    note arrive after hydration and must not push the list down (CLS 0). */
-.st-meta { margin-top: 10px; font-size: 13px; line-height: 20px; color: var(--ink-3); min-height: 40px; }
-@media (min-width: 640px) { .st-meta { min-height: 20px; } }
+.st-meta { margin-top: 10px; font-size: 13px; line-height: 20px; color: var(--ink-3); }
+.st-meta + .st-meta { margin-top: 0; }
+.st-when { min-height: 40px; }
+@media (min-width: 640px) { .st-when { min-height: 20px; } }
+.st-nowrap { white-space: nowrap; }
 .st-stale { color: var(--amber-text); font-weight: 550; }
 
 .st-list { margin-top: 28px; list-style: none; border-top: 1px solid var(--border); }
@@ -98,7 +102,7 @@ details[open] > summary .ref-chev { transform: rotate(180deg); }
 .st-more-count { font-weight: 450; color: var(--ink-3); }
 .st-dev { list-style: none; padding: 0 4px 16px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; }
 @media (min-width: 640px) { .st-dev { grid-template-columns: 1fr 1fr; column-gap: 24px; } }
-.st-dev a { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; font-size: 14px; color: var(--ink); border-bottom: 1px solid var(--border); }
+.st-dev a, .st-dev .st-dev-link { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; font-size: 14px; color: var(--ink); border-bottom: 1px solid var(--border); }
 .st-dev a span:last-child { font-size: 13px; color: var(--ink-3); }
 
 .st-method { margin-top: 48px; }
@@ -192,7 +196,8 @@ details[open] > summary .ref-chev { transform: rotate(180deg); }
 .ep-more-meta { margin-left: auto; font-size: 13px; font-weight: 450; color: var(--ink-3); text-align: right; }
 .ep-more > .ref-disclose { padding: 0 2px 18px; }
 
-.ep-table { width: 100%; border-collapse: collapse; background: transparent; font-size: 14px; border-radius: 0; }
+.ref .table-wrap .ep-table, .ref .ep-table { width: 100%; min-width: 0; border-collapse: collapse; background: transparent; font-size: 14px; border-radius: 0; overflow: visible; }
+.ref .ep-table td:first-child, .ref .ep-table th:first-child { width: 1%; padding-right: 24px; }
 .ep-table th { text-align: left; font-size: 13px; font-weight: 600; color: var(--ink); padding: 8px 12px 8px 0; border-bottom: 1px solid var(--border-strong); white-space: nowrap; }
 .ep-table td { padding: 8px 12px 8px 0; border-bottom: 1px solid var(--border); color: var(--ink-2); font-size: 14px; vertical-align: top; }
 .ep-table td:first-child { white-space: nowrap; }
