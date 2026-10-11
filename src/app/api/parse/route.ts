@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getParser } from "@/lib/parsers/registry";
 import "@/lib/parsers"; // Register all parsers
+import { MpesaParser } from "@/lib/parsers/mpesa";
 import type { ParsedReceipt, Receipt } from "@/lib/core/types";
 import { limiters, rateLimited } from "@/lib/rate-limit";
-import { readJsonCapped, bodyErrorResponse } from "@/lib/http/read-body";
+import { readBytesCapped, bodyErrorResponse, InvalidJsonError } from "@/lib/http/read-body";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -21,8 +22,9 @@ const CORS_HEADERS = {
  *   1. Bookmarklet: reads document.documentElement.outerHTML on the bank page,
  *      sends it here with the bank code and page URL.
  *   2. Copy-paste (mobile): user opens the receipt page, selects all, copies,
- *      pastes into cheki's textarea. Input may be plain text (Telebirr) or
- *      raw JSON (M-Pesa). This endpoint auto-detects the format.
+ *      pastes into cheki's textarea. Input may be plain text (Telebirr, or
+ *      the text of an M-Pesa receipt PDF) or M-Pesa's raw getReceipt JSON
+ *      envelope (base64 PDF inside). This endpoint auto-detects the format.
  *
  * This bypasses geo-blocking entirely because cheki's server never contacts
  * the bank. The user's browser is the one that fetched the receipt.
@@ -33,6 +35,12 @@ const CORS_HEADERS = {
  * "Parsed from your text".
  */
 const MAX_BODY_BYTES = 256 * 1024;
+/**
+ * A pasted M-Pesa envelope only. Kept under Vercel's 4.5 MB request limit, so
+ * a receipt PDF up to about 3 MB can be pasted; the server-side fetch path
+ * accepts up to the full 5 MB PDF cap.
+ */
+const MPESA_PASTE_MAX_BYTES = 4 * 1024 * 1024;
 export async function OPTIONS() {
   return new Response(null, { status: 204, headers: CORS_HEADERS });
 }
@@ -52,8 +60,8 @@ function detectContentType(input: string, parserType: string): string {
 
   // Plain text: Telebirr parser handles this fine because it strips HTML
   // tags (no-op for plain text) then splits by newlines and searches labels.
-  // For JSON-based parsers (M-Pesa), wrap plain text in a minimal JSON
-  // attempt, but if it's not JSON, the parser will return unverified.
+  // For JSON-based parsers, plain text that is not JSON stays text/plain
+  // (M-Pesa reads it as the receipt PDF's text).
   if (parserType === "json") {
     // Try to parse as JSON anyway (maybe it has whitespace before {)
     try {
@@ -87,9 +95,23 @@ export async function POST(request: NextRequest) {
   if (limited) return limited;
 
   try {
+    // Bodies are capped at 256 KB. The one exception is a pasted M-Pesa
+    // getReceipt envelope (a base64 PDF is larger than that): only a request
+    // declared as application/json may go up to MPESA_PASTE_MAX_BYTES, and a
+    // body over 256 KB is then refused unless it is bank "mpesa" with a JSON
+    // envelope as its content. The envelope's own checks (base64, PDF size
+    // cap, %PDF header) still run in MpesaParser.parseEnvelope.
+    const isJson = /^application\/json\s*(?:;|$)/i.test(request.headers.get("content-type") ?? "");
     let body: Record<string, unknown>;
+    let bodyBytes = 0;
     try {
-      body = await readJsonCapped<Record<string, unknown>>(request, MAX_BODY_BYTES);
+      const bytes = await readBytesCapped(request, isJson ? MPESA_PASTE_MAX_BYTES : MAX_BODY_BYTES);
+      bodyBytes = bytes.length;
+      try {
+        body = JSON.parse(bytes.toString("utf8")) as Record<string, unknown>;
+      } catch {
+        throw new InvalidJsonError();
+      }
     } catch (e) {
       const be = bodyErrorResponse(e);
       if (be) return NextResponse.json({ success: false, error: be.error }, { status: be.status, headers: CORS_HEADERS });
@@ -99,6 +121,15 @@ export async function POST(request: NextRequest) {
     const bank = str(body?.bank);
     const html = str(body?.html);
     const content = str(body?.content);
+    if (
+      bodyBytes > MAX_BODY_BYTES &&
+      !(bank?.toLowerCase() === "mpesa" && !html && content?.trimStart().startsWith("{"))
+    ) {
+      return NextResponse.json(
+        { success: false, error: `Request body is too large (limit ${Math.round(MAX_BODY_BYTES / 1024)} KB).` },
+        { status: 413, headers: CORS_HEADERS }
+      );
+    }
     const url = str(body?.url)?.slice(0, 500);
 
     // Accept both `html` and `content` fields (content is used by the paste flow)
@@ -148,7 +179,14 @@ export async function POST(request: NextRequest) {
       parseData = wrapPlainText(rawData, bankCode);
     }
 
-    const parsed: ParsedReceipt = parser.parse(parseData, contentType);
+    // M-Pesa's receipt is a PDF: a pasted getReceipt envelope is decoded (and
+    // size-checked) and its PDF read; pasted text is read as the PDF's text.
+    const parsed: ParsedReceipt =
+      parser.bankId === "mpesa"
+        ? contentType === "application/json"
+          ? (await MpesaParser.parseEnvelope(rawData)).parsed
+          : MpesaParser.parsePdfText(rawData)
+        : parser.parse(parseData, contentType);
 
     if (!parsed.verified) {
       // Provide a helpful error based on what was pasted
