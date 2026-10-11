@@ -211,6 +211,62 @@ export interface BankRefPattern {
   flags: string;
 }
 
+/**
+ * One receipt format a bank has used. A bank's `formats` are ordered: current
+ * formats first, then legacy (still accepted and fetched), then deprecated
+ * (links still recognised for their reference, never fetched).
+ */
+export type ReceiptFormatStatus = "current" | "legacy" | "deprecated";
+
+/** What a format needs from the user. */
+export type ReceiptFormatInputName = "reference" | "receiptId" | "link" | "account" | "phone";
+
+export interface ReceiptFormatInput {
+  name: ReceiptFormatInputName;
+  label: string;
+  example?: string;
+  /** For `account`: how many trailing digits the bank uses. */
+  digits?: number;
+}
+
+export interface ReceiptFormat {
+  id: string;
+  status: ReceiptFormatStatus;
+  label: string;
+  /** Registered parser that fetches this format. Absent: cheki does not fetch it (not supported yet, or deprecated). */
+  parser?: string;
+  /** URL template cheki fetches. Its host is allowlisted when the format has a parser and is not deprecated. */
+  endpoint?: string;
+  /** URL template of the receipt page people share or open. */
+  link?: string;
+  /** Hosts whose links are recognised for this format (reference extraction only). */
+  linkHosts?: string[];
+  inputs: ReceiptFormatInput[];
+  /** References this format accepts. Used to pick a format by the shape of the input. */
+  refPattern?: BankRefPattern;
+  responseType: "pdf" | "html" | "json";
+  headers?: Record<string, string>;
+  /** How GET /api/receipt serves it: a 302 to `link`, or the bank's PDF proxied. */
+  receiptPage?: "redirect" | "pdf";
+  /** YYYY-MM or YYYY-MM-DD, when known. */
+  since?: string;
+  deprecatedAt?: string;
+  replacedBy?: string;
+  /** "verified": observed by cheki; "inferred": from another source, see evidence. */
+  confidence: "verified" | "inferred";
+  evidence: string;
+  notes?: string;
+  /** Shown when the input matches this format but a required field is missing. */
+  missingHint?: string;
+}
+
+export interface EndpointHistoryEntry {
+  date: string;
+  formatId?: string;
+  change: string;
+  source?: string;
+}
+
 export interface BankManifestEntry {
   id: string;
   name: string;
@@ -241,4 +297,8 @@ export interface BankManifestEntry {
   useCases?: string[];
   faq?: BankFaqEntry[];
   seo?: BankSeoEntry;
+  /** Receipt formats, current first. Top-level endpoint fields describe the first supported one. */
+  formats?: ReceiptFormat[];
+  /** Dated endpoint changes (host moves, format switches, observed outages). */
+  endpointHistory?: EndpointHistoryEntry[];
 }

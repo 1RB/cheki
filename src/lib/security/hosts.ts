@@ -1,8 +1,7 @@
 /**
  * Central allowlist of hosts cheki's server may contact for receipts.
  *
- * Built from the manifest `endpoint` of every bank plus the few receipt hosts
- * the parsers use that the manifest does not spell out. Every bank fetch goes
+ * Derived from the manifest (see allowedHosts). Every bank fetch goes
  * through `assertAllowedUrl`, so a parser bug or a crafted reference can never
  * turn cheki into a proxy for an arbitrary URL (SSRF).
  *
@@ -11,37 +10,28 @@
  * not.
  */
 import { getAllBanks } from "../manifest/loader";
+import { supportedFormats, templateHost } from "../manifest/formats";
 
-/** Receipt hosts used by parsers or routes that the manifest does not list. */
-const EXTRA_HOSTS = [
-  // CBE new receipt API (manifest writes it as "Mb.cbe.com.et").
-  "mb.cbe.com.et",
-  // eBirr white-label receipts (Siinqee, Nib, Wegagen, ...).
-  "receipt.ebirr.com",
-  // Dashen's receipt host (receipts.dashenbanksc.com) comes from the manifest.
-  // The legacy dashensuperapp.com hosts are not fetched: links to them are
-  // only read for their reference and rebuilt on the manifest host.
-];
-
+/**
+ * Built from the manifest: every bank's top-level `endpoint` plus the
+ * `endpoint` of every supported format (current and legacy), so an older
+ * receipt still verifies after a bank switches hosts. Deprecated formats and
+ * formats without a parser are not fetched, so their hosts are not added
+ * (old Dashen Super App links are only read for their reference and rebuilt
+ * on the current host).
+ */
 let cached: Set<string> | null = null;
-
-function hostOf(endpoint: string): string | null {
-  if (!/^https:\/\//i.test(endpoint)) return null;
-  try {
-    // Placeholders like {ref} are not valid in a hostname; swap them out first.
-    const url = new URL(endpoint.replace(/\{[^}]*\}/g, "x"));
-    return url.host.toLowerCase();
-  } catch {
-    return null;
-  }
-}
 
 export function allowedHosts(): Set<string> {
   if (cached) return cached;
-  const hosts = new Set<string>(EXTRA_HOSTS);
+  const hosts = new Set<string>();
   for (const bank of getAllBanks()) {
-    const h = hostOf(bank.endpoint);
-    if (h) hosts.add(h);
+    const top = templateHost(bank.endpoint);
+    if (top) hosts.add(top);
+    for (const f of supportedFormats(bank)) {
+      const h = templateHost(f.endpoint);
+      if (h) hosts.add(h);
+    }
   }
   cached = hosts;
   return hosts;

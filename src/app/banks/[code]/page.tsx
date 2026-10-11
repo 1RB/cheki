@@ -7,6 +7,7 @@ import { brandTileBg } from "@/lib/utils";
 import { BankChecker } from "@/components/BankChecker";
 import { ContributeBox } from "@/components/ContributeBox";
 import { getEndpointDoc } from "@/lib/manifest/endpoints";
+import { formatNeeds, primaryFormat, secondaryFormats } from "@/lib/manifest/formats";
 import { contributeLeadMode } from "@/lib/contribute";
 import { getMergedPagesForBank, getBankTopicPages, stripBrandSuffix } from "@/lib/seo-pages";
 
@@ -51,6 +52,9 @@ export default async function BankPage({ params }: { params: Promise<{ code: str
   if (!bank) return <div>Bank not found</div>;
   const isLive = bank.status === "live";
   const endpointDoc = getEndpointDoc(bank.code);
+  // Lead with the current format; older ones (legacy, deprecated) go in a collapsed note.
+  const primary = primaryFormat(bank);
+  const olderFormats = secondaryFormats(bank).filter((f) => f.status !== "current");
 
   // Content from the per-bank /verify pages that now 301 here. Sections whose
   // heading this page already covers are skipped; FAQs are de-duplicated by
@@ -146,6 +150,7 @@ export default async function BankPage({ params }: { params: Promise<{ code: str
             accountLabel={bank.accountLabel}
             accountDigits={bank.accountDigits}
             requiresPhone={bank.requiresPhone}
+            formats={bank.formats}
           />
         )}
 
@@ -179,19 +184,42 @@ export default async function BankPage({ params }: { params: Promise<{ code: str
         <div className="two-col" style={{ gap: "48px" }}>
           <div className="prose">
             <h2>Required information</h2>
-            <ul>
-              {bank.requiresAccount ? (
+            {primary ? (
+              <ul>
+                {primary.inputs.map((i) => (
+                  <li key={i.name}>
+                    <strong>{i.label}</strong> (required)
+                    {i.digits ? `, last ${i.digits} digits minimum` : i.example ? <>, e.g. <code>{i.example}</code></> : null}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <ul>
                 <li><strong>Transaction reference</strong> (required), e.g. {bank.referenceExample}</li>
-              ) : (
-                <li><strong>Transaction reference</strong> (required), e.g. {bank.referenceExample}</li>
-              )}
-              {bank.requiresAccount && (
-                <li><strong>{bank.accountLabel || "Account number"}</strong> (required), last {bank.accountDigits} digits minimum</li>
-              )}
-              {bank.requiresPhone && (
-                <li><strong>Payer phone number</strong> (required), format: 2519XXXXXXXXX</li>
-              )}
-            </ul>
+                {bank.requiresAccount && (
+                  <li><strong>{bank.accountLabel || "Account number"}</strong> (required), last {bank.accountDigits} digits minimum</li>
+                )}
+                {bank.requiresPhone && (
+                  <li><strong>Payer phone number</strong> (required), format: 2519XXXXXXXXX</li>
+                )}
+              </ul>
+            )}
+            {olderFormats.length > 0 && (
+              <details>
+                <summary>Older receipt?</summary>
+                <ul>
+                  {olderFormats.map((f) => (
+                    <li key={f.id}>
+                      <strong>{f.label}</strong> ({f.status}
+                      {f.deprecatedAt ? `, retired ${f.deprecatedAt}` : ""}).{" "}
+                      {f.status === "deprecated"
+                        ? "Old links are still recognised: cheki reads the reference from them and checks it on the current receipt page."
+                        : `Needs ${f.inputs.map((i) => (i.digits ? `${i.label.toLowerCase()}` : i.label)).join(" and ")}. ${f.notes ?? ""}`}
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            )}
 
             <h2>Reference number format</h2>
             <p>{bank.referenceFormat}</p>
@@ -205,7 +233,7 @@ export default async function BankPage({ params }: { params: Promise<{ code: str
             </ol>
 
             <h2>How {bank.shortName} receipt verification works</h2>
-            <p>The {bank.shortName} receipt endpoint is: <code>{bank.endpointFormat}</code></p>
+            <p>The {bank.shortName} receipt endpoint is: <code>{bank.endpointFormat}</code>{olderFormats.length > 0 ? " (current format)" : ""}</p>
             <p>Placeholders, error shapes and gotchas are in the <Link href={`/endpoints#${bank.code}`}>{bank.shortName} endpoint reference</Link>.</p>
             <p>This is a public URL that returns a {bank.responseType === "pdf" ? "PDF document" : bank.responseType === "json" ? "JSON response" : "HTML page"} containing the official transaction data. No authentication is required.</p>
             {bank.geoBlocked && (
@@ -222,7 +250,17 @@ export default async function BankPage({ params }: { params: Promise<{ code: str
             <h2>Verifying {bank.shortName} via API</h2>
             <p>cheki provides a free REST API for {bank.shortName} verification:</p>
             <p><code>POST https://cheki.et/api/verify</code></p>
-            <p>Request body: <code>{`{ "bank": "${bank.code}", "reference": "${bank.referenceExample}"${bank.requiresAccount ? `, "accountNumber": "1000XXXXXXX"` : ""} }`}</code></p>
+            <p>Request body: <code>{`{ "bank": "${bank.code}", "reference": "${primary?.inputs[0]?.example ?? bank.referenceExample}"${bank.requiresAccount ? `, "accountNumber": "1000XXXXXXX"` : ""} }`}</code></p>
+            {olderFormats.some((f) => f.parser && f.status === "legacy" && formatNeeds(f, "account")) && (
+              <p>
+                Older receipt (legacy format):{" "}
+                {olderFormats
+                  .filter((f) => f.parser && f.status === "legacy")
+                  .map((f) => (
+                    <code key={f.id}>{`{ "bank": "${bank.code}", "reference": "${f.inputs[0]?.example ?? "REFERENCE"}"${formatNeeds(f, "account") ? `, "accountNumber": "1000XXXXXXX"` : ""} }`}</code>
+                  ))}
+              </p>
+            )}
             <p>See the <Link href="/docs">API documentation</Link> for full details.</p>
 
             {mergedSections.map((sec, i) => (

@@ -58,8 +58,47 @@ describe("/api/receipt", () => {
     expect(r.status).toBe(400); // the quote is rejected by reference validation
     const ok = await receiptGET(new NextRequest("https://cheki.et/api/receipt?bank=zemen&reference=ZB123456", { headers: freshIp() }));
     expect(ok.status).toBe(200);
-    expect(ok.headers.get("content-disposition")).toBe('attachment; filename="receipt.pdf"');
+    expect(ok.headers.get("content-disposition")).toBe('attachment; filename="zemen-receipt.pdf"');
+    expect(ok.headers.get("content-type")).toBe("application/pdf");
+    expect(ok.headers.get("content-security-policy")).toBe("sandbox; default-src 'none'");
+    expect(ok.headers.get("x-content-type-options")).toBe("nosniff");
     expect(ok.headers.get("cache-control")).toBe("private, no-store");
+  });
+
+  it("never serves a non-PDF body (no more receipt.bin): HTML from a PDF bank is a 502", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("<html><script>alert(1)</script></html>", { status: 200, headers: { "content-type": "text/html" } })));
+    const r = await receiptGET(new NextRequest("https://cheki.et/api/receipt?bank=zemen&reference=ZB123456", { headers: freshIp() }));
+    expect(r.status).toBe(502);
+    expect(r.headers.get("content-type")).toMatch(/application\/json/);
+    expect(await r.text()).not.toContain("<script>");
+  });
+
+  it("redirects Dashen (HTML) to Dashen's own receipt page instead of proxying it", async () => {
+    const fetchSpy = vi.fn();
+    vi.stubGlobal("fetch", fetchSpy);
+    const r = await receiptGET(new NextRequest("https://cheki.et/api/receipt?bank=dashen&reference=B22WDTI2619100WH", { headers: freshIp() }));
+    expect(r.status).toBe(302);
+    expect(r.headers.get("location")).toBe("https://receipts.dashenbanksc.com/receipt/B22WDTI2619100WH");
+    expect(r.headers.get("referrer-policy")).toBe("no-referrer");
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it("leads with CBE's current format: a Receipt ID redirects to mbreciept, no account needed", async () => {
+    const fetchSpy = vi.fn();
+    vi.stubGlobal("fetch", fetchSpy);
+    const r = await receiptGET(new NextRequest("https://cheki.et/api/receipt?bank=cbe&reference=v2-hfHCxExample0001", { headers: freshIp() }));
+    expect(r.status).toBe(302);
+    expect(r.headers.get("location")).toBe("https://mbreciept.cbe.com.et/v2-hfHCxExample0001");
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it("still serves a legacy CBE FT reference + account as the bank's PDF", async () => {
+    const fetchSpy = vi.fn(async () => new Response("%PDF-1.4 cbe", { status: 200 }));
+    vi.stubGlobal("fetch", fetchSpy);
+    const r = await receiptGET(new NextRequest("https://cheki.et/api/receipt?bank=cbe&reference=FT26140P01YB&account=1000560536171", { headers: freshIp() }));
+    expect(r.status).toBe(200);
+    expect(r.headers.get("content-type")).toBe("application/pdf");
+    expect(String((fetchSpy.mock.calls[0] as unknown[])[0])).toContain("apps.cbe.com.et:100/?id=FT26140P01YB60536171");
   });
 });
 

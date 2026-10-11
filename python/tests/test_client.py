@@ -332,18 +332,19 @@ def test_get_health():
 
 
 def test_get_receipt_url():
-    """Matches the validated /api/receipt: cbe (with account), zemen, dashen only."""
+    """Matches /api/receipt: a CBE Receipt ID needs no account; a legacy CBE FT reference does."""
     cheki = ChekiClient()
-    url = cheki.get_receipt_url("cbe", "FT123", account_number="1000 5605 36171")
-    assert url == f"{API}/api/receipt?bank=cbe&reference=FT123&account=1000560536171"
+    assert cheki.get_receipt_url("cbe", "fHCxExampleRcpt01") == f"{API}/api/receipt?bank=cbe&reference=fHCxExampleRcpt01"
+    url = cheki.get_receipt_url("cbe", "FT26140P01YB", account_number="1000 5605 36171")
+    assert url == f"{API}/api/receipt?bank=cbe&reference=FT26140P01YB&account=1000560536171"
     assert cheki.get_receipt_url("Zemen", "ZB123") == f"{API}/api/receipt?bank=zemen&reference=ZB123"
     for bank, ref, acct in [
         ("telebirr", "DET8FJGUJ4", None),
         ("constructor", "X1", None),
         ("zemen", "../admin", None),
         ("zemen", "a/b", None),
-        ("cbe", "FT1", None),
-        ("cbe", "FT1", "1234"),
+        ("cbe", "FT26140P01YB", None),
+        ("cbe", "FT26140P01YB", "1234"),
     ]:
         try:
             cheki.get_receipt_url(bank, ref, account_number=acct)

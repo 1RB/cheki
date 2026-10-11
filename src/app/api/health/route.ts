@@ -52,8 +52,9 @@ async function probeAll(): Promise<HealthBody> {
           .replace("{ref}", "test")
           .replace("{account}", "00000000")
           .replace("{phone}", "0000000000");
-        // CBE legacy PDF endpoint is slow, so give it 15s in health checks
-        const healthTimeout = b.id === "cbe" ? 15000 : 5000;
+        // Each bank's top-level endpoint is its current format (CBE: the
+        // mb.cbe.com.et JSON API, not the slow legacy apps.cbe.com.et PDF host).
+        const healthTimeout = 5000;
         await checkEndpoint(url, healthTimeout);
         return { id: b.id, name: b.name, status: "reachable", latencyMs: Date.now() - start };
       } catch {

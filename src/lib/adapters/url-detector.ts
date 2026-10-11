@@ -2,8 +2,9 @@
  * URL detector - parses receipt URLs and detects the bank + reference.
  *
  * Supports all known bank receipt URL formats:
- *   - mbreciept.cbe.com.et/{id}           → CBE new API
- *   - apps.cbe.com.et:100/?id={ref}{acct}  → CBE legacy
+ *   - mbreciept.cbe.com.et/{receiptId}     → CBE, current format (Receipt ID)
+ *   - mbreciept.cbe.com.et/FT...-12345678  → CBE, legacy FT format (dashed)
+ *   - apps.cbe.com.et:100/?id={ref}{acct}  → CBE, legacy FT format
  *   - transactioninfo.ethiotelecom.et/...  → Telebirr
  *   - cs.bankofabyssinia.com/...            → BOA
  *   - receipts.dashenbanksc.com/receipt/... → Dashen
@@ -51,11 +52,18 @@ export function detectBankFromUrl(input: string): DetectedReceipt | null {
     if (url.username || url.password) return null;
     const host = url.hostname.toLowerCase();
 
-    // CBE new: https://mbreciept.cbe.com.et/{shortId}
+    // CBE share links: https://mbreciept.cbe.com.et/{receiptId} (current,
+    // read through the mb.cbe.com.et JSON API). A dashed id such as
+    // FT26140P01YB-60536171 carries an older FT reference and the receiving
+    // account's last 8 digits, so it is the legacy format. The bank stays
+    // "cbe"; the verifier picks the format from the reference's shape.
     if (hostIs(host, "mbreciept.cbe.com.et", "mb.cbe.com.et")) {
       const parts = url.pathname.split("/").filter(Boolean);
-      if (parts.length > 0) {
-        return { bank: "cbe-new", reference: parts[parts.length - 1] };
+      const last = parts[parts.length - 1];
+      if (last) {
+        const dashed = last.match(/^(FT[A-Z0-9]{8,12})-(\d{8})$/i);
+        if (dashed) return { bank: "cbe", reference: dashed[1].toUpperCase(), accountNumber: dashed[2] };
+        return { bank: "cbe", reference: last };
       }
     }
 

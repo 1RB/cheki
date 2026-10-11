@@ -136,6 +136,34 @@ Every bank is one entry in `src/lib/manifest/banks.json`. That file is the singl
 }
 ```
 
+A bank that has more than one way to look a receipt up also lists them in `formats`, **current first**, plus a dated `endpointHistory`. The verifier picks a format from the shape of the input alone (`refPattern` and the fields supplied, see `src/lib/manifest/formats.ts`), so a receipt costs exactly one bank request; there is no "try the new host, then the old one" cascade. The host allowlist, `GET /api/banks`, `GET /api/receipt`, the checker field and the bank page all read `formats`:
+
+```json
+"formats": [
+  {
+    "id": "yourbank-share-link",
+    "status": "current",
+    "label": "Receipt link",
+    "parser": "yourbank",
+    "endpoint": "https://receipt.yourbank.com/r/{ref}",
+    "link": "https://receipt.yourbank.com/r/{ref}",
+    "linkHosts": ["receipt.yourbank.com"],
+    "inputs": [{ "name": "reference", "label": "Receipt ID", "example": "AB12CD34EF" }],
+    "refPattern": { "source": "^[A-Za-z0-9]{10}$", "flags": "" },
+    "responseType": "html",
+    "receiptPage": "redirect",
+    "since": "2026-10",
+    "confidence": "verified",
+    "evidence": "What cheki observed, where and when (or the outside source, with confidence inferred)."
+  }
+],
+"endpointHistory": [
+  { "date": "2026-10-11", "formatId": "yourbank-share-link", "change": "What changed.", "source": "cheki probe" }
+]
+```
+
+`confidence` is `verified` only for what cheki itself observed (a real receipt, or a probe). Anything taken from another site (links.et, another app's source code) is `inferred`, says so in `evidence`, and is never described as live in copy.
+
 Keep `status` as `in-development` until the parser has passed against a real receipt. In-development banks are noindexed, and their page shows the private submission box instead of the checker.
 
 Then add the bank to `src/lib/manifest/endpoints.ts`: placeholders (what each is, where to find it, length and pattern, traps), a redacted example, the fields the parser returns, the unknown-reference error shape, gotchas, a dated changelog line, and a `probe` with a fake reference and the expected status, content type and body text. `tests/manifest/endpoints.test.ts` fails if a manifest bank has no entry there.
@@ -225,6 +253,20 @@ describe("YourBankParser", () => {
 
 When the parser passes on a real receipt (yours, or one sent through the private box): set `"status": "live"` in `banks.json`, add a changelog line in `endpoints.ts`, update the live count in `tests/manifest/loader.test.ts`, and run `npm test`, `npx tsc --noEmit` and `npx next build`. Credit the contributor by name in the PR unless they asked to stay anonymous.
 
+### When a bank switches formats
+
+Banks move receipts to new hosts and new reference shapes (CBE's FT reference + account PDF gave way to the Receipt ID link; Dashen moved from receipt.dashensuperapp.com to receipts.dashenbanksc.com). Record the switch as data, keep older receipts working, and lead with the new format everywhere:
+
+1. **Add the new format at the head of `formats`** in `banks.json` with `"status": "current"`, its `endpoint`, `link`, `inputs`, a `refPattern` that tells it apart from the older format by shape, `since`, `confidence` and `evidence`. Update the bank's top-level `endpoint`, `endpointFormat`, `requiresAccount`, `referenceFormat`, `referenceExample`, `description` and `faq` to describe the current format.
+2. **Mark the old format** `"status": "legacy"` (the bank still answers: cheki keeps fetching it and its host stays allowlisted) or `"status": "deprecated"` (the bank stopped answering: no `parser`, its host leaves the allowlist, old links are only read for their reference). Add `replacedBy`, and `deprecatedAt` when you know it. Give a legacy format a `missingHint` for the case where its reference arrives without a field it needs.
+3. **Add an `endpointHistory` entry** with the date, the format id, what changed and the source (`cheki probe`, a commit, or the outside URL). `/endpoints` shows it as the bank's changelog.
+4. **Write the parser and a redacted fixture** for the new format (steps 3 and 4 above), and register it. If the new receipt's lookup key is a share token rather than the printed reference, add the parser id to `REFERENCE_IS_OPAQUE_TOKEN` in `src/lib/core/gate.ts` (and to `_REFERENCE_IS_OPAQUE_TOKEN` in `python/cheki/registry.py`), with a test that a mismatched reference still fails for the other banks.
+5. **Update the contract fixture** `sdks/fixtures/api-contract.json` (`banks` formats and `receiptUrlCases`) and run every SDK's tests (see [Changing an API response](#changing-an-api-response)). Update the SDK READMEs so the first example uses the new format and the old one sits under "Older receipts".
+6. **The health check follows automatically**: the bank's probe uses the primary (current) format's parser unless `probe.parser` says otherwise. Update `probe.expect` in `endpoints.ts` to the new host's unknown-reference answer, and move the old probe into the bank's `legacy` list so it is still checked as its own `<bank>:<formatId>` row (a legacy row going down never fails `--strict`).
+7. **Copy derives from the manifest** where it can: the checker field, the bank page's format note, `/endpoints` and `/api/banks` read `formats`. Hand-written copy does not, so grep for the old host and the old reference example (`src/lib/seo-pages.ts`, `src/lib/guides.ts`, `src/app/docs`, `public/llms.txt`, `README.md`, the SDK READMEs and examples) and make sure none of it leads with the old format.
+
+Then run `npx vitest run` (`tests/manifest/formats.test.ts` checks the ordering, the allowlist and the selection), `npx tsc --noEmit` and `npx next build`.
+
 ### Endpoint health checks
 
 `.github/workflows/endpoint-health.yml` runs `npm run health-check` daily. It sends each bank a known-fake reference, compares the answer with the `probe.expect` in `endpoints.ts`, and writes `public/status.json`. A changed shape shows as "degraded" on `/status`. GitHub runners are outside Ethiopia, so geo-restricted endpoints (Telebirr, M-Pesa) are recorded as "not checked from CI". Run it yourself with `npm run health-check -- --dry-run`, or `CHEKI_CHECK_GEO=1 npm run health-check -- --dry-run` from an Ethiopian network.
@@ -233,7 +275,8 @@ When the parser passes on a real receipt (yours, or one sent through the private
 
 ```bash
 npm run cli -- info
-npm run cli -- verify cbe FT26140P01YB -a 1000560536171
+npm run cli -- verify cbe https://mbreciept.cbe.com.et/fHCxExampleRcpt01
+npm run cli -- verify cbe FT26140P01YB -a 1000560536171   # older FT receipt (legacy)
 npm run cli -- verify telebirr CHQ0FJ403O
 npm run cli -- health
 ```

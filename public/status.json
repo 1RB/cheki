@@ -10,7 +10,17 @@
       "checkedAt": "2026-10-10T18:08:26Z",
       "status": "live",
       "detail": "Endpoint answers in the expected shape.",
-      "observed": "404 text/html \"You Are Not Allowed to See This Data, Please Check your Link\""
+      "observed": "500 application/problem+json \"Security Alert: Invalid or tampered legacy token!\""
+    },
+    {
+      "id": "cbe:cbe-ft-pdf",
+      "label": "CBE (legacy: FT reference + last 8 digits of the receiving account)",
+      "manifestStatus": "live",
+      "checkedAt": "2026-10-10T18:08:26Z",
+      "status": "live",
+      "detail": "Endpoint answers in the expected shape.",
+      "observed": "404 text/html \"You Are Not Allowed to See This Data, Please Check your Link\"",
+      "formatStatus": "legacy"
     },
     {
       "id": "telebirr",
@@ -265,7 +275,7 @@
     },
     {
       "id": "cbe-new",
-      "label": "CBE (QR receipts)",
+      "label": "CBE (Receipt ID alias)",
       "manifestStatus": "live",
       "checkedAt": "2026-10-10T18:08:26Z",
       "status": "live",

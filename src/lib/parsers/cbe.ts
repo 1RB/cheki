@@ -1,9 +1,11 @@
 /**
  * CBE parser - Commercial Bank of Ethiopia.
  *
- * Two systems:
- * 1. Legacy: PDF receipt from apps.cbe.com.et:100 (requires FT ref + last 8 digits)
- * 2. New: JSON API at Mb.cbe.com.et (receipt ID from QR code / mbreciept.cbe.com.et URLs)
+ * Two formats (banks.json `formats`, current first):
+ * 1. Current (CBENewParser): the Receipt ID from a mbreciept.cbe.com.et link
+ *    or QR code, read through the JSON API at mb.cbe.com.et. No account.
+ * 2. Legacy (CBEParser): FT reference + last 8 digits of the receiving
+ *    account, a PDF from apps.cbe.com.et:100. Still tried, often unreachable.
  */
 import { BaseParser, BROWSER_UA } from "./base";
 import type { ParsedReceipt, Result, HttpResult } from "../core/types";
@@ -11,6 +13,7 @@ import { ok, err } from "../core/types";
 import { parseMoney } from "../core/money";
 import { safeFetch, describeFetchError, MAX_PDF_BYTES, MAX_TEXT_BYTES } from "../http/safe-fetch";
 import { HostNotAllowedError } from "../security/hosts";
+import { getBank } from "../manifest/loader";
 
 function str(v: unknown): string | undefined {
   if (typeof v === "string") return v.trim() || undefined;
@@ -139,8 +142,9 @@ export class CBEParser extends BaseParser {
   }
 
   /**
-   * Override fetchReceipt for legacy CBE: the old apps.cbe.com.et:100 PDF endpoint
-   * has been decommissioned by CBE in favor of mbreciept.cbe.com.et links.
+   * Legacy CBE (FT reference + account). apps.cbe.com.et:100 is often
+   * unreachable (links.et reports it down since July 2026), so a failure
+   * points the user at the current format: the receipt link or Receipt ID.
    */
   async fetchReceipt(
     ref: string,
@@ -148,7 +152,8 @@ export class CBEParser extends BaseParser {
     _phone?: string,
     _options?: { fallbackUrl?: string }
   ): Promise<Result<HttpResult>> {
-    const gone = "CBE no longer supports the old FT reference format. Ask the sender for the new receipt link (mbreciept.cbe.com.et).";
+    const gone =
+      "CBE's older receipt service (FT reference + account) did not answer. Ask the sender for the receipt link or Receipt ID from the CBE app (mbreciept.cbe.com.et).";
     try {
       const resp = await safeFetch(this.buildUrl(ref, account), {
         headers: { "User-Agent": BROWSER_UA },
@@ -187,10 +192,14 @@ export class CBENewParser extends BaseParser {
   readonly accountDigits?: number = undefined;
   readonly requiresPhone = false;
 
-  private static readonly API_URL = "https://Mb.cbe.com.et/api/v1/transactions/public/transaction-detail";
-  private static readonly HEADERS = {
-    "X-App-ID": "d1292e42-7400-49de-a2d3-9731caa4c819",
-    "X-App-Version": "0a01980b-9859-1369-8198-59f403820000",
+  private static readonly API_URL = "https://mb.cbe.com.et/api/v1/transactions/public/transaction-detail";
+  /**
+   * The CBE web app's headers, from the manifest (the current CBE format).
+   * Without X-App-ID / X-App-Version the API answers 400; links.et also sends
+   * Origin and Referer, so cheki does too.
+   */
+  private static readonly HEADERS: Record<string, string> = {
+    ...(getBank("cbe")?.formats?.find((f) => f.parser === "cbe-new")?.headers ?? getBank("cbe-new")?.headers ?? {}),
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
     "Accept": "application/json",
   };

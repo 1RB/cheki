@@ -93,10 +93,14 @@ async function main() {
   const runner = process.env.CHEKI_RUNNER || (process.env.GITHUB_ACTIONS ? "GitHub Actions (ubuntu-latest)" : "local");
 
   const targets = buildProbeTargets({ checkGeoRestricted: checkGeo });
+  // One request per distinct URL: a parser alias (cbe-new) and its bank's
+  // current format (cbe) probe the same endpoint, so they share one answer.
+  const seen = new Map<string, Promise<{ response?: ObservedResponse; error?: string }>>();
   const results = await Promise.all(
     targets.map(async (t) => {
-      const outcome = t.url ? await probe(t.url, t.headers) : {};
-      return evaluate(t, outcome, isoNow());
+      if (!t.url) return evaluate(t, {}, isoNow());
+      if (!seen.has(t.url)) seen.set(t.url, probe(t.url, t.headers));
+      return evaluate(t, await seen.get(t.url)!, isoNow());
     }),
   );
 
@@ -117,7 +121,8 @@ async function main() {
     console.log(`\nWrote ${out}`);
   }
 
-  const degradedLive = results.filter((r) => r.status === "degraded" && r.manifestStatus === "live");
+  // A legacy format's host going away is expected over time; only current formats fail --strict.
+  const degradedLive = results.filter((r) => r.status === "degraded" && r.manifestStatus === "live" && !r.formatStatus);
   if (degradedLive.length > 0) {
     console.log(`\n::warning::Degraded live endpoints: ${degradedLive.map((r) => r.id).join(", ")}`);
     if (strict) process.exit(1);

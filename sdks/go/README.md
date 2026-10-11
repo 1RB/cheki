@@ -24,10 +24,10 @@ import (
 func main() {
 	client := cheki.NewClient() // 65 s per attempt, at most 1 retry
 
+	// CBE: the receipt link (or just its Receipt ID) from the CBE app. No account number needed.
 	result, err := client.Verify(context.Background(), cheki.VerifyOptions{
-		Bank:          "cbe",
-		Reference:     "FT26140P01YB",
-		AccountNumber: "1000560536171",
+		Bank:      "cbe",
+		Reference: "https://mbreciept.cbe.com.et/fHCxExampleRcpt01",
 	})
 	var apiErr *cheki.APIError
 	switch {
@@ -55,7 +55,7 @@ QR-only (BOA): `client.Verify(ctx, cheki.VerifyOptions{Bank: "boa", QRData: "3cH
 
 ```go
 batch, err := client.VerifyBatch(ctx, []cheki.VerifyOptions{
-	{Bank: "cbe", Reference: "FT26140P01YB", AccountNumber: "1000560536171"},
+	{Bank: "cbe", Reference: "https://mbreciept.cbe.com.et/fHCxExampleRcpt01"},
 	{Bank: "telebirr", Reference: "CHQ0FJ403O"},
 })
 // batch.Total, batch.Verified (only Verified: true), batch.Failed (everything else), batch.Cached
@@ -87,10 +87,20 @@ for _, b := range health.Banks {
 ### Receipt download links
 
 ```go
-u, err := client.GetReceiptURL("cbe", "FT26140P01YB", "1000560536171")
+u, err := client.GetReceiptURL("cbe", "fHCxExampleRcpt01", "")
+// https://cheki.et/api/receipt?bank=cbe&reference=fHCxExampleRcpt01
 ```
 
-Only `cbe` (account required, at least the last 8 digits), `zemen` and `dashen`; anything else returns `ErrInvalidInput`.
+Only `cbe`, `zemen` and `dashen`; anything else returns `ErrInvalidInput`. CBE and Dashen links redirect to the bank's own receipt page; Zemen (and older CBE receipts) are served as the bank's PDF.
+
+### Older receipts
+
+Older CBE receipts that only show an FT reference still work as a legacy format: pass the receiving account (at least the last 8 digits). CBE's older receipt service is often unreachable, so prefer the receipt link when you have it.
+
+```go
+result, err := client.Verify(ctx, cheki.VerifyOptions{Bank: "cbe", Reference: "FT26140P01YB", AccountNumber: "1000560536171"})
+u, err := client.GetReceiptURL("cbe", "FT26140P01YB", "1000560536171") // the bank's PDF
+```
 
 ## Errors
 

@@ -80,7 +80,7 @@ describe("CBENewParser", () => {
 
   it("builds API URL with receipt ID", () => {
     const url = parser.buildUrl("fHCxyV4mg5p");
-    expect(url).toBe("https://Mb.cbe.com.et/api/v1/transactions/public/transaction-detail/fHCxyV4mg5p");
+    expect(url).toBe("https://mb.cbe.com.et/api/v1/transactions/public/transaction-detail/fHCxyV4mg5p");
   });
 
   it("parses CBE new API JSON response", () => {

@@ -23,11 +23,26 @@ describe("isUrl", () => {
 });
 
 describe("detectBankFromUrl", () => {
-  it("detects CBE new API URLs", () => {
+  it("detects CBE share links as CBE (current Receipt ID format)", () => {
+    // The bank is "cbe"; the verifier picks the Receipt ID format from the token's shape.
     const result = detectBankFromUrl("https://mbreciept.cbe.com.et/fHCxyV4mg5p");
     expect(result).not.toBeNull();
-    expect(result!.bank).toBe("cbe-new");
+    expect(result!.bank).toBe("cbe");
     expect(result!.reference).toBe("fHCxyV4mg5p");
+    expect(result!.accountNumber).toBeUndefined();
+    expect(detectBankFromUrl("https://mbreciept.cbe.com.et/v2-hfHCxExample0001")).toEqual({ bank: "cbe", reference: "v2-hfHCxExample0001" });
+  });
+
+  it("reads a dashed mbreciept link as the legacy FT reference + 8-digit account", () => {
+    expect(detectBankFromUrl("https://mbreciept.cbe.com.et/ft26140p01yb-60536171")).toEqual({
+      bank: "cbe",
+      reference: "FT26140P01YB",
+      accountNumber: "60536171",
+    });
+  });
+
+  it("does not treat a look-alike CBE host as CBE", () => {
+    expect(detectBankFromUrl("https://mbreciept.cbe.com.et.evil.example/fHCxyV4mg5p")?.bank).not.toBe("cbe");
   });
 
   it("detects CBE legacy URLs with account suffix", () => {

@@ -1,5 +1,5 @@
 {
-  "$comment": "Canonical cheki HTTP API contract fixtures. Every SDK test suite decodes these, and tests/contract/sdk-fixtures.test.ts checks that the real route handlers still produce the same shapes (same keys, same JSON types). Change a route and this file together, or CI fails. Values are illustrative; references and names are fake.",
+  "$comment": "Canonical cheki HTTP API contract fixtures. Every SDK test suite decodes these, and tests/contract/sdk-fixtures.test.ts checks that the real route handlers still produce the same shapes (same keys, same JSON types). Change a route and this file together, or CI fails. Values are illustrative; references and names are fake. receiptUrlCases: what getReceiptUrl must build (query params, any order) or reject. Current formats need no account; a legacy CBE FT reference does. served says how /api/receipt answers: a redirect to the bank's own page, or the bank's PDF.",
   "limits": {
     "batchMaxReceipts": 20,
     "verifyBodyBytes": 16384,
@@ -13,6 +13,20 @@
     "sdkMaxRetries": 1,
     "receiptDownloadBanks": ["cbe", "zemen", "dashen"]
   },
+  "receiptUrlCases": [
+    { "name": "cbe_receipt_id", "format": "current", "served": "redirect", "bank": "cbe", "reference": "fHCxExampleRcpt01", "query": { "bank": "cbe", "reference": "fHCxExampleRcpt01" } },
+    { "name": "cbe_receipt_id_v2", "format": "current", "served": "redirect", "bank": "cbe", "reference": "v2-hfHCxExample0001", "query": { "bank": "cbe", "reference": "v2-hfHCxExample0001" } },
+    { "name": "cbe_receipt_id_ignores_account", "format": "current", "served": "redirect", "bank": "CBE", "reference": "fHCxExampleRcpt01", "account": "1000 5605 36171", "query": { "bank": "cbe", "reference": "fHCxExampleRcpt01" } },
+    { "name": "cbe_legacy_ft_with_account", "format": "legacy", "served": "pdf", "bank": "cbe", "reference": "FT26140P01YB", "account": "1000 5605 36171", "query": { "bank": "cbe", "reference": "FT26140P01YB", "account": "1000560536171" } },
+    { "name": "cbe_legacy_ft_without_account", "format": "legacy", "bank": "cbe", "reference": "FT26140P01YB", "error": true },
+    { "name": "cbe_legacy_ft_short_account", "format": "legacy", "bank": "cbe", "reference": "FT26140P01YB", "account": "1234", "error": true },
+    { "name": "dashen_ft_ref", "format": "current", "served": "redirect", "bank": "dashen", "reference": "B22WDTI2619100WH", "query": { "bank": "dashen", "reference": "B22WDTI2619100WH" } },
+    { "name": "zemen_token", "format": "current", "served": "pdf", "bank": "Zemen", "reference": "ZB123", "query": { "bank": "zemen", "reference": "ZB123" } },
+    { "name": "unsupported_bank", "bank": "telebirr", "reference": "X1", "error": true },
+    { "name": "prototype_name", "bank": "constructor", "reference": "X1", "error": true },
+    { "name": "path_traversal", "bank": "zemen", "reference": "../admin", "error": true },
+    { "name": "slash", "bank": "zemen", "reference": "a/b", "error": true }
+  ],
   "cases": {
     "verify_verified": {
       "method": "POST",
@@ -165,11 +179,15 @@
             "swift": "CBETETAA",
             "type": "bank",
             "status": "live",
-            "requiresAccount": true,
+            "requiresAccount": false,
             "accountDigits": 8,
-            "endpoint": "https://apps.cbe.com.et:100/?id={ref}{account}",
+            "endpoint": "https://mb.cbe.com.et/api/v1/transactions/public/transaction-detail/{ref}",
             "color": "#502878",
-            "initials": "CBE"
+            "initials": "CBE",
+            "formats": [
+              { "id": "cbe-receipt-id", "status": "current", "label": "Receipt ID or mbreciept.cbe.com.et link", "inputs": ["receiptId"], "responseType": "json", "supported": true, "confidence": "verified" },
+              { "id": "cbe-ft-pdf", "status": "legacy", "label": "FT reference + last 8 digits of the receiving account", "inputs": ["reference", "account"], "accountDigits": 8, "responseType": "pdf", "supported": true, "confidence": "inferred" }
+            ]
           },
           {
             "id": "telebirr",
@@ -179,7 +197,10 @@
             "requiresAccount": false,
             "endpoint": "https://transactioninfo.ethiotelecom.et/receipt/{ref}",
             "color": "#00A0DC",
-            "initials": "TB"
+            "initials": "TB",
+            "formats": [
+              { "id": "telebirr-receipt-html", "status": "current", "label": "Transaction number", "inputs": ["reference"], "responseType": "html", "supported": true, "confidence": "verified" }
+            ]
           },
           {
             "id": "cbebirr",
@@ -190,7 +211,10 @@
             "requiresPhone": true,
             "endpoint": "https://cbepay1.cbe.com.et/aureceipt?TID={ref}&PH={phone}",
             "color": "#502878",
-            "initials": "CB"
+            "initials": "CB",
+            "formats": [
+              { "id": "cbebirr-aureceipt", "status": "current", "label": "Receipt number + payer phone", "inputs": ["reference", "phone"], "responseType": "pdf", "supported": true, "confidence": "inferred" }
+            ]
           },
           {
             "id": "nib",
@@ -200,7 +224,10 @@
             "requiresAccount": false,
             "endpoint": "receipt.ebirr.com/nib",
             "color": "#1d4ed8",
-            "initials": "Nib Bank"
+            "initials": "Nib Bank",
+            "formats": [
+              { "id": "ebirr-nib", "status": "current", "label": "eBirr receipt link", "inputs": ["link"], "responseType": "html", "supported": true, "confidence": "inferred" }
+            ]
           }
         ]
       }

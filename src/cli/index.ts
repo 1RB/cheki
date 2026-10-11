@@ -4,7 +4,8 @@
  *
  * Usage:
  *   cheki info                                    List supported banks
- *   cheki verify cbe FT26140P01YB -a 1000560536171  Verify a CBE receipt
+ *   cheki verify cbe https://mbreciept.cbe.com.et/<id>  Verify a CBE receipt (Receipt ID link)
+ *   cheki verify cbe FT26140P01YB -a 1000560536171  Older CBE receipt (legacy FT reference)
  *   cheki verify telebirr CHQ0FJ403O                 Verify a Telebirr receipt
  *   cheki verify boa AB12345 -a 1234567890           Verify a BOA receipt
  *   cheki health                                     Check endpoint health
@@ -27,11 +28,12 @@ Usage:
   cheki --version                                 Show version
 
 Examples:
-  cheki verify cbe FT26140P01YB -a 1000560536171
+  cheki verify cbe https://mbreciept.cbe.com.et/fHCxExampleRcpt01
+  cheki verify dashen B22WDTI2619100WH
   cheki verify telebirr CHQ0FJ403O
   cheki verify boa AB12345 -a 1234567890
   cheki verify-qr boa <base64-qr-payload>
-  cheki verify cbe-new fHCxyV4mg5p
+  cheki verify cbe FT26140P01YB -a 1000560536171   (older CBE receipt, legacy format)
 `);
     process.exit(0);
   }
@@ -46,7 +48,12 @@ Examples:
     console.log("\n  Supported banks:\n");
     for (const b of banks) {
       const status = b.status === "live" ? "OK" : "SOON";
-      const acct = b.requiresAccount ? ` (requires ${b.accountDigits}-digit account)` : "";
+      const legacy = (b.formats ?? []).find((f) => f.status === "legacy" && f.parser && f.inputs.some((i) => i.name === "account"));
+      const acct = b.requiresAccount
+        ? ` (requires ${b.accountDigits}-digit account)`
+        : legacy
+          ? ` (older receipts: ${legacy.label})`
+          : "";
       console.log(`  ${status.padEnd(4)} ${b.id.padEnd(12)} ${b.name}${acct}`);
     }
     console.log(`\n  ${banks.length} banks total, ${banks.filter(b => b.status === "live").length} live\n`);

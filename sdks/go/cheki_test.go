@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"strings"
 	"sync/atomic"
@@ -19,9 +20,19 @@ type fixtureCase struct {
 	Body    json.RawMessage   `json:"body"`
 }
 
+type receiptURLCase struct {
+	Name      string            `json:"name"`
+	Bank      string            `json:"bank"`
+	Reference string            `json:"reference"`
+	Account   string            `json:"account"`
+	Query     map[string]string `json:"query"`
+	Error     bool              `json:"error"`
+}
+
 type contract struct {
-	Limits map[string]json.RawMessage `json:"limits"`
-	Cases  map[string]fixtureCase     `json:"cases"`
+	Limits          map[string]json.RawMessage `json:"limits"`
+	Cases           map[string]fixtureCase     `json:"cases"`
+	ReceiptURLCases []receiptURLCase           `json:"receiptUrlCases"`
 }
 
 func loadContract(t *testing.T) contract {
@@ -58,7 +69,11 @@ func serve(t *testing.T, cases ...fixtureCase) (*Client, *int32) {
 func withRetryAfter(c fixtureCase, v string) fixtureCase {
 	h := map[string]string{}
 	for k, val := range c.Headers {
-		h[k] = val
+		// The fixture spells it "retry-after"; keeping both spellings made the
+		// value depend on map iteration order (a flaky 17 s wait).
+		if !strings.EqualFold(k, "Retry-After") {
+			h[k] = val
+		}
 	}
 	h["Retry-After"] = v
 	c.Headers = h
@@ -163,6 +178,11 @@ func TestGetBanks(t *testing.T) {
 	}
 	if banks[1].Type != "mobile" || !banks[2].RequiresPhone || banks[3].Status != "in-development" {
 		t.Fatalf("banks %+v", banks)
+	}
+	// Formats come current first: CBE leads with the Receipt ID; the FT reference is legacy.
+	f := banks[0].Formats
+	if banks[0].RequiresAccount || len(f) != 2 || f[0].Status != "current" || f[0].Inputs[0] != "receiptId" || f[1].Status != "legacy" || f[1].AccountDigits != 8 || !f[1].Supported {
+		t.Fatalf("cbe formats %+v", f)
 	}
 }
 
@@ -293,16 +313,36 @@ func TestWithTimeoutDoesNotDropCustomClient(t *testing.T) {
 
 func TestGetReceiptURL(t *testing.T) {
 	c := NewClient(WithBaseURL("https://api.test"))
-	u, err := c.GetReceiptURL("cbe", "FT26140P01YB", "1000 5605 36171")
-	if err != nil || u != "https://api.test/api/receipt?account=1000560536171&bank=cbe&reference=FT26140P01YB" {
-		t.Fatalf("got %q %v", u, err)
+	cases := loadContract(t).ReceiptURLCases
+	if len(cases) < 6 {
+		t.Fatalf("receiptUrlCases missing: %d", len(cases))
 	}
-	if u, err := c.GetReceiptURL("Zemen", "ZB123", ""); err != nil || !strings.Contains(u, "bank=zemen") {
-		t.Fatalf("got %q %v", u, err)
-	}
-	for _, tc := range [][3]string{{"telebirr", "X1", ""}, {"zemen", "../admin", ""}, {"zemen", "a/b", ""}, {"cbe", "FT1", ""}, {"cbe", "FT1", "1234"}} {
-		if _, err := c.GetReceiptURL(tc[0], tc[1], tc[2]); !errors.Is(err, ErrInvalidInput) {
-			t.Fatalf("%v: want ErrInvalidInput, got %v", tc, err)
+	for _, tc := range cases {
+		u, err := c.GetReceiptURL(tc.Bank, tc.Reference, tc.Account)
+		if tc.Error {
+			if !errors.Is(err, ErrInvalidInput) {
+				t.Fatalf("%s: want ErrInvalidInput, got %q %v", tc.Name, u, err)
+			}
+			continue
+		}
+		if err != nil {
+			t.Fatalf("%s: %v", tc.Name, err)
+		}
+		parsed, perr := url.Parse(u)
+		if perr != nil || parsed.Scheme+"://"+parsed.Host+parsed.Path != "https://api.test/api/receipt" {
+			t.Fatalf("%s: url %q", tc.Name, u)
+		}
+		got := map[string]string{}
+		for k, v := range parsed.Query() {
+			got[k] = v[0]
+		}
+		if len(got) != len(tc.Query) {
+			t.Fatalf("%s: query %v, want %v", tc.Name, got, tc.Query)
+		}
+		for k, v := range tc.Query {
+			if got[k] != v {
+				t.Fatalf("%s: query %v, want %v", tc.Name, got, tc.Query)
+			}
 		}
 	}
 }

@@ -116,6 +116,26 @@ def test_banks():
     assert banks[0].id == "cbe" and banks[0].code == "cbe" and banks[0].requires_phone is False
     assert banks[1].type == "mobile" and banks[2].requires_phone is True
     assert banks[3].is_live is False
+    # Formats come current first: CBE leads with the Receipt ID, the FT reference is legacy.
+    assert banks[0].requires_account is False
+    assert [f.status for f in banks[0].formats] == ["current", "legacy"]
+    assert banks[0].formats[0].inputs == ["receiptId"]
+    assert banks[0].formats[1].account_digits == 8
+
+
+@pytest.mark.parametrize("case", CONTRACT["receiptUrlCases"], ids=lambda c: c["name"])
+def test_receipt_url_cases(case):
+    """get_receipt_url follows the shared fixture: current formats need no account."""
+    from urllib.parse import parse_qsl, urlsplit
+
+    cheki = ChekiClient(base_url="https://api.test")
+    if case.get("error"):
+        with pytest.raises(ValueError):
+            cheki.get_receipt_url(case["bank"], case["reference"], account_number=case.get("account"))
+        return
+    parts = urlsplit(cheki.get_receipt_url(case["bank"], case["reference"], account_number=case.get("account")))
+    assert f"{parts.scheme}://{parts.netloc}{parts.path}" == "https://api.test/api/receipt"
+    assert dict(parse_qsl(parts.query)) == case["query"]
 
 
 @responses.activate

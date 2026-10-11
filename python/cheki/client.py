@@ -33,8 +33,9 @@ Example::
     from cheki import ChekiClient
 
     cheki = ChekiClient()                       # uses the public instance
-    result = cheki.verify("cbe", "FT26140P01YB",
-                          account_number="1000560536171")
+    result = cheki.verify("cbe", "https://mbreciept.cbe.com.et/fHCxExampleRcpt01")
+    # Older CBE receipt with only an FT reference (legacy):
+    # cheki.verify("cbe", "FT26140P01YB", account_number="1000560536171")
     if result.is_verified:
         print(result.sender_name, result.amount, result.currency)
 """
@@ -88,8 +89,13 @@ _MAX_RETRY_AFTER = 60.0
 #: Base delay (seconds) before a retry when the server sends no Retry-After.
 _RETRY_BASE_DELAY = 1.0
 
-#: Banks ``/api/receipt`` can download -> account digits needed (0 = none).
+#: Banks ``/api/receipt`` serves -> account digits their legacy format needs
+#: (0 = none). For CBE only an older FT reference needs the account; the
+#: current format, a Receipt ID from a mbreciept.cbe.com.et link, needs none.
 RECEIPT_DOWNLOAD_BANKS: dict[str, int] = {"cbe": 8, "zemen": 0, "dashen": 0}
+
+#: An older CBE FT reference (legacy format, needs the account).
+_LEGACY_CBE_REFERENCE = re.compile(r"FT[A-Za-z0-9]{8,12}", re.IGNORECASE)
 
 _SAFE_REFERENCE = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,63}")
 
@@ -256,14 +262,18 @@ class ChekiClient:
         reference: str,
         account_number: str | None = None,
     ) -> str:
-        """URL of ``GET /api/receipt``, which downloads the bank's receipt file.
+        """URL of ``GET /api/receipt``, which opens the bank's own copy of a receipt.
 
-        Only CBE (needs the account number, at least its last 8 digits),
-        Zemen and Dashen are supported. No request is made.
+        Supported: CBE, Dashen and Zemen. Lead with the current format: a CBE
+        Receipt ID (from the mbreciept.cbe.com.et link) or a Dashen FT Ref,
+        which the server answers with a redirect to the bank's own receipt
+        page. An older CBE FT reference (legacy) also needs the receiving
+        account (at least its last 8 digits) and comes back as the bank's
+        PDF. No request is made.
 
         Raises:
-            ValueError: For an unsupported bank, a bad reference or a
-                missing CBE account.
+            ValueError: For an unsupported bank, a bad reference, or a legacy
+                CBE FT reference without the account.
         """
         bank_id = bank.strip().lower()
         if bank_id not in RECEIPT_DOWNLOAD_BANKS:
@@ -273,11 +283,12 @@ class ChekiClient:
             raise ValueError("reference must be 1-64 letters, digits, dots, dashes or underscores.")
         params: dict[str, str] = {"bank": bank_id, "reference": ref}
         digits = RECEIPT_DOWNLOAD_BANKS[bank_id]
-        if digits:
+        if digits and (bank_id != "cbe" or _LEGACY_CBE_REFERENCE.fullmatch(ref)):
             account = re.sub(r"[\s-]", "", account_number or "")
             if not re.fullmatch(r"[0-9]+", account) or len(account) < digits:
                 raise ValueError(
-                    f"{bank_id} needs the receiving account number (at least the last {digits} digits)."
+                    f"An older {bank_id} FT reference needs the receiving account number "
+                    f"(at least the last {digits} digits). A Receipt ID from the receipt link needs none."
                 )
             params["account"] = account
         return f"{self.base_url}/api/receipt?{urlencode(params)}"

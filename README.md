@@ -26,16 +26,18 @@ check.et charges 499 ETB/month. verify.et charges $20-40/month. Both verify rece
 
 **8 live banks** · 23 in research
 
-| Bank | Code | Type | Status | Requires account | Geo-blocked |
-|------|------|------|--------|------------------|-------------|
-| Commercial Bank of Ethiopia | `cbe` | Bank | ✅ Live | Yes (last 8 digits) | No |
-| Telebirr (Ethio Telecom) | `telebirr` | Mobile money | ✅ Live | No | Yes (Ethiopia only) |
-| Bank of Abyssinia | `boa` | Bank | ✅ Live | Yes (last 5 digits) | No |
-| M-Pesa Ethiopia | `mpesa` | Mobile money | ✅ Live | No | Yes (Ethiopia only) |
-| Dashen Bank | `dashen` | Bank | ✅ Live | No | No |
-| Awash Bank | `awash` | Bank | ✅ Live | No | No |
-| Siinqee Bank | `siinqee` | Bank | ✅ Live | No | No |
-| eBirr | `ebirr` | Mobile money | ✅ Live | No | No |
+| Bank | Code | Type | Status | Current input | Geo-blocked |
+|------|------|------|--------|---------------|-------------|
+| Commercial Bank of Ethiopia | `cbe` | Bank | ✅ Live | Receipt ID or mbreciept.cbe.com.et link (older FT receipts: + last 8 account digits) | No |
+| Telebirr (Ethio Telecom) | `telebirr` | Mobile money | ✅ Live | Transaction number | Yes (Ethiopia only) |
+| Bank of Abyssinia | `boa` | Bank | ✅ Live | Reference + last 5 account digits, or the receipt QR | No |
+| M-Pesa Ethiopia | `mpesa` | Mobile money | ✅ Live | Transaction number | Yes (Ethiopia only) |
+| Dashen Bank | `dashen` | Bank | ✅ Live | FT Ref (16 characters) | No |
+| Awash Bank | `awash` | Bank | ✅ Live | Share link from the SMS | No |
+| Siinqee Bank | `siinqee` | Bank | ✅ Live | eBirr receipt link | No |
+| eBirr | `ebirr` | Mobile money | ✅ Live | Receipt link (tenant/token) | No |
+
+Every bank lists its receipt formats in `src/lib/manifest/banks.json`, current first. Older formats keep working (an older CBE receipt with only an FT reference still verifies with the last 8 digits of the receiving account; old Dashen Super App links are read for their FT Ref), but the UI, docs and SDKs lead with the current one. `GET /api/banks` returns each bank's `formats`, and [/endpoints](https://cheki.et/endpoints) shows them with a dated changelog.
 
 ### In research (23)
 
@@ -54,7 +56,7 @@ What every SDK does the same way:
 - **Batch: at most 20 receipts**, checked before sending. The response has `results`, `total`, `verified`, `failed` and `cached`; `failed` includes decoded-only QR results.
 - **Typed errors** for 429 (with the `Retry-After` seconds) and 413, and the server's `error` text and `fallbackUrl` (geo-blocked banks) on every API error.
 - **Timeouts and retries:** each attempt waits up to 65 s (the server may take up to 60 s). A 4xx (other than 429) or a timeout is never retried. A network error, 5xx or 429 is retried at most once, after `Retry-After` when the server sends one (up to 60 s). The server itself makes at most 2 attempts per bank fetch, so one SDK call reaches a bank at most **4** times (a batch: 4 per receipt).
-- **`getReceiptUrl`** builds `/api/receipt` links for CBE (account required), Zemen and Dashen only, and rejects anything else.
+- **`getReceiptUrl`** builds `/api/receipt` links for CBE, Dashen and Zemen only, and rejects anything else. A CBE Receipt ID needs no account; an older CBE FT reference (legacy) needs the receiving account. `/api/receipt` redirects to the bank's own page for HTML receipts (CBE Receipt ID, Dashen) and returns the PDF for PDF ones.
 
 | Language | Install | Package | Registry |
 |----------|---------|---------|----------|
@@ -74,9 +76,8 @@ npm install cheki-verify
 import { Cheki, isVerified } from "cheki-verify";
 
 const cheki = new Cheki();
-const result = await cheki.verify("cbe", "FT26140P01YB", {
-  accountNumber: "1000560536171",
-});
+const result = await cheki.verify("cbe", "https://mbreciept.cbe.com.et/fHCxExampleRcpt01");
+// Older FT-only CBE receipt (legacy): cheki.verify("cbe", "FT26140P01YB", { accountNumber: "1000560536171" })
 if (isVerified(result)) console.log(result.amount, result.senderName);
 ```
 
@@ -92,7 +93,8 @@ pip install cheki
 from cheki import ChekiClient
 
 cheki = ChekiClient()
-result = cheki.verify("cbe", "FT26140P01YB", account_number="1000560536171")
+result = cheki.verify("cbe", "https://mbreciept.cbe.com.et/fHCxExampleRcpt01")
+    # Older receipt, FT reference only (legacy): cheki.verify("cbe", "FT26140P01YB", account_number="1000560536171")
 print(result.is_verified, result.amount, result.sender_name)
 ```
 
@@ -109,9 +111,9 @@ go get github.com/1RB/cheki/sdks/go
 ```go
 client := cheki.NewClient()
 result, err := client.Verify(ctx, cheki.VerifyOptions{
-    Bank:          "cbe",
-    Reference:     "FT26140P01YB",
-    AccountNumber: "1000560536171",
+    Bank:      "cbe",
+    Reference: "https://mbreciept.cbe.com.et/fHCxExampleRcpt01",
+    // Older receipt, FT reference only (legacy): Reference: "FT26140P01YB", AccountNumber: "1000560536171"
 })
 if err == nil && result.IsVerified() {
     fmt.Println(result.Amount, result.SenderName)
@@ -125,8 +127,7 @@ if err == nil && result.IsVerified() {
 final client = ChekiClient();
 final result = await client.verify(
   bank: 'cbe',
-  reference: 'FT26140P01YB',
-  accountNumber: '1000560536171',
+  reference: 'https://mbreciept.cbe.com.et/fHCxExampleRcpt01',
 );
 print(result.isVerified);
 client.close();
@@ -136,7 +137,8 @@ client.close();
 
 ```php
 $client = new ChekiClient();
-$result = $client->verify('cbe', 'FT26140P01YB', '1000560536171');
+$result = $client->verify('cbe', 'https://mbreciept.cbe.com.et/fHCxExampleRcpt01');
+// Older receipt, FT reference only (legacy): $client->verify('cbe', 'FT26140P01YB', '1000560536171');
 if ($result->isVerified()) {
     echo "$result->senderName sent $result->amount $result->currency";
 } elseif ($result->isRateLimited()) {
@@ -156,19 +158,20 @@ The CLI runs from a clone of this repo. Do not use `npx cheki`: the npm package 
 
 ```bash
 git clone https://github.com/1RB/cheki.git && cd cheki && npm install
-npm run cli -- verify cbe FT26140P01YB -a 1000560536171
+npm run cli -- verify cbe https://mbreciept.cbe.com.et/fHCxExampleRcpt01
+npm run cli -- verify cbe FT26140P01YB -a 1000560536171   # older FT receipt (legacy)
 npm run cli -- verify telebirr CHQ0FJ403O
 npm run cli -- health
 ```
 
-Or use the Python CLI, which calls the hosted API: `pip install cheki`, then `cheki-verify cbe FT26140P01YB --account 1000560536171`.
+Or use the Python CLI, which calls the hosted API: `pip install cheki`, then `cheki-verify cbe https://mbreciept.cbe.com.et/fHCxExampleRcpt01`.
 
 ### API
 
 ```bash
 curl -X POST https://cheki.et/api/verify \
   -H "Content-Type: application/json" \
-  -d '{"bank":"cbe","reference":"FT26140P01YB","accountNumber":"1000560536171"}'
+  -d '{"bank":"cbe","reference":"https://mbreciept.cbe.com.et/fHCxExampleRcpt01"}'
 ```
 
 ### Self-hosting
@@ -197,15 +200,15 @@ Self-hosting on an Ethiopian IP bypasses Telebirr/M-Pesa geo-blocks.
 
 Each Ethiopian bank publishes transaction receipts at public URLs:
 
-1. **CBE**: `https://apps.cbe.com.et:100/?id={FT_REFERENCE}{LAST_8_DIGITS}` → PDF
+1. **CBE**: Receipt ID from `https://mbreciept.cbe.com.et/{RECEIPT_ID}`, read through `https://mb.cbe.com.et/api/v1/transactions/public/transaction-detail/{RECEIPT_ID}` → JSON. Legacy: `https://apps.cbe.com.et:100/?id={FT_REFERENCE}{LAST_8_DIGITS}` → PDF (older receipts, host often unreachable)
 2. **Telebirr**: `https://transactioninfo.ethiotelecom.et/receipt/{REFERENCE}` → HTML
 3. **BOA**: `https://cs.bankofabyssinia.com/api/onlineSlip/getDetails/?id={REFERENCE}{LAST_5_DIGITS}` → JSON
-4. **M-Pesa**: `https://m-pesabusiness.safaricom.et/api/receipt/getReceipt?trxNo={REFERENCE}` → JSON
+4. **M-Pesa**: `https://m-pesabusiness.safaricom.et/api/receipt/getReceipt?trxNo={REFERENCE}` → JSON (geo-blocked, not probed; other projects read it as a JSON envelope carrying a base64 PDF, which is inferred and not yet confirmed against cheki's parser)
 5. **Awash**: share link from Awash mobile app → HTML
 6. **Dashen**: `https://receipts.dashenbanksc.com/receipt/{FT_REF}` → HTML (unknown refs: HTTP 400)
 7. **Zemen** (in development): PDF receipt URL → PDF
-8. **CBE Birr** (in development): phone + reference → HTML
-9. **Siinqee**: receipt URL → HTML
+8. **CBE Birr** (in development): reference + payer phone → PDF (inferred; a miss returns an HTML shell)
+9. **Siinqee**: eBirr receipt URL → HTML (links.et reports a newer Siinqee host, receipts.siinqeebank.com:871, not supported yet)
 10. **eBirr**: receipt URL → HTML (covers Nib, Wegagen, Ahadu, KAAFI)
 
 cheki fetches these URLs, parses the response (PDF/HTML/JSON), and returns structured JSON.

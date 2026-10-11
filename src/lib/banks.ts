@@ -10,7 +10,7 @@
  *   - filters out parser-only aliases (e.g. `cbe-new`) so they do not get pages
  */
 import manifestData from "./manifest/banks.json";
-import type { BankManifestEntry, BankRefPattern } from "./core/types";
+import type { BankManifestEntry, BankRefPattern, ReceiptFormat } from "./core/types";
 
 export interface Bank {
   code: string;
@@ -36,6 +36,8 @@ export interface Bank {
   useCases: string[];
   faq: { q: string; a: string }[];
   seo: { title: string; description: string; keywords: string[] };
+  /** Receipt formats, current first (see src/lib/manifest/formats.ts). */
+  formats: ReceiptFormat[];
 }
 
 const PARSER_ONLY_IDS = new Set(["cbe-new"]);
@@ -81,6 +83,7 @@ function manifestToBank(entry: BankManifestEntry): Bank {
     useCases: entry.useCases ?? [],
     faq: entry.faq ?? [],
     seo: entry.seo ?? { title: entry.name, description: "", keywords: [] },
+    formats: entry.formats ?? [],
   };
 }
 

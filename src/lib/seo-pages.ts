@@ -36,32 +36,32 @@ export const seoPages: SeoPage[] = [
     slug: "verify-cbe-receipt-online",
     title: "Verify CBE Receipt Online - Free & Instant | cheki",
     h1: "Verify a Commercial Bank of Ethiopia Receipt Online",
-    metaDescription: "Check if a CBE receipt is real or fake. Free, instant, no signup. Paste your FT reference number and account to verify any CBE payment in seconds.",
-    keywords: ["verify cbe receipt", "check cbe payment", "cbe receipt verification", "cbe ft reference check", "commercial bank ethiopia receipt online"],
+    metaDescription: "Check if a CBE receipt is real or fake. Free, instant, no signup. Paste the receipt link or Receipt ID from the CBE app to verify any CBE payment in seconds.",
+    keywords: ["verify cbe receipt", "check cbe payment", "cbe receipt verification", "mbreciept cbe", "cbe ft reference check", "commercial bank ethiopia receipt online"],
     intent: "transactional",
     bankCode: "cbe",
     faq: [
-      { q: "How do I verify a CBE receipt?", a: "Select Commercial Bank of Ethiopia, paste your FT reference number (e.g. FT26140P01YB), enter the last 8 digits of the receiving account, and click Verify. cheki fetches the receipt from CBE's public endpoint and shows you the result in 2-10 seconds." },
-      { q: "Do I need the account number to verify CBE?", a: "Yes. CBE's receipt endpoint requires the FT reference plus the last 8 digits of the receiving account number. Without the account number, the endpoint returns no data." },
+      { q: "How do I verify a CBE receipt?", a: "Paste the receipt link from the CBE app (mbreciept.cbe.com.et/...) or its Receipt ID, and click Verify. cheki reads the receipt from CBE's own record and shows the sender, receiver, amount and date in a few seconds." },
+      { q: "Do I need the account number to verify CBE?", a: "Not for new receipts: the Receipt ID or receipt link is enough. Only an older receipt that shows just an FT reference needs the last 8 digits of the receiving account, and CBE's older receipt service does not always answer." },
       { q: "Is CBE receipt verification free?", a: "Yes, cheki is completely free with no quota. check.et charges 499 ETB/month after 200 verifications. cheki uses the same public CBE endpoint but charges nothing." },
       { q: "Can I verify CBE receipts in bulk?", a: "Yes. Use the POST /api/verify/batch endpoint to verify up to 20 CBE receipts in a single API call. Perfect for end-of-day reconciliation." },
     ],
     sections: [
       {
         heading: "How CBE receipt verification works",
-        body: "The Commercial Bank of Ethiopia publishes every transaction receipt at a public URL: https://apps.cbe.com.et:100/?id={FT_REFERENCE}{ACCOUNT_SUFFIX}. No authentication is required. cheki fetches this URL, downloads the PDF, extracts the text, and parses it into structured JSON with sender name, receiver name, amount, date, branch, and reference number.",
+        body: "New CBE receipts are shared from the CBE app as a link, https://mbreciept.cbe.com.et/{RECEIPT_ID}, also printed as a QR code. cheki reads the receipt behind that Receipt ID from CBE's public JSON service and returns the sender, receiver, amount, date and reference. No account number and no authentication are needed.",
       },
       {
         heading: "What you need to verify a CBE receipt",
-        body: "To verify a CBE receipt, you need two pieces of information:",
+        body: "For a new CBE receipt, one thing:",
         bullets: [
-          "FT reference number (e.g. FT26140P01YB), found on the receipt or in the CBE mobile app transaction details",
-          "Last 8 digits of the receiving account number (e.g. 60536171), the account that received the payment",
+          "The receipt link (mbreciept.cbe.com.et/...) or its Receipt ID, from the CBE app's share button or the receipt QR code",
+          "Older receipt with only an FT reference (e.g. FT26140P01YB)? Add the last 8 digits of the receiving account. This uses CBE's older receipt service, which is often unreachable",
         ],
       },
       {
-        heading: "CBE's new QR code receipt system",
-        body: "CBE recently launched a new receipt sharing system at mbreciept.cbe.com.et. Receipts shared through this system have short URLs and QR codes instead of FT reference numbers. cheki supports both systems. If you paste a mbreciept.cbe.com.et URL, cheki automatically detects it and uses the new API.",
+        heading: "Older CBE receipts (FT reference)",
+        body: "Before the share links, CBE receipts were PDFs at apps.cbe.com.et:100, looked up by the FT reference plus the last 8 digits of the receiving account. cheki still accepts that older format, but most receipts now carry a Receipt ID, and the older host is often unreachable, so ask for the receipt link when you can.",
       },
       {
         heading: "How to spot a fake CBE receipt",
@@ -201,7 +201,8 @@ export const seoPages: SeoPage[] = [
         heading: "How free receipt verification works",
         body: "Every Ethiopian bank and mobile wallet publishes transaction receipts at publicly accessible URLs. These URLs require no authentication. This is by design: banks want merchants to be able to verify payments. cheki simply fetches these URLs, parses the response, and returns clean JSON.",
         bullets: [
-          "CBE: PDF receipt from apps.cbe.com.et:100",
+          "CBE: JSON for the Receipt ID in a mbreciept.cbe.com.et link (older FT receipts: PDF from apps.cbe.com.et:100)",
+          "Dashen: HTML receipt from receipts.dashenbanksc.com",
           "Telebirr: HTML receipt from transactioninfo.ethiotelecom.et",
           "BOA: JSON from cs.bankofabyssinia.com",
           "M-Pesa: JSON from m-pesabusiness.safaricom.et",
@@ -263,18 +264,18 @@ export const seoPages: SeoPage[] = [
     slug: "ethiopian-bank-receipt-formats",
     title: "Ethiopian Bank Receipt Formats: Complete Reference | cheki",
     h1: "Ethiopian Bank Receipt Formats",
-    metaDescription: "Complete technical reference for Ethiopian bank receipt formats. CBE PDF, Telebirr HTML, BOA JSON, M-Pesa JSON. Endpoint URLs, response structures, and field mappings.",
+    metaDescription: "Complete technical reference for Ethiopian bank receipt formats: CBE Receipt ID (JSON), Telebirr HTML, BOA JSON, Dashen HTML, M-Pesa. Current and legacy endpoint URLs and field mappings.",
     keywords: ["ethiopian bank receipt format", "cbe receipt format", "telebirr receipt format", "boa receipt json", "ethiopian payment receipt structure"],
     intent: "informational",
     faq: [
-      { q: "What format does CBE use for receipts?", a: "CBE uses PDF receipts downloaded from apps.cbe.com.et:100. The URL format is: https://apps.cbe.com.et:100/?id={FT_REFERENCE}{ACCOUNT_SUFFIX}. The PDF contains payer name, receiver name, accounts, amount, date, reference, and branch." },
+      { q: "What format does CBE use for receipts?", a: "New CBE receipts carry a Receipt ID, shared as https://mbreciept.cbe.com.et/{RECEIPT_ID}; the receipt itself is JSON from mb.cbe.com.et with payer, receiver, masked accounts, amount, date and reference. Older receipts were PDFs at https://apps.cbe.com.et:100/?id={FT_REFERENCE}{ACCOUNT_SUFFIX}, a legacy format cheki still accepts." },
       { q: "What format does Telebirr use?", a: "Telebirr uses HTML receipts from transactioninfo.ethiotelecom.et. The URL format is: https://transactioninfo.ethiotelecom.et/receipt/{REFERENCE}. The HTML page contains payer name, receiver name, amount in Birr, and date." },
       { q: "What format does Bank of Abyssinia use?", a: "BOA uses a JSON API at cs.bankofabyssinia.com. The URL format is: https://cs.bankofabyssinia.com/api/onlineSlip/getDetails/?id={REFERENCE}{ACCOUNT_SUFFIX}. Returns structured JSON with all fields." },
     ],
     sections: [
       {
         heading: "CBE receipt format",
-        body: "CBE (Commercial Bank of Ethiopia) publishes receipts as PDF files. The endpoint is https://apps.cbe.com.et:100/?id={FT_REFERENCE}{ACCOUNT_SUFFIX} where FT_REFERENCE is the transaction reference (e.g. FT26140P01YB) and ACCOUNT_SUFFIX is the last 8 digits of the receiving account. The PDF contains: Commercial Bank of Ethiopia header, payer name, payer account, receiver name, receiver account, transferred amount (ETB), payment date and time, reference number (VAT invoice no), branch name, and reason/type of service.",
+        body: "Current: the Receipt ID in a mbreciept.cbe.com.et link or QR code, read as JSON from https://mb.cbe.com.et/api/v1/transactions/public/transaction-detail/{RECEIPT_ID} (payer, receiver, masked accounts, amount, date, reference; no account number needed). Legacy: PDF files at https://apps.cbe.com.et:100/?id={FT_REFERENCE}{ACCOUNT_SUFFIX} where FT_REFERENCE is the transaction reference (e.g. FT26140P01YB) and ACCOUNT_SUFFIX is the last 8 digits of the receiving account. The PDF contains: Commercial Bank of Ethiopia header, payer name, payer account, receiver name, receiver account, transferred amount (ETB), payment date and time, reference number (VAT invoice no), branch name, and reason/type of service.",
       },
       {
         heading: "Telebirr receipt format",
@@ -357,7 +358,7 @@ export const seoPages: SeoPage[] = [
       },
       {
         heading: "Quick start",
-        body: "POST to https://cheki.et/api/verify with a JSON body containing the bank code, reference number, and (for CBE/BOA) the account number. The response includes sender name, receiver name, amount, date, and the source URL from the bank.",
+        body: "POST to https://cheki.et/api/verify with a JSON body containing the bank code and the receipt link or reference in the bank's current format (BOA, and older CBE FT-only receipts, also need the account number). The response includes sender name, receiver name, amount, date, and the source URL from the bank.",
       },
       {
         heading: "Available endpoints",

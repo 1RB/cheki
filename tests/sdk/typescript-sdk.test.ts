@@ -103,6 +103,11 @@ describe("TS SDK: models decode the contract fixtures", () => {
     expect(banks[0].requiresPhone).toBe(false);
     expect(banks.find((b) => b.id === "cbebirr")?.requiresPhone).toBe(true);
     expect(banks.find((b) => b.id === "telebirr")?.type).toBe("mobile");
+    // Formats come current first: CBE leads with the Receipt ID, the FT reference is legacy.
+    expect(banks[0].requiresAccount).toBe(false);
+    expect(banks[0].formats.map((f) => f.status)).toEqual(["current", "legacy"]);
+    expect(banks[0].formats[0].inputs).toEqual(["receiptId"]);
+    expect(banks[0].formats[1].accountDigits).toBe(8);
   });
 
   it("health: status, checkedAt, cached, banks", async () => {
@@ -226,19 +231,24 @@ describe("TS SDK: errors and retries", () => {
 });
 
 describe("TS SDK: getReceiptUrl matches /api/receipt validation", () => {
-  it("builds CBE (with account), Zemen and Dashen URLs", () => {
-    expect(client().getReceiptUrl("cbe", "FT26140P01YB", "1000 5605 36171")).toBe(
-      "https://api.test/api/receipt?bank=cbe&reference=FT26140P01YB&account=1000560536171"
-    );
-    expect(client().getReceiptUrl("Zemen", "ZB123")).toBe("https://api.test/api/receipt?bank=zemen&reference=ZB123");
+  type UrlCase = { name: string; bank: string; reference: string; account?: string; query?: Record<string, string>; error?: boolean };
+  const urlCases = (contract as unknown as { receiptUrlCases: UrlCase[] }).receiptUrlCases;
+
+  it("follows every shared receiptUrlCases fixture (current formats need no account, legacy CBE FT does)", () => {
+    expect(urlCases.length).toBeGreaterThan(5);
+    for (const c of urlCases) {
+      if (c.error) {
+        expect(() => client().getReceiptUrl(c.bank, c.reference, c.account), c.name).toThrow(ChekiValidationError);
+        continue;
+      }
+      const u = new URL(client().getReceiptUrl(c.bank, c.reference, c.account));
+      expect(u.origin + u.pathname, c.name).toBe("https://api.test/api/receipt");
+      expect(Object.fromEntries(u.searchParams), c.name).toEqual(c.query);
+    }
   });
 
-  it("rejects unsupported banks, bad references and a missing CBE account", () => {
-    expect(() => client().getReceiptUrl("telebirr", "X1")).toThrow(ChekiValidationError);
-    expect(() => client().getReceiptUrl("constructor", "X1")).toThrow(ChekiValidationError);
-    expect(() => client().getReceiptUrl("zemen", "../admin")).toThrow(ChekiValidationError);
-    expect(() => client().getReceiptUrl("zemen", "a/b")).toThrow(ChekiValidationError);
-    expect(() => client().getReceiptUrl("cbe", "FT1")).toThrow(ChekiValidationError);
-    expect(() => client().getReceiptUrl("cbe", "FT1", "1234")).toThrow(ChekiValidationError);
+  it("leads with the current format: a CBE Receipt ID needs no account", () => {
+    expect(client().getReceiptUrl("cbe", "fHCxExampleRcpt01")).toBe("https://api.test/api/receipt?bank=cbe&reference=fHCxExampleRcpt01");
+    expect(() => client().getReceiptUrl("cbe", "FT26140P01YB")).toThrow(/older cbe FT reference/);
   });
 });

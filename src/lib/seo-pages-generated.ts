@@ -14,6 +14,7 @@
  *   7. Developer-focused pages (3)
  */
 
+import { primaryFormat, secondaryFormats } from "./manifest/formats";
 import type { SeoPage } from "./seo-pages";
 import { banks, type Bank } from "./banks";
 import { LIVE_BANK_COUNT, liveBankList, liveProviders } from "./bank-counts";
@@ -30,6 +31,20 @@ function receiptTypeLabel(b: Bank): string {
   if (b.responseType === "pdf") return "PDF document";
   if (b.responseType === "json") return "JSON API response";
   return "HTML page";
+}
+
+/** How the bank's current format is asked for ("receipt ID or receipt link", "FT Ref", "transaction number"). */
+function refNoun(b: Bank): string {
+  const label = primaryFormat(b)?.inputs[0]?.label;
+  if (!label) return "transaction reference number";
+  return /^[A-Z][a-z]/.test(label) ? label.charAt(0).toLowerCase() + label.slice(1) : label;
+}
+
+/** One line per older format cheki still accepts, so the copy leads with the current one. */
+function olderFormatNotes(b: Bank): string[] {
+  return secondaryFormats(b)
+    .filter((f) => f.status === "legacy" && f.parser)
+    .map((f) => `Older receipt: ${f.label} (legacy format, still accepted)`);
 }
 
 function accountRequirement(b: Bank): string {
@@ -124,7 +139,7 @@ const checkPaymentPages: SeoPage[] = banks.map((b): SeoPage => ({
   slug: `check-${b.code}-payment-online`,
   title: `Check ${b.name} Payment Online - Free | cheki`,
   h1: `Check a ${b.name} Payment Online`,
-  metaDescription: `Check if a ${b.shortName} payment went through. Free, instant, no signup. Verify any ${b.shortName} transaction by reference number${b.requiresAccount ? ` and account` : ``}.`,
+  metaDescription: `Check if a ${b.shortName} payment went through. Free, instant, no signup. Verify any ${b.shortName} transaction by ${refNoun(b)}${b.requiresAccount ? ` and account` : ``}.`,
   keywords: [
     `check ${b.shortName} payment`,
     `${b.shortName} payment status`,
@@ -137,13 +152,13 @@ const checkPaymentPages: SeoPage[] = banks.map((b): SeoPage => ({
   faq: [
     {
       q: `How do I check if a ${b.shortName} payment was successful?`,
-      a: `Select ${b.name} on cheki, enter the transaction reference number${b.requiresAccount ? ` and the last ${b.accountDigits} digits of the receiving account` : ``}, and click Verify. If the payment exists, cheki shows you the sender name, receiver name, amount, and date. If it doesn't exist, the payment was not completed or the receipt is fake.`,
+      a: `Select ${b.name} on cheki, enter the ${refNoun(b)}${b.requiresAccount ? ` and the last ${b.accountDigits} digits of the receiving account` : ``}, and click Verify. If the payment exists, cheki shows you the sender name, receiver name, amount, and date. If it doesn't exist, the payment was not completed or the receipt is fake.`,
     },
     {
       q: `Can I check a ${b.shortName} payment without the receipt?`,
       a: b.requiresAccount
         ? `You need the transaction reference number and the last ${b.accountDigits} digits of the receiving account. Both are shown on the receipt. Without them, there is no way to look up a ${b.shortName} transaction through public endpoints.`
-        : `You need the transaction reference number. This is shown on the receipt and in the ${b.shortName} app's transaction history. Without it, there is no way to look up a ${b.shortName} transaction through public endpoints.`,
+        : `You need the ${refNoun(b)}. This is shown on the receipt and in the ${b.shortName} app. Without it, there is no way to look up a ${b.shortName} transaction through public endpoints.`,
     },
     {
       q: `Is checking ${b.shortName} payments free?`,
@@ -157,10 +172,11 @@ const checkPaymentPages: SeoPage[] = banks.map((b): SeoPage => ({
     },
     {
       heading: `What information you need`,
-      body: `To check a ${b.shortName} payment, ask the sender for the transaction reference number from their receipt${b.requiresAccount ? ` and make sure you know the last ${b.accountDigits} digits of your receiving account` : ``}. ${b.requiresAccount ? `Both pieces of information are required by the endpoint.` : `That's all you need, no account number required.`}`,
+      body: `To check a ${b.shortName} payment, ask the sender for the ${refNoun(b)} from their receipt${b.requiresAccount ? ` and make sure you know the last ${b.accountDigits} digits of your receiving account` : ``}. ${b.requiresAccount ? `Both pieces of information are required by the endpoint.` : `That's all you need, no account number required.`}`,
       bullets: [
-        `Transaction reference (e.g. ${b.referenceExample})`,
+        `${refNoun(b).charAt(0).toUpperCase()}${refNoun(b).slice(1)} (e.g. ${b.referenceExample})`,
         ...(b.requiresAccount ? [`Last ${b.accountDigits} digits of your account number`] : []),
+        ...olderFormatNotes(b),
         ...(b.geoBlocked ? [`If accessing from outside Ethiopia, cheki provides a fallback link`] : []),
       ],
     },
@@ -330,8 +346,8 @@ const apiEndpointPages: SeoPage[] = [
         body: "Send a POST request with Content-Type: application/json. The body must contain the bank id (e.g. 'cbe', 'telebirr', 'boa'; the id field from GET /api/banks), the transaction reference number, and for banks that require it, the account number.",
         bullets: [
           `bank (required unless the reference is a receipt link): bank id; live banks: ${liveBankIds}`,
-          "reference (required): transaction reference number (e.g. FT26140P01YB)",
-          "accountNumber (conditional): last 8 digits for CBE, last 5 for BOA, not required for Telebirr/M-Pesa",
+          "reference (required): the receipt link or reference in the bank's current format (e.g. a CBE mbreciept.cbe.com.et link, a Dashen FT Ref, a Telebirr transaction number)",
+          "accountNumber (conditional): last 5 digits for BOA; last 8 only for an older CBE receipt with just an FT reference (legacy); not needed for a CBE Receipt ID, Telebirr or M-Pesa",
         ],
       },
       {
@@ -593,7 +609,7 @@ const fraudScenarioPages: SeoPage[] = [
         heading: "Reference number formats by bank",
         body: "Each Ethiopian bank has a distinct reference number format. Knowing these formats helps you spot obviously fake references, but remember that a well-crafted fake will match the format perfectly:",
         bullets: [
-          "CBE: FT + 10 alphanumeric chars (e.g. FT26140P01YB)",
+          "CBE: a Receipt ID in the mbreciept.cbe.com.et link or QR code on new receipts; older receipts show FT + 10 alphanumeric chars (e.g. FT26140P01YB)",
           "Telebirr: alphanumeric string (e.g. DET8FJGUJ4)",
           "BOA: transaction reference + account suffix",
           "M-Pesa: transaction number (trxNo)",
@@ -641,7 +657,7 @@ const developerPages: SeoPage[] = [
           "verifyBatch(receipts): verify up to 20 receipts in one request (checked before sending); returns results, total, verified, failed and cached",
           "getBanks(): all supported banks and wallets; each bank's id is the value to pass as bank",
           "getHealth(): per-bank reachability (cached by the server for up to 5 minutes)",
-          "getReceiptUrl(bank, reference, accountNumber?): builds the /api/receipt download link for CBE, Zemen and Dashen (no request is made)",
+          "getReceiptUrl(bank, reference, accountNumber?): builds the /api/receipt link for CBE, Dashen and Zemen (no request is made). A CBE Receipt ID needs no account; an older CBE FT reference does",
         ],
       },
     ],
@@ -674,7 +690,7 @@ const developerPages: SeoPage[] = [
         bullets: [
           "ChekiClient: calls cheki.et or your self-hosted server; verification and the fail-closed gate run on the server",
           "Errors: result.http_status, result.error, result.is_rate_limited and result.retry_after; result.fallback_url for geo-blocked banks",
-          "CLI: cheki-verify cbe FT26140P01YB --account 1000560536171 calls the API and exits 0 only when the receipt is verified",
+          "CLI: cheki-verify cbe https://mbreciept.cbe.com.et/fHCxExampleRcpt01 calls the API and exits 0 only when the receipt is verified",
           "Direct mode (from cheki import verify) is deprecated and will be removed in the next major version",
         ],
       },

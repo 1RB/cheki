@@ -16,9 +16,7 @@
  * import { Cheki, isVerified } from "cheki-verify";
  *
  * const cheki = new Cheki();
- * const result = await cheki.verify("cbe", "FT26140P01YB", {
- *   accountNumber: "1000560536171",
- * });
+ * const result = await cheki.verify("cbe", "https://mbreciept.cbe.com.et/fHCxExampleRcpt01");
  * if (isVerified(result)) console.log(result.amount, result.senderName);
  * ```
  *
@@ -54,8 +52,14 @@ const MAX_RETRY_AFTER_MS = 60000;
 /** Base delay before a retry when the server sends no Retry-After. */
 const RETRY_BASE_DELAY_MS = 1000;
 /** Banks `/api/receipt` can download, and the account digits each needs. */
+/**
+ * Banks `GET /api/receipt` serves. `legacyReference` and `accountDigits` mark
+ * a legacy format that needs the receiving account: CBE's older FT reference.
+ * The current CBE format (a Receipt ID from a mbreciept.cbe.com.et link)
+ * needs no account.
+ */
 exports.RECEIPT_DOWNLOAD_BANKS = Object.freeze({
-    cbe: { accountDigits: 8 },
+    cbe: { accountDigits: 8, legacyReference: /^FT[A-Za-z0-9]{8,12}$/i },
     zemen: {},
     dashen: {},
 });
@@ -226,7 +230,7 @@ class Cheki {
         const raw = await this.request("GET", "/api/banks", undefined, requestOptions);
         const banks = (raw.banks ?? []).map((b) => {
             const id = String(b.id ?? b.code ?? "");
-            return { ...b, id, code: id, requiresPhone: b.requiresPhone === true };
+            return { ...b, id, code: id, requiresPhone: b.requiresPhone === true, formats: Array.isArray(b.formats) ? b.formats : [] };
         });
         return { banks };
     }
@@ -241,11 +245,15 @@ class Cheki {
         };
     }
     /**
-     * URL of `GET /api/receipt`, which downloads the bank's receipt file.
-     * Only CBE (needs the account number, at least its last 8 digits), Zemen
-     * and Dashen are supported. Pure helper, no request is made.
+     * URL of `GET /api/receipt`, which opens the bank's own copy of a receipt.
+     * Supported: CBE, Dashen and Zemen. Lead with the current format: a CBE
+     * Receipt ID (from the mbreciept.cbe.com.et link) or a Dashen FT Ref, which
+     * the server answers with a redirect to the bank's own receipt page. An
+     * older CBE FT reference (legacy) also needs the receiving account (at least
+     * its last 8 digits) and comes back as the bank's PDF. Pure helper, no
+     * request is made.
      *
-     * @throws {ChekiValidationError} For an unsupported bank, a bad reference or a missing CBE account.
+     * @throws {ChekiValidationError} For an unsupported bank, a bad reference, or a legacy CBE FT reference without the account.
      */
     getReceiptUrl(bank, reference, accountNumber) {
         const id = String(bank ?? "").trim().toLowerCase();
@@ -258,10 +266,11 @@ class Cheki {
             throw new ChekiValidationError("reference must be 1-64 letters, digits, dots, dashes or underscores.");
         }
         const params = new URLSearchParams({ bank: id, reference: ref });
-        if (spec.accountDigits) {
+        // Only the legacy format needs the account (CBE FT reference); a current Receipt ID never sends it.
+        if (spec.accountDigits && (!spec.legacyReference || spec.legacyReference.test(ref))) {
             const digits = String(accountNumber ?? "").replace(/[\s-]/g, "");
             if (!/^\d+$/.test(digits) || digits.length < spec.accountDigits) {
-                throw new ChekiValidationError(`${id} needs the receiving account number (at least the last ${spec.accountDigits} digits).`);
+                throw new ChekiValidationError(`An older ${id} FT reference needs the receiving account number (at least the last ${spec.accountDigits} digits). A Receipt ID from the receipt link needs none.`);
             }
             params.set("account", digits);
         }

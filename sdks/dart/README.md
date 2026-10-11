@@ -24,8 +24,8 @@ final client = ChekiClient(); // 65 s per attempt, at most 1 retry
 try {
   final result = await client.verify(
     bank: 'cbe',
-    reference: 'FT26140P01YB',
-    accountNumber: '1000560536171',
+    // CBE: the receipt link (or just its Receipt ID) from the CBE app. No account number needed.
+    reference: 'https://mbreciept.cbe.com.et/fHCxExampleRcpt01',
   );
   if (result.isVerified) {
     print('${result.senderName} sent ${result.amount} ${result.currency}');
@@ -51,7 +51,7 @@ QR-only (BOA): `client.verify(bank: 'boa', qrData: '3cHRaxVjn/pySp...')`.
 
 ```dart
 final batch = await client.verifyBatch(const [
-  BatchReceipt(bank: 'cbe', reference: 'FT26140P01YB', accountNumber: '1000560536171'),
+  BatchReceipt(bank: 'cbe', reference: 'https://mbreciept.cbe.com.et/fHCxExampleRcpt01'),
   BatchReceipt(bank: 'telebirr', reference: 'CHQ0FJ403O'),
 ]);
 print('${batch.verified}/${batch.total} verified, ${batch.failed} not, ${batch.cached} cached');
@@ -77,10 +77,20 @@ for (final b in health.banks) {
 ### Receipt download links
 
 ```dart
-client.getReceiptUrl('cbe', 'FT26140P01YB', '1000560536171');
+client.getReceiptUrl('cbe', 'fHCxExampleRcpt01');
+// https://cheki.et/api/receipt?bank=cbe&reference=fHCxExampleRcpt01
 ```
 
-Only `cbe` (account required, at least the last 8 digits), `zemen` and `dashen`; anything else throws `ChekiValidationException`.
+Only `cbe`, `zemen` and `dashen`; anything else throws `ChekiValidationException`. CBE and Dashen links redirect to the bank's own receipt page; Zemen (and older CBE receipts) are served as the bank's PDF.
+
+### Older receipts
+
+Older CBE receipts that only show an FT reference still work as a legacy format: pass the receiving account (at least the last 8 digits). CBE's older receipt service is often unreachable, so prefer the receipt link when you have it.
+
+```dart
+await client.verify(bank: 'cbe', reference: 'FT26140P01YB', accountNumber: '1000560536171');
+client.getReceiptUrl('cbe', 'FT26140P01YB', '1000560536171'); // the bank's PDF
+```
 
 ## Errors
 

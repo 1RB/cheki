@@ -9,21 +9,21 @@ const codeExamples: Record<string, string> = {
   -H "Content-Type: application/json" \\
   -d '{
     "bank": "cbe",
-    "reference": "FT26140P01YB",
-    "accountNumber": "1000560536171"
-  }'`,
+    "reference": "https://mbreciept.cbe.com.et/fHCxExampleRcpt01"
+  }'
+# Older CBE receipt with only an FT reference (legacy format):
+#   -d '{"bank":"cbe","reference":"FT26140P01YB","accountNumber":"1000560536171"}'`,
   JavaScript: `import { Cheki, isVerified } from "cheki-verify";
 
 const cheki = new Cheki("https://cheki.et");
-const result = await cheki.verify("cbe", "FT26140P01YB", {
-  accountNumber: "1000560536171"
-});
+const result = await cheki.verify("cbe", "https://mbreciept.cbe.com.et/fHCxExampleRcpt01");
+// Older FT-only receipt (legacy): cheki.verify("cbe", "FT26140P01YB", { accountNumber: "1000560536171" })
 // verified is the only success signal
 if (isVerified(result)) console.log(result.amount, result.senderName);`,
   Python: `from cheki import ChekiClient
 
-result = ChekiClient().verify("cbe", "FT26140P01YB",
-  account_number="1000560536171")
+result = ChekiClient().verify("cbe", "https://mbreciept.cbe.com.et/fHCxExampleRcpt01")
+# Older FT-only receipt (legacy): verify("cbe", "FT26140P01YB", account_number="1000560536171")
 if result.is_verified:  # the only success signal
     print(result.amount, result.sender_name)`,
 };
@@ -33,19 +33,17 @@ const sdkCode: Record<string, string> = {
 
 import { Cheki, isVerified } from "cheki-verify";
 const cheki = new Cheki();
-const result = await cheki.verify("cbe", "FT...", {
-  accountNumber: "1000560536171"
-});
+const result = await cheki.verify("cbe", "https://mbreciept.cbe.com.et/fHCxExampleRcpt01");
 isVerified(result); // true only when the bank confirmed it`,
   Python: `pip install cheki
 
 from cheki import ChekiClient
-result = ChekiClient().verify("cbe", "FT...",
-  account_number="1000560536171")
+result = ChekiClient().verify("cbe", "https://mbreciept.cbe.com.et/fHCxExampleRcpt01")
 result.is_verified  # True only when the bank confirmed it`,
   CLI: `# From a clone of the repo ("npx cheki" is an unrelated npm package)
 git clone https://github.com/1RB/cheki.git && cd cheki && npm install
-npm run cli -- verify cbe FT26140P01YB -a 1000560536171
+npm run cli -- verify cbe https://mbreciept.cbe.com.et/fHCxExampleRcpt01
+npm run cli -- verify cbe FT26140P01YB -a 1000560536171   # older FT receipt (legacy)
 npm run cli -- info
 npm run cli -- health`,
 };
@@ -55,7 +53,7 @@ export default function DevelopersPage() {
   const [activeSdk, setActiveSdk] = useState("TypeScript");
 
   const endpoints = [
-    { method: "POST", path: "/api/verify", desc: "Verify a single receipt. Send bank code, reference, and (for CBE/BOA) account number." },
+    { method: "POST", path: "/api/verify", desc: "Verify a single receipt. Send the bank code and the receipt link or reference in its current format. BOA, and older CBE FT-only receipts, also need the account number." },
     { method: "POST", path: "/api/verify/batch", desc: "Verify up to 20 receipts at once. Send an array of receipt objects." },
     { method: "GET", path: "/api/banks", desc: "List all supported banks and their verification status." },
     { method: "GET", path: "/api/health", desc: "Check API health and per-bank endpoint latency." },
@@ -127,8 +125,8 @@ export default function DevelopersPage() {
   "senderName": "Mr Mohammed Abdulwasi Reshid",
   "receiverName": "SAMI ADIL ZEKARIA",
   "date": "5/20/2026 7:29:00 PM",
-  "durationMs": 7782,
-  "sourceUrl": "https://apps.cbe.com.et:100/?id=FT26140P01YB60536171"
+  "durationMs": 1240,
+  "sourceUrl": "https://mbreciept.cbe.com.et/fHCxExampleRcpt01"
 }`}</code>
           </pre>
         </div>

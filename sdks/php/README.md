@@ -13,7 +13,8 @@ use Cheki\ChekiClient;
 
 $client = new ChekiClient(); // 65 s per attempt, at most 1 retry
 
-$result = $client->verify('cbe', 'FT26140P01YB', '1000560536171');
+// CBE: the receipt link (or just its Receipt ID) from the CBE app. No account number needed.
+$result = $client->verify('cbe', 'https://mbreciept.cbe.com.et/fHCxExampleRcpt01');
 
 if ($result->isVerified()) {
     echo "{$result->senderName} sent {$result->amount} {$result->currency}";
@@ -39,7 +40,7 @@ Signature: `verify(string $bank, string $reference, ?string $accountNumber = nul
 
 ```php
 $batch = $client->verifyBatch([
-    ['bank' => 'cbe', 'reference' => 'FT26140P01YB', 'accountNumber' => '1000560536171'],
+    ['bank' => 'cbe', 'reference' => 'https://mbreciept.cbe.com.et/fHCxExampleRcpt01'],
     ['bank' => 'telebirr', 'reference' => 'CHQ0FJ403O'],
     ['bank' => 'boa', 'qrData' => '3cHRaxVjn/pySp...'],
 ]);
@@ -68,10 +69,20 @@ foreach ($health->banks as $b) {
 ### Receipt download links
 
 ```php
-$url = $client->getReceiptUrl('cbe', 'FT26140P01YB', '1000560536171');
+$url = $client->getReceiptUrl('cbe', 'fHCxExampleRcpt01');
+// https://cheki.et/api/receipt?bank=cbe&reference=fHCxExampleRcpt01
 ```
 
-Only `cbe` (account required, at least the last 8 digits), `zemen` and `dashen`; anything else throws `InvalidArgumentException`.
+Only `cbe`, `zemen` and `dashen`; anything else throws `InvalidArgumentException`. CBE and Dashen links redirect to the bank's own receipt page; Zemen (and older CBE receipts) are served as the bank's PDF.
+
+### Older receipts
+
+Older CBE receipts that only show an FT reference still work as a legacy format: pass the receiving account (at least the last 8 digits). CBE's older receipt service is often unreachable, so prefer the receipt link when you have it.
+
+```php
+$result = $client->verify('cbe', 'FT26140P01YB', '1000560536171');
+$url = $client->getReceiptUrl('cbe', 'FT26140P01YB', '1000560536171'); // the bank's PDF
+```
 
 ## Timeouts and retries
 

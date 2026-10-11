@@ -125,6 +125,32 @@ describe("SDK contract fixtures match the route handlers", () => {
     expect(served.sort()).toEqual([...(contract.limits.receiptDownloadBanks as string[])].sort());
   });
 
+  it("receiptUrlCases: /api/receipt answers every case the way the fixture says", async () => {
+    type UrlCase = { name: string; bank: string; reference: string; account?: string; query?: Record<string, string>; error?: boolean; served?: "redirect" | "pdf" };
+    const cases = (contract as unknown as { receiptUrlCases: UrlCase[] }).receiptUrlCases;
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("%PDF-1.4 fixture", { status: 200 })));
+    for (const c of cases) {
+      const q = new URLSearchParams(c.query ?? { bank: c.bank, reference: c.reference, ...(c.account ? { account: c.account } : {}) });
+      const r = await receiptGET(new NextRequest(`https://cheki.et/api/receipt?${q}`, { headers: freshIp() }));
+      if (c.error) {
+        // SDK-side rejections the server must also refuse (no bank request).
+        if (c.query === undefined && ["cbe", "zemen", "dashen"].includes(c.bank.toLowerCase()) && !/[/.]/.test(c.reference)) {
+          expect(r.status, c.name).toBe(400);
+        } else {
+          expect(r.status, c.name).toBeGreaterThanOrEqual(400);
+        }
+        continue;
+      }
+      if (c.served === "redirect") {
+        expect(r.status, c.name).toBe(302);
+        expect(r.headers.get("location"), c.name).toMatch(/^https:\/\/(mbreciept\.cbe\.com\.et|receipts\.dashenbanksc\.com)\//);
+      } else {
+        expect(r.status, c.name).toBe(200);
+        expect(r.headers.get("content-type"), c.name).toBe("application/pdf");
+      }
+    }
+  });
+
   it("verify_verified: envelope is success + receipt + cached", async () => {
     const f = fx("verify_verified");
     const ref = uniqueRef();

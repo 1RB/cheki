@@ -8,7 +8,7 @@ namespace Cheki;
  * Client for the cheki receipt verification API.
  *
  *   $client = new ChekiClient();
- *   $result = $client->verify('cbe', 'FT26140P01YB', '1000560536171');
+ *   $result = $client->verify('cbe', 'https://mbreciept.cbe.com.et/fHCxExampleRcpt01');
  *   if ($result->isVerified()) {
  *       echo $result->senderName . ' sent ' . $result->amount . ' ' . $result->currency;
  *   }
@@ -25,7 +25,10 @@ class ChekiClient
     public const MAX_BATCH_SIZE = 20;
 
     /** Banks /api/receipt can download => account digits needed (0 = none). */
+    /** Banks GET /api/receipt serves, with the account digits their legacy format needs (0 when none). */
     public const RECEIPT_DOWNLOAD_BANKS = ['cbe' => 8, 'zemen' => 0, 'dashen' => 0];
+    /** An older CBE FT reference (legacy format, needs the account). A Receipt ID does not. */
+    public const LEGACY_CBE_REFERENCE = '/^FT[A-Za-z0-9]{8,12}$/i';
 
     /** A Retry-After longer than this (seconds) is not waited out. */
     private const MAX_RETRY_AFTER = 60;
@@ -161,11 +164,15 @@ class ChekiClient
     }
 
     /**
-     * URL of GET /api/receipt, which downloads the bank's receipt file. Only
-     * CBE (needs the account number, at least its last 8 digits), Zemen and
-     * Dashen are supported. No request is made.
+     * URL of GET /api/receipt, which opens the bank's own copy of a receipt.
+     * Supported: CBE, Dashen and Zemen. Lead with the current format: a CBE
+     * Receipt ID (from the mbreciept.cbe.com.et link) or a Dashen FT Ref,
+     * which the server answers with a redirect to the bank's own page. An
+     * older CBE FT reference (legacy) also needs the receiving account (at
+     * least its last 8 digits) and comes back as the bank's PDF. No request
+     * is made.
      *
-     * @throws \InvalidArgumentException For an unsupported bank, a bad reference or a missing CBE account.
+     * @throws \InvalidArgumentException For an unsupported bank, a bad reference, or a legacy CBE FT reference without the account.
      */
     public function getReceiptUrl(string $bank, string $reference, ?string $accountNumber = null): string
     {
@@ -179,10 +186,11 @@ class ChekiClient
         }
         $params = ['bank' => $id, 'reference' => $ref];
         $digits = self::RECEIPT_DOWNLOAD_BANKS[$id];
-        if ($digits > 0) {
+        // Only the legacy format needs the account: an older CBE FT reference.
+        if ($digits > 0 && ($id !== 'cbe' || preg_match(self::LEGACY_CBE_REFERENCE, $ref) === 1)) {
             $acct = str_replace([' ', '-'], '', (string) $accountNumber);
             if (!preg_match('/^\d+$/', $acct) || strlen($acct) < $digits) {
-                throw new \InvalidArgumentException("{$id} needs the receiving account number (at least the last {$digits} digits).");
+                throw new \InvalidArgumentException("An older {$id} FT reference needs the receiving account number (at least the last {$digits} digits). A Receipt ID from the receipt link needs none.");
             }
             $params['account'] = $acct;
         }

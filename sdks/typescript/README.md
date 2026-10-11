@@ -19,14 +19,15 @@ import { Cheki, isVerified } from "cheki-verify";
 
 const cheki = new Cheki(); // https://cheki.et, 65 s timeout, at most 1 retry
 
-const result = await cheki.verify("cbe", "FT26140P01YB", {
-  accountNumber: "1000560536171",
-});
+// CBE: the receipt link (or just its Receipt ID) from the CBE app. No account number needed.
+const result = await cheki.verify("cbe", "https://mbreciept.cbe.com.et/fHCxExampleRcpt01");
 
 if (isVerified(result)) {
   console.log(result.amount, result.currency, result.senderName);
 }
 ```
+
+Each bank's receipt formats come current first in `getBanks()` (lead with the first `supported` one in `b.formats`); see [Older receipts](#older-receipts) for legacy formats.
 
 ### `verified` is the only success signal
 
@@ -50,7 +51,7 @@ const r = await cheki.verify("boa", "", { qrData: "3cHRaxVjn/pySp..." });
 
 ```ts
 const batch = await cheki.verifyBatch([
-  { bank: "cbe", reference: "FT26140P01YB", accountNumber: "1000560536171" },
+  { bank: "cbe", reference: "https://mbreciept.cbe.com.et/fHCxExampleRcpt01" },
   { bank: "telebirr", reference: "CHQ0FJ403O" },
 ]);
 
@@ -69,6 +70,8 @@ More than 20 receipts (or none) throws `ChekiValidationError` before any request
 const { banks } = await cheki.getBanks();
 for (const b of banks) console.log(b.id, b.name, b.type, b.status, b.requiresAccount, b.accountDigits);
 // b.code is a deprecated alias of b.id
+// b.formats: the bank's receipt formats, current first (status "current" | "legacy" | "deprecated")
+console.log(banks.find((b) => b.id === "cbe")?.formats.find((f) => f.supported)?.label); // "Receipt ID or mbreciept.cbe.com.et link"
 
 const health = await cheki.getHealth(); // cached up to 5 minutes server-side
 console.log(health.status, health.checkedAt, health.cached);
@@ -78,11 +81,22 @@ for (const b of health.banks) console.log(b.id, b.status, b.latencyMs); // reach
 ### Receipt download links
 
 ```ts
-cheki.getReceiptUrl("cbe", "FT26140P01YB", "1000560536171");
-// https://cheki.et/api/receipt?bank=cbe&reference=FT26140P01YB&account=1000560536171
+cheki.getReceiptUrl("cbe", "fHCxExampleRcpt01");
+// https://cheki.et/api/receipt?bank=cbe&reference=fHCxExampleRcpt01 (redirects to CBE's own receipt page)
+cheki.getReceiptUrl("dashen", "B22WDTI2619100WH");
+// https://cheki.et/api/receipt?bank=dashen&reference=B22WDTI2619100WH (redirects to Dashen's own receipt page)
 ```
 
-Only `cbe` (account required, at least the last 8 digits), `zemen` and `dashen` are supported; anything else throws `ChekiValidationError`.
+Only `cbe`, `zemen` and `dashen` are supported; anything else throws `ChekiValidationError`. CBE and Dashen links redirect to the bank's own page; Zemen (and older CBE receipts) are served as the bank's PDF.
+
+### Older receipts
+
+Older CBE receipts that only show an FT reference still work as a legacy format: pass the receiving account (at least the last 8 digits). CBE's older receipt service is often unreachable, so prefer the receipt link when you have it.
+
+```ts
+await cheki.verify("cbe", "FT26140P01YB", { accountNumber: "1000560536171" });
+cheki.getReceiptUrl("cbe", "FT26140P01YB", "1000560536171"); // the bank's PDF
+```
 
 ## Errors
 
@@ -99,7 +113,7 @@ Status codes: 400 bad input, 404 unsupported bank, 413 too large, 422 receipt no
 
 ## Timeouts and retries
 
-- Each attempt waits up to **65 s** (`DEFAULT_TIMEOUT_MS`). The server may spend up to 60 s on a slow bank (CBE PDFs).
+- Each attempt waits up to **65 s** (`DEFAULT_TIMEOUT_MS`). The server may spend up to 60 s on a slow bank (older CBE PDFs).
 - **No retries on 4xx** (except 429) and **none on timeouts** (the server may still be working on the request).
 - **At most one retry** (`MAX_RETRIES = 1`) on a network error, 5xx or 429. The retry waits for `Retry-After` when the server sends one (up to 60 s; a longer wait is thrown as `ChekiRateLimitError` instead), otherwise 1-2 s.
 - The server tries each bank at most 2 times, so one `verify()` reaches the bank at most **4 times** (a batch: 4 per receipt). Worst-case wall time is about 2 × 65 s plus the retry wait.
@@ -112,7 +126,7 @@ const cheki = new Cheki({
   defaultHeaders: { "X-Request-Source": "my-app" },
 });
 
-await cheki.verify("cbe", "FT26140P01YB", { accountNumber: "1000560536171" }, { timeoutMs: 30_000, retries: 0, signal });
+await cheki.verify("cbe", "https://mbreciept.cbe.com.et/fHCxExampleRcpt01", {}, { timeoutMs: 30_000, retries: 0, signal });
 ```
 
 ## Not covered

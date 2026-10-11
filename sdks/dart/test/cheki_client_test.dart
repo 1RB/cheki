@@ -96,6 +96,11 @@ void main() {
       expect(banks.first.requiresPhone, isFalse);
       expect(banks[1].isMobile, isTrue);
       expect(banks[2].requiresPhone, isTrue);
+      // Formats come current first: CBE leads with the Receipt ID, the FT reference is legacy.
+      expect(banks.first.requiresAccount, isFalse);
+      expect(banks.first.formats.map((f) => f.status).toList(), ['current', 'legacy']);
+      expect(banks.first.formats.first.inputs, ['receiptId']);
+      expect(banks.first.formats[1].accountDigits, 8);
     });
 
     test('health', () async {
@@ -196,21 +201,26 @@ void main() {
     });
   });
 
-  test('getReceiptUrl matches /api/receipt validation', () {
+  test('getReceiptUrl follows the shared receiptUrlCases fixture', () {
     final c = ChekiClient(baseUrl: 'https://api.test');
-    expect(c.getReceiptUrl('cbe', 'FT26140P01YB', '1000 5605 36171'),
-        'https://api.test/api/receipt?bank=cbe&reference=FT26140P01YB&account=1000560536171');
-    expect(c.getReceiptUrl('Zemen', 'ZB123'), 'https://api.test/api/receipt?bank=zemen&reference=ZB123');
-    for (final args in [
-      ['telebirr', 'X1', null],
-      ['zemen', '../admin', null],
-      ['zemen', 'a/b', null],
-      ['cbe', 'FT1', null],
-      ['cbe', 'FT1', '1234'],
-    ]) {
-      expect(() => c.getReceiptUrl(args[0]!, args[1]!, args[2]), throwsA(isA<ChekiValidationException>()),
-          reason: '$args');
+    final cases = (contract['receiptUrlCases'] as List).cast<Map<String, dynamic>>();
+    expect(cases.length, greaterThan(5));
+    for (final tc in cases) {
+      final name = tc['name'] as String;
+      final account = tc['account'] as String?;
+      if (tc['error'] == true) {
+        expect(() => c.getReceiptUrl(tc['bank'] as String, tc['reference'] as String, account),
+            throwsA(isA<ChekiValidationException>()),
+            reason: name);
+        continue;
+      }
+      final u = Uri.parse(c.getReceiptUrl(tc['bank'] as String, tc['reference'] as String, account));
+      expect('${u.scheme}://${u.host}${u.path}', 'https://api.test/api/receipt', reason: name);
+      expect(u.queryParameters, Map<String, String>.from(tc['query'] as Map), reason: name);
     }
+    // Current format first: a CBE Receipt ID needs no account.
+    expect(c.getReceiptUrl('cbe', 'fHCxExampleRcpt01'),
+        'https://api.test/api/receipt?bank=cbe&reference=fHCxExampleRcpt01');
   });
 
   test('parseRetryAfter', () {
