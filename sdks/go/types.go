@@ -2,8 +2,10 @@ package cheki
 
 // VerifyOptions is the input for a single receipt verification request.
 //
-// Bank is required, plus Reference or QRData. AccountNumber is needed by CBE
-// and BOA, PhoneNumber by CBE Birr (see BankInfo).
+// Bank is required, plus Reference or QRData. Lead with the bank's current
+// format (a CBE receipt link or Receipt ID needs no account). AccountNumber is
+// needed by BOA and by an older CBE receipt that shows only an FT reference
+// (legacy format), PhoneNumber by CBE Birr (see BankInfo.Formats).
 type VerifyOptions struct {
 	Bank          string `json:"bank"`
 	Reference     string `json:"reference,omitempty"`
@@ -104,9 +106,30 @@ type BankInfo struct {
 	RequiresAccount bool   `json:"requiresAccount"`
 	AccountDigits   int    `json:"accountDigits,omitempty"`
 	RequiresPhone   bool   `json:"requiresPhone,omitempty"`
-	Endpoint        string `json:"endpoint,omitempty"`
-	Color           string `json:"color,omitempty"`
-	Initials        string `json:"initials,omitempty"`
+	// Endpoint is the URL template of the bank's current format (informational).
+	Endpoint string `json:"endpoint,omitempty"`
+	Color    string `json:"color,omitempty"`
+	Initials string `json:"initials,omitempty"`
+	// Formats lists the bank's receipt formats, current first. Lead with the
+	// first Supported one; the rest are older receipts.
+	Formats []ReceiptFormat `json:"formats,omitempty"`
+}
+
+// ReceiptFormat is one receipt format of a bank.
+type ReceiptFormat struct {
+	ID string `json:"id"`
+	// Status is "current", "legacy" (still works) or "deprecated" (links are
+	// only read for their reference).
+	Status string `json:"status"`
+	Label  string `json:"label"`
+	// Inputs the format needs: "reference", "receiptId", "link", "account", "phone".
+	Inputs        []string `json:"inputs"`
+	AccountDigits int      `json:"accountDigits,omitempty"`
+	ResponseType  string   `json:"responseType"`
+	// Supported is false when cheki documents the format but can't check it yet.
+	Supported bool `json:"supported"`
+	// Confidence is "verified" (observed by cheki) or "inferred".
+	Confidence string `json:"confidence"`
 }
 
 // BankHealth is one bank's reachability in the health response.
