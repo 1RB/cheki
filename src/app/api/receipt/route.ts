@@ -1,74 +1,101 @@
 import { NextRequest, NextResponse } from "next/server";
+import { checkAccountSuffix, checkReference } from "@/lib/security/reference";
+import { safeFetch, MAX_PDF_BYTES } from "@/lib/http/safe-fetch";
+import { limiters, rateLimited } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const BANK_ENDPOINTS: Record<string, (ref: string, account?: string) => string> = {
-  cbe: (ref, account) => {
-    const suffix = (account || "").slice(-8);
-    return `https://apps.cbe.com.et:100/?id=${ref}${suffix}`;
-  },
-  zemen: (ref) => `https://share.zemenbank.com/rt/${ref}/pdf`,
-  dashen: (ref) => `https://receipts.dashenbanksc.com/receipt/${encodeURIComponent(ref)}`,
+/**
+ * Download the raw receipt file from the bank.
+ *
+ * Kept (not deleted) because the SDKs build links to it: receiptUrl() in the
+ * TypeScript, Python and PHP clients, and /docs documents it. Hardened:
+ *   - The bank is looked up in a Map, so "constructor", "__proto__" and other
+ *     Object.prototype names are not banks. A plain object lookup used to turn
+ *     ?bank=constructor into an open proxy for any URL.
+ *   - The reference and account are validated like /api/verify does.
+ *   - Only allowlisted bank hosts are fetched (safeFetch), with a size cap.
+ *   - The filename is fixed and the response is private.
+ */
+type Builder = {
+  build: (ref: string, account?: string) => string;
+  accountDigits?: number;
+  /** Statuses that mean "no receipt for this reference" (answered as 404). */
+  notFound?: readonly number[];
 };
 
+const BANK_ENDPOINTS = new Map<string, Builder>([
+  [
+    "cbe",
+    {
+      accountDigits: 8,
+      build: (ref, account) => `https://apps.cbe.com.et:100/?id=${encodeURIComponent(ref)}${account ?? ""}`,
+    },
+  ],
+  ["zemen", { build: (ref) => `https://share.zemenbank.com/rt/${encodeURIComponent(ref)}/pdf` }],
+  // Dashen moved to an HTML receipt page; an unknown FT Ref answers HTTP 400.
+  [
+    "dashen",
+    { build: (ref) => `https://receipts.dashenbanksc.com/receipt/${encodeURIComponent(ref)}`, notFound: [400, 404] },
+  ],
+]);
+
+const fail = (error: string, status: number) =>
+  NextResponse.json({ success: false, error }, { status, headers: { "Cache-Control": "no-store" } });
+
 export async function GET(request: NextRequest) {
+  const limited = rateLimited(limiters.verify, request.headers);
+  if (limited) return limited;
+
   const params = request.nextUrl.searchParams;
   const bank = params.get("bank");
   const reference = params.get("reference");
   const accountNumber = params.get("account");
 
   if (!bank || !reference) {
-    return NextResponse.json(
-      { success: false, error: "bank and reference are required." },
-      { status: 400 }
-    );
+    return fail("bank and reference are required.", 400);
   }
 
-  const builder = BANK_ENDPOINTS[bank.toLowerCase()];
+  const builder = BANK_ENDPOINTS.get(bank.toLowerCase());
   if (!builder) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: `Receipt download not supported for bank '${bank}'. Supported: ${Object.keys(BANK_ENDPOINTS).join(", ")}`,
-      },
-      { status: 400 }
-    );
+    return fail(`Receipt download is only supported for: ${Array.from(BANK_ENDPOINTS.keys()).join(", ")}.`, 400);
   }
 
-  const url = builder(reference, accountNumber || undefined);
+  const ref = checkReference(reference);
+  if (!ref.ok) return fail(ref.message, 400);
+
+  let account: string | undefined;
+  if (builder.accountDigits) {
+    if (!accountNumber) return fail("account is required for this bank.", 400);
+    const acct = checkAccountSuffix(accountNumber, builder.accountDigits);
+    if (!acct.ok) return fail(acct.message, 400);
+    account = acct.value;
+  }
 
   try {
-    const resp = await fetch(url, {
+    const resp = await safeFetch(builder.build(ref.value, account), {
       headers: { "User-Agent": "Mozilla/5.0 (compatible; cheki)" },
-      signal: AbortSignal.timeout(15000),
+      timeoutMs: 15000,
+      maxBytes: MAX_PDF_BYTES,
     });
 
     if (resp.status !== 200) {
-      return NextResponse.json(
-        { success: false, error: `Bank returned status ${resp.status}.` },
-        { status: resp.status }
-      );
+      const notFound = (builder.notFound ?? [404]).includes(resp.status);
+      return fail(notFound ? "Receipt not found." : `Bank returned status ${resp.status}.`, notFound ? 404 : 502);
     }
 
-    const contentType = resp.headers.get("content-type") || "application/octet-stream";
-    const buf = Buffer.from(await resp.arrayBuffer());
-
-    return new NextResponse(buf, {
+    const isPdf = resp.body.subarray(0, 5).toString("ascii").startsWith("%PDF");
+    return new NextResponse(new Uint8Array(resp.body), {
       status: 200,
       headers: {
-        "Content-Type": contentType,
-        "Content-Disposition": `attachment; filename="receipt_${reference}.${contentType.includes("pdf") ? "pdf" : "html"}"`,
-        "Cache-Control": "public, max-age=3600",
+        "Content-Type": isPdf ? "application/pdf" : "application/octet-stream",
+        "Content-Disposition": `attachment; filename="receipt.${isPdf ? "pdf" : "bin"}"`,
+        "Cache-Control": "private, no-store",
+        "X-Content-Type-Options": "nosniff",
       },
     });
-  } catch (err) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: err instanceof Error ? err.message : "Failed to download receipt.",
-      },
-      { status: 502 }
-    );
+  } catch {
+    return fail("Failed to download receipt.", 502);
   }
 }
