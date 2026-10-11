@@ -12,7 +12,8 @@ pip install cheki
 from cheki import ChekiClient
 
 with ChekiClient() as cheki:  # https://cheki.et, 65 s per attempt, at most 1 retry
-    result = cheki.verify("cbe", "FT26140P01YB", account_number="1000560536171")
+    # CBE: the receipt link (or just its Receipt ID) from the CBE app. No account number needed.
+    result = cheki.verify("cbe", "https://mbreciept.cbe.com.et/fHCxExampleRcpt01")
 
     if result.is_verified:
         print(f"{result.sender_name} sent {result.amount} {result.currency}")
@@ -35,7 +36,7 @@ QR-only (BOA): `cheki.verify("boa", "", qr_data="3cHRaxVjn/pySp...")`.
 
 ```python
 batch = cheki.verify_batch([
-    {"bank": "cbe", "reference": "FT26140P01YB", "accountNumber": "1000560536171"},
+    {"bank": "cbe", "reference": "https://mbreciept.cbe.com.et/fHCxExampleRcpt01"},
     {"bank": "telebirr", "reference": "DET8FJGUJ4"},
     {"bank": "boa", "qr_data": "3cHRaxVjn/pySp..."},
 ])
@@ -61,10 +62,20 @@ for b in health.banks:        # health.checks is a deprecated alias
 ### Receipt download links
 
 ```python
-cheki.get_receipt_url("cbe", "FT26140P01YB", account_number="1000560536171")
+cheki.get_receipt_url("cbe", "fHCxExampleRcpt01")
+# https://cheki.et/api/receipt?bank=cbe&reference=fHCxExampleRcpt01
 ```
 
-Only `cbe` (account required, at least the last 8 digits), `zemen` and `dashen`; anything else raises `ValueError`.
+Only `cbe`, `zemen` and `dashen`; anything else raises `ValueError`. CBE and Dashen links redirect to the bank's own receipt page; Zemen (and older CBE receipts) are served as the bank's PDF.
+
+### Older receipts
+
+Older CBE receipts that only show an FT reference still work as a legacy format: pass the receiving account (at least the last 8 digits). CBE's older receipt service is often unreachable, so prefer the receipt link when you have it.
+
+```python
+cheki.verify("cbe", "FT26140P01YB", account_number="1000560536171")
+cheki.get_receipt_url("cbe", "FT26140P01YB", account_number="1000560536171")  # the bank's PDF
+```
 
 ## Errors
 
@@ -90,7 +101,7 @@ Only `cbe` (account required, at least the last 8 digits), `zemen` and `dashen`;
 `pip install cheki` installs `cheki-verify`, which uses the hosted API:
 
 ```bash
-cheki-verify cbe FT26140P01YB --account 1000560536171
+cheki-verify cbe https://mbreciept.cbe.com.et/fHCxExampleRcpt01
 cheki-verify telebirr DET8FJGUJ4 --json
 cheki-verify boa --qr '3cHRaxVjn/pySp...'
 cheki-verify --health
@@ -101,11 +112,11 @@ It exits 0 only when the bank confirmed the receipt. `--api` is accepted and ign
 
 ## Direct verification (deprecated)
 
-`from cheki import verify` fetches bank endpoints from your own machine with Python parsers that have drifted from the server's: they lack its shared verification gate, host allowlist and ReDoS fixes, use an old Dashen host, and do not support eBirr/Siinqee. It is kept only so existing code keeps working:
+`from cheki import verify` fetches bank endpoints from your own machine with Python parsers that have drifted from the server's: they lack its host allowlist and ReDoS fixes and do not support eBirr/Siinqee. CBE (Receipt ID first, FT reference + account for older receipts) and Dashen (receipts.dashenbanksc.com) follow the current formats. It is kept only so existing code keeps working:
 
 - it emits a `DeprecationWarning`;
 - it rejects references that are not plain receipt numbers (no `/ ? # & %`, `..` or spaces);
-- it applies a fail-closed port of the server's gate (positive amount, a payer or receiver, no failed/pending status), so a response that does not pass is `FAILED`, not `VERIFIED`;
+- it applies a fail-closed port of the server's gate (positive amount, the requested reference unless it is an opaque share token such as CBE's Receipt ID, a payer or receiver, no failed/pending status), so a response that does not pass is `FAILED`, not `VERIFIED`;
 - `cheki-verify --direct` uses it (with a warning).
 
 It will be removed in the next major version. If you cannot use the hosted API, self-host the cheki server (see the repo's Docker setup) and point `ChekiClient(base_url=...)` at it.
