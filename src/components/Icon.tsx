@@ -37,8 +37,15 @@ import {
   FileCheckIcon,
   Money01Icon,
   Cancel01Icon,
-  UserGroupIcon,
-  Building01Icon,
+  Share08Icon,
+  PrinterIcon,
+  RefreshIcon,
+  Clock01Icon,
+  WifiDisconnected01Icon,
+  CancelCircleIcon,
+  Delete02Icon,
+  Tick02Icon,
+  ArrowUpRight01Icon,
 } from "@hugeicons/core-free-icons";
 
 interface IconProps {
@@ -61,4 +68,6 @@ export {
   ChevronDownIcon, ChevronUpIcon, Copy01Icon, CopyCheckIcon, Download01Icon,
   Upload01Icon, Image01Icon, LockKeyIcon, Menu01Icon,
   ContainerIcon, FileCheckIcon, Money01Icon, Cancel01Icon,
+  Share08Icon, PrinterIcon, RefreshIcon, Clock01Icon, WifiDisconnected01Icon,
+  CancelCircleIcon, Delete02Icon, Tick02Icon, ArrowUpRight01Icon,
 };

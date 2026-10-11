@@ -1,344 +1,163 @@
 "use client";
 
-import { motion, AnimatePresence } from "motion/react";
-import { Search, X, ArrowRight } from "lucide-react";
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type ReactNode,
-} from "react";
+/**
+ * ⌘K search, loaded only when it is first opened (see Chrome.tsx).
+ *
+ * A modal dialog with an ARIA combobox: the input owns a listbox, arrow keys
+ * move aria-activedescendant, Enter opens, Escape closes and focus returns to
+ * whatever opened it. The page behind is inert while it is open. Items come
+ * from /search-index.json, a static file built from the bank manifest and the
+ * guides, so neither ships in the page bundle.
+ */
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { useRouter } from "next/navigation";
+import { Icon, Search01Icon, Cancel01Icon } from "@/components/Icon";
 
 export type CommandItem = {
   id: string;
   label: string;
   description?: string;
   href: string;
-  icon?: ReactNode;
   group?: string;
 };
 
-export interface CommandPaletteProps {
-  items: CommandItem[];
-  placeholder?: string;
-  emptyText?: string;
+let cache: Promise<CommandItem[]> | null = null;
+function loadItems(): Promise<CommandItem[]> {
+  cache ??= fetch("/search-index.json")
+    .then((r) => (r.ok ? r.json() : []))
+    .catch(() => {
+      cache = null;
+      return [];
+    });
+  return cache;
 }
 
-export function CommandPalette({
-  items,
-  placeholder = "Search banks, guides, pages...",
-  emptyText = "No results found",
-}: CommandPaletteProps) {
-  const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState("");
-  const [activeIndex, setActiveIndex] = useState(0);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const listRef = useRef<HTMLDivElement>(null);
+interface Props {
+  onClose: () => void;
+}
 
-  // ⌘K / Ctrl+K to open
+export default function CommandPalette({ onClose }: Props) {
+  const router = useRouter();
+  const [items, setItems] = useState<CommandItem[]>([]);
+  const [query, setQuery] = useState("");
+  const [active, setActive] = useState(0);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const listId = useId();
+  const labelId = useId();
+
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
-        e.preventDefault();
-        setOpen(true);
-      }
-      if (e.key === "Escape") {
-        setOpen(false);
-      }
+    let live = true;
+    loadItems().then((list) => live && setItems(list));
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    inputRef.current?.focus();
+    // Everything outside the dialog is inert while it is open.
+    const siblings = Array.from(document.body.children).filter((el) => el !== dialogRef.current?.parentElement && !el.contains(dialogRef.current));
+    siblings.forEach((el) => el.setAttribute("inert", ""));
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      live = false;
+      siblings.forEach((el) => el.removeAttribute("inert"));
+      document.body.style.overflow = prevOverflow;
+      opener?.focus();
     };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
   }, []);
 
-  // Focus input on open
-  useEffect(() => {
-    if (open) {
-      setQuery("");
-      setActiveIndex(0);
-      setTimeout(() => inputRef.current?.focus(), 50);
-    }
-  }, [open]);
-
   const filtered = useMemo(() => {
-    if (!query.trim()) return items;
-    const q = query.toLowerCase();
-    return items.filter(
-      (item) =>
-        item.label.toLowerCase().includes(q) ||
-        item.description?.toLowerCase().includes(q) ||
-        item.group?.toLowerCase().includes(q),
-    );
+    const q = query.trim().toLowerCase();
+    const list = q
+      ? items.filter((i) => i.label.toLowerCase().includes(q) || i.description?.toLowerCase().includes(q) || i.group?.toLowerCase().includes(q))
+      : items.filter((i) => i.group !== "Guides").concat(items.filter((i) => i.group === "Guides").slice(0, 6));
+    return list.slice(0, 60);
   }, [items, query]);
 
-  // Group filtered results
-  const grouped = useMemo(() => {
-    const groups: Record<string, CommandItem[]> = {};
-    for (const item of filtered) {
-      const g = item.group || "Pages";
-      if (!groups[g]) groups[g] = [];
-      groups[g].push(item);
+  const go = (item: CommandItem | undefined) => {
+    if (!item) return;
+    onClose();
+    router.push(item.href);
+  };
+
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      onClose();
+    } else if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActive((i) => Math.min(i + 1, filtered.length - 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActive((i) => Math.max(i - 1, 0));
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      go(filtered[active]);
+    } else if (e.key === "Tab") {
+      // Focus stays in the dialog: input and close button only.
+      e.preventDefault();
+      const close = dialogRef.current?.querySelector<HTMLButtonElement>(".cp-close");
+      (document.activeElement === inputRef.current ? close : inputRef.current)?.focus();
     }
-    return groups;
-  }, [filtered]);
+  };
 
-  const flatList = useMemo(() => Object.values(grouped).flat(), [grouped]);
-
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (e.key === "ArrowDown") {
-        e.preventDefault();
-        setActiveIndex((i) => Math.min(i + 1, flatList.length - 1));
-      } else if (e.key === "ArrowUp") {
-        e.preventDefault();
-        setActiveIndex((i) => Math.max(i - 1, 0));
-      } else if (e.key === "Enter") {
-        e.preventDefault();
-        const item = flatList[activeIndex];
-        if (item) {
-          window.location.href = item.href;
-          setOpen(false);
-        }
-      }
-    },
-    [flatList, activeIndex],
-  );
-
-  // Scroll active item into view
   useEffect(() => {
-    const el = listRef.current?.querySelector(`[data-idx="${activeIndex}"]`);
-    el?.scrollIntoView({ block: "nearest" });
-  }, [activeIndex]);
+    document.getElementById(`${listId}-${active}`)?.scrollIntoView({ block: "nearest" });
+  }, [active, listId]);
 
-
-  return (
-    <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        aria-label="Search (⌘K)"
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          width: "32px",
-          height: "32px",
-          borderRadius: "8px",
-          border: "none",
-          background: "transparent",
-          cursor: "pointer",
-          flexShrink: 0,
-          transition: "background 0.15s",
-        }}
-        onMouseEnter={(e) => { e.currentTarget.style.background = "var(--surface-alt)"; }}
-        onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
-      >
-        <Search style={{ width: 16, height: 16, color: "var(--ink-3)" }} />
-      </button>
-
-      {open ? createPortal(
-        <AnimatePresence>
-          {open ? (
-            <>
-              {/* Backdrop. ⌘K is a keyboard action, so it opens and closes
-                  on a hard cut: no transition, no backdrop blur ramp. */}
-              <motion.div
-                initial={false}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0 }}
-                style={{
-                  position: "fixed",
-                  inset: 0,
-                  background: "rgba(0,0,0,0.4)",
-                  backdropFilter: "blur(4px)",
-                  zIndex: 200,
-                }}
-                onClick={() => setOpen(false)}
-              />
-              {/* Panel */}
-              <motion.div
-                initial={false}
-                animate={{ x: "-50%" }}
-                exit={{ x: "-50%", opacity: 0 }}
-                transition={{ duration: 0 }}
-                style={{
-                  position: "fixed",
-                  top: "15vh",
-                  left: "50%",
-                  width: "calc(100vw - 32px)",
-                  maxWidth: "560px",
-                  maxHeight: "60vh",
-                  background: "var(--surface)",
-                  borderRadius: "16px",
-                  border: "1px solid var(--border)",
-                  boxShadow: "0 20px 60px rgba(0,0,0,0.15)",
-                  zIndex: 201,
-                  overflow: "hidden",
-                  display: "flex",
-                  flexDirection: "column",
-                }}
-                onKeyDown={handleKeyDown}
-              >
-                {/* Search input */}
-                <div style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "12px",
-                  padding: "16px 20px",
-                  borderBottom: "1px solid var(--border)",
-                }}>
-                  <Search style={{ width: 18, height: 18, color: "var(--ink-3)", flexShrink: 0 }} />
-                  <input
-                    ref={inputRef}
-                    type="text"
-                    value={query}
-                    onChange={(e) => { setQuery(e.target.value); setActiveIndex(0); }}
-                    placeholder={placeholder}
-                    style={{
-                      flex: 1,
-                      border: "none",
-                      background: "transparent",
-                      fontSize: "16px",
-                      color: "var(--ink)",
-                      fontFamily: "var(--sans)",
-                      outline: "none",
-                    }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setOpen(false)}
-                    style={{
-                      border: "none",
-                      background: "var(--surface-alt)",
-                      borderRadius: "6px",
-                      padding: "4px",
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    <X style={{ width: 14, height: 14, color: "var(--ink-3)" }} />
-                  </button>
+  let lastGroup = "";
+  return createPortal(
+    <div className="cp-root">
+      <div className="cp-backdrop" onClick={onClose} aria-hidden="true" />
+      <div ref={dialogRef} className="cp" role="dialog" aria-modal="true" aria-labelledby={labelId} onKeyDown={onKeyDown}>
+        <h2 id={labelId} className="sr-only">Search cheki</h2>
+        <div className="cp-search">
+          <Icon icon={Search01Icon} size={18} color="var(--ink-3)" />
+          <input
+            ref={inputRef}
+            className="cp-input"
+            role="combobox"
+            aria-expanded="true"
+            aria-controls={listId}
+            aria-autocomplete="list"
+            aria-activedescendant={filtered[active] ? `${listId}-${active}` : undefined}
+            aria-label="Search banks, guides and pages"
+            placeholder="Search banks, guides, pages"
+            value={query}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setActive(0);
+            }}
+          />
+          <button type="button" className="cp-close" onClick={onClose} aria-label="Close search">
+            <Icon icon={Cancel01Icon} size={16} />
+          </button>
+        </div>
+        <ul id={listId} role="listbox" aria-label="Results" className="cp-list">
+          {filtered.length === 0 && <li className="cp-empty" role="presentation">{items.length ? "No results" : "Loading…"}</li>}
+          {filtered.map((item, i) => {
+            const header = item.group && item.group !== lastGroup ? item.group : null;
+            lastGroup = item.group ?? lastGroup;
+            return (
+              <li key={item.id} role="presentation">
+                {header && <span className="cp-group" aria-hidden="true">{header}</span>}
+                <div
+                  id={`${listId}-${i}`}
+                  role="option"
+                  aria-selected={i === active}
+                  className="cp-option"
+                  onMouseMove={() => setActive(i)}
+                  onClick={() => go(item)}
+                >
+                  <span className="cp-label">{item.label}</span>
+                  {item.description && <span className="cp-desc">{item.description}</span>}
                 </div>
-
-                {/* Results */}
-                <div ref={listRef} style={{
-                  overflowY: "auto",
-                  flex: 1,
-                  padding: "8px",
-                }}>
-                  {flatList.length === 0 ? (
-                    <div style={{
-                      padding: "32px 20px",
-                      textAlign: "center",
-                      color: "var(--ink-3)",
-                      fontSize: "14px",
-                    }}>{emptyText}</div>
-                  ) : (
-                    Object.entries(grouped).map(([group, groupItems]) => (
-                      <div key={group} style={{ marginBottom: "4px" }}>
-                        <div style={{
-                          padding: "8px 12px 4px",
-                          fontSize: "11px",
-                          fontWeight: 600,
-                          color: "var(--ink-3)",
-                          textTransform: "uppercase",
-                          letterSpacing: "0.05em",
-                        }}>{group}</div>
-                        {groupItems.map((item) => {
-                          const idx = flatList.indexOf(item);
-                          const isActive = idx === activeIndex;
-                          return (
-                            <a
-                              key={item.id}
-                              href={item.href}
-                              data-idx={idx}
-                              onMouseEnter={() => setActiveIndex(idx)}
-                              onClick={() => setOpen(false)}
-                              style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "12px",
-                                padding: "10px 12px",
-                                borderRadius: "10px",
-                                textDecoration: "none",
-                                background: isActive ? "var(--surface-alt)" : "transparent",
-                                transition: "background 0.1s",
-                              }}
-                            >
-                              {item.icon && (
-                                <span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 20, height: 20, flexShrink: 0 }}>
-                                  {item.icon}
-                                </span>
-                              )}
-                              <span style={{ flex: 1, minWidth: 0 }}>
-                                <span style={{
-                                  display: "block",
-                                  fontSize: "14px",
-                                  fontWeight: 500,
-                                  color: "var(--ink)",
-                                  fontFamily: "var(--sans)",
-                                  whiteSpace: "nowrap",
-                                  overflow: "hidden",
-                                  textOverflow: "ellipsis",
-                                }}>{item.label}</span>
-                                {item.description && (
-                                  <span style={{
-                                    display: "block",
-                                    fontSize: "12px",
-                                    color: "var(--ink-3)",
-                                    whiteSpace: "nowrap",
-                                    overflow: "hidden",
-                                    textOverflow: "ellipsis",
-                                  }}>{item.description}</span>
-                                )}
-                              </span>
-                              {isActive && (
-                                <ArrowRight style={{ width: 14, height: 14, color: "var(--green-dark)", flexShrink: 0 }} />
-                              )}
-                            </a>
-                          );
-                        })}
-                      </div>
-                    ))
-                  )}
-                </div>
-
-                {/* Footer */}
-                <div style={{
-                  padding: "10px 16px",
-                  borderTop: "1px solid var(--border)",
-                  display: "flex",
-                  gap: "16px",
-                  fontSize: "11px",
-                  color: "var(--ink-3)",
-                  fontFamily: "var(--sans)",
-                }}>
-                  <span><kbd style={kbdStyle}>↑↓</kbd> navigate</span>
-                  <span><kbd style={kbdStyle}>↵</kbd> open</span>
-                  <span><kbd style={kbdStyle}>esc</kbd> close</span>
-                </div>
-              </motion.div>
-            </>
-          ) : null}
-        </AnimatePresence>,
-        document.body,
-      ) : null}
-    </>
+              </li>
+            );
+          })}
+        </ul>
+        <p className="cp-foot" aria-hidden="true"><kbd>↑↓</kbd> move <kbd>↵</kbd> open <kbd>esc</kbd> close</p>
+      </div>
+    </div>,
+    document.body
   );
 }
-
-const kbdStyle: React.CSSProperties = {
-  fontSize: "11px",
-  fontWeight: 600,
-  padding: "1px 5px",
-  borderRadius: "3px",
-  background: "var(--surface-alt)",
-  border: "1px solid var(--border)",
-  fontFamily: "var(--mono)",
-  marginRight: "3px",
-};

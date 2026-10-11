@@ -4,7 +4,7 @@ import { banks, getBank } from "@/lib/banks";
 import { Nav, Footer } from "@/components/Chrome";
 import { BouncyAccordion } from "@/components/motion/bouncy-accordion";
 import { brandTileBg } from "@/lib/utils";
-import { BankChecker } from "@/components/BankChecker";
+import { VerifyPanel } from "@/components/verify/VerifyPanel";
 import { ContributeBox } from "@/components/ContributeBox";
 import { getEndpointDoc } from "@/lib/manifest/endpoints";
 import { formatNeeds, primaryFormat, secondaryFormats } from "@/lib/manifest/formats";
@@ -124,7 +124,7 @@ export default async function BankPage({ params }: { params: Promise<{ code: str
         </nav>
 
         <div style={{ display: "flex", alignItems: "center", gap: "16px", marginBottom: "24px" }}>
-          <div style={{ width: "48px", height: "48px", borderRadius: "12px", background: bank.color, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700, fontSize: "18px" }}>
+          <div aria-hidden="true" style={{ width: "48px", height: "48px", borderRadius: "12px", background: brandTileBg(bank.color), display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700, fontSize: "18px" }}>
             {bank.shortName.slice(0, 3)}
           </div>
           <div>
@@ -142,16 +142,13 @@ export default async function BankPage({ params }: { params: Promise<{ code: str
         </p>
 
         {isLive && (
-          <BankChecker
-            code={bank.code}
-            shortName={bank.shortName}
-            referenceExample={bank.referenceExample}
-            requiresAccount={bank.requiresAccount}
-            accountLabel={bank.accountLabel}
-            accountDigits={bank.accountDigits}
-            requiresPhone={bank.requiresPhone}
-            formats={bank.formats}
-          />
+          <section id="check" aria-label={`${bank.shortName} receipt checker`} className="bank-check">
+            <VerifyPanel lockedBank={bank.code} />
+            <p className="bank-check-foot">
+              Free, no signup. Checked against {bank.shortName}&apos;s own receipt record
+              {bank.geoBlocked ? ", which only answers Ethiopian networks" : ""}.
+            </p>
+          </section>
         )}
 
         {!isLive && (
@@ -172,7 +169,7 @@ export default async function BankPage({ params }: { params: Promise<{ code: str
             padding: "12px 16px", borderRadius: "8px", border: "1px solid var(--border)", fontSize: "14px", fontWeight: 500,
             color: bank.status === "live" ? "var(--green-dark)" : "var(--ink-3)", background: "var(--surface)",
           }}>
-            {bank.status === "live" ? "Live and working" : "In development"}
+            {bank.status === "live" ? (bank.geoBlocked ? "Live on Ethiopian networks" : "Live and working") : "In development"}
           </span>
           {bank.geoBlocked && (
             <span style={{ padding: "12px 16px", borderRadius: "8px", border: "1px solid color-mix(in srgb, var(--amber) 30%, transparent)", fontSize: "14px", fontWeight: 500, color: "var(--amber-text)", background: "var(--amber-light)" }}>

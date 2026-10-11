@@ -1,10 +1,25 @@
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
+import localFont from "next/font/local";
 import "./globals.css";
 import { LIVE_BANK_COUNT, liveBankList } from "@/lib/bank-counts";
 import { I18nProvider } from "@/lib/i18n/context";
 
 const SITE_URL = "https://cheki.et";
+
+// Latin subset of Inter (30 KB, wght 400-800), built by scripts/subset-font.sh
+// from the full 352 KB variable font. `display: optional` means a slow
+// connection keeps the metric-matched fallback for this page view instead of
+// repainting the hero when the font lands: the swap was the LCP.
+const inter = localFont({
+  src: "./fonts/inter-latin.woff2",
+  weight: "400 800",
+  style: "normal",
+  display: "optional",
+  variable: "--font-inter",
+  fallback: ["-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "sans-serif"],
+  adjustFontFallback: "Arial",
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -136,12 +151,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" className={inter.variable}>
       <head>
-        {/* Self-hosted: an origin the page has never visited costs DNS + TLS
-            before the first paint. Preloaded because a swap-phase font is a
-            guaranteed flash of fallback text. */}
-        <link rel="preload" href="/fonts/InterVariable.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ldOrganization) }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ldWebsite) }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ldWebapp) }} />
@@ -155,9 +166,6 @@ export default function RootLayout({
           }
           ::view-transition-old(root) { z-index: 1; }
           ::view-transition-new(root) { z-index: 9999; }
-          nav { view-transition-name: nav; }
-          ::view-transition-old(nav) { animation: none; }
-          ::view-transition-new(nav) { animation: none; }
         `}</style>
         <Script
           id="cheki-theme-init"

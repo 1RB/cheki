@@ -1,13 +1,5 @@
 @import "tailwindcss";
 
-@font-face {
-  font-family: "Inter";
-  font-style: normal;
-  font-weight: 100 900;
-  font-display: swap;
-  src: url("/fonts/InterVariable.woff2") format("woff2");
-}
-
 :root {
   --bg: #faf9f6;
   --surface: #ffffff;
@@ -39,7 +31,7 @@
   --border: #e5e2dc;
   --dotted: #d4d0c8;
   --mono: "JetBrains Mono", "IBM Plex Mono", "Roboto Mono", ui-monospace, monospace;
-  --sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --sans: var(--font-inter, "Inter"), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --nav-h: 56px;
   --code-bg: #24292e;
   --code-text: #e1e4e8;
@@ -341,6 +333,82 @@ a { color: inherit; text-decoration: none; }
 }
 
 /* nav: show desktop links, hide mobile toggle by default */
+/* ── Site nav ── */
+.site-nav {
+  position: sticky; top: 0; z-index: 100; height: var(--nav-h);
+  background: color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+}
+.nav-inner { height: 100%; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.nav-left { display: flex; align-items: center; gap: 20px; min-width: 0; }
+.nav-logo { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; flex-shrink: 0; text-decoration: none; }
+.nav-logo-word { font-weight: 800; font-size: 20px; letter-spacing: -0.03em; color: var(--ink); }
+.nav-oss {
+  font-size: 11px; font-weight: 600; color: var(--green-dark); padding: 2px 6px; border-radius: 4px;
+  background: var(--green-light); border: 1px solid var(--green-light);
+}
+.nav-links { gap: 2px; align-items: center; }
+.nav-link {
+  padding: 6px 12px; font-size: 14px; font-weight: 500; color: var(--ink-2); border-radius: 6px;
+  transition: color 0.15s, background-color 0.15s; text-decoration: none;
+}
+.nav-link:hover { color: var(--ink); }
+.nav-link[aria-current="page"] { font-weight: 600; color: var(--ink); background: color-mix(in srgb, var(--border) 70%, transparent); }
+.nav-right { gap: 4px; align-items: center; flex-shrink: 0; }
+.nav-gh {
+  display: flex; align-items: center; gap: 6px; margin-left: 4px; padding: 6px 14px; border-radius: 6px;
+  font-size: 14px; font-weight: 600; color: var(--bg); background: var(--ink); text-decoration: none;
+}
+.nav-icon-btn {
+  width: 44px; height: 44px; display: inline-flex; align-items: center; justify-content: center;
+  border: none; border-radius: 10px; background: transparent; cursor: pointer; flex-shrink: 0;
+}
+.nav-icon-btn:hover { background: var(--surface-alt); }
+.nav-mobile-actions { display: flex; align-items: center; gap: 2px; }
+.nav-mobile-menu {
+  position: fixed; inset: 0; z-index: 200; background: var(--bg);
+  flex-direction: column; overflow: hidden; isolation: isolate;
+}
+.nmm-head {
+  height: var(--nav-h); flex-shrink: 0; display: flex; align-items: center; justify-content: space-between;
+  padding: 0 16px; border-bottom: 1px solid var(--border);
+}
+.nmm-body {
+  flex: 1; padding: 20px 16px 32px; display: flex; flex-direction: column; gap: 8px;
+  overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y;
+}
+.nmm-link, .nmm-row, .nmm-gh {
+  flex-shrink: 0; min-height: 56px; padding: 0 18px; border-radius: 12px; display: flex; align-items: center;
+  justify-content: space-between; font-size: 17px; font-weight: 600; text-decoration: none;
+}
+.nmm-link, .nmm-row { color: var(--ink); background: var(--surface); border: 1px solid var(--border); }
+.nmm-gh { justify-content: flex-start; gap: 10px; color: var(--bg); background: var(--ink); }
+
+/* ── ⌘K palette ── */
+.cp-root { position: fixed; inset: 0; z-index: 300; }
+.cp-backdrop { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.42); }
+.cp {
+  position: absolute; top: 12vh; left: 50%; transform: translateX(-50%);
+  width: calc(100vw - 24px); max-width: 580px; max-height: 70vh; display: flex; flex-direction: column;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 16px; overflow: hidden;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.2); animation: cp-in 150ms ease-out both;
+}
+@keyframes cp-in { from { opacity: 0; transform: translate(-50%, 4px); } to { opacity: 1; transform: translate(-50%, 0); } }
+.cp-search { display: flex; align-items: center; gap: 10px; padding: 6px 6px 6px 16px; border-bottom: 1px solid var(--border); }
+.cp-input { flex: 1; min-width: 0; height: 48px; border: none; background: transparent; color: var(--ink); font-size: 16px; }
+.cp-input:focus-visible { outline: none; }
+.cp-close { width: 44px; height: 44px; border: none; border-radius: 10px; background: transparent; color: var(--ink-3); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+.cp-list { list-style: none; overflow-y: auto; padding: 6px; flex: 1; }
+.cp-group { display: block; padding: 10px 12px 4px; font-size: 11px; font-weight: 650; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-3); }
+.cp-option { display: flex; flex-direction: column; justify-content: center; min-height: 44px; padding: 8px 12px; border-radius: 10px; cursor: pointer; }
+.cp-option[aria-selected="true"] { background: var(--surface-alt); box-shadow: inset 2px 0 0 var(--green); }
+.cp-label { font-size: 14px; font-weight: 500; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cp-desc { font-size: 12px; color: var(--ink-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cp-empty { padding: 28px 12px; text-align: center; color: var(--ink-3); font-size: 14px; }
+.cp-foot { padding: 10px 16px; border-top: 1px solid var(--border); font-size: 11px; color: var(--ink-3); display: flex; gap: 10px; }
+.cp-foot kbd { font-family: var(--mono); font-size: 11px; padding: 1px 5px; border-radius: 4px; background: var(--surface-alt); border: 1px solid var(--border); }
+@media (prefers-reduced-motion: reduce) { .cp { animation: none; } }
+
 .nav-desktop { display: flex !important; }
 .nav-mobile-toggle { display: none !important; }
 .nav-mobile-only { display: none !important; }
@@ -1247,20 +1315,16 @@ button, [role="button"], a.button, .btn {
   transition-delay: var(--page-stagger);
 }
 /* Next.js App Router page enter - template.tsx wraps each route */
+/* Opacity only, and only after a client-side navigation (html[data-nav] is
+   set by the Nav). The first paint of a page is never held back by it, and no
+   transform or filter is left on the wrapper (which would trap position:fixed
+   descendants). */
 @keyframes t-page-enter {
-  from {
-    opacity: 0;
-    transform: translateY(var(--page-slide-distance));
-    filter: blur(var(--page-blur));
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-    filter: blur(0);
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
-.t-page-enter {
-  animation: t-page-enter var(--page-slide-dur) var(--page-slide-ease) both;
+html[data-nav] .t-page-enter {
+  animation: t-page-enter 180ms ease-out backwards;
 }
 @media (prefers-reduced-motion: reduce) {
   .t-page-slide .t-page,
@@ -1503,3 +1567,12 @@ button, [role="button"], a.button, .btn {
   font-weight: 600;
   letter-spacing: 0.02em;
 }
+
+/* ── Checker on /banks/[code] ── */
+.bank-check {
+  max-width: 680px; margin-bottom: 40px; padding: 20px; border-radius: 16px;
+  background: var(--surface); border: 1px solid var(--border);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03), 0 18px 40px -28px rgba(0, 0, 0, 0.18);
+}
+.bank-check-foot { margin-top: 12px; font-size: 12px; color: var(--ink-3); line-height: 1.5; }
+@media (min-width: 640px) { .bank-check { padding: 24px; } }

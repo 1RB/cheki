@@ -12,8 +12,9 @@
  * down before upload.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
-import jsQR from "jsqr";
 import { retryAfterSeconds } from "@/lib/verify-response";
+import { decodeQrFromImage } from "@/lib/qr/decode";
+import { decodeImage, prepareUpload } from "@/lib/image/prepare";
 
 type LeadMode = "screenshot" | "link";
 
@@ -37,7 +38,6 @@ interface Shot {
 
 const PROBE_URL = "https://github.com/1RB/cheki/blob/main/CONTRIBUTING.md#1-probe-your-own-receipt-locally";
 const MAX_EDGE = 1600;
-const QR_EDGES = [2000, 1000];
 const MAX_UPLOAD = 3 * 1024 * 1024;
 const MAX_RAW = 25 * 1024 * 1024;
 
@@ -50,61 +50,17 @@ function isHttpUrl(text: string): boolean {
   }
 }
 
-async function decodeImage(file: Blob): Promise<{ src: CanvasImageSource; w: number; h: number; close: () => void }> {
-  try {
-    const bmp = await createImageBitmap(file);
-    return { src: bmp, w: bmp.width, h: bmp.height, close: () => bmp.close() };
-  } catch {
-    const url = URL.createObjectURL(file);
-    try {
-      const img = new Image();
-      img.src = url;
-      await img.decode();
-      return { src: img, w: img.naturalWidth, h: img.naturalHeight, close: () => undefined };
-    } finally {
-      URL.revokeObjectURL(url);
-    }
-  }
-}
-
-function drawScaled(src: CanvasImageSource, w: number, h: number, maxEdge: number) {
-  const scale = Math.min(1, maxEdge / Math.max(w, h));
-  const canvas = document.createElement("canvas");
-  canvas.width = Math.max(1, Math.round(w * scale));
-  canvas.height = Math.max(1, Math.round(h * scale));
-  const ctx = canvas.getContext("2d", { willReadFrequently: true });
-  if (!ctx) throw new Error("no canvas");
-  ctx.fillStyle = "#ffffff";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.drawImage(src, 0, 0, canvas.width, canvas.height);
-  return { canvas, ctx };
-}
-
-function toJpeg(canvas: HTMLCanvasElement, quality: number): Promise<Blob | null> {
-  return new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", quality));
-}
-
-/** Returns a QR link found in the image, or a metadata-free JPEG of it. */
+/**
+ * Returns a QR link found in the image, or a metadata-free JPEG of it. The QR
+ * scan is the shared pipeline (src/lib/qr/decode.ts, jsQR loaded on demand);
+ * the JPEG is redrawn through a canvas, which drops EXIF.
+ */
 async function processScreenshot(file: Blob): Promise<{ link: string } | { blob: Blob }> {
   const img = await decodeImage(file);
   try {
-    for (const edge of QR_EDGES) {
-      const { canvas, ctx } = drawScaled(img.src, img.w, img.h, edge);
-      const data = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const qr = jsQR(data.data, data.width, data.height, { inversionAttempts: "attemptBoth" });
-      if (qr && isHttpUrl(qr.data)) return { link: qr.data.trim() };
-      if (Math.max(img.w, img.h) <= edge) break;
-    }
-    let edge = MAX_EDGE;
-    for (let attempt = 0; attempt < 3; attempt++) {
-      const { canvas } = drawScaled(img.src, img.w, img.h, edge);
-      for (const q of [0.8, 0.65, 0.5]) {
-        const blob = await toJpeg(canvas, q);
-        if (blob && blob.size <= MAX_UPLOAD) return { blob };
-      }
-      edge = Math.round(edge * 0.75);
-    }
-    throw new Error("too large");
+    const qr = await decodeQrFromImage(img);
+    if (qr && isHttpUrl(qr)) return { link: qr.trim() };
+    return { blob: await prepareUpload(file, { image: img, maxBytes: MAX_UPLOAD, maxEdge: MAX_EDGE }) };
   } finally {
     img.close();
   }
