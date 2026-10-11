@@ -1,46 +1,42 @@
 import { NextResponse } from "next/server";
 import { getAllBanks, getParser } from "@/lib";
-import * as https from "node:https";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-function checkEndpoint(url: string, sslVerify: boolean, timeoutMs: number = 5000): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (!sslVerify) {
-      // Use node:https with SSL verification disabled for banks with broken certs
-      const req = https.get(
-        url,
-        { headers: { "User-Agent": "cheki-health-check" }, rejectUnauthorized: false },
-        () => resolve()
-      );
-      req.on("error", reject);
-      req.setTimeout(timeoutMs, () => req.destroy(new Error("timeout")));
-      return;
-    }
+/**
+ * Per-bank reachability.
+ *
+ * This used to probe every live bank on every request, so each call to
+ * /api/health fanned out to every bank endpoint (an amplifier). Results are
+ * now cached for 5 minutes per instance, and the CDN may serve the same
+ * response for 5 minutes (s-maxage), so the banks see at most one probe per
+ * instance per 5 minutes no matter how often this is called.
+ */
+const CACHE_TTL_MS = 5 * 60 * 1000;
+const CACHE_HEADERS = { "Cache-Control": "public, max-age=60, s-maxage=300, stale-while-revalidate=600" };
 
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), timeoutMs);
-    fetch(url, {
-      method: "GET",
-      signal: controller.signal,
-      headers: { "User-Agent": "cheki-health-check" },
-    })
-      .then(() => {
-        clearTimeout(timeout);
-        resolve();
-      })
-      .catch((e) => {
-        clearTimeout(timeout);
-        reject(e);
-      });
+type BankCheck = { id: string; name: string; status: string; latencyMs: number };
+type HealthBody = { status: string; checkedAt: string; banks: BankCheck[] };
+let cache: { at: number; body: HealthBody } | null = null;
+let inflight: Promise<HealthBody> | null = null;
+
+async function checkEndpoint(url: string, timeoutMs: number): Promise<void> {
+  // TLS is verified for every bank (the Awash and Telebirr/M-Pesa bypasses
+  // were removed). Only reachability matters, so the body is discarded.
+  const resp = await fetch(url, {
+    method: "GET",
+    redirect: "manual",
+    signal: AbortSignal.timeout(timeoutMs),
+    headers: { "User-Agent": "cheki-health-check" },
   });
+  await resp.body?.cancel().catch(() => {});
 }
 
-export async function GET() {
+async function probeAll(): Promise<HealthBody> {
   const banks = getAllBanks();
   const checks = await Promise.all(
-    banks.map(async (b) => {
+    banks.map(async (b): Promise<BankCheck> => {
       const start = Date.now();
       const parser = getParser(b.id);
       if (!parser || b.status !== "live") {
@@ -58,26 +54,37 @@ export async function GET() {
           .replace("{phone}", "0000000000");
         // CBE legacy PDF endpoint is slow, so give it 15s in health checks
         const healthTimeout = b.id === "cbe" ? 15000 : 5000;
-        await checkEndpoint(url, b.sslVerify, healthTimeout);
-        return {
-          id: b.id,
-          name: b.name,
-          status: "reachable",
-          latencyMs: Date.now() - start,
-        };
+        await checkEndpoint(url, healthTimeout);
+        return { id: b.id, name: b.name, status: "reachable", latencyMs: Date.now() - start };
       } catch {
         return {
           id: b.id,
           name: b.name,
-          status: (b.id === "telebirr" || b.id === "mpesa") ? "geo-blocked" : "unreachable",
+          status: b.geoBlocked ? "geo-blocked" : "unreachable",
           latencyMs: Date.now() - start,
         };
       }
     })
   );
+  return { status: "ok", checkedAt: new Date().toISOString(), banks: checks };
+}
 
-  return NextResponse.json({
-    status: "ok",
-    banks: checks,
-  });
+export async function GET() {
+  const now = Date.now();
+  if (cache && now - cache.at < CACHE_TTL_MS) {
+    return NextResponse.json({ ...cache.body, cached: true }, { headers: CACHE_HEADERS });
+  }
+  // Concurrent requests during a refresh share one probe.
+  if (!inflight) {
+    inflight = probeAll()
+      .then((body) => {
+        cache = { at: Date.now(), body };
+        return body;
+      })
+      .finally(() => {
+        inflight = null;
+      });
+  }
+  const body = await inflight;
+  return NextResponse.json({ ...body, cached: false }, { headers: CACHE_HEADERS });
 }
