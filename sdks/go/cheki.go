@@ -1,65 +1,109 @@
 // Package cheki provides a Go client for the cheki receipt verification API.
 //
 // cheki is a free Ethiopian receipt verification service available at
-// https://cheki.et. This client wraps the REST API, offering
-// typed responses, context-aware requests, and idiomatic Go error handling.
+// https://cheki.et. This client wraps the REST API, offering typed
+// responses, context-aware requests, and idiomatic Go error handling.
+//
+// Verified is the ONLY success signal. A 200 response can still be
+// unverified: a BOA QR code that could not be confirmed with the bank comes
+// back with Verified false and DecodedOnly true. Use VerifyResult.IsVerified.
 //
 // Example:
 //
 //	client := cheki.NewClient()
 //	result, err := client.Verify(context.Background(), cheki.VerifyOptions{
-//	    Bank:      "cbe",
-//	    Reference: "123456789",
+//	    Bank:          "cbe",
+//	    Reference:     "FT26140P01YB",
+//	    AccountNumber: "1000560536171",
 //	})
 //	if err != nil {
 //	    log.Fatal(err)
 //	}
-//	fmt.Println(result.Verified)
+//	if result.IsVerified() {
+//	    fmt.Println(result.Amount, result.SenderName)
+//	}
 package cheki
 
 import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"math/rand"
 	"net/http"
+	"net/url"
+	"regexp"
+	"strconv"
+	"strings"
 	"time"
 )
+
+// Version is the SDK version sent in the User-Agent header.
+const Version = "1.4.1"
 
 // DefaultBaseURL is the default cheki API endpoint.
 const DefaultBaseURL = "https://cheki.et"
 
-// DefaultTimeout is the default HTTP request timeout.
-const DefaultTimeout = 30 * time.Second
+// DefaultTimeout is the per-attempt timeout. The server gives a verification
+// up to 60 s, so the client waits a little longer than that.
+const DefaultTimeout = 65 * time.Second
 
-// Retry configuration.
+// MaxRetries is the most retries the client makes on top of the first
+// attempt. The server already tries each bank fetch up to 2 times, so one
+// SDK call reaches a bank at most 2 x 2 = 4 times.
+const MaxRetries = 1
+
+// MaxBatchSize is the most receipts VerifyBatch accepts.
+const MaxBatchSize = 20
+
 const (
-	maxRetries     = 3
-	initialBackoff = 500 * time.Millisecond
-	maxBackoff     = 5 * time.Second
+	maxRetryAfter  = 60 * time.Second
+	retryBaseDelay = time.Second
+)
+
+// ReceiptDownloadBanks lists the banks /api/receipt can download, with the
+// number of trailing account digits each needs (0 when no account is needed).
+var ReceiptDownloadBanks = map[string]int{"cbe": 8, "zemen": 0, "dashen": 0}
+
+var safeReference = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$`)
+
+// Sentinel errors, usable with errors.Is.
+var (
+	// ErrRateLimited matches an *APIError with status 429.
+	ErrRateLimited = errors.New("cheki: rate limited")
+	// ErrPayloadTooLarge matches an *APIError with status 413.
+	ErrPayloadTooLarge = errors.New("cheki: request body too large")
+	// ErrBatchTooLarge is returned by VerifyBatch for more than MaxBatchSize receipts.
+	ErrBatchTooLarge = fmt.Errorf("cheki: a batch accepts at most %d receipts", MaxBatchSize)
+	// ErrInvalidInput is returned for input rejected before any request is made.
+	ErrInvalidInput = errors.New("cheki: invalid input")
 )
 
 // Client is the cheki API client.
 type Client struct {
 	baseURL    string
 	httpClient *http.Client
+	timeout    time.Duration
+	maxRetries int
+	userAgent  string
 }
 
 // Option configures a Client at construction time.
 type Option func(*Client)
 
 // WithBaseURL overrides the default API base URL.
-func WithBaseURL(url string) Option {
+func WithBaseURL(u string) Option {
 	return func(c *Client) {
-		if url != "" {
-			c.baseURL = url
+		if u != "" {
+			c.baseURL = strings.TrimRight(u, "/")
 		}
 	}
 }
 
-// WithHTTPClient supplies a custom *http.Client.
+// WithHTTPClient supplies a custom *http.Client. The per-attempt timeout
+// (WithTimeout) still applies, through the request context.
 func WithHTTPClient(hc *http.Client) Option {
 	return func(c *Client) {
 		if hc != nil {
@@ -68,11 +112,33 @@ func WithHTTPClient(hc *http.Client) Option {
 	}
 }
 
-// WithTimeout sets the HTTP request timeout for the default client.
-// Has no effect if WithHTTPClient is also used.
+// WithTimeout sets the per-attempt timeout. It works with or without
+// WithHTTPClient, in any order. Zero or negative disables it (the context
+// passed to each call still applies).
 func WithTimeout(d time.Duration) Option {
+	return func(c *Client) { c.timeout = d }
+}
+
+// WithMaxRetries sets the retries on network errors, 5xx and 429. Values
+// are clamped to 0..MaxRetries.
+func WithMaxRetries(n int) Option {
 	return func(c *Client) {
-		c.httpClient = &http.Client{Timeout: d}
+		if n < 0 {
+			n = 0
+		}
+		if n > MaxRetries {
+			n = MaxRetries
+		}
+		c.maxRetries = n
+	}
+}
+
+// WithUserAgent overrides the User-Agent header.
+func WithUserAgent(ua string) Option {
+	return func(c *Client) {
+		if ua != "" {
+			c.userAgent = ua
+		}
 	}
 }
 
@@ -80,7 +146,10 @@ func WithTimeout(d time.Duration) Option {
 func NewClient(opts ...Option) *Client {
 	c := &Client{
 		baseURL:    DefaultBaseURL,
-		httpClient: &http.Client{Timeout: DefaultTimeout},
+		httpClient: &http.Client{},
+		timeout:    DefaultTimeout,
+		maxRetries: MaxRetries,
+		userAgent:  "cheki-go-sdk/" + Version,
 	}
 	for _, opt := range opts {
 		opt(c)
@@ -88,185 +157,297 @@ func NewClient(opts ...Option) *Client {
 	return c
 }
 
-// Verify verifies a single receipt against the cheki service.
+// Verify verifies a single receipt.
+//
+// It returns a result for HTTP 200, which includes unverified decoded-only
+// BOA QR results: check IsVerified. Any other status is an *APIError
+// (422 not found, 404 unsupported bank, 429 rate limited, ...).
 func (c *Client) Verify(ctx context.Context, opts VerifyOptions) (*VerifyResult, error) {
-	if opts.Bank == "" {
-		return nil, fmt.Errorf("cheki: bank is required")
+	if strings.TrimSpace(opts.Bank) == "" {
+		return nil, fmt.Errorf("%w: bank is required", ErrInvalidInput)
 	}
-	if opts.Reference == "" {
-		return nil, fmt.Errorf("cheki: reference is required")
+	if strings.TrimSpace(opts.Reference) == "" && strings.TrimSpace(opts.QRData) == "" {
+		return nil, fmt.Errorf("%w: reference or QRData is required", ErrInvalidInput)
 	}
-
 	body, err := json.Marshal(opts)
 	if err != nil {
 		return nil, fmt.Errorf("cheki: failed to marshal request: %w", err)
 	}
-
 	var result VerifyResult
-	if err := c.post(ctx, "/api/verify", body, &result); err != nil {
+	if err := c.do(ctx, http.MethodPost, "/api/verify", body, &result); err != nil {
 		return nil, err
 	}
 	return &result, nil
 }
 
-// VerifyBatch verifies multiple receipts in a single request.
+// VerifyBatch verifies up to MaxBatchSize receipts in one request. Every
+// item also counts against the per-IP verify limit (30 per minute).
 func (c *Client) VerifyBatch(ctx context.Context, receipts []VerifyOptions) (*BatchResult, error) {
 	if len(receipts) == 0 {
-		return nil, fmt.Errorf("cheki: at least one receipt is required")
+		return nil, fmt.Errorf("%w: at least one receipt is required", ErrInvalidInput)
 	}
-
-	payload := struct {
+	if len(receipts) > MaxBatchSize {
+		return nil, fmt.Errorf("%w (got %d); split the list into chunks of %d", ErrBatchTooLarge, len(receipts), MaxBatchSize)
+	}
+	body, err := json.Marshal(struct {
 		Receipts []VerifyOptions `json:"receipts"`
-	}{Receipts: receipts}
-
-	body, err := json.Marshal(payload)
+	}{Receipts: receipts})
 	if err != nil {
 		return nil, fmt.Errorf("cheki: failed to marshal request: %w", err)
 	}
-
 	var result BatchResult
-	if err := c.post(ctx, "/api/verify/batch", body, &result); err != nil {
+	if err := c.do(ctx, http.MethodPost, "/api/verify/batch", body, &result); err != nil {
 		return nil, err
+	}
+	for i := range result.Results {
+		result.Results[i].Index = i
 	}
 	return &result, nil
 }
 
-// GetBanks retrieves the list of banks supported by the cheki service.
+// GetBanks retrieves the list of supported banks. BankInfo.ID is the value
+// to pass as VerifyOptions.Bank.
 func (c *Client) GetBanks(ctx context.Context) ([]BankInfo, error) {
 	var resp BanksResponse
-	if err := c.get(ctx, "/api/banks", &resp); err != nil {
+	if err := c.do(ctx, http.MethodGet, "/api/banks", nil, &resp); err != nil {
 		return nil, err
+	}
+	for i := range resp.Banks {
+		resp.Banks[i].Code = resp.Banks[i].ID
 	}
 	return resp.Banks, nil
 }
 
-// GetHealth retrieves the health status of the cheki service.
+// GetHealth retrieves per-bank reachability. The server caches it for up to
+// 5 minutes.
 func (c *Client) GetHealth(ctx context.Context) (*HealthStatus, error) {
 	var status HealthStatus
-	if err := c.get(ctx, "/api/health", &status); err != nil {
+	if err := c.do(ctx, http.MethodGet, "/api/health", nil, &status); err != nil {
 		return nil, err
 	}
 	return &status, nil
 }
 
-// GetReceiptURL constructs the URL for viewing a receipt on the cheki web
-// service. This is the public-facing page where a receipt can be viewed
-// in a browser - distinct from the API endpoint used for verification.
-func (c *Client) GetReceiptURL(bank, reference string) string {
-	return fmt.Sprintf("%s/receipt/%s/%s", c.baseURL, bank, reference)
-}
-
-// post sends a JSON POST request and decodes the JSON response into target.
-func (c *Client) post(ctx context.Context, path string, body []byte, target any) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL+path, bytes.NewReader(body))
-	if err != nil {
-		return fmt.Errorf("cheki: failed to create request: %w", err)
+// GetReceiptURL returns the URL of GET /api/receipt, which downloads the
+// bank's receipt file. Only CBE (needs the account number, at least its last
+// 8 digits), Zemen and Dashen are supported. No request is made.
+func (c *Client) GetReceiptURL(bank, reference, accountNumber string) (string, error) {
+	id := strings.ToLower(strings.TrimSpace(bank))
+	digits, ok := ReceiptDownloadBanks[id]
+	if !ok {
+		return "", fmt.Errorf("%w: receipt download is only supported for cbe, zemen and dashen", ErrInvalidInput)
 	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Accept", "application/json")
-	return c.do(req, target)
-}
-
-// get sends a GET request and decodes the JSON response into target.
-func (c *Client) get(ctx context.Context, path string, target any) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+path, nil)
-	if err != nil {
-		return fmt.Errorf("cheki: failed to create request: %w", err)
+	ref := strings.TrimSpace(reference)
+	if !safeReference.MatchString(ref) || strings.Contains(ref, "..") {
+		return "", fmt.Errorf("%w: reference must be 1-64 letters, digits, dots, dashes or underscores", ErrInvalidInput)
 	}
-	req.Header.Set("Accept", "application/json")
-	return c.do(req, target)
+	q := url.Values{}
+	q.Set("bank", id)
+	q.Set("reference", ref)
+	if digits > 0 {
+		acct := strings.NewReplacer(" ", "", "-", "").Replace(accountNumber)
+		if len(acct) < digits || strings.Trim(acct, "0123456789") != "" {
+			return "", fmt.Errorf("%w: %s needs the receiving account number (at least the last %d digits)", ErrInvalidInput, id, digits)
+		}
+		q.Set("account", acct)
+	}
+	return c.baseURL + "/api/receipt?" + q.Encode(), nil
 }
 
-// do executes the request and decodes the JSON response body into target.
+// do performs the request with at most one retry.
 //
-// It retries up to maxRetries times on HTTP 429 (Too Many Requests) and 5xx
-// (Server Error) responses using exponential backoff with jitter. The initial
-// backoff is 500ms, doubling each retry, capped at 5s. A random jitter of up
-// to 50% of the backoff is added to avoid thundering-herd effects. Context
-// cancellation is respected during backoff waits.
-func (c *Client) do(req *http.Request, target any) error {
-	backoff := initialBackoff
-	var lastErr error
-
-	for attempt := 0; attempt <= maxRetries; attempt++ {
-		// On retry, rewind the request body for POST requests.
-		if attempt > 0 {
-			if req.GetBody != nil {
-				newBody, err := req.GetBody()
-				if err != nil {
-					return fmt.Errorf("cheki: failed to rewind request body: %w", err)
-				}
-				req.Body = newBody
-			}
-
-			// Wait with exponential backoff + jitter, respecting context cancellation.
-			jitter := time.Duration(rand.Int63n(int64(backoff) / 2))
-			wait := backoff/2 + jitter
-			select {
-			case <-req.Context().Done():
-				return req.Context().Err()
-			case <-time.After(wait):
-			}
-
-			// Increase backoff for next iteration, capped at maxBackoff.
-			backoff *= 2
-			if backoff > maxBackoff {
-				backoff = maxBackoff
-			}
-		}
-
-		resp, err := c.httpClient.Do(req)
+// Retried: network errors, 5xx, and 429 when Retry-After is at most 60 s.
+// Never retried: other 4xx, timeouts, a cancelled context.
+func (c *Client) do(ctx context.Context, method, path string, body []byte, target any) error {
+	for attempt := 0; ; attempt++ {
+		canRetry := attempt < c.maxRetries
+		status, raw, header, err := c.attempt(ctx, method, path, body)
 		if err != nil {
-			// Network-level errors are not retryable (spec: 429/5xx only).
-			return fmt.Errorf("cheki: request failed: %w", err)
-		}
-
-		raw, readErr := io.ReadAll(resp.Body)
-		resp.Body.Close()
-		if readErr != nil {
-			return fmt.Errorf("cheki: failed to read response: %w", readErr)
-		}
-
-		// Retry on 429 or 5xx if we haven't exhausted retries.
-		if (resp.StatusCode == 429 || resp.StatusCode >= 500) && attempt < maxRetries {
-			lastErr = &APIError{
-				StatusCode: resp.StatusCode,
-				Body:       string(raw),
-				Message:    fmt.Sprintf("cheki: API returned status %d (retrying)", resp.StatusCode),
+			var te *timeoutError
+			if errors.As(err, &te) || ctx.Err() != nil || !canRetry {
+				return err
+			}
+			if werr := sleep(ctx, retryDelay(-1)); werr != nil {
+				return werr
 			}
 			continue
 		}
 
-		// Non-retryable error or retries exhausted.
-		if resp.StatusCode >= 400 {
-			return &APIError{
-				StatusCode: resp.StatusCode,
-				Body:       string(raw),
-				Message:    fmt.Sprintf("cheki: API returned status %d", resp.StatusCode),
+		if status >= 200 && status < 300 {
+			if err := json.Unmarshal(raw, target); err != nil {
+				return fmt.Errorf("cheki: failed to decode response: %w", err)
 			}
+			return nil
 		}
 
-		if err := json.Unmarshal(raw, target); err != nil {
-			return fmt.Errorf("cheki: failed to decode response: %w", err)
+		apiErr := newAPIError(method, path, status, raw, header)
+		retryable := status == http.StatusTooManyRequests || status >= 500
+		if retryable && canRetry && (apiErr.RetryAfter < 0 || apiErr.RetryAfter <= maxRetryAfter) {
+			if werr := sleep(ctx, retryDelay(apiErr.RetryAfter)); werr != nil {
+				return werr
+			}
+			continue
 		}
-		return nil
+		return apiErr
 	}
-
-	// All retries exhausted - return the last API error.
-	return lastErr
 }
 
-// APIError represents a non-2xx API response.
+type timeoutError struct {
+	path    string
+	timeout time.Duration
+}
+
+func (e *timeoutError) Error() string {
+	return fmt.Sprintf("cheki: request to %s timed out after %s", e.path, e.timeout)
+}
+
+// Is makes errors.Is(err, context.DeadlineExceeded) true for timeouts.
+func (e *timeoutError) Is(target error) bool { return target == context.DeadlineExceeded }
+
+func (c *Client) attempt(ctx context.Context, method, path string, body []byte) (int, []byte, http.Header, error) {
+	actx := ctx
+	cancel := context.CancelFunc(func() {})
+	if c.timeout > 0 {
+		actx, cancel = context.WithTimeout(ctx, c.timeout)
+	}
+	defer cancel()
+
+	var reader io.Reader
+	if body != nil {
+		reader = bytes.NewReader(body)
+	}
+	req, err := http.NewRequestWithContext(actx, method, c.baseURL+path, reader)
+	if err != nil {
+		return 0, nil, nil, fmt.Errorf("cheki: failed to create request: %w", err)
+	}
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("User-Agent", c.userAgent)
+	if body != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
+
+	resp, err := c.httpClient.Do(req)
+	if err == nil {
+		defer resp.Body.Close()
+		raw, rerr := io.ReadAll(resp.Body)
+		if rerr == nil {
+			return resp.StatusCode, raw, resp.Header, nil
+		}
+		err = rerr
+	}
+	if ctx.Err() != nil {
+		return 0, nil, nil, fmt.Errorf("cheki: request to %s cancelled: %w", path, ctx.Err())
+	}
+	if actx.Err() == context.DeadlineExceeded {
+		return 0, nil, nil, &timeoutError{path: path, timeout: c.timeout}
+	}
+	return 0, nil, nil, fmt.Errorf("cheki: request to %s failed: %w", path, err)
+}
+
+// retryDelay is the Retry-After when given (>= 0), otherwise 1-2 s.
+func retryDelay(retryAfter time.Duration) time.Duration {
+	if retryAfter >= 0 {
+		return retryAfter
+	}
+	return retryBaseDelay + time.Duration(rand.Int63n(int64(retryBaseDelay)))
+}
+
+func sleep(ctx context.Context, d time.Duration) error {
+	if d <= 0 {
+		return ctx.Err()
+	}
+	t := time.NewTimer(d)
+	defer t.Stop()
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-t.C:
+		return nil
+	}
+}
+
+// parseRetryAfter returns the Retry-After delay, or -1 when absent or invalid.
+func parseRetryAfter(v string, now time.Time) time.Duration {
+	v = strings.TrimSpace(v)
+	if v == "" {
+		return -1
+	}
+	if n, err := strconv.Atoi(v); err == nil && n >= 0 {
+		return time.Duration(n) * time.Second
+	}
+	if t, err := http.ParseTime(v); err == nil {
+		d := t.Sub(now)
+		if d < 0 {
+			d = 0
+		}
+		return d.Round(time.Second)
+	}
+	return -1
+}
+
+// APIError is a non-2xx API response.
+//
+// Status codes: 400 bad input, 404 unsupported bank, 413 body too large,
+// 422 receipt not found or not a valid receipt, 429 rate limited, 502 bank
+// unreachable, 500 internal error. errors.Is(err, ErrRateLimited) and
+// errors.Is(err, ErrPayloadTooLarge) work on it.
 type APIError struct {
 	StatusCode int
-	Body       string
-	Message    string
+	Method     string
+	Path       string
+	// Message is the server's error text, when it sent one.
+	Message string
+	// FallbackURL is set for geo-blocked banks: open it in a browser in Ethiopia.
+	FallbackURL string
+	// RetryAfter is the server's Retry-After, or -1 when it sent none.
+	RetryAfter time.Duration
+	// Body is the raw response body.
+	Body string
+}
+
+func newAPIError(method, path string, status int, raw []byte, header http.Header) *APIError {
+	e := &APIError{
+		StatusCode: status,
+		Method:     method,
+		Path:       path,
+		Body:       string(raw),
+		RetryAfter: parseRetryAfter(header.Get("Retry-After"), time.Now()),
+	}
+	var envelope struct {
+		Error       string `json:"error"`
+		FallbackURL string `json:"fallbackUrl"`
+	}
+	if json.Unmarshal(raw, &envelope) == nil {
+		e.Message = envelope.Error
+		e.FallbackURL = envelope.FallbackURL
+	}
+	return e
 }
 
 // Error implements the error interface.
 func (e *APIError) Error() string {
-	if e.Message == "" {
-		return fmt.Sprintf("cheki: API error (status %d): %s", e.StatusCode, e.Body)
+	s := fmt.Sprintf("cheki: API returned %d for %s %s", e.StatusCode, e.Method, e.Path)
+	if e.Message != "" {
+		s += ": " + e.Message
 	}
-	return e.Message
+	return s
+}
+
+// Is supports errors.Is(err, ErrRateLimited) and errors.Is(err, ErrPayloadTooLarge).
+func (e *APIError) Is(target error) bool {
+	switch target {
+	case ErrRateLimited:
+		return e.StatusCode == http.StatusTooManyRequests
+	case ErrPayloadTooLarge:
+		return e.StatusCode == http.StatusRequestEntityTooLarge
+	}
+	return false
+}
+
+// IsRateLimited reports a 429. RetryAfter says how long to wait (-1 if unknown).
+func (e *APIError) IsRateLimited() bool { return e.StatusCode == http.StatusTooManyRequests }
+
+// IsPayloadTooLarge reports a 413.
+func (e *APIError) IsPayloadTooLarge() bool {
+	return e.StatusCode == http.StatusRequestEntityTooLarge
 }
