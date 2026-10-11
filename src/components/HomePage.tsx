@@ -8,6 +8,7 @@ import { banks, detectBank, verificationState, type BankCode, type VerifyResult 
 import { readVerifyResponse } from "@/lib/verify-response";
 import { classifyStatus } from "@/lib/core/status";
 import { detectBankFromUrl, isUrl } from "@/lib/adapters/url-detector";
+import { formatNeeds, matchesFormat, primaryFormat, secondaryFormats, supportedFormats } from "@/lib/manifest/formats";
 import { articles } from "@/lib/guides";
 import { homeFaqs } from "@/lib/home-faq";
 import { Nav, Footer } from "@/components/Chrome";
@@ -27,7 +28,8 @@ import { Trash2 } from "lucide-react";
 /**
  * One example receipt URL per live bank, used for the rolling placeholder.
  * The formats come straight from the manifest, so they can never drift from
- * what the API actually accepts.
+ * what the API actually accepts. endpointFormat is the bank's current format
+ * (CBE: the mbreciept.cbe.com.et Receipt ID link, not the older FT URL).
  */
 const PLACEHOLDER_EXAMPLES = banks
   .filter((b) => b.status === "live" && b.endpointFormat.startsWith("http"))
@@ -77,8 +79,15 @@ export function HomePage() {
   const { toasts, showToast, dismissToast } = useToastStack();
 
   const selectedBank = banks.find((b) => b.code === bank)!;
-  const needsAccount = selectedBank.requiresAccount;
-  const needsPhone = selectedBank.requiresPhone;
+  // Lead with the bank's current format. An older reference (a CBE FT
+  // reference) switches to the legacy format, which asks for the account.
+  const typedRef = reference.trim();
+  const currentFormat = primaryFormat(selectedBank);
+  const activeFormat =
+    (typedRef && !isUrl(typedRef) ? supportedFormats(selectedBank).find((f) => matchesFormat(f, typedRef)) : undefined) ?? currentFormat;
+  const olderFormats = secondaryFormats(selectedBank).filter((f) => f.status !== "current");
+  const needsAccount = activeFormat ? formatNeeds(activeFormat, "account") : selectedBank.requiresAccount;
+  const needsPhone = activeFormat ? formatNeeds(activeFormat, "phone") : selectedBank.requiresPhone;
   const isDisabled = selectedBank.status === "soon";
   const isGeoBlocked = selectedBank.geoBlocked;
 
@@ -694,9 +703,10 @@ export function HomePage() {
 
 1. Read ${origin}/llms.txt. It documents every endpoint, bank code and reference format.
 2. POST ${origin}/api/verify with a JSON body:
-     {"bank": "cbe", "reference": "FT26140P01YB", "accountNumber": "60536171"}
-   accountNumber is required only for cbe and boa. If you have a receipt URL
-   instead of a reference, send it in "reference" and cheki detects the bank.
+     {"bank": "cbe", "reference": "https://mbreciept.cbe.com.et/<receipt-id>"}
+   A receipt link or Receipt ID is enough for most banks. accountNumber is
+   needed only for boa and for older CBE receipts that show just an FT
+   reference. GET ${origin}/api/banks lists each bank's formats, current first.
 3. Use the response:
      result.verified        the answer; true means the bank confirms this receipt
      result.amount          amount in ETB
@@ -1034,6 +1044,19 @@ ${receipt}`;
                       Sent to {selectedBank.shortName}&apos;s public receipt endpoint over HTTPS to look up this receipt. cheki has no signup, so nothing here is tied to an account.
                     </p>
                   </div>
+                )}
+
+                {inputMode === "reference" && olderFormats.length > 0 && (
+                  <details className="form-hint" style={{ marginTop: "-6px" }}>
+                    <summary style={{ cursor: "pointer" }}>Older {selectedBank.shortName} receipt?</summary>
+                    {olderFormats.map((f) => (
+                      <p key={f.id} style={{ marginTop: "4px" }}>
+                        {f.status === "deprecated"
+                          ? `Old ${f.label}s still work: paste the link and cheki checks it on ${selectedBank.shortName}'s current receipt page.`
+                          : `${f.label}: type ${f.inputs[0]?.example ? `it (e.g. ${f.inputs[0].example})` : "it"} below${formatNeeds(f, "account") ? " and an account field appears" : ""}. This uses ${selectedBank.shortName}'s older receipt service, which may not answer.`}
+                      </p>
+                    ))}
+                  </details>
                 )}
 
                 <div>
