@@ -12,7 +12,8 @@ Until it is removed, :func:`verify`:
 * rejects references that are not plain receipt numbers (no ``/ ? # & %``,
   ``..`` or whitespace), so nothing can be smuggled into a bank URL;
 * runs a fail-closed port of the server's verification gate: a result is
-  only ``VERIFIED`` with a positive amount, at least one party, and no
+  only ``VERIFIED`` with a positive amount, a returned reference that matches
+  the requested one (except opaque share tokens), at least one party, and no
   failure/pending transaction status. Anything else becomes ``FAILED``.
 """
 
@@ -37,6 +38,11 @@ _FAILURE_STATUS = re.compile(
     re.IGNORECASE,
 )
 
+# Same set as src/lib/core/gate.ts (REFERENCE_IS_OPAQUE_TOKEN): lookup keys that are
+# share tokens, so the receipt's own reference never equals the requested one.
+# "cbe-new" is CBE's current format (the Receipt ID); the receipt carries the FT id.
+_REFERENCE_IS_OPAQUE_TOKEN = frozenset({"awash", "ebirr", "siinqee", "cbe-new"})
+
 _DEPRECATION = (
     "cheki.verify() (direct verification) is deprecated and will be removed in the next major "
     "version. Its parsers lack the server's verification gate and hardening. Use "
@@ -58,18 +64,32 @@ def _status_text(result: VerificationResult) -> str | None:
     return None
 
 
-def gate(result: VerificationResult) -> VerificationResult:
+def _normalize_reference(ref: object) -> str:
+    return re.sub(r"\s+", "", ref).upper() if isinstance(ref, str) else ""
+
+
+def gate(result: VerificationResult, requested_reference: str | None = None) -> VerificationResult:
     """Fail-closed port of the server's verification gate (src/lib/core/gate.ts).
 
     A ``VERIFIED`` result is downgraded to ``FAILED`` unless it has a finite
-    amount greater than zero, at least one party, and no failure status.
+    amount greater than zero, a returned reference (``raw["bank_reference"]``,
+    when the bank gives one) equal to ``requested_reference``, at least one
+    party, and no failure status. The reference check is keyed like the
+    server's: by ``raw["gate_id"]`` (the format's parser, e.g. ``cbe-new``)
+    or else the bank, and skipped for opaque share tokens.
     """
     if result.status is not VerificationStatus.VERIFIED:
         return result
     reason: str | None = None
+    raw: dict[str, Any] = result.raw if isinstance(result.raw, dict) else {}
+    gate_id = str(raw.get("gate_id") or result.bank or "").lower()
+    returned = _normalize_reference(raw.get("bank_reference"))
+    requested = _normalize_reference(requested_reference)
     amount = result.amount
     if not isinstance(amount, (int, float)) or not math.isfinite(amount) or amount <= 0:
         reason = "The bank's response has no valid amount, so it cannot be confirmed as a receipt."
+    elif gate_id not in _REFERENCE_IS_OPAQUE_TOKEN and returned and requested and returned != requested:
+        reason = "The bank returned a receipt with a different reference than the one you entered."
     elif not any(
         isinstance(v, str) and v.strip()
         for v in (result.sender_name, result.receiver_name, result.sender_account, result.receiver_account)
@@ -92,9 +112,11 @@ def verify(bank: str, reference: str, **kwargs: object) -> VerificationResult:
 
     Args:
         bank: Bank/wallet code, e.g. "cbe", "telebirr", "boa", "mpesa".
-        reference: Transaction reference number.
+        reference: Transaction reference number. For CBE, the Receipt ID from
+            the receipt link (mbreciept.cbe.com.et/<Receipt ID>); an older FT
+            reference also needs account_number.
         **kwargs: Bank-specific extras:
-            - cbe, boa: account_number (full receiving account)
+            - cbe (older FT reference only), boa: account_number (full receiving account)
             - cbebirr: phone_number (payer phone)
 
     Raises:
@@ -112,4 +134,4 @@ def verify(bank: str, reference: str, **kwargs: object) -> VerificationResult:
             "(no /, ?, #, &, %, '..' or spaces), up to 64 characters."
         )
     verifier = VERIFIERS[bank]()
-    return gate(verifier.verify(ref, **kwargs))
+    return gate(verifier.verify(ref, **kwargs), requested_reference=ref)
