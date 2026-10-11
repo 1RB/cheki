@@ -177,7 +177,15 @@ export class YourBankParser extends BaseParser {
 }
 ```
 
-PDF receipts: keep `parse` returning `{ verified: false }` and add static `extractPdfText` (via `unpdf`) and `parsePdfText` methods, then add a branch for the bank in `src/lib/core/verifier.ts` (see Zemen, Dashen or CBE Birr). If a bank can answer with either PDF or HTML, set `readonly binaryResponse = true` so the body is read as bytes.
+PDF receipts: keep `parse` returning `{ verified: false }` and add static `extractPdfText` (via `unpdf`) and `parsePdfText` methods, then add the bank to `parseResponse()` in `src/lib/core/verifier.ts` (see Zemen, Dashen or CBE Birr). If a bank can answer with either PDF or HTML, set `readonly binaryResponse = true` so the body is read as bytes (it then gets the 5 MB PDF cap instead of 2 MB).
+
+Rules every parser follows (tests enforce them):
+
+- **Fetching is done for you.** `BaseParser.fetchReceipt` goes through `safeFetch`: the host must be on the allowlist on every redirect hop, the body is capped, and only network errors and 5xx are retried (4xx never). The allowlist is built from the manifest `endpoint`, so a new host is allowed by its manifest entry; never fetch a URL the user supplied, only one rebuilt from the reference.
+- **Unknown references.** 404 means "not found". If the bank answers an unknown reference with another status (Dashen uses 400), override `notFoundStatuses` so it maps to not-found instead of an error or a retry.
+- **`verified: true` is not the last word.** After your parser, a shared gate (`src/lib/core/gate.ts`) requires a positive amount, at least one party, a reference that matches the one requested, and a status that is not a failure. Return the bank's own reference and status so the gate can check them.
+- **Linear-time parsing only.** Parsers also run on pasted text, so use `removeScriptsAndStyles` / `TAG_RE` from `src/lib/core/html.ts` and `parseMoney` from `src/lib/core/money.ts` instead of `/<[^>]+>/`, lazy `<script>...</script>` or unbounded number regexes. `tests/security/redos.test.ts` runs every parser on 100k-character pathological input.
+- **References** are validated by `normalizeReference` (no `/ # ? & %`, `..` or whitespace) and must be `encodeURIComponent`-ed in `buildUrl`.
 
 ### 4. A redacted fixture and a test
 
