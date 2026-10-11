@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Nav, Footer } from "@/components/Chrome";
 import { CodeBlock } from "@/components/CodeBlock";
 import { StatusPill } from "@/components/StatusPill";
@@ -61,7 +62,7 @@ function EndpointCard({ row }: { row: EndpointRow }) {
       {!live && hasBankPage && (
         <p style={{ marginTop: "12px", padding: "10px 14px", borderRadius: "8px", background: "var(--surface-alt)", ...small }}>
           <strong>In development, help us.</strong> A real receipt link is what we need to finish this one.{" "}
-          <a href={`/banks/${bank.id}#contribute`} style={{ color: "var(--green-dark)", fontWeight: 600 }}>Send one privately</a>.
+          <Link href={`/banks/${bank.id}#contribute`} style={{ color: "var(--green-dark)", fontWeight: 600 }}>Send one privately</Link>.
         </p>
       )}
 
@@ -141,7 +142,7 @@ function EndpointCard({ row }: { row: EndpointRow }) {
           <a href={`${REPO_URL}/${doc.fixture.includes(".") ? "blob" : "tree"}/main/${doc.fixture}`} target="_blank" rel="noopener noreferrer" style={{ color: "var(--green-dark)", fontWeight: 600 }}>Fixture</a>
         )}
         <a href={REPORT_CHANGE_URL} target="_blank" rel="noopener noreferrer" style={{ color: "var(--green-dark)", fontWeight: 600 }}>Report a change</a>
-        {hasBankPage && <a href={`/banks/${bank.id}`} style={{ color: "var(--ink-2)" }}>{doc.label} page</a>}
+        {hasBankPage && <Link href={`/banks/${bank.id}`} style={{ color: "var(--ink-2)" }}>{doc.label} page</Link>}
       </p>
     </article>
   );
@@ -170,9 +171,9 @@ export default function EndpointsPage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(techArticleJsonLd) }} />
       <main className="container" style={{ paddingTop: "48px", paddingBottom: "48px" }}>
         <nav aria-label="Breadcrumb" style={{ fontSize: "13px", color: "var(--ink-3)", marginBottom: "16px" }}>
-          <a href="/" style={{ color: "var(--ink-3)" }}>Home</a>
+          <Link href="/" style={{ color: "var(--ink-3)" }}>Home</Link>
           <span style={{ margin: "0 6px" }}>/</span>
-          <a href="/docs" style={{ color: "var(--ink-3)" }}>Docs</a>
+          <Link href="/docs" style={{ color: "var(--ink-3)" }}>Docs</Link>
           <span style={{ margin: "0 6px" }}>/</span>
           <span style={{ color: "var(--ink)" }}>Endpoints</span>
         </nav>
@@ -183,7 +184,7 @@ export default function EndpointsPage() {
           The public receipt URLs cheki reads, one card per bank. This page is generated from the same manifest the verifier uses, so it changes when the code changes.
         </p>
         <p style={{ ...small, marginBottom: "32px" }}>
-          Live health for each endpoint is on the <a href="/status" style={{ color: "var(--green-dark)" }}>status page</a>. To call cheki instead of the banks, see the <a href="/docs" style={{ color: "var(--green-dark)" }}>API docs</a>.
+          The daily health check for each endpoint is on the <Link href="/status" style={{ color: "var(--green-dark)" }}>status page</Link> (<code>GET /api/health</code> gives a reachability snapshot, cached for 5 minutes). Only live banks are verified; in-development banks are documented here but cheki does not check their receipts yet. To call cheki instead of the banks, see the <Link href="/docs" style={{ color: "var(--green-dark)" }}>API docs</Link>: requests are rate limited per IP (verify 30 per minute, batch 5 per minute with up to 20 receipts each) and over the limit you get a 429 with a Retry-After header.
         </p>
 
         <section aria-labelledby="status-table" style={{ marginBottom: "40px" }}>
@@ -191,7 +192,7 @@ export default function EndpointsPage() {
           <div className="table-wrap">
             <table>
               <thead>
-                <tr><th>Bank</th><th>Status</th><th>Input needed</th><th>Response type</th><th>Geo-restricted</th><th>Last checked</th></tr>
+                <tr><th>Bank</th><th>Status</th><th>Input needed</th><th>Response type</th><th>Geo-restricted</th><th>Recorded</th></tr>
               </thead>
               <tbody>
                 {rows.map((r) => (
