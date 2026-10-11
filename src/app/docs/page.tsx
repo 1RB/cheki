@@ -24,40 +24,54 @@ const sdkExamples = [
     shikiLang: "typescript",
     code: `npm install cheki-verify
 
-import { Cheki } from "cheki-verify";
+import { Cheki, isVerified, ChekiAPIError, ChekiRateLimitError } from "cheki-verify";
 
-const cheki = new Cheki();
+const cheki = new Cheki(); // 65 s timeout, at most 1 retry
 
-const result = await cheki.verify("cbe", "FT26140P01YB", {
-  accountNumber: "1000560536171"
-});
+try {
+  const result = await cheki.verify("cbe", "FT26140P01YB", {
+    accountNumber: "1000560536171",
+  });
+  // verified is the only success signal (a decoded-only BOA QR is success: true, verified: false)
+  if (isVerified(result)) console.log(result.amount, result.senderName);
+} catch (err) {
+  if (err instanceof ChekiRateLimitError) console.log("retry in", err.retryAfterSeconds, "s");
+  else if (err instanceof ChekiAPIError) console.log(err.statusCode, err.serverMessage, err.fallbackUrl);
+}
 
-console.log(result.verified);   // true
-console.log(result.senderName);
-console.log(result.amount);
-
+// Max 20 receipts per batch (checked before sending)
 const batch = await cheki.verifyBatch([
   { bank: "cbe", reference: "FT26140P01YB", accountNumber: "1000560536171" },
-  { bank: "telebirr", reference: "DET8FJGUJ4" }
+  { bank: "telebirr", reference: "DET8FJGUJ4" },
 ]);
+console.log(batch.verified, batch.failed, batch.total);
 
-const { banks } = await cheki.getBanks();
-const health = await cheki.getHealth();`,
+const { banks } = await cheki.getBanks();   // banks[i].id
+const health = await cheki.getHealth();     // health.banks[i].status`,
   },
   {
     lang: "Python",
     shikiLang: "python",
     code: `pip install cheki
 
-from cheki import verify
+from cheki import ChekiClient
 
-result = verify("cbe", "FT26140P01YB", account_number="1000560536171")
-print(result.status)        # VerificationStatus.VERIFIED
-print(result.amount)
-print(result.payer_name)
+with ChekiClient() as cheki:  # 65 s timeout, at most 1 retry
+    result = cheki.verify("cbe", "FT26140P01YB", account_number="1000560536171")
+    if result.is_verified:  # the only success signal
+        print(result.amount, result.sender_name)
+    elif result.is_rate_limited:
+        print("retry in", result.retry_after, "s")
+    else:
+        print(result.http_status, result.error, result.fallback_url)
 
-# CLI also available
-# cheki-verify cbe FT26140P01YB -a 1000560536171`,
+    batch = cheki.verify_batch([  # max 20
+        {"bank": "cbe", "reference": "FT26140P01YB", "accountNumber": "1000560536171"},
+        {"bank": "telebirr", "reference": "DET8FJGUJ4"},
+    ])
+    print(batch.verified, batch.failed, batch.total)
+
+# CLI (uses the API): cheki-verify cbe FT26140P01YB --account 1000560536171`,
   },
   {
     lang: "Go",
@@ -66,50 +80,59 @@ print(result.payer_name)
 
 import cheki "github.com/1RB/cheki/sdks/go"
 
-client := cheki.NewClient()
+client := cheki.NewClient() // 65 s timeout, at most 1 retry
 
-result, err := client.Verify(ctx, &cheki.VerifyOptions{
+result, err := client.Verify(ctx, cheki.VerifyOptions{
     Bank:          "cbe",
     Reference:     "FT26140P01YB",
     AccountNumber: "1000560536171",
 })
+var apiErr *cheki.APIError
+switch {
+case errors.Is(err, cheki.ErrRateLimited) && errors.As(err, &apiErr):
+    fmt.Println("retry in", apiErr.RetryAfter)
+case errors.As(err, &apiErr):
+    fmt.Println(apiErr.StatusCode, apiErr.Message, apiErr.FallbackURL)
+case err == nil && result.IsVerified(): // the only success signal
+    fmt.Println(result.Amount, result.SenderName)
+}
 
-fmt.Println(result.Verified)
-fmt.Println(result.SenderName)
-fmt.Println(result.Amount)
-
-batch, err := client.VerifyBatch(ctx, []cheki.VerifyOptions{
+batch, err := client.VerifyBatch(ctx, []cheki.VerifyOptions{ // max 20
     {Bank: "cbe", Reference: "FT26140P01YB", AccountNumber: "1000560536171"},
     {Bank: "telebirr", Reference: "DET8FJGUJ4"},
 })
 
-banks, err := client.GetBanks(ctx)
-health, err := client.GetHealth(ctx)`,
+banks, err := client.GetBanks(ctx)   // banks[i].ID
+health, err := client.GetHealth(ctx) // health.Banks[i].Status`,
   },
   {
     lang: "Dart",
     shikiLang: "bash",
-    code: `# pubspec.yaml
-# dependencies:
-#   cheki: ^1.4.0
+    code: `// pubspec.yaml (not on pub.dev yet; use a git dependency)
+// dependencies:
+//   cheki:
+//     git: { url: https://github.com/1RB/cheki.git, path: sdks/dart }
 
 import 'package:cheki/cheki.dart';
 
-final client = ChekiClient();
+final client = ChekiClient(); // 65 s timeout, at most 1 retry
 
-final result = await client.verify(
-  bank: 'cbe',
-  reference: 'FT26140P01YB',
-  accountNumber: '1000560536171',
-);
+try {
+  final result = await client.verify(
+    bank: 'cbe',
+    reference: 'FT26140P01YB',
+    accountNumber: '1000560536171',
+  );
+  if (result.isVerified) print(result.amount); // the only success signal
+} on ChekiRateLimitException catch (e) {
+  print('retry in \${e.retryAfter}');
+} on ChekiException catch (e) {
+  print('\${e.statusCode} \${e.message} \${e.fallbackUrl}');
+}
 
-print(result.verified);
-print(result.senderName);
-print(result.amount);
-
-final batch = await client.verifyBatch([
-  VerifyRequest(bank: 'cbe', reference: 'FT26140P01YB', accountNumber: '1000560536171'),
-  VerifyRequest(bank: 'telebirr', reference: 'DET8FJGUJ4'),
+final batch = await client.verifyBatch(const [ // max 20
+  BatchReceipt(bank: 'cbe', reference: 'FT26140P01YB', accountNumber: '1000560536171'),
+  BatchReceipt(bank: 'telebirr', reference: 'DET8FJGUJ4'),
 ]);
 
 client.close();`,
@@ -121,23 +144,25 @@ client.close();`,
 
 use Cheki\\ChekiClient;
 
-$client = new ChekiClient();
+$client = new ChekiClient(); // 65 s timeout, at most 1 retry
 
-$result = $client->verify('cbe', 'FT26140P01YB', [
-    'accountNumber' => '1000560536171',
-]);
+$result = $client->verify('cbe', 'FT26140P01YB', '1000560536171');
 
-echo $result->verified ? 'verified' : 'not verified';
-echo $result->senderName;
-echo $result->amount;
+if ($result->isVerified()) {          // the only success signal
+    echo $result->senderName, ' ', $result->amount;
+} elseif ($result->isRateLimited()) {
+    echo 'retry in ', $result->retryAfter, ' s';
+} else {
+    echo $result->httpStatus, ' ', $result->error;
+}
 
-$batch = $client->verifyBatch([
+$batch = $client->verifyBatch([       // max 20
     ['bank' => 'cbe', 'reference' => 'FT26140P01YB', 'accountNumber' => '1000560536171'],
     ['bank' => 'telebirr', 'reference' => 'DET8FJGUJ4'],
 ]);
 
-$banks = $client->getBanks();
-$health = $client->getHealth();`,
+$banks = $client->getBanks();   // $banks[0]->id
+$health = $client->getHealth(); // $health->banks[0]->status`,
   },
   {
     lang: "cURL",
@@ -149,17 +174,35 @@ $health = $client->getHealth();`,
   {
     lang: "CLI",
     shikiLang: "bash",
-    code: `npx cheki info
-npx cheki verify cbe FT26140P01YB -a 1000560536171
-npx cheki verify telebirr CHQ0FJ403O
-npx cheki verify-qr boa 3cHRaxVjn/pySp...
-npx cheki health`,
+    code: `# The CLI runs from a clone of the repo. (The npm package named "cheki"
+# is an unrelated project, so "npx cheki" does not run this CLI.)
+git clone https://github.com/1RB/cheki.git && cd cheki && npm install
+npm run cli -- info
+npm run cli -- verify cbe FT26140P01YB -a 1000560536171
+npm run cli -- verify telebirr CHQ0FJ403O
+npm run cli -- verify-qr boa 3cHRaxVjn/pySp...
+npm run cli -- health
+
+# Or, through the hosted API: pip install cheki && cheki-verify cbe FT26140P01YB --account 1000560536171`,
   },
 ];
 
+/** Batch response: only verified: true counts as verified; errors carry the status a single verify would return. */
+const BATCH_RESPONSE_EXAMPLE = {
+  success: true,
+  results: [
+    { success: true, verified: true, bank: "Commercial Bank of Ethiopia", bankCode: "cbe", reference: "FT26140P01YB", amount: 20000, currency: "ETB", sourceUrl: "https://apps.cbe.com.et:100/?id=FT26140P01YB60536171", durationMs: 7782, cached: false },
+    { success: false, error: "[Telebirr] Receipt not found. Check the reference number.", status: 422 },
+  ],
+  cached: 0,
+  total: 2,
+  verified: 1,
+  failed: 1,
+};
+
 const verifyParams = [
   { name: "bank", type: "string", required: "Yes (unless URL)", desc: "Bank code: cbe, telebirr, boa, mpesa, dashen, zemen, cbebirr, siinqee" },
-  { name: "reference", type: "string", required: "Yes", desc: "Transaction reference number (e.g. FT26140P01YB) or receipt URL" },
+  { name: "reference", type: "string", required: "Yes (unless qrData)", desc: "Transaction reference number (e.g. FT26140P01YB) or receipt URL" },
   { name: "accountNumber", type: "string", required: "CBE, BOA", desc: "Last 8 digits for CBE, last 5 for BOA" },
   { name: "qrData", type: "string", required: "BOA QR", desc: "Raw QR payload for BOA inter-bank transfers" },
   { name: "phoneNumber", type: "string", required: "CBE Birr", desc: "Payer phone number, format: 2519XXXXXXXXX" },
@@ -171,11 +214,11 @@ const batchParams = [
 
 const errorCodes = [
   { code: "400", name: "Bad Request", desc: "Missing required fields or malformed reference number" },
-  { code: "404", name: "Not Found", desc: "Bank code not recognized or receipt not found at the bank endpoint" },
-  { code: "422", name: "Unprocessable", desc: "Bank endpoint returned data but it could not be parsed" },
+  { code: "404", name: "Not Found", desc: "Bank not supported: unknown id, or still in development" },
+  { code: "422", name: "Unprocessable", desc: "Receipt not found at the bank, or the bank's response failed verification (no amount, wrong reference, failed or pending status)" },
   { code: "413", name: "Payload Too Large", desc: "Request body is over the limit (16 KB verify, 64 KB batch, 256 KB parse, 10 MB ocr)" },
   { code: "429", name: "Too Many Requests", desc: "Per-IP rate limit reached. Wait the number of seconds in the Retry-After header, then retry." },
-  { code: "502", name: "Bad Gateway", desc: "Bank endpoint is unreachable, geo-blocked, or timed out" },
+  { code: "502", name: "Bad Gateway", desc: "Bank endpoint is unreachable, geo-blocked, or timed out. Geo-blocked banks include a fallbackUrl to open in a browser." },
   { code: "500", name: "Server Error", desc: "Internal server error. Check /api/health for endpoint status." },
 ];
 
@@ -185,6 +228,8 @@ const responseFields = [
   { name: "decodedOnly", type: "boolean", desc: "BOA QR only: decoded from the QR but the bank could not be reached. Always paired with verified: false. Not proof of payment." },
   { name: "parsed", type: "boolean", desc: "/api/parse only: read from content you supplied, never checked with the bank. Always paired with verified: false." },
   { name: "bank", type: "string", desc: "Full bank name" },
+  { name: "bankCode", type: "string", desc: "Bank id (e.g. cbe)" },
+  { name: "cached", type: "boolean", desc: "Served from cheki's receipt cache (verified receipts only). durationMs is absent when true." },
   { name: "reference", type: "string", desc: "Transaction reference number" },
   { name: "senderName", type: "string", desc: "Name of the account that sent the payment" },
   { name: "senderAccount", type: "string", desc: "Masked sender account number" },
@@ -384,25 +429,38 @@ export default async function DocsPage() {
     ),
     "json"
   );
+  const batchRespHtml = await highlightCode(
+    JSON.stringify(BATCH_RESPONSE_EXAMPLE, null, 2),
+    "json"
+  );
   const banksRespHtml = await highlightCode(
     JSON.stringify(
-      [
-        {
-          code: "cbe",
-          name: "Commercial Bank of Ethiopia",
-          type: "bank",
-          status: "live",
-          requiresAccount: true,
-          accountDigits: 8,
-        },
-        {
-          code: "telebirr",
-          name: "Telebirr",
-          type: "wallet",
-          status: "live",
-          requiresAccount: false,
-        },
-      ],
+      {
+        banks: [
+          {
+            id: "cbe",
+            name: "Commercial Bank of Ethiopia",
+            swift: "CBETETAA",
+            type: "bank",
+            status: "live",
+            requiresAccount: true,
+            accountDigits: 8,
+            endpoint: "https://apps.cbe.com.et:100/?id={ref}{account}",
+            color: "#502878",
+            initials: "CBE",
+          },
+          {
+            id: "telebirr",
+            name: "Telebirr",
+            type: "mobile",
+            status: "live",
+            requiresAccount: false,
+            endpoint: "https://transactioninfo.ethiotelecom.et/receipt/{ref}",
+            color: "#00A0DC",
+            initials: "TB",
+          },
+        ],
+      },
       null,
       2
     ),
@@ -412,11 +470,13 @@ export default async function DocsPage() {
     JSON.stringify(
       {
         status: "ok",
-        banks: {
-          cbe: { status: "up", latencyMs: 340 },
-          telebirr: { status: "geo-blocked", latencyMs: null },
-          boa: { status: "up", latencyMs: 180 },
-        },
+        checkedAt: "2026-10-11T09:00:00.000Z",
+        banks: [
+          { id: "cbe", name: "Commercial Bank of Ethiopia", status: "reachable", latencyMs: 340 },
+          { id: "telebirr", name: "Telebirr", status: "geo-blocked", latencyMs: 5004 },
+          { id: "nib", name: "Nib International Bank", status: "in-development", latencyMs: 0 },
+        ],
+        cached: false,
       },
       null,
       2
@@ -427,9 +487,7 @@ export default async function DocsPage() {
     JSON.stringify(
       {
         success: false,
-        error: "Receipt not found. Check the reference number.",
-        bank: "Commercial Bank of Ethiopia",
-        reference: "INVALID123",
+        error: "[Commercial Bank of Ethiopia] Receipt not found. Check the reference number.",
       },
       null,
       2
@@ -831,13 +889,28 @@ docker-compose up -d
                 highlightedHtml={batchReqHtml}
                 langLabel="json"
               />
+              <p
+                style={{
+                  fontSize: "13px",
+                  fontWeight: 600,
+                  color: "var(--ink-3)",
+                  marginBottom: "8px",
+                }}
+              >
+                Response (200). verified counts only verified: true items; failed is everything else, including decoded-only QR results.
+              </p>
+              <CodeBlock
+                code={JSON.stringify(BATCH_RESPONSE_EXAMPLE, null, 2)}
+                highlightedHtml={batchRespHtml}
+                langLabel="json"
+              />
 
               {/* GET /api/banks */}
               <SectionTitle id="banks">GET /api/banks</SectionTitle>
               <EndpointHeader
                 method="GET"
                 path="/api/banks"
-                desc="List all supported banks with metadata: code, name, type, status, endpoint, and verification requirements."
+                desc="List all supported banks with metadata: id (the value to send as bank), name, type (bank, mobile or wallet), status, endpoint, and whether an account (accountDigits) or phone (requiresPhone) is needed. requiresPhone, swift and accountDigits are omitted when not set."
               />
               <p
                 style={{
@@ -851,23 +924,32 @@ docker-compose up -d
               </p>
               <CodeBlock
                 code={JSON.stringify(
-                  [
-                    {
-                      code: "cbe",
-                      name: "Commercial Bank of Ethiopia",
-                      type: "bank",
-                      status: "live",
-                      requiresAccount: true,
-                      accountDigits: 8,
-                    },
-                    {
-                      code: "telebirr",
-                      name: "Telebirr",
-                      type: "wallet",
-                      status: "live",
-                      requiresAccount: false,
-                    },
-                  ],
+                  {
+                    banks: [
+                      {
+                        id: "cbe",
+                        name: "Commercial Bank of Ethiopia",
+                        swift: "CBETETAA",
+                        type: "bank",
+                        status: "live",
+                        requiresAccount: true,
+                        accountDigits: 8,
+                        endpoint: "https://apps.cbe.com.et:100/?id={ref}{account}",
+                        color: "#502878",
+                        initials: "CBE",
+                      },
+                      {
+                        id: "telebirr",
+                        name: "Telebirr",
+                        type: "mobile",
+                        status: "live",
+                        requiresAccount: false,
+                        endpoint: "https://transactioninfo.ethiotelecom.et/receipt/{ref}",
+                        color: "#00A0DC",
+                        initials: "TB",
+                      },
+                    ],
+                  },
                   null,
                   2
                 )}
@@ -880,7 +962,7 @@ docker-compose up -d
               <EndpointHeader
                 method="GET"
                 path="/api/health"
-                desc="Check if each bank endpoint is reachable. Reports status and latency per bank. Useful for monitoring and debugging."
+                desc="Check if each bank endpoint is reachable: status (reachable, unreachable, geo-blocked, no-parser, in-development) and latency per bank. Results are cached for up to 5 minutes (cached: true), so this never hammers the banks."
               />
               <p
                 style={{
@@ -896,11 +978,13 @@ docker-compose up -d
                 code={JSON.stringify(
                   {
                     status: "ok",
-                    banks: {
-                      cbe: { status: "up", latencyMs: 340 },
-                      telebirr: { status: "geo-blocked", latencyMs: null },
-                      boa: { status: "up", latencyMs: 180 },
-                    },
+                    checkedAt: "2026-10-11T09:00:00.000Z",
+                    banks: [
+                      { id: "cbe", name: "Commercial Bank of Ethiopia", status: "reachable", latencyMs: 340 },
+                      { id: "telebirr", name: "Telebirr", status: "geo-blocked", latencyMs: 5004 },
+                      { id: "nib", name: "Nib International Bank", status: "in-development", latencyMs: 0 },
+                    ],
+                    cached: false,
                   },
                   null,
                   2
@@ -914,7 +998,7 @@ docker-compose up -d
               <EndpointHeader
                 method="GET"
                 path="/api/receipt?bank=cbe&reference=FT...&account=..."
-                desc="Download the original receipt file (PDF or HTML) from the bank endpoint. Returns the raw file with the appropriate Content-Type header."
+                desc="Download the original receipt file from the bank. Only cbe (account required, at least the last 8 digits), zemen and dashen are supported; reference and account are validated like /api/verify. Returns the file as an attachment (application/pdf when it is a PDF). Errors are JSON with 400, 404 or 502, and the verify rate limit (429) applies."
               />
 
               {/* SDKs */}
@@ -927,8 +1011,14 @@ docker-compose up -d
                   marginBottom: "16px",
                 }}
               >
-                SDKs are available in 5 languages. All wrap the same REST API with
-                typed errors, retry with exponential backoff, and timeout support.
+                SDKs are available in 5 languages. All wrap the same REST API and
+                share one contract (sdks/fixtures/api-contract.json): bank id, the
+                verified, decodedOnly and parsed fields, batch counts, typed 429 (with
+                Retry-After) and 413 errors, and a client-side limit of 20 receipts per
+                batch. Each attempt waits up to 65 seconds (the server may take up to 60).
+                They never retry a 4xx or a timeout, and retry at most once on a
+                network error, 5xx or 429 (after Retry-After). The server makes at most
+                2 attempts per bank fetch, so one SDK call reaches a bank at most 4 times.
               </p>
               <DocsTabs tabs={sdkTabs} />
 
@@ -938,9 +1028,7 @@ docker-compose up -d
                 code={JSON.stringify(
                   {
                     success: false,
-                    error: "Receipt not found. Check the reference number.",
-                    bank: "Commercial Bank of Ethiopia",
-                    reference: "INVALID123",
+                    error: "[Commercial Bank of Ethiopia] Receipt not found. Check the reference number.",
                   },
                   null,
                   2
