@@ -45,6 +45,16 @@ export interface ProbeSpec {
   observed: string;
 }
 
+export interface LegacyFormatDoc {
+  /** Manifest format id. */
+  formatId: string;
+  placeholders: PlaceholderDoc[];
+  redactedExample?: string;
+  unknownRef: string;
+  /** Probed by the health check as its own row (id "<bank>:<formatId>"); never fails the run. */
+  probe?: ProbeSpec;
+}
+
 export interface EndpointDoc {
   id: string;
   /** Display label in the status table and card heading. Empty means the manifest shortName. */
@@ -59,7 +69,12 @@ export interface EndpointDoc {
   fieldsParsed: string[];
   unknownRef: string;
   gotchas: string[];
+  /** Status notes. Endpoint moves and format switches live in the manifest's endpointHistory. */
   changelog: { date: string; note: string }[];
+  /** Another manifest id this entry is a parser alias of (no card of its own on /endpoints). */
+  aliasOf?: string;
+  /** Docs and health probes for the bank's older formats (manifest formats with status legacy). */
+  legacy?: LegacyFormatDoc[];
   /** Repo-relative paths. */
   parserSource?: string;
   fixture?: string;
@@ -122,60 +137,82 @@ export const endpointDocs: EndpointDoc[] = [
   {
     id: "cbe",
     label: "CBE",
-    inputNeeded: "FT reference + last 8 digits of the receiving account",
+    inputNeeded: "Receipt ID or mbreciept.cbe.com.et link (older receipts: FT reference + last 8 digits of the receiving account)",
+    preferLink: true,
     placeholders: [
       {
-        name: "{REFERENCE}",
-        what: "The CBE FT transaction reference.",
-        whereToFind: 'On the receipt as "Reference No. (VAT Invoice No)", and in the CBE SMS.',
-        format: '12 characters: "FT" plus 10 letters and digits, e.g. FT26140P01YB.',
-      },
-      {
-        name: "{LAST_8_DIGITS_OF_ACCOUNT}",
-        what: "The last 8 digits of the receiving (credit) account.",
-        whereToFind: "The receiver's account number on the receipt, or your own account if you received the money.",
-        format: "8 digits, appended directly after the reference with no separator.",
-        traps: "The payer's account does not work. Only the receiving account matches.",
+        name: "{RECEIPT_ID}",
+        what: "The CBE Receipt ID: the last part of the receipt link the CBE app shares.",
+        whereToFind: "Share the receipt from the CBE app, or scan its QR code. The link is mbreciept.cbe.com.et/{Receipt ID}. cheki reads it through CBE's JSON API at mb.cbe.com.et.",
+        format: "Opaque token, letters and digits: fHCx... on v1 receipts, v2-... on newer ones. Length varies (about 18 to 24 characters).",
+        traps: "It is not the FT reference. An FT reference sent to this API answers \"Invalid or tampered legacy token\".",
       },
     ],
-    redactedExample: "https://apps.cbe.com.et:100/?id=FT26140P01YBXXXXXXXX",
-    fieldsParsed: ["senderName", "senderAccount", "receiverName", "receiverAccount", "amount", "currency", "date", "reference", "branch", "reason"],
-    unknownRef: 'HTTP 404 text/html, "You Are Not Allowed to See This Data, Please Check your Link" (no PDF).',
+    redactedExample: "https://mbreciept.cbe.com.et/fHCxXXXXXXXXXXXXXX",
+    fieldsParsed: ["senderName", "senderAccount", "receiverName", "receiverAccount", "amount", "currency", "date", "reference", "reason"],
+    unknownRef: 'HTTP 500 application/problem+json, detail "Security Alert: Invalid or tampered legacy token!".',
     gotchas: [
-      "Runs on port 100 with a certificate that does not verify, so the client skips TLS verification.",
-      "Slow. cheki allows 30 seconds for this endpoint.",
-      "Newer CBE receipts share a QR link on mbreciept.cbe.com.et, which uses the CBE QR endpoint below.",
+      "The JSON API needs the CBE web app's X-App-ID and X-App-Version headers (and cheki also sends its Origin and Referer). Without them it answers HTTP 400 \"Missing Headers\".",
+      "Account numbers come back masked (1****1234).",
+      "A Receipt ID can't be derived from an FT reference, so an older receipt with only an FT reference needs the legacy format below.",
     ],
     changelog: [],
+    legacy: [
+      {
+        formatId: "cbe-ft-pdf",
+        placeholders: [
+          {
+            name: "{REFERENCE}",
+            what: "The CBE FT transaction reference.",
+            whereToFind: 'On older receipts as "Reference No. (VAT Invoice No)", and in the CBE SMS.',
+            format: '12 characters: "FT" plus 10 letters and digits, e.g. FT26140P01YB.',
+          },
+          {
+            name: "{LAST_8_DIGITS_OF_ACCOUNT}",
+            what: "The last 8 digits of the receiving (credit) account.",
+            whereToFind: "The receiver's account number on the receipt, or your own account if you received the money.",
+            format: "8 digits, appended directly after the reference with no separator.",
+            traps: "The payer's account does not work. Only the receiving account matches.",
+          },
+        ],
+        redactedExample: "https://apps.cbe.com.et:100/?id=FT26140P01YBXXXXXXXX",
+        unknownRef: 'HTTP 404 text/html, "You Are Not Allowed to See This Data, Please Check your Link" (seen 2026-10-10; the host is often unreachable).',
+        probe: {
+          parser: "cbe",
+          ref: "FT00000CHEKI0",
+          account: "00000000",
+          expect: { status: 404, bodyIncludes: ["You Are Not Allowed to See This Data"] },
+          observed: "Oregon, US, 2026-10-10; unreachable from cheki's egress 2026-10-11",
+        },
+      },
+    ],
     parserSource: "src/lib/parsers/cbe.ts",
     fixture: "tests/parsers/cbe.test.ts",
+    // No parser here: the probe follows CBE's primary (current) format, cbe-new.
     probe: {
-      ref: "FT00000CHEKI0",
-      account: "00000000",
-      expect: { status: 404, bodyIncludes: ["You Are Not Allowed to See This Data"] },
-      observed: "Oregon, US, 2026-10-10",
+      ref: "chekiprobe000",
+      useManifestHeaders: true,
+      expect: { status: 500, contentType: "json", bodyIncludes: ["Invalid or tampered legacy token"] },
+      observed: "Oregon, US, 2026-10-10 (same endpoint as the cbe-new probe)",
     },
   },
   {
     id: "cbe-new",
-    label: "CBE (QR receipts)",
+    label: "CBE (Receipt ID alias)",
+    aliasOf: "cbe",
     inputNeeded: "Receipt ID from the mbreciept.cbe.com.et link",
     placeholders: [
       {
         name: "{ref}",
-        what: "The receipt ID in a CBE QR receipt link.",
-        whereToFind: "Scan the QR code on a newer CBE receipt. The link is mbreciept.cbe.com.et/{id}; the ID is the last path segment.",
+        what: "The CBE Receipt ID. bank=cbe-new is an older alias; bank=cbe picks this format automatically.",
+        whereToFind: "The last path segment of a mbreciept.cbe.com.et link.",
         format: "Opaque token, length varies.",
-        confirmed: false,
       },
     ],
     redactedExample: "https://mbreciept.cbe.com.et/XXXXXXXXXXXX",
     fieldsParsed: ["senderName", "senderAccount", "receiverName", "receiverAccount", "amount", "currency", "date", "reference", "reason"],
     unknownRef: 'HTTP 500 application/problem+json, detail "Security Alert: Invalid or tampered legacy token!".',
-    gotchas: [
-      "Requires the X-App-ID and X-App-Version headers. Without them the API answers HTTP 400 \"Missing Headers\".",
-      "Not a separate bank page. cheki routes mbreciept links here automatically.",
-    ],
+    gotchas: ["Same endpoint as CBE's current format. Documented on the CBE card."],
     changelog: [],
     parserSource: "src/lib/parsers/cbe.ts",
     fixture: "tests/parsers/cbe.test.ts",
@@ -279,9 +316,9 @@ export const endpointDocs: EndpointDoc[] = [
     unknownRef: 'HTTP 400 application/json, {"statusCode":400,"message":"Transaction not found"}.',
     gotchas: [
       "The old host receipt.dashensuperapp.com now returns 502 Bad Gateway. Old PDF links on api.dashensuperapp.com are still detected and routed to the new host.",
-      "The live endpoint returns an HTML receipt, not a PDF.",
+      "The live endpoint returns an HTML receipt, not a PDF. GET /api/receipt redirects to it rather than serving the bank's HTML from cheki.",
     ],
-    changelog: [{ date: "2026-10-10", note: "Moved from receipt.dashensuperapp.com (PDF, now 502) to receipts.dashenbanksc.com (HTML). FT Ref is the only accepted reference." }],
+    changelog: [],
     parserSource: "src/lib/parsers/dashen.ts",
     fixture: "tests/parsers/dashen.test.ts",
     probe: {
@@ -474,6 +511,12 @@ export function getEndpointRows(): EndpointRow[] {
       if (!doc) return [];
       return [{ bank, doc: { ...doc, label: doc.label || bank.shortName || bank.name } }];
     });
+}
+
+/** Manifest endpointHistory plus the doc's status notes, newest first. */
+export function changelogFor(row: EndpointRow): { date: string; note: string }[] {
+  const fromManifest = (row.bank.endpointHistory ?? []).map((h) => ({ date: h.date, note: h.change }));
+  return [...fromManifest, ...row.doc.changelog].sort((a, b) => b.date.localeCompare(a.date));
 }
 
 export function getEndpointDoc(id: string): EndpointDoc | undefined {
