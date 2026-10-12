@@ -8,12 +8,13 @@
  * (Upstash/Redis) or a Vercel WAF rate-limit rule in front of /api/*.
  */
 import { NextResponse } from "next/server";
+import { RATE_LIMITS } from "./rate-limit-config";
 
 export class RateLimiter {
   private hits = new Map<string, number[]>();
 
   constructor(
-    /** Requests allowed per window (read by the guides' rate-limit copy). */
+    /** Requests allowed per window (see ./rate-limit-config). */
     readonly limit: number,
     readonly windowMs: number,
     private readonly maxKeys = 5000,
@@ -130,18 +131,13 @@ export function normalizeIpKey(raw: string): string {
   return ip.toLowerCase();
 }
 
-const MINUTE = 60 * 1000;
-
 /** Shared limiters, one per route family (per instance, see above). */
 export const limiters = {
-  /** Single verifications; batch items also count against this bucket. */
-  verify: new RateLimiter(30, MINUTE),
-  /** Batch requests themselves. */
-  batch: new RateLimiter(5, MINUTE),
-  parse: new RateLimiter(20, MINUTE),
-  ocr: new RateLimiter(20, MINUTE),
-  /** /api/contribute: a low-volume form that forwards to Telegram. */
-  contribute: new RateLimiter(5, 10 * MINUTE),
+  verify: new RateLimiter(RATE_LIMITS.verify.limit, RATE_LIMITS.verify.windowMs),
+  batch: new RateLimiter(RATE_LIMITS.batch.limit, RATE_LIMITS.batch.windowMs),
+  parse: new RateLimiter(RATE_LIMITS.parse.limit, RATE_LIMITS.parse.windowMs),
+  ocr: new RateLimiter(RATE_LIMITS.ocr.limit, RATE_LIMITS.ocr.windowMs),
+  contribute: new RateLimiter(RATE_LIMITS.contribute.limit, RATE_LIMITS.contribute.windowMs),
 };
 
 /** A 429 response, or null when the request may go ahead. */

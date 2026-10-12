@@ -13,14 +13,14 @@
 [![Stars](https://img.shields.io/github/stars/1RB/cheki?style=flat&label=Stars&logo=github)](https://github.com/1RB/cheki/stargazers)
 [![Issues](https://img.shields.io/github/issues/1RB/cheki?style=flat&label=Issues&logo=github)](https://github.com/1RB/cheki/issues)
 [![Tests](https://img.shields.io/badge/tests-122%20vitest-2ddb6a?style=flat&logo=vitest&logoColor=fff)](https://github.com/1RB/cheki/blob/main/src/lib/parsers/__tests__)
-[![Banks](https://img.shields.io/badge/banks-10%20live%20%E2%80%A2%2021%20researching-2ddb6a?style=flat)](https://cheki.et/banks)
+[![Banks](https://img.shields.io/badge/banks-8%20live%20%E2%80%A2%2023%20researching-2ddb6a?style=flat)](https://cheki.et/banks)
 [![Website](https://img.shields.io/website?style=flat&label=cheki.et&url=https%3A%2F%2Fcheki.et&logo=vercel&logoColor=fff)](https://cheki.et)
 
 cheki verifies Ethiopian bank and mobile money receipts by fetching public bank endpoints. The data is free. The code is MIT licensed. No one should charge you for accessing public bank data.
 
 ## Why?
 
-check.et charges 499 ETB/month. verify.et charges $20-40/month. Both verify receipts by hitting the same public bank URLs cheki uses for free. cheki exposes this and provides the same service for free, forever.
+check.et charges 499 ETB/month or 4,990 ETB/year after 200 one-time free verifications, and verify.et's API plans run 500-3,000 ETB/month (prices as listed on each site on 12 October 2026). Both verify receipts by hitting the same public bank URLs cheki uses for free. cheki exposes this and provides the same service for free: no signup and no API key, with per-IP rate limits on the hosted API (verify 30/min, batch 5/min); self-host for more.
 
 ## Supported banks
 

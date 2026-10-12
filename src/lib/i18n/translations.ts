@@ -250,7 +250,7 @@ export const translations = {
     compare: {
       title: "How the services compare",
       subtitle: "Six receipt verification tools in Ethiopia. All use the same public bank endpoints. Compare pricing, features, and transparency.",
-      verdict: "All six services fetch from the same public bank endpoints. cheki is the only free, open-source, unlimited option. Choose a paid service only if you need a dashboard, mobile app, or Ethiopian IP relay.",
+      verdict: "All six services fetch from the same public bank endpoints. cheki is the only open-source option, and it is free with no signup and no API key, under per-IP rate limits (self-host for more). Choose a paid service only if you need a dashboard, mobile app, or Ethiopian IP relay.",
       pricing: "Pricing and access",
       platform: "Platform and features",
       transparency: "Transparency and openness",
@@ -354,7 +354,7 @@ export const translations = {
     compare: {
       title: "chekiን ከሌሎች ጋር አወዳድር",
       subtitle: "በኢትዮጵያ ውስጥ ስድስት የደረሰኝ ማረጋገጫ አገልግሎቶች አሉ። ሁሉም ተመሳሳይ የህዝብ የባንክ ዩአርኤሎችን ይጠቀማሉ። ዋጋ፣ ባህሪያት፣ እና ግልጽነትን አወዳድር።",
-      verdict: "ሁሉም ስድስት አገልግሎቶች ከተመሳሳይ የህዝብ የባንክ ዩአርኤሎች ይሳባሉ። cheki ብቻ ነፃ፣ የክፍት ምንጭ፣ የማይገደብ ምርጫ። ዳሽቦርድ፣ የሞባይል መተግበሪያ፣ ወይም የኢትዮጵያ አይፒ ማሰላለፊያ የሚፈልጉ ከሆነ ብቻ ይሁኑ።",
+      verdict: "ሁሉም ስድስት አገልግሎቶች ከተመሳሳይ የህዝብ የባንክ ዩአርኤሎች ይሳባሉ። የክፍት ምንጭ የሆነው cheki ብቻ ነው፤ ያለ ምዝገባ እና ያለ API ቁልፍ በነፃ ይሰራል፣ በአይፒ አድራሻ የጥያቄ ገደብ አለው (ለበለጠ በራስዎ ሰርቨር ያስተናግዱት)። ዳሽቦርድ፣ የሞባይል መተግበሪያ፣ ወይም የኢትዮጵያ አይፒ ማሰላለፊያ የሚያስፈልግዎ ከሆነ ብቻ የሚከፈልበትን አገልግሎት ይምረጡ።",
       pricing: "ዋጋ እና መዳረሻ",
       platform: "መድረክ እና ባህሪያት",
       transparency: "ግልጽነት እና ክፍትነት",

@@ -62,7 +62,7 @@ describe("guides: rate limits, not quotas", () => {
   });
 
   it("every quoted per-minute limit matches the hosted limiters", () => {
-    expect(HOSTED_RATE_LIMITS).toEqual({ verifyPerMinute: 30, batchPerMinute: 5 });
+    expect(HOSTED_RATE_LIMITS).toMatchObject({ verifyPerMinute: 30, batchPerMinute: 5 });
     expect(limiters.verify.limit).toBe(HOSTED_RATE_LIMITS.verifyPerMinute);
     const all = articles.map(corpus).join("\n");
     const verify = [...all.matchAll(/verify (\d+) per minute|verify (\d+)\/min/gi)].map((m) => Number(m[1] ?? m[2]));

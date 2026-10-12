@@ -1,5 +1,5 @@
 import { IN_DEVELOPMENT_BANK_COUNT, LIVE_BANK_COUNT, TOTAL_BANK_COUNT, liveBankList } from "./bank-counts";
-import { COMPETITORS_CHECKED, COMPETITOR_BANKS_LISTED, RATE_LIMIT_SENTENCE, servicesListingMoreBanks } from "./guides-facts";
+import { CHEKI_PRICING, COMPETITORS_CHECKED, COMPETITOR_BANKS_LISTED, COMPETITOR_PRICING, RATE_LIMIT_SENTENCE, servicesListingMoreBanks, type Competitor } from "./guides-facts";
 // Block-based content system for guides and blog posts
 // Supports rich formatting: text, lists, code, callouts, tables, quotes, steps
 
@@ -639,7 +639,7 @@ export const articles: Article[] = [
     excerpt:
       "Self-hosting cheki gives you full control, zero cost, and bypasses Telebirr/M-Pesa geo-blocking. Here's the complete Docker setup guide.",
     date: "2026-06-18",
-    updated: "2026-10-11",
+    updated: "2026-10-12",
     readTime: "5 min",
     content: [
       { type: "text", text: "Self-hosting cheki gives you three advantages over the hosted version: full control over your data, no dependency on cheki.et, and the ability to bypass Telebirr and M-Pesa geo-blocking by running on an Ethiopian IP address." },
@@ -671,7 +671,7 @@ export const articles: Article[] = [
       { type: "heading", text: "Bypassing Telebirr and M-Pesa geo-blocks" },
       { type: "text", text: "Telebirr (transactioninfo.ethiotelecom.et) and M-Pesa (m-pesabusiness.safaricom.et) block all non-Ethiopian IP addresses at the TCP level. This means cloud servers on AWS, Vercel, Cloudflare, and most international hosting providers cannot reach these endpoints." },
       { type: "text", text: "If you self-host cheki on a server with an Ethiopian IP address, Telebirr and M-Pesa verification will work without any workarounds. This is the cleanest solution." },
-      { type: "callout", variant: "tip", title: "Ethiopian hosting options", text: "Ethio Telecom and various local ISPs offer fixed IP addresses. A small VPS or dedicated server in Ethiopia can run cheki for a few hundred birr per month, with unlimited verification." },
+      { type: "callout", variant: "tip", title: "Ethiopian hosting options", text: "Ethio Telecom and various local ISPs offer fixed IP addresses. A small VPS or dedicated server in Ethiopia can run cheki for a few hundred birr per month, under rate limits you set yourself." },
 
       { type: "callout", variant: "warning", title: "No header tricks", text: "The block is on the real network address, so headers like X-Forwarded-For change nothing and cheki does not send them. From a server outside Ethiopia, cheki makes one quick attempt and then gives the user the bank's own receipt link to open." },
 
@@ -750,12 +750,8 @@ export const articles: Article[] = [
         type: "table",
         headers: ["Service", "Price", "Free tier", "Per-verify cost"],
         rows: [
-          ["cheki", "Free", "No signup, no key; per-IP rate limits", "0 ETB"],
-          ["check.et", "499 ETB/mo or 4,990/yr", "200 (one-time)", "Flat fee (Pro is unlimited)"],
-          ["verify.et", "500-3,000 ETB/mo (API), 4,000 ETB/yr (app)", "200/mo", "~0.10 ETB (API)"],
-          ["qbirr", "500-8,000 ETB/mo", "50/mo", "0.08-0.50 ETB"],
-          ["tinaverify", "3,000-8,000 ETB per 90 days", "None listed", "0.84-0.91 ETB"],
-          ["tally", "500-12,000+ ETB/mo", "1-day trial", "Flat fee"],
+          ["cheki", CHEKI_PRICING.price, CHEKI_PRICING.freeTier, CHEKI_PRICING.perVerification],
+          ...(Object.keys(COMPETITOR_PRICING) as Competitor[]).map((c) => [c, COMPETITOR_PRICING[c].price, COMPETITOR_PRICING[c].freeTier, COMPETITOR_PRICING[c].perVerification]),
         ],
       },
       { type: "callout", variant: "warning", title: "check.et's free tier is one-time", text: `check.et's 200 free verifications are a one-time allowance, not monthly. Once you use them, you must upgrade. cheki has no allowance to use up: no signup and no key, just ${RATE_LIMIT_SENTENCE}` },
