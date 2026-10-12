@@ -129,23 +129,7 @@
   font-size: 12px; font-weight: 550; color: var(--amber-text);
 }
 .vi-beta::before { content: ""; width: 6px; height: 6px; border-radius: 999px; background: var(--amber); }
-.vi-select-wrap {
-  flex-shrink: 0; position: relative; display: inline-flex; align-items: center; height: 32px; max-width: 150px;
-  padding: 0 26px 0 10px; border-radius: var(--radius-sm); color: var(--ink-2); font-size: 13px; font-weight: 500;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-  background-position: right 9px center; background-size: 10px 6px; background-repeat: no-repeat;
-  transition: background-color var(--dur-fast) var(--ease-out);
-}
-.vi-select-face { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; pointer-events: none; }
-/* The real control: transparent, on top, 16px (no iOS focus zoom), and
-   44px tall so the hit area is a full target while the face stays 32px. */
-.vi-select {
-  position: absolute; left: 0; right: 0; top: 50%; height: 44px; width: 100%; transform: translateY(-50%);
-  opacity: 0; appearance: none; border: 0; margin: 0; padding: 0; font-size: 16px; cursor: pointer;
-  background: transparent; color: var(--ink);
-}
-@media (hover: hover) { .vi-select-wrap:hover { background-color: var(--border); } }
-.vi-select-wrap:has(.vi-select:focus-visible) { outline: 2px solid var(--ring); outline-offset: 2px; }
+/* The bank chooser beside the status row: src/components/ui/bank-select.css. */
 
 /* Extra field: opens only when the detected format needs it. */
 .vi-extra {
@@ -471,7 +455,6 @@
 }
 
 @media (max-width: 380px) {
-  .vi-select-wrap { max-width: 128px; }
   .vc-row { grid-template-columns: 76px minmax(0, 1fr); }
 }
 

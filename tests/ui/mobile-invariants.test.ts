@@ -67,11 +67,14 @@ describe("mobile: form controls never trigger iOS focus zoom", () => {
     expect(rule).toMatch(/font-size:\s*16px\s*!important/);
   });
 
-  it("the bank picker is a transparent 16px select over a 13px face", () => {
-    const verify = read("src/components/verify/verify.css");
-    expect(verify).toMatch(/\.vi-select \{[^}]*font-size: 16px/);
-    expect(verify).toMatch(/\.vi-select \{[^}]*opacity: 0/);
-    expect(read("src/components/verify/VerifyInput.tsx")).toContain('className="vi-select-face" aria-hidden="true"');
+  it("the bank chooser has a 44px hit area and a 16px filter in the sheet", () => {
+    const css = read("src/components/ui/bank-select.css");
+    // 32px face, ::before extends it 6px above and below.
+    expect(css).toMatch(/\.bs-trigger \{[^}]*height: 32px/);
+    expect(css).toMatch(/\.bs-trigger::before \{[^}]*top: -6px; bottom: -6px/);
+    expect(css).toMatch(/\.bs-sheet \.bs-filter \{[^}]*font-size: 16px/);
+    expect(css).toMatch(/\.bs-opt \{[^}]*min-height: 44px/);
+    expect(read("src/components/verify/VerifyInput.tsx")).not.toContain("<select");
   });
 
   it("no inline style gives a form control a font-size under 16px", () => {

@@ -42,7 +42,7 @@ describe("VerifyPanel", () => {
     const input = setup();
     fireEvent.change(input, { target: { value: CBE } });
     await waitFor(() => expect(screen.getByRole("status").textContent).toMatch(/CBE receipt link/));
-    expect(screen.getByLabelText("Bank")).toBeTruthy(); // native <select> override
+    expect(screen.getByRole("button", { name: "Bank Auto · CBE" }).getAttribute("aria-haspopup")).toBe("listbox");
   });
 
   it("Enter submits and a confirmed result is green; it is saved without names", async () => {
@@ -138,6 +138,33 @@ describe("VerifyPanel", () => {
     fireEvent.change(extra, { target: { value: "12345" } });
     await act(async () => { fireEvent.submit(input.closest("form")!); });
     expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ bank: "boa", reference: link, accountNumber: "12345" });
+  });
+
+  it("choosing a bank in the chooser overrides detection and is what gets sent", async () => {
+    const input = setup();
+    fireEvent.change(input, { target: { value: "SE12345678" } });
+    await waitFor(() => expect(screen.getByRole("status").textContent).toMatch(/Pick the bank/));
+    const chooser = screen.getByRole("button", { name: "Bank Auto-detect" }); // ambiguous: no "Auto · X" hint
+    act(() => chooser.click());
+    fireEvent.change(screen.getByRole("combobox", { name: "Find a bank" }), { target: { value: "dash" } });
+    fireEvent.keyDown(document.activeElement!, { key: "Enter" });
+    expect(document.activeElement).toBe(chooser);
+    await waitFor(() => expect(screen.getByRole("status").textContent).toMatch(/Dashen \(chosen\)/));
+    expect(chooser.textContent).toContain("Dashen");
+    fetchMock.mockResolvedValue(json({ success: true, verified: true, bankCode: "dashen", amount: 1, senderName: "A" }));
+    await act(async () => { fireEvent.submit(input.closest("form")!); });
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ bank: "dashen", reference: "SE12345678" });
+  });
+
+  it("a receipt link names its own bank: the chooser cannot re-route it", async () => {
+    const input = setup();
+    fireEvent.change(input, { target: { value: CBE } });
+    const chooser = await waitFor(() => screen.getByRole("button", { name: "Bank Auto · CBE" }));
+    act(() => chooser.click());
+    act(() => screen.getByRole("option", { name: "Dashen" }).click());
+    fetchMock.mockResolvedValue(json({ success: true, verified: true, bankCode: "cbe", amount: 1, senderName: "A" }));
+    await act(async () => { fireEvent.submit(input.closest("form")!); });
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ bank: "cbe", reference: CBE });
   });
 
   it("recent checks: per-row remove and Clear", async () => {
