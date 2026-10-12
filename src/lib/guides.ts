@@ -287,7 +287,7 @@ export const articles: Article[] = [
     slug: "ethiopian-bank-receipt-formats",
     title: "Ethiopian Bank Receipt Formats: A Complete Reference",
     description:
-      "Every Ethiopian bank receipt reference format, endpoint URL, and response type in one place. CBE, Telebirr, BOA, M-Pesa, Dashen, Awash, Zemen, CBE Birr, Siinqee, eBirr.",
+      "Every Ethiopian bank receipt reference format, endpoint URL, and response type in one place. CBE, Telebirr, BOA, M-Pesa, Dashen, Awash, Zemen, CBE Birr, Siinqee, eBirr, ZamZam.",
     category: "technical",
     excerpt:
       `The definitive reference for Ethiopian bank receipt formats. Reference patterns, endpoint URLs, required fields, and response types for the ${LIVE_BANK_COUNT} live banks and wallets, plus the ones still in research.`,
@@ -573,6 +573,21 @@ export const articles: Article[] = [
       { type: "text", text: "The user shares the receipt from the eBirr app to get a receipt.ebirr.com/{tenant}/{token} URL. cheki auto-detects the tenant and maps it to the correct partner bank. Invalid tokens return a 'Not Found Page' (HTTP 200 with red H1)." },
       { type: "callout", variant: "info", title: "eBirr vs Telebirr", text: "eBirr and Telebirr are completely different services. Telebirr is Ethio Telecom's mobile wallet. eBirr is a separate mobile money platform that partners with multiple banks (Nib, Wegagen, Ahadu, KAAFI, Siinqee/Coopbank)." },
 
+      { type: "heading", text: "ZamZam Bank (beta)" },
+      {
+        type: "table",
+        headers: ["Field", "Value"],
+        rows: [
+          ["Receipt link", "https://receipt.zamzambank.com.et/receipt/{RECEIPT_ID}"],
+          ["Data endpoint", "https://receipt-backend.zamzambank.com.et/api/v1/invoice/{RECEIPT_ID}"],
+          ["Response format", "JSON (an unknown id answers HTTP 200 with null)"],
+          ["Input needed", "The receipt link, or the numeric receipt id at its end"],
+          ["Account number required", "No"],
+          ["Geo-blocked", "No"],
+        ],
+      },
+      { type: "text", text: "The receipt link opens a web app; its data comes from ZamZam's JSON service, which expects a fixed credential that ZamZam ships inside that public web app (cheki sends the same one). The record names the ZamZam account holder, the amount, the date (no time) and ZamZam's transaction reference. cheki masks the account number to its first digit and last 4. Whether the holder paid or received is inferred from the record's debit/credit flag, which is why ZamZam support is in beta." },
+
       { type: "heading", text: "Other Ethiopian banks (researching)" },
       { type: "text", text: "The following banks are licensed in Ethiopia but do not yet have confirmed public receipt verification endpoints. cheki lists them as 'in development' and is actively researching their receipt systems:" },
       {
@@ -589,7 +604,6 @@ export const articles: Article[] = [
           ["Lion International Bank", "2006", "-", "Researching (aka Anbessa)"],
           ["Oromia International Bank", "2008", "-", "Researching"],
           ["Hibret Bank", "1998", "-", "Researching (formerly United Bank)"],
-          ["ZamZam Bank", "2021", "-", "Researching (Islamic)"],
           ["Hijra Bank", "2021", "-", "Researching (Islamic)"],
           ["Shabelle Bank", "2021", "-", "Researching"],
           ["Goh Betoch Bank", "2021", "-", "Researching (housing/mortgage)"],
@@ -614,6 +628,7 @@ export const articles: Article[] = [
           ["awashpay.awashbank.com:8225/-{A}-{B}", "Awash Bank"],
           ["receipt.ebirr.com/{tenant}/{token}", "eBirr"],
           ["tenant/token (nib/, wegagen/, ahadu/, kaafimf/)", "eBirr"],
+          ["receipt.zamzambank.com.et/receipt/{id}", "ZamZam Bank (a bare number needs ZamZam chosen)"],
         ],
       },
       { type: "callout", variant: "info", title: "URL auto-detection", text: "cheki also detects the bank from pasted URLs. If you paste a mbreciept.cbe.com.et link, it knows it's CBE. If you paste a transactioninfo.ethiotelecom.et link, it knows it's Telebirr. If you paste an awashpay.awashbank.com:8225/-... link, it knows it's Awash. No manual bank selection needed." },
@@ -626,7 +641,7 @@ export const articles: Article[] = [
     related: ["cbe-receipt-qr-code", "self-hosting-docker-guide", "payment-verification-api-guide"],
     seo: {
       title: "Ethiopian Bank Receipt Formats: Complete Reference",
-      description: "Every Ethiopian bank receipt reference format, endpoint URL, and response type. CBE, Telebirr, BOA, M-Pesa, Dashen, Awash, Zemen, CBE Birr, Siinqee, eBirr.",
+      description: "Every Ethiopian bank receipt reference format, endpoint URL, and response type. CBE, Telebirr, BOA, M-Pesa, Dashen, Awash, Zemen, CBE Birr, Siinqee, eBirr, ZamZam.",
       keywords: ["ethiopian bank receipt format", "CBE FT reference", "telebirr transaction ID format", "BOA receipt endpoint", "ethiopian bank API", "receipt verification reference pattern"],
     },
   },
@@ -831,7 +846,7 @@ export const articles: Article[] = [
       { type: "heading", text: "cheki: the details" },
       { type: "text", text: `cheki is MIT licensed open source built with Next.js. It requires no signup and no API key. The hosted version at cheki.et applies ${RATE_LIMIT_SENTENCE} The full source code is on GitHub.` },
       { type: "text", text: `cheki supports ${TOTAL_BANK_COUNT} banks with ${LIVE_BANK_COUNT} live (${liveBankList("short")}) and ${IN_DEVELOPMENT_BANK_COUNT} in development.` + " eBirr alone covers 4 additional banks through a single integration (Nib International, Wegagen, Ahadu, KAAFI Microfinance). It supports both the old and new CBE receipt systems, BOA QR code decryption, and unified QR scanning with multi-scale auto-detection." },
-      { type: "text", text: "Recent updates (October 2026): cheki reads the Payment QR Code on Telebirr receipts (upload a screenshot, scan it with the camera, or paste the QR text) and checks the transaction number with Telebirr; the QR on its own is never treated as proof. M-Pesa receipts (beta) are read from the PDF inside Safaricom's JSON response, CBE's newer v2 receipt links work, a public /status page checks every bank endpoint daily, and the result only turns green when the bank itself confirms the receipt. Pasting the receipt text from the Telebirr or M-Pesa app still works when those endpoints block cloud servers." },
+      { type: "text", text: "Recent updates (October 2026): cheki reads the Payment QR Code on Telebirr receipts (upload a screenshot, scan it with the camera, or paste the QR text) and checks the transaction number with Telebirr; the QR on its own is never treated as proof. M-Pesa receipts (beta) are read from the PDF inside Safaricom's JSON response, ZamZam Bank receipt links (beta) are checked against ZamZam's own record, CBE's newer v2 receipt links work, a public /status page checks every bank endpoint daily, and the result only turns green when the bank itself confirms the receipt. Pasting the receipt text from the Telebirr or M-Pesa app still works when those endpoints block cloud servers." },
       { type: "text", text: "Strengths: free, open source, no signup, self-hosting, batch verification, Python library, TypeScript SDK, Docker, QR code scanning with BOA AES decryption and Telebirr receipt QR reading, URL auto-detection, allows AI crawlers, shows receipt source URLs, and parses pasted receipt text." },
       { type: "text", text: `Weaknesses: no mobile app (web only, but PWA-installable), no employee management, no dashboard for businesses, no duplicate detection built-in, no geo-block bypass relay${servicesListingMoreBanks(LIVE_BANK_COUNT).length ? `, fewer live banks than ${servicesListingMoreBanks(LIVE_BANK_COUNT).join("/")} list` : ""}.` },
 

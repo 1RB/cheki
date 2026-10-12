@@ -85,6 +85,11 @@ export function SiinqeeLogo({ size = 36 }: { size?: number }) {
   return <BankLogo size={size} shortName="SQE" color="#be185d" />;
 }
 
+// ZamZam - teal (the manifest colour)
+export function ZamZamLogo({ size = 36 }: { size?: number }) {
+  return <BankLogo size={size} shortName="ZZB" color="#0d9488" />;
+}
+
 const logoMap: Record<string, (props: { size?: number }) => React.ReactElement> = {
   cbe: CBEOCogo,
   telebirr: TelebirrLogo,
@@ -95,6 +100,7 @@ const logoMap: Record<string, (props: { size?: number }) => React.ReactElement> 
   zemen: ZemenLogo,
   cbebirr: CBEBirrLogo,
   siinqee: SiinqeeLogo,
+  zamzam: ZamZamLogo,
 };
 
 export function BankLogoByName({ code, size = 36 }: { code: string; size?: number }) {

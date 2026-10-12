@@ -28,6 +28,7 @@ src/lib/parsers/               ← one file per bank. each extends BaseParser
   telebirr.ts                    Telebirr HTML
   boa.ts                         BOA JSON
   mpesa.ts                       M-Pesa JSON envelope with a base64 PDF (pdf-in-json, beta)
+  zamzam.ts                      ZamZam JSON (public Basic credential from its web app, account masked, beta)
   registry.ts                    plugin registry (register/get/isSupported)
   index.ts                       auto-registers all parsers
        ↓
