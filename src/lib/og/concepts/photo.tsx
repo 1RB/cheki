@@ -192,20 +192,20 @@ const BAIT_W = 126;
 const BAIT_H = 190;
 
 export function BaitCard({ bank }: { bank?: CardBank }) {
-  const text = bank ? `Fake ${bank.shortName} receipts are bait.` : "Don’t take the bait.";
+  const second = bank ? `${bank.shortName} doesn’t.` : "Banks don’t.";
+  const sub = bank ? `Check any ${bank.shortName} receipt with the bank, in seconds.` : "Check any receipt with the bank, in seconds.";
   return (
     <Art name="bait">
-      {/* the phone hangs 8.7° off vertical; the screen's blank half is centred at (804, 474) */}
-      <At left={804 - BAIT_W / 2} top={474 - BAIT_H / 2}>
-        <div style={{ display: "flex", width: BAIT_W, height: BAIT_H, transform: "rotate(-8.7deg)", ...ON_SCREEN }}>
-          <Screen width={BAIT_W} bank={bank} size={1.05} />
-        </div>
-      </At>
+      {/* Ray's art: the success screen is part of the photo, so nothing is set on it */}
       <At left={60} top={50}>
         <Mark size={34} color={WHITE} />
       </At>
-      <At left={322} top={bank ? 170 : 190}>
-        <Words text={text} italic={["bait."]} size={bank ? 58 : 66} color={WHITE} width={340} />
+      <At left={300} top={205}>
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          <Words text="Screenshots lie." size={50} color={WHITE} width={380} />
+          <Words text={second} italic={["don’t.", "doesn’t."]} size={50} color={WHITE} width={380} />
+          <div style={{ display: "flex", marginTop: 22, width: 260, fontFamily: "Inter", fontWeight: 500, fontSize: 21, lineHeight: 1.3, color: "rgba(255,255,255,0.86)" }}>{sub}</div>
+        </div>
       </At>
     </Art>
   );
