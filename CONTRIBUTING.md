@@ -283,8 +283,8 @@ Guides live in `src/lib/guides.ts` as content blocks (text, steps, callouts, tab
 
 - **Bump `updated`** (YYYY-MM-DD) whenever an article's text changes. It is shown as "Updated", sent as `dateModified` in the Article JSON-LD and used as the sitemap `lastmod`. `date` stays the first-published date.
 - **Never type cheki's bank counts.** Use `LIVE_BANK_COUNT`, `TOTAL_BANK_COUNT` and `IN_DEVELOPMENT_BANK_COUNT` from `src/lib/bank-counts.ts` in a template literal. A count about someone else (a competitor, eBirr's partner banks) has to be added to the allowlist in `tests/guides/guides-content.test.ts`.
-- **Say "rate limits", not "no quota".** The hosted API has fair per-IP limits (verify 30/min, batch 5/min; self-host for more). `RATE_LIMIT_SENTENCE` in `src/lib/guides-facts.ts` reads them from `src/lib/rate-limit.ts`, and a test checks every "N per minute" in the guides against the limiters.
-- **Date competitor claims.** Competitor prices and bank lists sit in `src/lib/guides-facts.ts` with `COMPETITORS_CHECKED`, the day they were last re-checked on the public sites. Re-check, update the date and the numbers together; anything not re-checked keeps its "as of June 2026".
+- **Say "rate limits", not "no quota".** The hosted API has fair per-IP limits (verify 30/min, batch 5/min; self-host for more). `RATE_LIMIT_SENTENCE`, `RATE_LIMIT_SHORT` and `HOSTED_RATE_LIMITS` in `src/lib/guides-facts.ts` read them from `src/lib/rate-limit-config.ts`, the table the limiters in `src/lib/rate-limit.ts` are built from, and a test checks every "N per minute" on the site against the limiters. This holds site-wide, not only in the guides: never write "no quota", "unlimited", "no limits" or "no monthly cap" about cheki.
+- **Date competitor claims.** Competitor prices (`COMPETITOR_PRICING`) and bank lists (`COMPETITOR_BANKS_LISTED`) sit in `src/lib/guides-facts.ts` with `COMPETITORS_CHECKED`, the day they were last re-checked on the public sites. The guides, `/compare`, the SEO pages and the home FAQ all read them from there (`competitorPrices()` gives the dated sentence). Re-check, update the date and the numbers together; anything not re-checked keeps its "as of June 2026" (`COMPETITOR_FACTS_AS_OF`). README.md and public/llms.txt can't import, so update their price lines by hand; `tests/content` fails on a stale one.
 - **Design language**: labels are ink and sentence case (no pills, tracked caps or coloured category tiles); callouts are a quiet surface with an 8px amber or red dot only for warnings, never an emoji; green appears nowhere on these pages, so `.guides-scope` draws the focus ring and selection in ink.
 - New UI strings go in `translations.ts` under `guides.*` in both `en` and `am` (a test checks they match).
 
@@ -316,6 +316,7 @@ Tests are in `tests/` and cover:
 - The SDK contract (`tests/contract`): `sdks/fixtures/api-contract.json` must match what the route handlers send
 - Mobile invariants (`tests/ui/mobile-invariants.test.ts`): source-level rules for phones, listed below
 - Guides (`tests/guides`): no "no quota", no hardcoded bank counts, dated competitor claims, the index grouping, and the JSON-LD
+- Site copy (`tests/content`): the same rules for /compare, the SEO pages, the home FAQ, translations, README, llms.txt and the SDK READMEs and manifests
 
 ### UI changes on phones
 
