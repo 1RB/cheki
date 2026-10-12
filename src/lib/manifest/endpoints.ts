@@ -250,26 +250,33 @@ export const endpointDocs: EndpointDoc[] = [
   {
     id: "boa",
     label: "BOA",
-    inputNeeded: "Reference + last 5 digits of the receiving account",
+    inputNeeded: "BOA slip link, or reference + last 5 digits of the account on the receipt",
     placeholders: [
       {
         name: "{REFERENCE}",
         what: "The Bank of Abyssinia transaction reference.",
-        whereToFind: "On the BOA receipt or slip link (cs.bankofabyssinia.com/slip/?trx=...). Inter-bank transfers use an FT reference.",
+        whereToFind: "On the BOA receipt, or at the start of the slip link's trx value (cs.bankofabyssinia.com/slip/?trx=FT252003JZPP12345 → FT252003JZPP).",
         format: "Letters and digits, starting with 2 letters, e.g. FT252003JZPP.",
       },
       {
         name: "{LAST_5_DIGITS}",
-        what: "The last 5 digits of the receiving account.",
-        whereToFind: "The receiver's account number on the receipt.",
+        what: "The last 5 digits of an account on the receipt, which BOA looks the receipt up by. Not always the receiver's: a fee receipt with no receiver uses the source account.",
+        whereToFind: "The last 5 characters of the slip link's trx value (FT252003JZPP12345 → 12345), or the account on the receipt.",
         format: "5 digits, appended directly after the reference.",
       },
     ],
     redactedExample: "https://cs.bankofabyssinia.com/api/onlineSlip/getDetails/?id=FT252003JZPPXXXXX",
-    fieldsParsed: ["senderName", "senderAccount", "receiverName", "receiverAccount", "amount", "currency", "date", "reference"],
+    fieldsParsed: ["senderName", "senderAccount", "receiverName", "receiverAccount", "amount", "currency", "date", "reference", "transactionType", "amountInWords", "serviceFee", "totalPaid", "reason"],
     unknownRef: 'HTTP 200 application/json with body[0]["Payer\'s Name"] = "Invalid reference number".',
-    gotchas: ["A miss still returns HTTP 200, so the parser must read the body."],
-    changelog: [],
+    gotchas: [
+      "A miss still returns HTTP 200, so the parser must read the body.",
+      "Fee and charge receipts (e.g. Transaction Type \"Account Transfer MB Maintenance\") have no Receiver's Name or Receiver's Account; receiver fields stay empty.",
+      "Slip links put the 5 account digits straight after the reference (trx=FT252003JZPP12345); cheki splits them off.",
+      "\"VAT (15%)\" is not mapped: on the fee receipt observed it was 15% of the Transferred Amount, not of the Service Charge, so it does not fit serviceFeeVat. totalPaid includes it.",
+    ],
+    changelog: [
+      { date: "2026-10-12", note: "Slip links (trx=) are split into the reference and the 5 account digits; receipts without a receiver, and the service charge, total including VAT and payment reference rows, are read." },
+    ],
     parserSource: "src/lib/parsers/boa.ts",
     fixture: "tests/parsers/boa.test.ts",
     probe: {

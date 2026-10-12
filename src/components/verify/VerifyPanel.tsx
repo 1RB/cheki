@@ -25,7 +25,7 @@ import { useTranslation } from "@/lib/i18n/use-translation";
 import { isUrl } from "@/lib/adapters/url-detector";
 import { isBoaQrPayload } from "@/lib/qr/decode";
 import { isTelebirrQrPayload, parseTelebirrQr } from "@/lib/qr/telebirr";
-import { browserReceiptUrl, detectInput, liveBanks, type Detection } from "@/lib/verify/detect";
+import { accountFieldKeys, browserReceiptUrl, detectInput, liveBanks, type Detection } from "@/lib/verify/detect";
 import { postJson } from "@/lib/verify/client";
 import { presentVerdict, type FraudCheck } from "@/lib/verify/verdict";
 import { addVerified, clearRecent, findPrevious, loadRecent, removeRecent, type RecentCheck } from "@/lib/verify/history";
@@ -187,7 +187,7 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
         const phoneOk = /^(251|0)?9\d{8}$/.test(digits);
         const accountOk = digits.length >= (d.accountDigits ?? 5);
         if (d.needsPhone ? !phoneOk : !accountOk) {
-          setExtraError(d.needsPhone ? t("verify.extra.phoneMissing") : t("verify.extra.accountMissing", { digits: d.accountDigits ?? 5 }));
+          setExtraError(d.needsPhone ? t("verify.extra.phoneMissing") : t(accountFieldKeys(d).missing, { digits: d.accountDigits ?? 5 }));
           extraRef.current?.focus();
           return;
         }

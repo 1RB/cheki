@@ -77,6 +77,8 @@ export const translations = {
         accountPlaceholder: "Last {digits} digits",
         accountHint: "Sent to {bank} with the reference to find this receipt. Nothing is stored.",
         accountMissing: "Enter at least the last {digits} digits of the receiving account.",
+        accountOnReceipt: "Account on the receipt, last {digits} digits",
+        accountOnReceiptMissing: "Enter at least the last {digits} digits of the account on the receipt, or paste the full receipt link.",
         phone: "Payer phone number",
         phoneHint: "{bank} matches the receipt on the payer's number. Nothing is stored.",
         phoneMissing: "Enter the payer's phone number (2519XXXXXXXX).",

@@ -139,6 +139,10 @@ export function detectInput(raw: string, opts: { lockedBank?: string; overrideBa
     const bank = fromUrl;
     const primary = primaryFormat(bank);
     const format = (hit.reference ? supportedFormats(bank).find((f) => matchesFormat(f, hit.reference)) : undefined) ?? primary;
+    // A full link usually carries the account suffix or token. A BOA slip
+    // link without the 5-digit suffix (trx={reference} only) does not, so
+    // the account field opens instead of sending a check that must fail.
+    const linkNeedsAccount = Boolean(format && formatNeeds(format, "account") && !hit.accountNumber);
     return finish({
       ...base,
       kind: "url",
@@ -148,9 +152,9 @@ export function detectInput(raw: string, opts: { lockedBank?: string; overrideBa
       urlReference: hit.reference,
       format,
       olderFormat: Boolean(format && primary && format !== primary),
-      // A full link already carries the account suffix or token.
-      needsAccount: false,
+      needsAccount: linkNeedsAccount,
       needsPhone: false,
+      ...(linkNeedsAccount ? { accountDigits: formatAccountDigits(format) ?? bank.accountDigits } : {}),
     });
   }
 
@@ -172,6 +176,21 @@ export function detectInput(raw: string, opts: { lockedBank?: string; overrideBa
     needsPhone,
     accountDigits: formatAccountDigits(format) ?? bank.accountDigits,
   });
+}
+
+/**
+ * Banks whose account suffix is not always the receiving account. BOA looks a
+ * receipt up by one account's last 5 digits, and on a fee receipt with no
+ * receiver that is the source account. The field is labelled "account on the
+ * receipt" there instead of "receiving account".
+ */
+const ACCOUNT_ON_RECEIPT_BANKS = new Set(["boa"]);
+
+/** i18n keys for the account field's label and its "too short" error. */
+export function accountFieldKeys(d: Pick<Detection, "bank">): { label: string; missing: string } {
+  return d.bank && ACCOUNT_ON_RECEIPT_BANKS.has(d.bank.code)
+    ? { label: "verify.extra.accountOnReceipt", missing: "verify.extra.accountOnReceiptMissing" }
+    : { label: "verify.extra.account", missing: "verify.extra.accountMissing" };
 }
 
 /** What the extra field must hold before a check can go out, or null when it is fine. */

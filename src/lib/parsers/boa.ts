@@ -3,7 +3,10 @@
  *
  * Endpoint: https://cs.bankofabyssinia.com/api/onlineSlip/getDetails/?id={ref}{account}
  * Response: JSON with receipt fields
- * Requires: reference + last 5 digits of account
+ * Requires: reference + last 5 digits of an account on the receipt. Not
+ *   always the receiver's: a fee receipt with no receiver uses the source
+ *   account. (A QR lookup uses the receiver account the QR names.) A slip
+ *   link (/slip/?trx=) can carry these 5 digits after the reference.
  *
  * QR decryption:
  *   BOA receipt QR codes are AES-256-CBC encrypted payloads. The key is hardcoded
@@ -32,6 +35,18 @@ const QR_IV = "1234567890123456";
 const QR_ITERATIONS = 10000;
 const QR_KEYLEN = 32;
 const QR_HASH = "sha1";
+
+/** A non-blank string field, trimmed; anything else is undefined. */
+function text(v: unknown): string | undefined {
+  if (typeof v === "number" && Number.isFinite(v)) return String(v);
+  return typeof v === "string" && v.trim() ? v.trim() : undefined;
+}
+
+/** A money field ("1,234.50", "5,000.00 ETB" or a number), or undefined. */
+function money(v: unknown): number | undefined {
+  const s = text(v);
+  return s === undefined ? undefined : parseMoney(s);
+}
 
 export class BOAParser extends BaseParser {
   readonly bankId = "boa";
@@ -88,25 +103,38 @@ export class BOAParser extends BaseParser {
   parse(data: string | Buffer, _contentType: string): ParsedReceipt {
     try {
       const payload = JSON.parse(data.toString());
-      const body = payload.body;
-      if (!body || !body[0] || body[0]["Payer's Name"] === "Invalid reference number") {
+      const body = payload?.body;
+      const row = Array.isArray(body) ? body[0] : undefined;
+      if (!row || typeof row !== "object" || row["Payer's Name"] === "Invalid reference number") {
         return { verified: false, raw: data.toString().slice(0, 500) };
       }
 
-      const row = body[0];
-      const amtRaw = row["Transferred Amount"];
-      const amount = parseMoney(amtRaw == null ? undefined : String(amtRaw));
-
+      // Every field is optional: a fee or charge receipt ("Account Transfer
+      // MB Maintenance") has no Receiver's Name or Receiver's Account, and the
+      // amount rows vary by transaction type. Missing or blank fields stay
+      // undefined so no empty rows reach the UI or the API response.
       return {
         verified: true,
-        senderName: row["Source Account Name"],
-        senderAccount: row["Source Account"],
-        receiverName: row["Receiver's Name"],
-        receiverAccount: row["Receiver's Account"],
-        amount,
-        currency: row.currency || "ETB",
-        date: row["Transaction Date"],
-        reference: row["Transaction Reference"],
+        senderName: text(row["Source Account Name"]) ?? text(row["Payer's Name"]),
+        senderAccount: text(row["Source Account"]),
+        receiverName: text(row["Receiver's Name"]),
+        receiverAccount: text(row["Receiver's Account"]),
+        amount: money(row["Transferred Amount"]),
+        currency: text(row.currency) ?? "ETB",
+        date: text(row["Transaction Date"]),
+        reference: text(row["Transaction Reference"]),
+        transactionType: text(row["Transaction Type"]),
+        amountInWords: text(row["Transferred Amount in word"]),
+        serviceFee: money(row["Service Charge"]),
+        // "VAT (15%)" is deliberately not mapped. On the one fee receipt
+        // observed (2026-10-12) it was 15% of the Transferred Amount, not of
+        // the Service Charge, so serviceFeeVat ("VAT on the service fee")
+        // would mislabel it. totalPaid already includes it.
+        totalPaid: money(row["Total Amount including VAT"]),
+        // The payer's own note. BOA prints it as "Payment Reference" and may
+        // add a "Narrative". ParsedReceipt has one free-text field for this,
+        // so the Payment Reference wins and the Narrative is the fallback.
+        reason: text(row["Payment Reference"]) ?? text(row["Narrative"]),
         raw: data.toString().slice(0, 1000),
       };
     } catch {

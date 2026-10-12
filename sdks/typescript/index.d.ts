@@ -48,7 +48,7 @@ export declare const RECEIPT_DOWNLOAD_BANKS: Readonly<Record<string, {
 }>>;
 /** Optional fields for a single verification, the third argument to {@link Cheki.verify}. */
 export interface VerifyOptions {
-    /** Receiving account number. Needed by BOA, and by an older CBE receipt that shows only an FT reference (legacy format); a CBE Receipt ID or link needs none. */
+    /** Account number. BOA: the last 5 digits of the account on the receipt (a full BOA slip link can carry them). An older CBE receipt that shows only an FT reference (legacy format): the receiving account; a CBE Receipt ID or link needs none. */
     accountNumber?: string;
     /** Payer phone number (required by CBE Birr). */
     phoneNumber?: string;

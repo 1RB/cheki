@@ -116,6 +116,30 @@ describe("VerifyPanel", () => {
     expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ bank: "cbe", reference: "FT26140P01YB", accountNumber: "60536171" });
   });
 
+  it("a BOA slip link with the 5-digit suffix is sent as is, with no account field", async () => {
+    // Synthetic reference and suffix (tests/fixtures/boa/no-receiver.ts).
+    const link = "https://cs.bankofabyssinia.com/slip/?trx=FT26999ABCD112345";
+    fetchMock.mockResolvedValue(json({ success: true, verified: true, bankCode: "boa", reference: "FT26999ABCD1", amount: 100, senderName: "TEST PAYER ONE" }));
+    const input = setup();
+    await submit(input, link);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ bank: "boa", reference: link });
+    await waitFor(() => expect(screen.getByRole("heading", { name: "Verified with BOA" })).toBeTruthy());
+  });
+
+  it("a BOA slip link without the suffix asks for the account on the receipt", async () => {
+    const link = "https://cs.bankofabyssinia.com/slip/?trx=FT26999ABCD1";
+    const input = setup();
+    await submit(input, link);
+    expect(fetchMock).not.toHaveBeenCalled();
+    const extra = screen.getByLabelText("Account on the receipt, last 5 digits") as HTMLInputElement;
+    expect(screen.getByText(/Enter at least the last 5 digits of the account on the receipt/)).toBeTruthy();
+    fetchMock.mockResolvedValue(json({ success: true, verified: true, bankCode: "boa", amount: 100, senderName: "A" }));
+    fireEvent.change(extra, { target: { value: "12345" } });
+    await act(async () => { fireEvent.submit(input.closest("form")!); });
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ bank: "boa", reference: link, accountNumber: "12345" });
+  });
+
   it("recent checks: per-row remove and Clear", async () => {
     localStorage.setItem(HISTORY_KEY, JSON.stringify([
       { bank: "cbe", ref: "FT1", checkedAt: "2026-10-01T10:00:00Z", amount: 10 },

@@ -118,8 +118,10 @@ export function VerdictCard({ verdict, result, checkedAt, t, onAnother, onRetry 
         {p?.name && p.account && <span className="vc-acct">{p.account}</span>}
       </>
     );
-    rows.push([t("verify.card.from"), party(v.from)]);
-    rows.push([t("verify.card.to"), party(v.to)]);
+    // A party the bank did not return gets no row (a BOA fee receipt has no
+    // receiver), rather than a "-" placeholder.
+    if (v.from) rows.push([t("verify.card.from"), party(v.from)]);
+    if (v.to) rows.push([t("verify.card.to"), party(v.to)]);
   }
   if (v.showDetails && v.date) rows.push([t("verify.card.date"), <RelativeTime key="d" value={v.date} className="vc-num" />]);
   if (v.reference) rows.push([t("verify.card.reference"), <span key="r" className="vc-mono">{v.reference}</span>]);

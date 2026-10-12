@@ -365,8 +365,8 @@ export const articles: Article[] = [
           ["URL format", "https://cs.bankofabyssinia.com/api/onlineSlip/getDetails/?id={REFERENCE}{LAST_5_DIGITS}"],
           ["QR format", "AES-256-CBC encrypted CSV (decrypts to source, amount, reference, date, receiver)"],
           ["Response format", "JSON"],
-          ["Input needed", "Transaction reference + last 5 digits of receiving account, OR the QR payload"],
-          ["Account number required", "Yes (last 5 digits), skipped if QR payload is provided"],
+          ["Input needed", "The BOA slip link, OR the transaction reference + last 5 digits of the account on the receipt, OR the QR payload"],
+          ["Account number required", "Yes (last 5 digits), skipped for a slip link that ends with them, or a QR payload"],
           ["Geo-blocked", "No"],
         ],
       },
@@ -621,7 +621,7 @@ export const articles: Article[] = [
     faq: [
       { q: "Are these bank endpoints official APIs?", a: "These are public endpoints that the banks use for their own receipt sharing systems. They are not documented official APIs, but they are publicly accessible without authentication. cheki, check.et, and verify.et all use these same endpoints." },
       { q: "Can the banks change or remove these endpoints?", a: "Yes. If a bank changes their endpoint, cheki needs to update its parser. Because cheki is open source, anyone can submit a fix. This is an advantage over closed services like check.et." },
-      { q: "Which banks require an account number?", a: "BOA requires the last 5 digits of the receiving account. CBE's current receipts (the mbreciept link or Receipt ID) need no account number; only an older CBE receipt with just an FT reference needs the last 8 digits. CBE Birr needs the payer's phone. All other banks only need the receipt link or reference." },
+      { q: "Which banks require an account number?", a: "BOA requires the last 5 digits of the account on the receipt, which a full BOA slip link can carry. CBE's current receipts (the mbreciept link or Receipt ID) need no account number; only an older CBE receipt with just an FT reference needs the last 8 digits. CBE Birr needs the payer's phone. All other banks only need the receipt link or reference." },
     ],
     related: ["cbe-receipt-qr-code", "self-hosting-docker-guide", "payment-verification-api-guide"],
     seo: {
@@ -1307,7 +1307,7 @@ curl -X POST https://cheki.et/api/verify \\
         ],
       },
 
-      { type: "callout", variant: "tip", title: "No account number needed for QR", text: "Unlike BOA's JSON API which requires the last 5 digits of the receiving account, QR-based verification needs no additional information. The QR code contains everything. Just scan and verify." },
+      { type: "callout", variant: "tip", title: "No account number needed for QR", text: "Unlike a typed BOA reference, which needs the last 5 digits of the account on the receipt, QR-based verification needs no additional information. The QR code contains everything. Just scan and verify." },
 
       { type: "heading", text: "BOA QR vs CBE QR: a comparison" },
       {
@@ -1415,7 +1415,7 @@ curl -X POST https://cheki.et/api/verify \\
     ],
     faq: [
       { q: "Does BOA verification require Selenium?", a: "No. cheki uses BOA's JSON API directly at cs.bankofabyssinia.com. This is faster and works in serverless environments without Chrome WebDriver." },
-      { q: "Why does BOA need the last 5 digits?", a: "BOA's API endpoint combines the transaction reference with the last 5 digits of the receiving account to form the full ID. This prevents unauthorized receipt enumeration." },
+      { q: "Why does BOA need the last 5 digits?", a: "BOA's API endpoint combines the transaction reference with the last 5 digits of an account on the receipt to form the full ID, which makes receipts harder to guess. It is not always the receiving account: a fee receipt with no receiver uses the source account. A BOA slip link (cs.bankofabyssinia.com/slip/?trx=...) whose trx value ends with those 5 digits works on its own." },
       { q: "What if BOA's API returns 'Invalid reference number'?", a: "This happens for inter-bank transfers (e.g., FT... references sent to CBE). In that case, scan the QR code on the receipt and send the payload in the qrData field. cheki decrypts it with AES-256-CBC using the key embedded in BOA's receipt app. See the BOA QR code breakdown for details." },
       { q: "Is QR-based verification secure?", a: "The key is hardcoded in BOA's public receipt web app, which means anyone can decrypt QR codes (and forge them). For high-value inter-bank transfers, request additional confirmation. See our BOA QR code breakdown for the full security analysis." },
       { q: "Can I verify inter-bank BOA transfers without the QR code?", a: "No. BOA's JSON API does not recognize inter-bank transfer references. The QR code is the only way to verify these transactions. If you don't have the QR code, ask the sender for a screenshot of the receipt or check your bank statement for the incoming transfer." },

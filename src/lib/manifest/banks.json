@@ -310,7 +310,7 @@
     "parser": "boa",
     "responseType": "json",
     "requiresAccount": true,
-    "accountLabel": "Receiving account number",
+    "accountLabel": "Account on the receipt",
     "accountDigits": 5,
     "endpoint": "https://cs.bankofabyssinia.com/api/onlineSlip/getDetails/?id={ref}{account}",
     "endpointFormat": "https://cs.bankofabyssinia.com/api/onlineSlip/getDetails/?id={REFERENCE}{LAST_5_DIGITS}",
@@ -324,11 +324,11 @@
     "refPrefixes": [
       "Various"
     ],
-    "description": "Bank of Abyssinia (BOA) is one of Ethiopia's largest private banks. BOA publishes receipt data as JSON via a public API endpoint that requires the transaction reference and the last 5 digits of the receiving account number. For inter-bank transfers (BOA to CBE, Dashen, etc.), the receipt QR code is AES-256-CBC encrypted: cheki decrypts it to read the reference and receiving account, then confirms the receipt with BOA. If BOA cannot be reached, the result is marked as decoded from the QR and not confirmed. No Selenium or headless browser required.",
+    "description": "Bank of Abyssinia (BOA) is one of Ethiopia's largest private banks. BOA publishes receipt data as JSON via a public API endpoint that requires the transaction reference and the last 5 digits of the account on the receipt. A full BOA slip link (cs.bankofabyssinia.com/slip/?trx=...) can carry both: cheki splits the reference and the 5 digits out of it. For inter-bank transfers (BOA to CBE, Dashen, etc.), the receipt QR code is AES-256-CBC encrypted: cheki decrypts it to read the reference and receiving account, then confirms the receipt with BOA. If BOA cannot be reached, the result is marked as decoded from the QR and not confirmed. No Selenium or headless browser required.",
     "referenceFormat": "Alphanumeric reference starting with 2 letters (varies by transaction type). Inter-bank transfers use FT references (e.g., FT252003JZPP).",
     "referenceExample": "AB12345678",
     "howToVerify": [
-      "For BOA-to-BOA transfers: get the transaction reference and last 5 digits of your receiving account",
+      "For BOA-to-BOA receipts: paste the BOA slip link, or enter the transaction reference and the last 5 digits of the account on the receipt",
       "cheki calls BOA's public JSON API and returns structured payment data in 1-2 seconds",
       "For inter-bank transfers (BOA to CBE/Dashen/etc.): scan the QR code on the receipt with cheki's camera scanner or upload a screenshot",
       "cheki auto-detects BOA QR payloads and decrypts them server-side: the QR supplies the reference and receiving account, and BOA confirms the receipt. No account number to type. If BOA cannot be reached, the result is shown as decoded only, not verified."
@@ -347,7 +347,7 @@
       },
       {
         "q": "What information do I need to verify a BOA transaction?",
-        "a": "For BOA-to-BOA transfers, you need the transaction reference number and the last 5 digits of the receiving account. For inter-bank transfers (BOA to CBE, Dashen, etc.), scan the QR code on the receipt. No account number is needed for QR-based verification."
+        "a": "For BOA-to-BOA receipts, paste the BOA slip link; when it carries the 5 account digits after the reference, nothing else is needed. Otherwise, enter the transaction reference and the last 5 digits of the account on the receipt. For inter-bank transfers (BOA to CBE, Dashen, etc.), scan the QR code on the receipt. No account number is needed for QR-based verification."
       },
       {
         "q": "Can I verify inter-bank BOA transfers (sent to CBE or other banks)?",
@@ -386,7 +386,7 @@
       {
         "id": "boa-online-slip-json",
         "status": "current",
-        "label": "Reference + last 5 digits of the receiving account",
+        "label": "Reference + last 5 digits of the account on the receipt",
         "parser": "boa",
         "endpoint": "https://cs.bankofabyssinia.com/api/onlineSlip/getDetails/?id={ref}{account}",
         "linkHosts": [
@@ -400,14 +400,15 @@
           },
           {
             "name": "account",
-            "label": "Receiving account (last 5 digits)",
+            "label": "Account on the receipt (last 5 digits)",
             "digits": 5
           }
         ],
         "responseType": "json",
         "confidence": "verified",
-        "evidence": "Unknown reference answers HTTP 200 JSON 'Invalid reference number' (cheki, 2026-10-10). links.et reads the same endpoint.",
-        "notes": "Inter-bank transfers are checked from the receipt QR code, which names the reference and account."
+        "evidence": "Unknown reference answers HTTP 200 JSON 'Invalid reference number' (cheki, 2026-10-10). links.et reads the same endpoint. Slip links (cs.bankofabyssinia.com/slip/?trx=) carry the same id, {reference}{5 digits}. On a fee receipt with no receiver, the 5 digits were the source account's (cheki, 2026-10-12), so they are not always the receiving account.",
+        "notes": "Inter-bank transfers are checked from the receipt QR code, which names the reference and account.",
+        "missingHint": "This BOA receipt needs the last 5 digits of the account on the receipt. A full BOA slip link that ends with them also works."
       }
     ]
   },

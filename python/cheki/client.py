@@ -155,8 +155,10 @@ class ChekiClient:
         Args:
             bank: Bank/wallet code, e.g. ``"cbe"``, ``"telebirr"``.
             reference: Transaction reference number (or receipt URL).
-            account_number: Receiving account number. Required for banks
-                that need it (e.g. cbe, boa).
+            account_number: Account number, for banks that need it. boa:
+                the last 5 digits of the account on the receipt (a full BOA
+                slip link can carry them). Older cbe FT receipts: the
+                receiving account.
             phone_number: Payer phone number. Required for cbebirr.
             qr_data: Raw QR payload: a boa inter-bank receipt QR, or the
                 Payment QR Code on a telebirr receipt (the server reads the

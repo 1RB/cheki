@@ -49,7 +49,9 @@ export function checkAccountSuffix(input: unknown, digits: number): Checked<stri
     return { ok: false, message: "The account number can only contain digits." };
   }
   if (cleaned.length < digits) {
-    return { ok: false, message: `Enter at least the last ${digits} digits of the receiving account.` };
+    // Which account depends on the bank and format (see each format's
+    // missingHint), so this message does not name one.
+    return { ok: false, message: `Enter at least the last ${digits} digits of the account number.` };
   }
   return { ok: true, value: cleaned.slice(-digits) };
 }

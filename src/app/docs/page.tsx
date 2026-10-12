@@ -209,7 +209,7 @@ const BATCH_RESPONSE_EXAMPLE = {
 const verifyParams = [
   { name: "bank", type: "string", required: "Yes (unless URL)", desc: `Bank id (the id field from GET /api/banks). Live: ${liveProviders.map((b) => b.id).join(", ")}` },
   { name: "reference", type: "string", required: "Yes (unless qrData)", desc: "Receipt link, Receipt ID or transaction reference, in the bank's current format (e.g. a CBE mbreciept.cbe.com.et link, a Dashen FT Ref, a Telebirr transaction number)" },
-  { name: "accountNumber", type: "string", required: "BOA; older CBE FT receipts", desc: "Last 5 digits for BOA. Last 8 digits only for an older CBE receipt that shows just an FT reference (legacy format); a CBE Receipt ID or link needs none" },
+  { name: "accountNumber", type: "string", required: "BOA (typed reference); older CBE FT receipts", desc: "BOA: the last 5 digits of the account on the receipt, not needed when you send a BOA slip link that ends with them. Last 8 digits only for an older CBE receipt that shows just an FT reference (legacy format); a CBE Receipt ID or link needs none" },
   { name: "qrData", type: "string", required: "BOA or Telebirr QR", desc: "Raw QR payload: a BOA inter-bank receipt QR (bank \"boa\"), or the Payment QR Code on a Telebirr receipt (bank \"telebirr\" or empty), whose transaction number is checked exactly like a typed one. A QR alone is never proof of payment." },
   { name: "phoneNumber", type: "string", required: "CBE Birr", desc: "Payer phone number, format: 2519XXXXXXXXX" },
 ];
