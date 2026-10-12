@@ -4,14 +4,21 @@
  *
  * The hero art is generated photography and 3D, saved without any text in
  * public/og/{name}.jpg at exactly 1200x630, so the card is the image plus a
- * headline and the wordmark set in the site's own type. A bank card swaps
- * only the headline ("Hold every CBE receipt to the light."). Receipts in the
- * art are blank or blurred: no card ever shows receipt data.
+ * headline and the wordmark set in the site's own type.
+ *
+ * Round 3 (lineup, bait): a blank strip of paper did not say "payment". The
+ * objects are now what a merchant is actually shown, a phone on a banking
+ * app's green-tick success screen, and the screen's words are set here in
+ * Satori on top of the art: "Transfer successful", ETB 25,000.00, a masked
+ * reference and a date. All synthetic, the same on every phone, so the
+ * lineup's joke lands (they all look the same, one is lying). A bank card
+ * puts the bank's name on the screen as plain text, never a logo. light and
+ * check keep their blank receipts.
  *
  * Telegram and WhatsApp crop a card to its centre square (x 285 to 915), so
- * the headline and the hero both sit inside it and the image alone still
- * carries the idea at the ~300px a feed shows. The wordmark takes the corner
- * outside the square.
+ * the headline and the hero both sit inside it and the amount and
+ * "successful" still read at the ~300px a feed shows. The wordmark takes the
+ * corner outside the square.
  */
 import { readFileSync } from "fs";
 import { join } from "path";
@@ -63,6 +70,62 @@ function Words({ text, italic = [], size, color, align = "left", width, shadow }
   );
 }
 
+/**
+ * The success screen every phone in the art shows, synthetic: the words a
+ * banking app puts under its green tick. The art keeps the tick and the
+ * screen; these are set on the blank part below it, `width` wide.
+ */
+export const OG_RECEIPT = {
+  status: ["Transfer", "successful"],
+  currency: "ETB",
+  amount: "25,000",
+  cents: ".00",
+  reference: "FT25\u2022\u2022\u2022\u2022\u2022K7Q",
+  date: "08 Oct 2026",
+  /** The lineup's liar is identical but for one tell: a date that does not exist. */
+  fakeDate: "31 Sep 2026",
+} as const;
+
+const SCREEN_INK = "#111111";
+const SCREEN_INK2 = "#5a5a5a";
+
+function Screen({ width, bank, fake = false, size = 1 }: { width: number; bank?: CardBank; fake?: boolean; size?: number }) {
+  const r = OG_RECEIPT;
+  const mono: CSSProperties = { display: "flex", fontFamily: "Mono", fontWeight: 500, fontSize: 9.5 * size, color: SCREEN_INK2 };
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width, color: SCREEN_INK }}>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", fontFamily: "Inter", fontWeight: 600, fontSize: 18 * size, lineHeight: 1.06, letterSpacing: "-0.01em" }}>
+        {r.status.map((w) => (
+          <div key={w} style={{ display: "flex" }}>
+            {w}
+          </div>
+        ))}
+      </div>
+      <div style={{ ...mono, fontSize: 11 * size, marginTop: 12 * size }}>{r.currency}</div>
+      <div style={{ display: "flex", alignItems: "flex-end", fontFamily: "Inter Display", fontWeight: 700, letterSpacing: "-0.03em" }}>
+        <div style={{ display: "flex", fontSize: 28 * size, lineHeight: 1 }}>{r.amount}</div>
+        <div style={{ display: "flex", fontSize: 15 * size, lineHeight: 1.2 }}>{r.cents}</div>
+      </div>
+      <div style={{ display: "flex", width: width - 26, borderTop: "1px solid #dcdcdc", marginTop: 10 * size }} />
+      <div style={{ ...mono, marginTop: 8 * size }}>{r.reference}</div>
+      <div style={{ ...mono, marginTop: 3 * size }}>{fake ? r.fakeDate : r.date}</div>
+      <div style={{ ...mono, fontSize: 8.5 * size, color: "#7a7a7a", marginTop: 6 * size, width: width - 14, justifyContent: "center", textAlign: "center", lineHeight: 1.15 }}>
+        {bank ? bank.name : "Bank transfer"}
+      </div>
+    </div>
+  );
+}
+
+/** Screen words sit on the photo: a hair of blur and opacity so they read as lit pixels, not a sticker. */
+const ON_SCREEN: CSSProperties = { opacity: 0.95, filter: "blur(0.3px)" };
+
+let disguise: string | undefined;
+/** public/og/lineup-disguise.png: the joke glasses cut out of the lineup art, laid back over the screen words. */
+function disguiseUrl(): string {
+  disguise ??= `data:image/png;base64,${readFileSync(join(process.cwd(), "public/og", "lineup-disguise.png")).toString("base64")}`;
+  return disguise;
+}
+
 function Art({ name, children }: { name: OgArt; children: ReactNode }) {
   return (
     <div style={{ display: "flex", position: "relative", width: "100%", height: "100%", overflow: "hidden", fontFamily: "Inter" }}>
@@ -92,14 +155,29 @@ export function LightCard({ bank }: { bank?: CardBank }) {
   );
 }
 
-/** 2. The lineup. Playful suspicion: five receipts, one in a joke-shop disguise. */
+/** 2. The lineup. Playful suspicion: five phones on the same success screen, one in a joke-shop disguise. */
+const PHONES = [164, 379, 602, 828, 1043];
+const PHONE_W = 128;
+
 export function LineupCard({ bank }: { bank?: CardBank }) {
   const text = bank ? `One of them isn’t from ${bank.shortName}.` : "One of them is lying.";
   return (
     <Art name="lineup">
-      <At left={0} right={0} top={70}>
+      {PHONES.map((cx, i) => (
+        <At key={cx} left={cx - PHONE_W / 2} top={400}>
+          <div style={{ display: "flex", ...ON_SCREEN }}>
+            <Screen width={PHONE_W} bank={bank} fake={i === 2} />
+          </div>
+        </At>
+      ))}
+      <At left={517} top={252}>
+        {/* eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text */}
+        <img src={disguiseUrl()} width={176} height={180} />
+      </At>
+      <At left={0} right={0} top={bank ? 58 : 70}>
         <div style={{ display: "flex", width: "100%", justifyContent: "center" }}>
-          <Words text={text} italic={["lying.", `${bank?.shortName}.`]} size={58} color={INK} align="center" width={1100} />
+          {/* the bank line is longer: two lines, so it stays inside the centre square */}
+          <Words text={text} italic={["lying.", `${bank?.shortName}.`]} size={bank ? 54 : 58} color={INK} align="center" width={bank ? 560 : 1100} />
         </div>
       </At>
       <At left={60} top={14}>
@@ -109,11 +187,20 @@ export function LineupCard({ bank }: { bank?: CardBank }) {
   );
 }
 
-/** 3. Don't take the bait. A wary smirk: a receipt on a hook, on tomato red. */
+/** 3. Don't take the bait. A wary smirk: a phone on a fishing hook, on tomato red, showing a payment that never happened. */
+const BAIT_W = 126;
+const BAIT_H = 190;
+
 export function BaitCard({ bank }: { bank?: CardBank }) {
   const text = bank ? `Fake ${bank.shortName} receipts are bait.` : "Don’t take the bait.";
   return (
     <Art name="bait">
+      {/* the phone hangs 8.7° off vertical; the screen's blank half is centred at (804, 474) */}
+      <At left={804 - BAIT_W / 2} top={474 - BAIT_H / 2}>
+        <div style={{ display: "flex", width: BAIT_W, height: BAIT_H, transform: "rotate(-8.7deg)", ...ON_SCREEN }}>
+          <Screen width={BAIT_W} bank={bank} size={1.05} />
+        </div>
+      </At>
       <At left={60} top={50}>
         <Mark size={34} color={WHITE} />
       </At>

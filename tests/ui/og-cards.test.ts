@@ -154,6 +154,13 @@ describe("OG cards", () => {
     }
   });
 
+  it("ships the lineup's disguise cut-out that sits over the screen words", () => {
+    const file = join(root, "public/og", "lineup-disguise.png");
+    expect(existsSync(file), file).toBe(true);
+    expect(statSync(file).size, file).toBeLessThan(100 * 1024);
+    expect(read("src/lib/og/concepts/photo.tsx")).toContain("lineup-disguise.png");
+  });
+
   it("spells the Amharic right", () => {
     // ተረጋግጧል "verified", ከፍያለሁ "I've paid", ብር "birr"
     expect(OG_AMHARIC).toContain("\u1270\u1228\u130B\u130D\u1327\u120D");
