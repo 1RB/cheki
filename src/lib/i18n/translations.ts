@@ -58,6 +58,14 @@ export const translations = {
       dropHere: "Drop the receipt screenshot",
       bankSelect: "Bank",
       autoDetect: "Auto-detect",
+      bankPicker: {
+        autoShort: "Auto · {bank}",
+        autoSub: "Reads the bank from the link or reference",
+        autoDetected: "Detected: {bank}",
+        filter: "Find a bank",
+        noMatch: "No bank matches “{query}”",
+        close: "Close",
+      },
       detect: {
         idle: "{banks}",
         link: "{bank} receipt link",
@@ -285,6 +293,19 @@ export const translations = {
     },
   },
   am: {
+    verify: {
+      bankSelect: "ባንክ",
+      autoDetect: "ራስ-ሰር መለየት",
+      beta: "ቤታ",
+      bankPicker: {
+        autoShort: "ራስ-ሰር · {bank}",
+        autoSub: "ባንኩን ከሊንኩ ወይም ከማጣቀሻ ቁጥሩ ይለያል",
+        autoDetected: "የተለየው፦ {bank}",
+        filter: "ባንክ ይፈልጉ",
+        noMatch: "“{query}” የሚል ባንክ የለም",
+        close: "ዝጋ",
+      },
+    },
     time: {
       justNow: "አሁን",
       checked: "{when} ተፈትሿል",
