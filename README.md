@@ -193,7 +193,7 @@ Self-hosting on an Ethiopian IP bypasses Telebirr/M-Pesa geo-blocks.
 - **5 SDKs**: TypeScript, Python, Go, Dart, PHP with typed errors and retry
 - **8 live banks**: CBE, Telebirr, BOA, M-Pesa, Dashen, Awash, Siinqee, eBirr (Zemen and CBE Birr are in development)
 - **Docker**: self-hosting with docker-compose
-- **SEO**: bank-specific pages, guides, sitemap, structured data
+- **SEO**: bank-specific pages, task-grouped guides, sitemap with per-guide lastmod, structured data (Article, ItemList, FAQ, Breadcrumb)
 - **AI-friendly**: `llms.txt`, allows all AI crawlers in `robots.txt`
 - **122 tests**: full parser coverage with vitest
 
@@ -226,7 +226,7 @@ src/
     verify/
       [slug]/page.tsx       # Per-bank verify pages (SSG)
     guides/
-      page.tsx              # Guide listing
+      page.tsx              # Guide index, grouped by task (server component)
       [slug]/page.tsx       # Individual guide pages (SSG)
     developers/page.tsx     # Developer/API page
     compare/page.tsx        # Comparison with check.et/verify.et
@@ -246,7 +246,10 @@ src/
     index.ts                # CLI entry point (npm run cli)
   lib/
     banks.ts                # Bank data and reference detection
-    guides.ts               # Guide articles data
+    guides.ts               # Guide articles data (content blocks, updated dates)
+    guides-index.ts         # /guides grouping and order
+    guides-seo.ts           # Article / ItemList JSON-LD and guide metadata
+    guides-facts.ts         # Competitor facts and rate-limit copy used by the guides
     ease.ts                 # Custom easing functions
     highlight.ts            # Syntax highlighting
     verify/

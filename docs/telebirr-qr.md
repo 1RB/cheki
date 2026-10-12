@@ -97,4 +97,8 @@ Hex is otherwise parsed case-insensitively.
   telebirr-receipt-html`, no parser, never fetched). `GET /api/banks` lists
   it with `inputs: ["qr"]`.
 
+- **Guide**: [`/guides/how-to-verify-telebirr-receipt`](https://cheki.et/guides/how-to-verify-telebirr-receipt)
+  walks merchants through the upload, camera and paste paths and repeats that
+  the QR alone is never proof (`src/lib/guides.ts`).
+
 Recent checks store only the transaction number, never the QR text.
