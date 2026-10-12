@@ -1,4 +1,5 @@
 import { IN_DEVELOPMENT_BANK_COUNT, LIVE_BANK_COUNT, TOTAL_BANK_COUNT, liveBankList } from "./bank-counts";
+import { CHEKI_PRICING, COMPETITORS_CHECKED, COMPETITOR_BANKS_LISTED, COMPETITOR_PRICING, RATE_LIMIT_SENTENCE, servicesListingMoreBanks, type Competitor } from "./guides-facts";
 // Block-based content system for guides and blog posts
 // Supports rich formatting: text, lists, code, callouts, tables, quotes, steps
 
@@ -21,7 +22,14 @@ export interface Article {
   category: "bank" | "fraud" | "business" | "api" | "comparison" | "technical" | "open-source";
   bankCode?: string;
   excerpt: string;
+  /** First published (YYYY-MM-DD). */
   date: string;
+  /**
+   * Last content change (YYYY-MM-DD). Rendered as "Updated", emitted as
+   * dateModified in the Article JSON-LD and used as the sitemap lastmod.
+   * Bump it whenever the article's text changes.
+   */
+  updated: string;
   readTime: string;
   content: ContentBlock[];
   seo: {
@@ -44,6 +52,7 @@ export const articles: Article[] = [
     excerpt:
       "CBE launched a new receipt sharing system at mbreciept.cbe.com.et. Here's what the QR codes contain, how the API works, and why it makes verification easier.",
     date: "2026-06-18",
+    updated: "2026-10-12",
     readTime: "4 min",
     content: [
       { type: "text", text: "Commercial Bank of Ethiopia recently launched a new receipt sharing system. When you complete a transfer in the CBE mobile app, you can now share a short link like https://mbreciept.cbe.com.et/fHCxyV4mg5pRIwEkJO. The recipient opens this link and sees the full receipt in their browser, no app required." },
@@ -54,7 +63,7 @@ export const articles: Article[] = [
       { type: "code", code: "https://mbreciept.cbe.com.et/{SHORT_ID}" },
       { type: "text", text: "The short ID is a random string like fHCxyV4mg5pRIwEkJO. It maps to a single transaction on CBE's backend. When you scan the QR code, you get this URL, which you can paste into cheki's URL input mode to verify instantly." },
 
-      { type: "callout", variant: "tip", title: "Try it now", text: "Open cheki.et, switch to the 'Receipt URL' tab, and paste any mbreciept.cbe.com.et link. cheki calls CBE's JSON API and returns the full transaction data in under 2 seconds." },
+      { type: "callout", variant: "tip", title: "Try it now", text: "Open cheki.et and paste any mbreciept.cbe.com.et link into the receipt field. cheki calls CBE's JSON API and returns the full transaction data in under 2 seconds." },
 
       { type: "heading", text: "The API behind the receipts" },
       { type: "text", text: "The mbreciept.cbe.com.et page is a Nuxt.js single-page app. When it loads, it calls a JSON API at a different domain:" },
@@ -85,7 +94,7 @@ export const articles: Article[] = [
         type: "steps",
         items: [
           { title: "Open cheki.et on your phone", text: "The QR scanner uses your phone's camera, so mobile works best." },
-          { title: "Tap the camera icon", text: "It's in the top-right of the verify form, next to the QR icon. Allow camera access when prompted." },
+          { title: "Tap Scan QR with camera", text: "It's the camera button next to the receipt field. Allow camera access when prompted." },
           { title: "Point at the QR code", text: "Hold your phone over the QR code on the receipt. A scan box overlay shows where to aim." },
           { title: "Automatic verification", text: "Once the QR code is detected, the URL is extracted and verification happens automatically. The result appears in under 2 seconds." },
         ],
@@ -106,7 +115,7 @@ export const articles: Article[] = [
     ],
     faq: [
       { q: "Can I still use the old CBE receipt system with FT reference and account number?", a: "cheki still accepts it as a legacy format: enter the FT reference and the last 8 digits of the receiving account. CBE's old endpoint (apps.cbe.com.et:100) is often unreachable, so if the check fails, ask the sender to share the mbreciept.cbe.com.et link from the CBE app. It works with a single tap in cheki." },
-      { q: "Do I need the CBE app to scan QR codes?", a: "No. cheki has a built-in QR scanner that uses your phone's camera. Open cheki.et, tap the camera icon, and point at the QR code on the receipt." },
+      { q: "Do I need the CBE app to scan QR codes?", a: "No. cheki has a built-in QR scanner that uses your phone's camera. Open cheki.et, tap Scan QR with camera, and point it at the QR code on the receipt." },
       { q: "What if the CBE receipt link doesn't work?", a: "The mbreciept.cbe.com.et service may occasionally be down. If the link returns a 502 or timeout, try again later. An old FT reference + account is a legacy fallback, but that endpoint is often unreachable too." },
     ],
     related: ["free-receipt-verification-no-api-key", "ethiopian-bank-receipt-formats", "payment-fraud-ethiopia"],
@@ -120,11 +129,12 @@ export const articles: Article[] = [
     slug: "free-receipt-verification-no-api-key",
     title: "Free Ethiopian Receipt Verification Without API Keys or Signup",
     description:
-      "Stop paying check.et 499 ETB/month. Verify CBE, Telebirr, BOA, and M-Pesa receipts for free with no signup, no API key, and no quota. Here's how.",
+      "Stop paying check.et 499 ETB/month. Verify CBE, Telebirr, BOA, and M-Pesa receipts for free with no signup and no API key, under fair per-IP rate limits. Here's how.",
     category: "comparison",
     excerpt:
-      "check.et charges 499 ETB/month after 200 free verifications. verify.et charges $20+/month. Both use the same public bank endpoints cheki uses for free. Here's the complete guide to free verification.",
+      "check.et charges 499 ETB/month after 200 one-time free verifications, and verify.et's API plans start at 500 ETB/month. Both use the same public bank endpoints cheki uses for free. Here's the complete guide to free verification.",
     date: "2026-06-18",
+    updated: "2026-10-12",
     readTime: "5 min",
     content: [
       { type: "text", text: "If you're an Ethiopian business owner, you've probably heard of check.et or verify.et. They verify bank receipts so you can confirm payments before releasing goods. They charge you for data that is already free." },
@@ -151,15 +161,16 @@ export const articles: Article[] = [
         type: "table",
         headers: ["Service", "Free tier", "Paid plan", "Per verification cost"],
         rows: [
-          ["cheki", "Unlimited", "N/A (always free)", "0 ETB"],
-          ["check.et", "200 (one-time, not monthly)", "499 ETB/month or 4,990/year", "~2.5 ETB per verification at 200/mo"],
-          ["verify.et", "200 (one-time)", "$20-40/month", "~$0.10-0.20 per verification"],
-          ["qbirr", "50/month", "500-8,000 ETB/month", "0.50-0.84 ETB per verification"],
-          ["tinaverify", "None", "3K-8K ETB per 90 days (credit-based)", "0.84-0.91 ETB per verification"],
-          ["tally", "Unknown (not public)", "Unknown", "Unknown"],
+          ["cheki", "No signup, no key; per-IP rate limits", "None (free)", "0 ETB"],
+          ["check.et", "200 (one-time, not monthly)", "499 ETB/month or 4,990 ETB/year", "Flat fee (Pro is unlimited)"],
+          ["verify.et", "200/month", "500-3,000 ETB/month (API), 4,000 ETB/year (app)", "~0.10 ETB per API verification"],
+          ["qbirr", "50/month", "500-8,000 ETB/month", "0.08-0.50 ETB per verification"],
+          ["tinaverify", "None listed", "3,000-8,000 ETB per 90 days (credits)", "0.84-0.91 ETB per verification"],
+          ["tally", "1-day trial", "500-12,000+ ETB/month", "Flat fee"],
         ],
       },
-      { type: "callout", variant: "info", title: "Important detail", text: "check.et's 200 free verifications are a one-time allowance, not monthly. Once you use them, you must upgrade. cheki has no such limit. Ever." },
+      { type: "text", text: `Prices as listed on each service's public site on ${COMPETITORS_CHECKED}. Other details about these services are as of June 2026.` },
+      { type: "callout", variant: "info", title: "Important detail", text: `check.et's 200 free verifications are a one-time allowance, not monthly. Once you use them, you must upgrade. cheki has no allowance to use up: no signup and no key, just ${RATE_LIMIT_SENTENCE}` },
 
       { type: "heading", text: "How to verify receipts for free with cheki" },
       {
@@ -182,9 +193,9 @@ export const articles: Article[] = [
       { type: "callout", variant: "success", title: "Migrating from check.et", text: "If you're currently using check.et's API, migrating to cheki is simple. Change the URL from api.check.et to cheki.et, remove the Authorization header, and rename transaction_number to reference and account_number to accountNumber. The response structure is similar." },
 
       { type: "heading", text: "What about verify.et?" },
-      { type: "text", text: "verify.et is made by Suba Software and charges in USD ($20-40/month). It has an Android app on the Play Store and supports Telegram OAuth for signup. Here's the interesting part: verify.et blocks AI crawlers in its robots.txt:" },
+      { type: "text", text: `verify.et is made by Suba Software. On ${COMPETITORS_CHECKED} its pricing page listed a free Starter tier (200 verifications a month), API plans from 500 ETB a month, and a 4,000 ETB/year app plan, and its site offered a free receipt check with no account. It has an Android app on the Play Store and uses Telegram for sign-in. Here's the interesting part: as of June 2026, verify.et blocked AI crawlers in its robots.txt:` },
       { type: "code", code: "# From verify.et/robots.txt\nUser-agent: GPTBot\nDisallow: /\n\nUser-agent: ClaudeBot\nDisallow: /\n\nUser-agent: CCBot\nDisallow: /\n\nUser-agent: Google-Extended\nDisallow: /" },
-      { type: "text", text: "This means verify.et actively prevents ChatGPT, Claude, and Google's AI from reading its content. Why? Possibly to prevent users from discovering that the underlying data is public. cheki does the opposite: our robots.txt explicitly allows all AI crawlers, and we publish an llms.txt file with key facts for AI assistants." },
+      { type: "text", text: "This means verify.et prevented ChatGPT, Claude, and Google's AI from reading its content. Why? Possibly to prevent users from discovering that the underlying data is public. cheki does the opposite: our robots.txt explicitly allows all AI crawlers, and we publish an llms.txt file with key facts for AI assistants." },
 
       { type: "heading", text: "Self-hosting for zero cost and zero dependency" },
       { type: "text", text: "If you don't want to depend on cheki.et at all, you can self-host the entire system with Docker:" },
@@ -192,14 +203,14 @@ export const articles: Article[] = [
       { type: "text", text: "Self-hosting on an Ethiopian IP also bypasses Telebirr and M-Pesa geo-blocking, which affects both cheki's hosted version and check.et's servers." },
     ],
     faq: [
-      { q: "Is cheki really free forever?", a: "Yes. cheki is MIT licensed open source. The hosted version at cheki.et is free with no quota. You can also self-host with Docker at zero cost. There is no premium tier, no credit system, and no plan to add one." },
+      { q: "Is cheki really free forever?", a: "Yes. cheki is MIT licensed open source. The hosted version at cheki.et is free with no signup and no API key; it applies fair per-IP rate limits (verify 30 per minute, batch 5 per minute) so one client cannot starve everyone else. You can also self-host with Docker at zero cost and set your own limits. There is no premium tier, no credit system, and no plan to add one." },
       { q: "How is cheki different from check.et?", a: "cheki uses the same public bank endpoints as check.et. The difference is that cheki is free, open source, requires no signup or API key, and allows you to self-host. check.et charges 499 ETB/month after 200 one-time free verifications." },
       { q: "Can I use cheki for my business?", a: "Yes. cheki has no per-business or per-user restrictions. Use the web interface, the API, or self-host with Docker. The hosted API is rate limited per IP (verify 30 per minute, batch 5 per minute); self-host with Docker if you need more." },
     ],
     related: ["check-et-vs-verify-et-vs-cheki", "self-hosting-docker-guide", "payment-verification-api-guide"],
     seo: {
       title: "Free Ethiopian Receipt Verification Without API Keys",
-      description: "Stop paying check.et 499 ETB/month. Verify CBE, Telebirr, BOA, and M-Pesa receipts for free with no signup, no API key, and no quota.",
+      description: "Stop paying check.et 499 ETB/month. Verify CBE, Telebirr, BOA, and M-Pesa receipts for free with no signup and no API key, under fair per-IP rate limits.",
       keywords: ["free receipt verification ethiopia", "check.et alternative free", "verify.et alternative", "free CBE verification", "no API key receipt verify", "free ethiopian bank verification"],
     },
   },
@@ -212,6 +223,7 @@ export const articles: Article[] = [
     excerpt:
       "Payment fraud costs Ethiopian businesses millions every year. Here are the specific tactics fraudsters use and exactly how to catch each one.",
     date: "2026-06-18",
+    updated: "2026-10-11",
     readTime: "7 min",
     content: [
       { type: "text", text: "Payment fraud is one of the biggest challenges for Ethiopian businesses. Unlike countries with card payments and automatic merchant confirmation, most Ethiopian transactions happen through bank transfers and mobile money. Merchants must manually verify each payment before releasing goods. This creates opportunities for fraud." },
@@ -278,8 +290,9 @@ export const articles: Article[] = [
       "Every Ethiopian bank receipt reference format, endpoint URL, and response type in one place. CBE, Telebirr, BOA, M-Pesa, Dashen, Awash, Zemen, CBE Birr, Siinqee, eBirr.",
     category: "technical",
     excerpt:
-      "The definitive reference for Ethiopian bank receipt formats. Reference patterns, endpoint URLs, required fields, and response types for all 11 banks and wallets.",
+      `The definitive reference for Ethiopian bank receipt formats. Reference patterns, endpoint URLs, required fields, and response types for the ${LIVE_BANK_COUNT} live banks and wallets, plus the ones still in research.`,
     date: "2026-06-18",
+    updated: "2026-10-12",
     readTime: "6 min",
     content: [
       { type: "text", text: "This is a complete technical reference for every Ethiopian bank and mobile wallet receipt system. If you're building a verification system, integrating payments, or just want to understand how Ethiopian bank receipts work, this is your reference." },
@@ -561,7 +574,7 @@ export const articles: Article[] = [
       { type: "callout", variant: "info", title: "eBirr vs Telebirr", text: "eBirr and Telebirr are completely different services. Telebirr is Ethio Telecom's mobile wallet. eBirr is a separate mobile money platform that partners with multiple banks (Nib, Wegagen, Ahadu, KAAFI, Siinqee/Coopbank)." },
 
       { type: "heading", text: "Other Ethiopian banks (researching)" },
-      { type: "text", text: "The following 18 banks are licensed in Ethiopia but do not yet have confirmed public receipt verification endpoints. cheki lists them as 'in development' and is actively researching their receipt systems:" },
+      { type: "text", text: "The following banks are licensed in Ethiopia but do not yet have confirmed public receipt verification endpoints. cheki lists them as 'in development' and is actively researching their receipt systems:" },
       {
         type: "table",
         headers: ["Bank", "Established", "Branches", "Status"],
@@ -626,6 +639,7 @@ export const articles: Article[] = [
     excerpt:
       "Self-hosting cheki gives you full control, zero cost, and bypasses Telebirr/M-Pesa geo-blocking. Here's the complete Docker setup guide.",
     date: "2026-06-18",
+    updated: "2026-10-12",
     readTime: "5 min",
     content: [
       { type: "text", text: "Self-hosting cheki gives you three advantages over the hosted version: full control over your data, no dependency on cheki.et, and the ability to bypass Telebirr and M-Pesa geo-blocking by running on an Ethiopian IP address." },
@@ -657,7 +671,7 @@ export const articles: Article[] = [
       { type: "heading", text: "Bypassing Telebirr and M-Pesa geo-blocks" },
       { type: "text", text: "Telebirr (transactioninfo.ethiotelecom.et) and M-Pesa (m-pesabusiness.safaricom.et) block all non-Ethiopian IP addresses at the TCP level. This means cloud servers on AWS, Vercel, Cloudflare, and most international hosting providers cannot reach these endpoints." },
       { type: "text", text: "If you self-host cheki on a server with an Ethiopian IP address, Telebirr and M-Pesa verification will work without any workarounds. This is the cleanest solution." },
-      { type: "callout", variant: "tip", title: "Ethiopian hosting options", text: "Ethio Telecom and various local ISPs offer fixed IP addresses. A small VPS or dedicated server in Ethiopia can run cheki for a few hundred birr per month, with unlimited verification." },
+      { type: "callout", variant: "tip", title: "Ethiopian hosting options", text: "Ethio Telecom and various local ISPs offer fixed IP addresses. A small VPS or dedicated server in Ethiopia can run cheki for a few hundred birr per month, under rate limits you set yourself." },
 
       { type: "callout", variant: "warning", title: "No header tricks", text: "The block is on the real network address, so headers like X-Forwarded-For change nothing and cheki does not send them. From a server outside Ethiopia, cheki makes one quick attempt and then gives the user the bank's own receipt link to open." },
 
@@ -701,13 +715,15 @@ export const articles: Article[] = [
       "Evidence-based comparison of Ethiopia's six receipt verification services: cheki, check.et, verify.et, qbirr, tinaverify, and tally. Pricing, features, data sources, and what's behind the paywall.",
     category: "comparison",
     excerpt:
-      "Six services, all using the same public bank endpoints. One is free and open source, the rest charge 500-8,000 ETB/month. Here's the evidence.",
+      "Six services, all using the same public bank endpoints. One is free and open source; the others charge for volume, seats or branches. Here's the evidence.",
     date: "2026-06-20",
+    updated: "2026-10-12",
     readTime: "9 min",
     content: [
       { type: "text", text: "There are six receipt verification services operating in Ethiopia: cheki, check.et, verify.et, qbirr, tinaverify, and tally. This article compares all six based on publicly available evidence, not marketing claims." },
 
       { type: "callout", variant: "info", title: "Full disclosure", text: "cheki is the open source project we built. This comparison is based on public information from each service's website, API docs, sitemap, robots.txt, and GitHub repositories. Verify everything yourself." },
+      { type: "callout", variant: "info", title: "When this was checked", text: `Prices and bank lists for the other services were re-checked on their public sites on ${COMPETITORS_CHECKED}. Everything else about them (features, robots.txt, terms, infrastructure) is as of June 2026 unless a line says otherwise.` },
 
       { type: "heading", text: "If you just want the answer" },
       { type: "text", text: "Choose based on your actual need, not the longest feature list. Most people only need one thing: confirm the payment happened." },
@@ -734,33 +750,29 @@ export const articles: Article[] = [
         type: "table",
         headers: ["Service", "Price", "Free tier", "Per-verify cost"],
         rows: [
-          ["cheki", "Free forever", "Unlimited", "0 ETB"],
-          ["check.et", "499 ETB/mo or 4,990/yr", "200 (one-time)", "~2.5 ETB at 200/mo"],
-          ["verify.et", "$20-40/mo USD", "200 (one-time)", "~$0.10-0.20"],
-          ["qbirr", "500-8,000 ETB/mo", "50/mo", "0.50-0.84 ETB"],
-          ["tinaverify", "3K-8K ETB per 90 days", "None", "0.84-0.91 ETB"],
-          ["tally", "Unknown (not public)", "Unknown", "Unknown"],
+          ["cheki", CHEKI_PRICING.price, CHEKI_PRICING.freeTier, CHEKI_PRICING.perVerification],
+          ...(Object.keys(COMPETITOR_PRICING) as Competitor[]).map((c) => [c, COMPETITOR_PRICING[c].price, COMPETITOR_PRICING[c].freeTier, COMPETITOR_PRICING[c].perVerification]),
         ],
       },
-      { type: "callout", variant: "warning", title: "check.et's free tier is one-time", text: "check.et's 200 free verifications are a one-time allowance, not monthly. Once you use them, you must upgrade. cheki has no such limit, ever." },
+      { type: "callout", variant: "warning", title: "check.et's free tier is one-time", text: `check.et's 200 free verifications are a one-time allowance, not monthly. Once you use them, you must upgrade. cheki has no allowance to use up: no signup and no key, just ${RATE_LIMIT_SENTENCE}` },
 
       { type: "heading", text: "Platform comparison" },
       {
         type: "table",
         headers: ["Feature", "cheki", "check.et", "verify.et", "qbirr", "tinaverify", "tally"],
         rows: [
-          ["Banks supported", "9", "9", "10", "7", "6", "4"],
-          ["Banks live", "4", "9", "9", "7", "6", "4"],
+          ["Banks and wallets listed", `${LIVE_BANK_COUNT} live`, String(COMPETITOR_BANKS_LISTED["check.et"]), String(COMPETITOR_BANKS_LISTED["verify.et"]), String(COMPETITOR_BANKS_LISTED.qbirr), String(COMPETITOR_BANKS_LISTED.tinaverify), String(COMPETITOR_BANKS_LISTED.tally)],
           ["REST API", "Yes (free)", "Yes (paid)", "Yes (paid)", "Yes (paid)", "No", "No"],
-          ["QR scanning", "Yes", "Yes", "Yes", "No", "Yes (camera)", "No"],
+          ["QR scanning", "Yes", "Yes", "Yes", "Upload", "Yes (camera)", "Yes"],
           ["BOA QR decryption", "Yes", "No", "No", "No", "No", "No"],
           ["Batch verification", "Yes (20)", "No", "No", "No", "No", "No"],
-          ["Mobile app", "PWA", "PWA", "Android", "No", "iOS+Android", "Unreleased"],
+          ["Mobile app", "PWA", "PWA", "Android", "No", "iOS+Android", "Android (staff)"],
           ["Geo-block bypass", "No", "No", "No", "Yes (relay)", "No", "Yes (ET IP)"],
           ["Duplicate detection", "No", "Per-branch", "History", "Per-merchant", "Audit trail", "No"],
           ["Amount tolerance", "No", "No", "No", "Yes (configurable)", "No", "No"],
         ],
       },
+      { type: "text", text: `Bank counts are what each service listed on its own site on ${COMPETITORS_CHECKED}. cheki also lists ${IN_DEVELOPMENT_BANK_COUNT} more banks and wallets as in development. The feature rows are as of June 2026, except QR scanning and mobile apps, re-checked on ${COMPETITORS_CHECKED}.` },
 
       { type: "heading", text: "Transparency comparison" },
       {
@@ -775,7 +787,7 @@ export const articles: Article[] = [
           ["TypeScript SDK", "Yes", "No", "Yes", "Advertised (unpublished)", "No", "No"],
         ],
       },
-      { type: "callout", variant: "warning", title: "qbirr's SDKs are vaporware", text: "qbirr advertises Node.js, Python, PHP, and Go SDKs plus a WordPress plugin. As of launch (June 2026), none of them exist on npm, PyPI, Packagist, GitHub, or the WordPress plugin repository. The GitHub user 'qbirr' belongs to an unrelated Indonesian developer. Only the REST API works." },
+      { type: "callout", variant: "warning", title: "qbirr's SDKs at launch", text: `At launch (June 2026), qbirr advertised Node.js, Python, PHP, and Go SDKs plus a WordPress plugin, but none of them were published on npm, PyPI, Packagist, GitHub, or the WordPress plugin repository. On ${COMPETITORS_CHECKED} its site pointed to installs from its own git server (git.qbirr.com) instead. The REST API is the dependable path.` },
 
       { type: "heading", text: "check.et: the details" },
       { type: "text", text: "check.et is built with Next.js and deployed on Vercel. It has a well-designed UI with bilingual support (English and Amharic), bank-specific guide pages, and a developer portal. The pricing model is:" },
@@ -784,44 +796,44 @@ export const articles: Article[] = [
         "Pro Monthly: 499 ETB/month",
         "Pro Yearly: 4,990 ETB/year (save 2 months)",
       ]},
-      { type: "text", text: "check.et supports 9 banks and wallets: CBE, Telebirr, Dashen, Awash, BOA, Zemen, CBE Birr, M-Pesa, and Siinqee. It has a REST API that requires a business account and API key." },
+      { type: "text", text: `On ${COMPETITORS_CHECKED}, check.et listed ${COMPETITOR_BANKS_LISTED["check.et"]} banks and wallets: CBE, Telebirr, Dashen, Awash, BOA, Zemen, CBE Birr, M-Pesa, Amhara, and Siinqee. It has a REST API that requires a business account and API key.` },
       { type: "text", text: "Strengths: polished UI, bilingual, good SEO content (15+ guide pages), developer documentation, employee management features." },
       { type: "text", text: "Weaknesses: charges for public data, 200 free verifications are one-time not monthly, API requires business account signup, no self-hosting, no open source." },
 
       { type: "heading", text: "verify.et: the details" },
       { type: "text", text: "verify.et is built by Suba Software. It uses Cloudflare and has an Android app on the Play Store. Signup is Telegram-only (OAuth via Telegram bot)." },
-      { type: "text", text: "verify.et supports 10 banks: CBE, Telebirr, Dashen, BOA, CBE Birr, Awash, M-Pesa, Siinqee, Kaafi Ebirr, and Zemen. It has a blog with categories for payment verification, bank guides, wallet guides, fraud prevention, API integration, merchant operations, and finance basics." },
-      { type: "callout", variant: "warning", title: "verify.et blocks AI crawlers", text: "verify.et's robots.txt explicitly blocks GPTBot, ClaudeBot, CCBot, Google-Extended, Applebot-Extended, Bytespider, meta-externalagent, and Amazonbot. This prevents ChatGPT, Claude, Google AI Overview, and other AI tools from reading verify.et's content. The stated reason is EU copyright directive compliance, but the practical effect is that users can't ask AI assistants about verify.et." },
-      { type: "text", text: "Strengths: Android app, blog content, status pages per bank, published TypeScript SDK." },
-      { type: "text", text: "Weaknesses: charges in USD, requires Telegram signup, blocks AI crawlers, no open source, no self-hosting, no batch verification, no Python library." },
+      { type: "text", text: `On ${COMPETITORS_CHECKED}, verify.et listed ${COMPETITOR_BANKS_LISTED["verify.et"]} banks and wallets: CBE, Telebirr, Dashen, BOA, CBE Birr, Awash, M-Pesa, Siinqee, Kaafi Ebirr, and Coopay Ebirr. Its pricing page listed a free Starter tier (200 verifications a month), Dev Plus (500 ETB/month for 5,000 API verifications), Dev Pro (3,000 ETB/month for 30,000), and Verify Pro (4,000 ETB/year, unlimited in the app). It also has a blog covering payment verification, bank guides, fraud prevention, and API integration.` },
+      { type: "callout", variant: "warning", title: "verify.et blocked AI crawlers (June 2026)", text: "verify.et's robots.txt explicitly blocks GPTBot, ClaudeBot, CCBot, Google-Extended, Applebot-Extended, Bytespider, meta-externalagent, and Amazonbot. This prevents ChatGPT, Claude, Google AI Overview, and other AI tools from reading verify.et's content. The stated reason is EU copyright directive compliance, but the practical effect is that users can't ask AI assistants about verify.et." },
+      { type: "text", text: "Strengths: Android app, blog content, status pages per bank, a free receipt check with no account, REST API examples in TypeScript, Python, and PHP." },
+      { type: "text", text: "Weaknesses: accounts need Telegram sign-in, AI crawlers blocked (June 2026), no open source, no self-hosting, no batch verification, no Python library." },
 
       { type: "heading", text: "qbirr: the details" },
-      { type: "text", text: "qbirr is the newest entrant, launched June 2026. It is a developer-first API platform built with NestJS on a Contabo VPS in France. The API is at verify.qbirr.com/api/v1/verify with X-API-Key authentication." },
-      { type: "text", text: "qbirr supports 7 providers: CBE, Telebirr, Awash, Dashen, M-Pesa, BOA, and eBirr (COOPay, KAAFI, Nib, Wegagen, Ahadu). All 7 are live." },
-      { type: "text", text: "Pricing: 50 free verifications/month, then Starter (1K for 500 ETB/mo), Pro (10K for 2,000 ETB/mo), or Scale (100K for 8,000 ETB/mo with dedicated relay and 99.9% SLA)." },
-      { type: "text", text: "Strengths: clean API design, Ethiopian relay for Telebirr/M-Pesa geo-block bypass, configurable amount tolerance, per-merchant duplicate ref locking, Scale plan with SLA." },
-      { type: "text", text: "Weaknesses: brand new with no track record, SDKs advertised but unpublished, no web UI for verification, no mobile app, no QR scanning, fewer banks than check.et/verify.et, English only." },
+      { type: "text", text: "qbirr is the newest entrant, launched June 2026. It is a developer-first API platform built with NestJS on a Contabo VPS in France. The API is at qbirr.com/api/v1/verify with X-API-Key authentication (October 2026)." },
+      { type: "text", text: `On ${COMPETITORS_CHECKED}, qbirr listed ${COMPETITOR_BANKS_LISTED.qbirr} live providers: CBE, Telebirr, Awash, Dashen, M-Pesa, BOA, and eBirr (COOPay, KAAFI, Nib, Wegagen, Ahadu).` },
+      { type: "text", text: `Pricing on ${COMPETITORS_CHECKED}: 50 free verifications/month, then Starter (1,000 for 500 ETB/mo), Pro (10,000 for 2,000 ETB/mo), or Scale (100,000 for 8,000 ETB/mo; in June 2026 Scale also promised a dedicated relay and a 99.9% SLA).` },
+      { type: "text", text: "Strengths: clean API design, Ethiopian relay for Telebirr/M-Pesa geo-block bypass, configurable amount tolerance, per-merchant duplicate ref locking, and (October 2026) a no-signup web check, 5 a day, that accepts a receipt upload." },
+      { type: "text", text: "Weaknesses: young (launched June 2026), SDKs only on its own git server, no mobile app, fewer banks than check.et/verify.et, English only." },
 
       { type: "heading", text: "tinaverify: the details" },
       { type: "text", text: "tinaverify is a mobile-first product focused on the cashier workflow. It has published apps on both Google Play (com.tina.verify) and the App Store (id6764829142). Built with Next.js (App Router, Turbopack)." },
-      { type: "text", text: "tinaverify supports 6 banks: CBE, CBE Birr, Awash, Dashen, BOA, and Telebirr. All 6 are live." },
-      { type: "text", text: "Pricing is credit-based with 90-day validity: Starter (3,000 ETB for 3,300 credits) or Business (8,000 ETB for 9,500 credits). Custom credits at 1.50 ETB each, minimum 500." },
+      { type: "text", text: `On ${COMPETITORS_CHECKED}, tinaverify listed ${COMPETITOR_BANKS_LISTED.tinaverify} banks and wallets: CBE, CBE Birr, Awash, Dashen, BOA, and Telebirr.` },
+      { type: "text", text: `Pricing on ${COMPETITORS_CHECKED} is credit-based with 90-day validity: Starter (3,000 ETB for 3,300 credits) or Business (8,000 ETB for 9,500 credits). Custom credits cost 1.50 ETB each, minimum 99 ETB.` },
       { type: "text", text: "Strengths: published iOS and Android apps, cashier workflow (scan, verify, audit trail), multi-branch support, searchable audit history by cashier/branch/amount/reference, daily sales tracking." },
       { type: "text", text: "Weaknesses: no REST API, credit-based pricing with expiry (90 days), no open source, no self-hosting, no batch verification, fewer banks than check.et/verify.et." },
 
       { type: "heading", text: "tally: the details" },
-      { type: "text", text: "tally is a Telegram bot-based service by Sabi LLC (sabi.works), a tech talent marketplace. The website is a static marketing page with no web app, dashboard, login, API, or docs. Every CTA links to the Telegram bot (@TallyETBot)." },
-      { type: "text", text: "tally supports 4 banks: CBE, Telebirr, BOA, and Awash. The website claims direct bank verification, but their Terms section 3 explicitly states they use 'publicly accessible verification endpoints and APIs provided by financial institutions.'" },
-      { type: "text", text: "Pricing is not public. The footer 'Pricing' link is a dead anchor. Terms have no billing section." },
-      { type: "text", text: "Strengths: Telegram bot delivery (low friction for Telegram-heavy market), Ethiopian-hosted (Ethio Telecom IP), workspace codes for staff." },
-      { type: "text", text: "Weaknesses: only 4 banks, no web app, no API, no docs, mobile app claimed but store links are dead, SSL certificate expired April 2026 (unrenewed for 2+ months), no pricing transparency, made by a dev shop not a dedicated fintech." },
+      { type: "text", text: "tally is a Telegram bot-based service by Sabi LLC (sabi.works), a tech talent marketplace. The website is a marketing page with no web app, API, or docs: owners sign up through the Telegram bot (@TallyETBot), and staff verify in an Android app with a workspace code (iOS 'coming soon', October 2026)." },
+      { type: "text", text: `On ${COMPETITORS_CHECKED}, tally listed ${COMPETITOR_BANKS_LISTED.tally} banks: CBE, Telebirr, BOA, and Awash. The website claims direct bank verification, but in June 2026 its Terms section 3 explicitly stated it uses 'publicly accessible verification endpoints and APIs provided by financial institutions.'` },
+      { type: "text", text: `tally now publishes its pricing. On ${COMPETITORS_CHECKED}: Tally Shop (500 ETB/month or 5,000 ETB/year, one shop, up to 3 staff, 1-day free trial), Tally Business (5,000 ETB/month, up to three branches), and Tally Chain (from 12,000 ETB/month). VAT is charged on top.` },
+      { type: "text", text: "Strengths: Telegram bot delivery (low friction for Telegram-heavy market), Ethiopian-hosted (Ethio Telecom IP, June 2026), workspace codes and an Android app for staff, sales reports in Telegram." },
+      { type: "text", text: "Weaknesses: only 4 banks, no web app, no public API or docs, made by a dev shop not a dedicated fintech. In June 2026 its SSL certificate had expired and its store links were dead; both worked on 12 October 2026." },
 
       { type: "heading", text: "cheki: the details" },
-      { type: "text", text: "cheki is MIT licensed open source built with Next.js. It requires no signup, no API key, and has no quota. The hosted version is at cheki.et, and the full source code is on GitHub." },
+      { type: "text", text: `cheki is MIT licensed open source built with Next.js. It requires no signup and no API key. The hosted version at cheki.et applies ${RATE_LIMIT_SENTENCE} The full source code is on GitHub.` },
       { type: "text", text: `cheki supports ${TOTAL_BANK_COUNT} banks with ${LIVE_BANK_COUNT} live (${liveBankList("short")}) and ${IN_DEVELOPMENT_BANK_COUNT} in development.` + " eBirr alone covers 4 additional banks through a single integration (Nib International, Wegagen, Ahadu, KAAFI Microfinance). It supports both the old and new CBE receipt systems, BOA QR code decryption, and unified QR scanning with multi-scale auto-detection." },
-      { type: "text", text: "Recent updates: cheki now parses mobile 'Select All' receipt text. This matters because Telebirr and M-Pesa block cloud servers from reaching their endpoints. If you copy the receipt text from the Telebirr app and paste it into cheki, the parser extracts the full transaction details locally without ever calling the geo-blocked endpoint." },
-      { type: "text", text: "Strengths: free, open source, no signup, self-hosting, batch verification, Python library, TypeScript SDK, Docker, QR code scanning with BOA AES decryption, URL auto-detection, allows AI crawlers, shows receipt source URLs, and now parses pasted receipt text." },
-      { type: "text", text: "Weaknesses: no mobile app (web only, but PWA-installable), no employee management, no dashboard for businesses, no duplicate detection built-in, no geo-block bypass relay, fewer live banks than check.et/verify.et/qbirr/tinaverify." },
+      { type: "text", text: "Recent updates (October 2026): cheki reads the Payment QR Code on Telebirr receipts (upload a screenshot, scan it with the camera, or paste the QR text) and checks the transaction number with Telebirr; the QR on its own is never treated as proof. M-Pesa receipts (beta) are read from the PDF inside Safaricom's JSON response, CBE's newer v2 receipt links work, a public /status page checks every bank endpoint daily, and the result only turns green when the bank itself confirms the receipt. Pasting the receipt text from the Telebirr or M-Pesa app still works when those endpoints block cloud servers." },
+      { type: "text", text: "Strengths: free, open source, no signup, self-hosting, batch verification, Python library, TypeScript SDK, Docker, QR code scanning with BOA AES decryption and Telebirr receipt QR reading, URL auto-detection, allows AI crawlers, shows receipt source URLs, and parses pasted receipt text." },
+      { type: "text", text: `Weaknesses: no mobile app (web only, but PWA-installable), no employee management, no dashboard for businesses, no duplicate detection built-in, no geo-block bypass relay${servicesListingMoreBanks(LIVE_BANK_COUNT).length ? `, fewer live banks than ${servicesListingMoreBanks(LIVE_BANK_COUNT).join("/")} list` : ""}.` },
 
       { type: "heading", text: "Geo-blocking: the shared problem" },
       { type: "text", text: "Telebirr and M-Pesa block non-Ethiopian IP addresses at the network level. This affects every service that does not have an Ethiopian relay or server, including cheki's hosted version and check.et's servers." },
@@ -849,7 +861,7 @@ export const articles: Article[] = [
       { q: "Is qbirr's API better than cheki's?", a: "qbirr has a cleaner developer API with rate limits, usage tracking, and configurable amount tolerance. Its main practical advantage is an Ethiopian relay that bypasses geo-blocking for Telebirr and M-Pesa. However, it requires an API key, charges money, and has fewer banks. cheki's API is free, requires no key, and supports batch verification." },
       { q: "Should I use tinaverify instead of cheki?", a: "If you need a mobile app for cashiers at a physical counter, tinaverify is a good choice with published iOS and Android apps. If you need a free API, web UI, or self-hosting, cheki is better. tinaverify charges 3,000-8,000 ETB per 90 days with credit expiry." },
       { q: "Is cheki's data as accurate as check.et's?", a: "Yes. All six services fetch from the same bank endpoints. The data is identical. cheki shows you the source URL so you can verify where the data came from." },
-      { q: "What about tally?", a: "tally is a Telegram bot with 4 banks, no API, no web app, expired SSL, and no public pricing. It's the smallest player in the market. If you use Telegram for business, it might work for basic needs, but it lacks the features and transparency of the other services." },
+      { q: "What about tally?", a: "tally is a Telegram-first service with 4 banks, no public API, no web app, and plans from 500 ETB a month (October 2026). It covers the fewest banks of the six. If your staff already work in Telegram, it may be enough for basic needs." },
     ],
     related: ["free-receipt-verification-no-api-key", "payment-fraud-ethiopia", "ethiopian-bank-receipt-formats"],
     seo: {
@@ -867,6 +879,7 @@ export const articles: Article[] = [
     excerpt:
       "From cURL to production: everything you need to integrate free Ethiopian receipt verification into your application.",
     date: "2026-06-18",
+    updated: "2026-10-11",
     readTime: "8 min",
     content: [
       { type: "text", text: "This guide walks through integrating cheki's free REST API into a real application. No API key, no signup; requests are rate limited per IP. We'll cover single verification, batch verification, error handling, and fraud prevention patterns." },
@@ -958,6 +971,7 @@ export const articles: Article[] = [
     excerpt:
       "Ethiopian fintech is dominated by paid services wrapping public data. Open source changes the equation. This is what community-built tools like cheki do differently.",
     date: "2026-06-18",
+    updated: "2026-10-07",
     readTime: "5 min",
     content: [
       { type: "text", text: "Ethiopia's fintech scene has a peculiar characteristic: many of the most useful services are built on top of public data that anyone can access, yet wrapped in paywalls and closed source code. cheki challenges this model by being completely open source and free." },
@@ -1040,6 +1054,7 @@ export const articles: Article[] = [
     bankCode: "cbe",
     excerpt: "Two ways to verify CBE receipts: the new QR/URL system and the classic FT reference + account method. Both are free with cheki.",
     date: "2026-06-18",
+    updated: "2026-10-12",
     readTime: "4 min",
     content: [
       { type: "text", text: "CBE (Commercial Bank of Ethiopia) is the largest bank in Ethiopia and the most common settlement rail for businesses. There are two ways to verify a CBE receipt, and cheki supports both for free." },
@@ -1050,7 +1065,7 @@ export const articles: Article[] = [
         type: "steps",
         items: [
           { title: "Get the receipt link or QR code", text: "Ask the customer to share the receipt link from their CBE app, or scan the QR code on the printed receipt." },
-          { title: "Paste the URL in cheki", text: "Open cheki.et, switch to the 'Receipt URL' tab, and paste the mbreciept.cbe.com.et link. Or scan the QR code directly with cheki's camera scanner." },
+          { title: "Paste the URL in cheki", text: "Open cheki.et and paste the mbreciept.cbe.com.et link into the receipt field. Or scan the QR code directly with cheki's camera scanner." },
           { title: "Click Verify", text: "cheki calls CBE's JSON API and returns the transaction data in under 2 seconds. You'll see the FT reference, amount, sender, receiver, and date." },
         ],
       },
@@ -1108,20 +1123,22 @@ curl -X POST https://cheki.et/api/verify \\
     description: "Complete guide to verifying Telebirr (Ethio Telecom) transactions. Reference number format, geo-blocking workarounds, and free verification with cheki.",
     category: "bank",
     bankCode: "telebirr",
-    excerpt: "Telebirr is Ethiopia's most used mobile wallet. Here's how to verify any Telebirr transaction for free, including what to do about geo-blocking.",
+    excerpt: "Telebirr is Ethiopia's most used mobile wallet. Here's how to verify any Telebirr transaction for free, from the transaction number or the receipt's QR code, including what to do about geo-blocking.",
     date: "2026-06-18",
+    updated: "2026-10-12",
     readTime: "4 min",
     content: [
       { type: "text", text: "Telebirr is Ethio Telecom's mobile money service and the most widely used digital wallet in Ethiopia. Verifying Telebirr receipts is simpler than CBE because you only need the transaction reference number, no account number required." },
 
       { type: "heading", text: "What you need" },
       { type: "list", items: [
-        "Transaction reference number (required), e.g. DET8FJGUJ4 or CHQ0FJ403O",
+        "The transaction number, e.g. DET8FJGUJ4 or CHQ0FJ403O",
+        "Or the Payment QR Code on the Telebirr receipt: cheki reads the transaction number out of it",
         "That's it. No account number needed.",
       ]},
 
       { type: "heading", text: "Telebirr reference number format" },
-      { type: "text", text: "Telebirr transaction references start with a 2-3 letter prefix followed by 6-8 alphanumeric characters. The reference is sent via SMS to both the payer and receiver after each transaction." },
+      { type: "text", text: "A Telebirr transaction number is 10 letters and digits that start with a 2-3 letter prefix. It is sent by SMS to both the payer and receiver after each transaction, and it is shown on the in-app receipt." },
       {
         type: "table",
         headers: ["Prefix", "Transaction type"],
@@ -1145,6 +1162,18 @@ curl -X POST https://cheki.et/api/verify \\
         ],
       },
 
+      { type: "heading", text: "Verify from the receipt QR code" },
+      { type: "text", text: "The receipt in the Telebirr app shows a Payment QR Code. You can give cheki that instead of typing the transaction number." },
+      {
+        type: "steps",
+        items: [
+          { title: "Get the receipt", text: "Ask the customer for a screenshot of the Telebirr receipt, or have them show it on their phone." },
+          { title: "Upload, scan, or paste", text: "On cheki.et, tap Upload receipt screenshot (or paste the screenshot), tap Scan QR with camera, or paste the QR text into the receipt field. cheki reads the transaction number out of the QR in your browser and selects Telebirr." },
+          { title: "Check it with Telebirr", text: "cheki then checks that transaction number with Telebirr exactly as if you had typed it. Telebirr only answers Ethiopian networks, so you get an 'Open the Telebirr receipt' link to open on your phone, a paste fallback, and a server check on request." },
+        ],
+      },
+      { type: "callout", variant: "warning", title: "The QR is not proof of payment", text: "The Payment QR Code holds the transaction number and nothing else cheki uses: no amount, no names. Anyone who knows a transaction number can make a valid QR for it, so cheki never verifies a receipt from QR content alone. A result is only verified when Telebirr's own receipt page confirms it." },
+
       { type: "heading", text: "Verify directly in the Telebirr app" },
       { type: "text", text: "Telebirr also has its own built-in verification feature. If you have the Telebirr app installed, you can verify a payment without using any third-party service." },
       {
@@ -1163,7 +1192,7 @@ curl -X POST https://cheki.et/api/verify \\
       { type: "callout", variant: "warning", title: "Telebirr blocks non-Ethiopian IPs", text: "Telebirr's receipt endpoint blocks all requests from IP addresses outside Ethiopia. If cheki's hosted server can't reach Telebirr, you'll get a fallback URL to open the receipt directly in your browser." },
       { type: "text", text: "If you're in Ethiopia, verification works smoothly. If you're outside Ethiopia:" },
       { type: "list", items: [
-        "Use the 'Receipt URL' tab and paste the full Telebirr receipt URL. Your browser will fetch it directly using your Ethiopian IP if you're on an Ethiopian network.",
+        "Tap 'Open the Telebirr receipt' (or paste the full Telebirr receipt URL) on a phone that is on an Ethiopian network. Your browser fetches the receipt directly from Telebirr.",
         "Self-host cheki with Docker on an Ethiopian server for reliable server-side verification.",
         "Use the Python library from a machine with an Ethiopian IP address.",
       ]},
@@ -1172,6 +1201,8 @@ curl -X POST https://cheki.et/api/verify \\
       { type: "code", lang: "bash", code: 'curl -X POST https://cheki.et/api/verify \\\n  -H "Content-Type: application/json" \\\n  -d \'{"bank":"telebirr","reference":"DET8FJGUJ4"}\'' },
       { type: "text", text: "If the server is geo-blocked, the response includes a fallbackUrl field:" },
       { type: "code", lang: "json", code: '{\n  "success": false,\n  "error": "Our server can\'t reach this bank...",\n  "fallbackUrl": "https://transactioninfo.ethiotelecom.et/receipt/DET8FJGUJ4"\n}' },
+      { type: "text", text: "The API also accepts the receipt QR text. Send it as qrData with bank telebirr (or no bank): cheki reads the transaction number and checks it like a typed reference. With another bank named, it answers 400." },
+      { type: "code", lang: "bash", code: 'curl -X POST https://cheki.et/api/verify \\\n  -H "Content-Type: application/json" \\\n  -d \'{"bank":"telebirr","qrData":"<text of the Payment QR Code>"}\'' },
 
       { type: "heading", text: "What the receipt contains" },
       { type: "list", items: [
@@ -1185,6 +1216,7 @@ curl -X POST https://cheki.et/api/verify \\
     ],
     faq: [
       { q: "Do I need an account number for Telebirr verification?", a: "No. Telebirr only requires the transaction reference number. This makes it simpler than CBE or BOA verification." },
+      { q: "Can cheki read the QR code on a Telebirr receipt?", a: "Yes. Upload or paste a screenshot, scan it with the camera, or paste the QR text. cheki reads the transaction number from the Payment QR Code and checks it with Telebirr. The QR alone is never treated as proof: only Telebirr's own receipt page can confirm the payment." },
       { q: "Why does Telebirr verification fail from outside Ethiopia?", a: "Telebirr's receipt endpoint blocks non-Ethiopian IPs at the network level. Use the fallback URL, self-host on an Ethiopian server, or use the Python library from an Ethiopian network." },
       { q: "Is Telebirr receipt verification free?", a: "Yes. The Telebirr receipt URL is public and free. check.et charges 499 ETB/month for accessing this same endpoint. cheki does it for free." },
     ],
@@ -1192,7 +1224,7 @@ curl -X POST https://cheki.et/api/verify \\
     seo: {
       title: "How to Verify a Telebirr Receipt Step by Step",
       description: "Complete guide to verifying Telebirr transactions. Reference number format, geo-blocking workarounds, and free verification with cheki.",
-      keywords: ["verify telebirr receipt", "how to verify telebirr transaction", "telebirr reference number", "telebirr transaction ID", "ethio telecom receipt verify"],
+      keywords: ["verify telebirr receipt", "how to verify telebirr transaction", "telebirr reference number", "telebirr transaction ID", "telebirr receipt QR code", "ethio telecom receipt verify"],
     },
   },
   {
@@ -1205,6 +1237,7 @@ curl -X POST https://cheki.et/api/verify \\
     excerpt:
       "BOA's receipt QR codes are AES-256-CBC encrypted payloads using CryptoJS format. The key is public in BOA's web app. This guide covers how decryption works and why inter-bank transfers need it.",
     date: "2026-06-19",
+    updated: "2026-10-07",
     readTime: "6 min",
     content: [
       { type: "text", text: "Bank of Abyssinia takes a different approach to receipt QR codes than CBE. Instead of encoding a URL that points to a server-side receipt, BOA encrypts the full transaction data directly into the QR code. This means the QR code itself IS the receipt, not just a link to one." },
@@ -1325,6 +1358,7 @@ curl -X POST https://cheki.et/api/verify \\
     bankCode: "boa",
     excerpt: "BOA verification is simple with cheki's direct JSON API. No Selenium, no headless browser, just the reference and last 5 digits of your account. QR codes for inter-bank transfers.",
     date: "2026-06-18",
+    updated: "2026-10-11",
     readTime: "3 min",
     content: [
       { type: "text", text: "Bank of Abyssinia (BOA) is one of Ethiopia's largest private banks. BOA publishes receipt data as JSON via a public API endpoint. cheki uses this API directly, without requiring Selenium or a headless browser like some other libraries." },
@@ -1400,8 +1434,9 @@ curl -X POST https://cheki.et/api/verify \\
       `cheki supports ${TOTAL_BANK_COUNT} Ethiopian banks but only ${LIVE_BANK_COUNT} are live. Here's how you can help add the rest. No coding required, just share a receipt. For developers: how to write a parser and submit a PR.`,
     category: "open-source",
     excerpt:
-      "18 Ethiopian banks still need receipt endpoints. You can help by sharing a receipt, writing a parser, or reporting broken endpoints. Here's the complete community contribution guide.",
+      `${IN_DEVELOPMENT_BANK_COUNT} Ethiopian banks and wallets still need confirmed receipt endpoints. You can help by sharing a receipt, writing a parser, or reporting broken endpoints. Here's the complete community contribution guide.`,
     date: "2026-06-19",
+    updated: "2026-10-12",
     readTime: "5 min",
     content: [
       { type: "text", text: `cheki lists ${TOTAL_BANK_COUNT} Ethiopian banks and wallets, but only ${LIVE_BANK_COUNT} are live. The remaining ${IN_DEVELOPMENT_BANK_COUNT} are listed as 'in development' because we haven't confirmed their public receipt endpoints yet. This is where the community comes in.` },
@@ -1470,7 +1505,7 @@ curl -X POST https://cheki.et/api/verify \\
       { q: "Do I need to know how to code to contribute?", a: "No. The most valuable contribution is a receipt from a bank we don't support yet. Send us a screenshot or URL and we'll handle the technical work." },
       { q: "Is it safe to share my receipt?", a: "Redact or blur your full account number before sharing. We only need the receipt structure, reference number, and QR code payload. Never share your PIN, password, or OTP." },
       { q: "How long does it take to add a new bank?", a: "If we have a receipt to reverse-engineer, usually within a day. If a developer submits a complete parser with tests, we merge it the same day." },
-      { q: "Can I add a bank that no verification service supports?", a: "Yes. That's the whole point. If you find the receipt endpoint, we'll add it. cheki is the only verification tool that lists all 31 Ethiopian banks, not just the profitable ones." },
+      { q: "Can I add a bank that no verification service supports?", a: `Yes. That's the whole point. If you find the receipt endpoint, we'll add it. cheki lists ${TOTAL_BANK_COUNT} banks and wallets, including the ones no paid service covers yet, not just the profitable ones.` },
       { q: "What if a bank doesn't have a public receipt endpoint?", a: "Some banks may not have receipt sharing yet. In that case, we list them as 'researching' and wait until they launch a digital receipt system. We don't fake it." },
     ],
     related: ["open-source-ethiopian-fintech", "ethiopian-bank-receipt-formats", "self-hosting-docker-guide"],
@@ -1488,6 +1523,7 @@ curl -X POST https://cheki.et/api/verify \\
     excerpt: "Translate cheki's interface into your language. No coding required. English and Amharic are live; we need Oromiffa, Tigrinya, Somali, and more.",
     readTime: "5 min",
     date: "2026-06-20",
+    updated: "2026-10-07",
     content: [
       { type: "text", text: "cheki is open source and free, but it's only useful if people can read it. Right now the interface is in English and Amharic. We want to add Oromiffa, Tigrinya, Somali, and any other language the community needs." },
       { type: "text", text: "You do not need to be a developer to translate cheki. Translations live in a single JSON file per language. If you can edit text, you can translate it." },

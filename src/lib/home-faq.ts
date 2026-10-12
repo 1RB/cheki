@@ -6,6 +6,7 @@
  * visible content, so they cannot drift apart.
  */
 import { LIVE_BANK_COUNT, liveBankList } from "./bank-counts";
+import { RATE_LIMIT_SENTENCE, competitorPrices } from "./guides-facts";
 export interface FaqItem {
   q: string;
   a: string;
@@ -14,7 +15,7 @@ export interface FaqItem {
 export const homeFaqs: FaqItem[] = [
   {
     q: "Is cheki really free?",
-    a: "Yes. cheki is 100% free: no signup, no API key, no credit card, and no verification quota (only a per-IP rate limit against abuse). check.et charges 499 ETB/month after 200 verifications and verify.et charges $20-40/month. cheki is MIT licensed, so you can also read the source and self-host it.",
+    a: `Yes. cheki is free: no signup, no API key and no credit card. The hosted API has ${RATE_LIMIT_SENTENCE} ${competitorPrices(["check.et", "verify.et"])} cheki is MIT licensed, so you can also read the source and self-host it.`,
   },
   {
     q: "How does receipt verification work?",

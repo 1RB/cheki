@@ -18,6 +18,9 @@ import { primaryFormat, secondaryFormats } from "./manifest/formats";
 import type { SeoPage } from "./seo-pages";
 import { banks, type Bank } from "./banks";
 import { LIVE_BANK_COUNT, liveBankList, liveProviders } from "./bank-counts";
+import { COMPETITOR_FACTS_AS_OF, HOSTED_RATE_LIMITS, NO_SIGNUP_SENTENCE, RATE_LIMIT_SHORT, competitorPrices } from "./guides-facts";
+
+const { verifyPerMinute, batchPerMinute, parsePerMinute, ocrPerMinute } = HOSTED_RATE_LIMITS;
 
 /** Live bank ids for API copy ("cbe, telebirr, ..."), from the manifest. */
 const liveBankIds = liveProviders.map((b) => b.id).join(", ");
@@ -104,7 +107,7 @@ const bankVerificationPages: SeoPage[] = banks
           : `Is ${b.shortName} receipt verification free?`,
         a: b.geoBlocked
           ? `${b.shortName}'s endpoint (${b.endpoint}) blocks requests from non-Ethiopian IP addresses. If cheki's server can't reach it, we provide a direct link for you to open the receipt yourself. Self-hosting cheki on an Ethiopian IP bypasses this restriction.`
-          : `Yes, cheki is completely free with no quota. check.et charges 499 ETB/month after 200 verifications. cheki uses the same public ${b.shortName} endpoint but charges nothing.`,
+          : `Yes. cheki is free. ${NO_SIGNUP_SENTENCE} ${competitorPrices(["check.et"])} cheki uses the same public ${b.shortName} endpoint but charges nothing.`,
       },
     ],
     sections: [
@@ -168,7 +171,7 @@ const checkPaymentPages: SeoPage[] = banks.map((b): SeoPage => ({
     },
     {
       q: `Is checking ${b.shortName} payments free?`,
-      a: `Yes. cheki checks ${b.shortName} payments for free with no quota. check.et charges 499 ETB/month after 200 checks for the same data. cheki uses the same public ${b.shortName} endpoint.`,
+      a: `Yes. cheki checks ${b.shortName} payments for free. ${NO_SIGNUP_SENTENCE} ${competitorPrices(["check.et"])} cheki uses the same public ${b.shortName} endpoint.`,
     },
   ],
   sections: [
@@ -344,7 +347,7 @@ const apiEndpointPages: SeoPage[] = [
     faq: [
       { q: "What does POST /api/verify do?", a: "It verifies a single Ethiopian bank receipt. You send a JSON body with the bank id, reference number, and (for some banks) the account number. The endpoint fetches the receipt from the bank's public URL, parses it, and returns structured JSON with sender name, receiver name, amount, date, and the source URL." },
       { q: "Do I need an API key for /api/verify?", a: "No. cheki's API requires no authentication. No API key, no bearer token, no OAuth. Just POST with a JSON content type and the receipt details." },
-      { q: "What's the rate limit?", a: "Requests are rate limited per IP: /api/verify 30 per minute, /api/verify/batch 5 per minute, /api/parse and /api/ocr 20 per minute each. Over the limit you get a 429 with a Retry-After header. For bulk verification, use POST /api/verify/batch to verify up to 20 receipts in a single request." },
+      { q: "What's the rate limit?", a: `Requests are rate limited per IP: /api/verify ${verifyPerMinute} per minute, /api/verify/batch ${batchPerMinute} per minute, /api/parse ${parsePerMinute} per minute, /api/ocr ${ocrPerMinute} per minute. Over the limit you get a 429 with a Retry-After header. For bulk verification, use POST /api/verify/batch to verify up to 20 receipts in a single request.` },
     ],
     sections: [
       {
@@ -375,9 +378,9 @@ const apiEndpointPages: SeoPage[] = [
     keywords: ["batch receipt verification", "bulk verify receipts", "batch api ethiopia", "verify multiple receipts", "reconciliation api ethiopia"],
     intent: "transactional",
     faq: [
-      { q: "How many receipts can I verify at once?", a: "Up to 20 receipts per batch request. They are checked 5 at a time, and each receipt counts against the per-IP verify limit (30 per minute)." },
+      { q: "How many receipts can I verify at once?", a: `Up to 20 receipts per batch request. They are checked 5 at a time, and each receipt counts against the per-IP verify limit (${verifyPerMinute} per minute).` },
       { q: "What happens if one receipt in the batch fails?", a: "Each receipt is verified independently. If one fails (e.g. receipt not found, geo-blocked), the others still succeed. The response includes an array of results with individual success/failure status for each receipt." },
-      { q: "Is batch verification free?", a: "Yes. Batch verification is free with no quota, same as single verification (up to 20 receipts per request, 5 batch requests per minute per IP). check.et and verify.et do not offer batch verification at all." },
+      { q: "Is batch verification free?", a: `Yes. Batch verification is free, with no signup and no API key, under the same per-IP rate limits as single verification (up to 20 receipts per request, ${batchPerMinute} batch requests per minute per IP; self-host for more). As of ${COMPETITOR_FACTS_AS_OF}, check.et and verify.et did not offer batch verification.` },
     ],
     sections: [
       {
@@ -647,7 +650,7 @@ const developerPages: SeoPage[] = [
     intent: "transactional",
     faq: [
       { q: "How do I install the cheki TypeScript SDK?", a: "Run npm install cheki-verify, then import { Cheki } from \"cheki-verify\". It has no runtime dependencies; it uses the platform's fetch (Node.js 18+)." },
-      { q: "Can I use the SDK in the browser?", a: "Call it from your server. The hosted API does not send CORS headers on the verify routes, so browser calls to cheki.et are blocked. Your backend also keeps your users' requests under its own per-IP rate limit (verify: 30 per minute)." },
+      { q: "Can I use the SDK in the browser?", a: `Call it from your server. The hosted API does not send CORS headers on the verify routes, so browser calls to cheki.et are blocked. Your backend also keeps your users' requests under its own per-IP rate limit (verify: ${verifyPerMinute} per minute).` },
       { q: "Does the SDK handle errors?", a: "Yes. Any non-2xx response throws ChekiAPIError with the HTTP status, the server's error text and, for geo-blocked banks, a fallbackUrl. 429 throws ChekiRateLimitError (with the Retry-After seconds) and 413 throws ChekiPayloadTooLargeError. Bad input throws ChekiValidationError before any request, and network failures and timeouts throw ChekiNetworkError and ChekiTimeoutError. A receipt the bank does not have is a 422 ChekiAPIError." },
     ],
     sections: [
@@ -711,11 +714,11 @@ const developerPages: SeoPage[] = [
     slug: "receipt-verification-for-business",
     title: "Receipt Verification for Ethiopian Businesses | cheki",
     h1: "Receipt Verification for Your Business",
-    metaDescription: "How Ethiopian businesses can verify bank receipts for free. Integration guides for e-commerce, delivery services, retail, and accounting. No API key, no signup, no quota.",
+    metaDescription: "How Ethiopian businesses can verify bank receipts for free. Integration guides for e-commerce, delivery services, retail, and accounting. No API key, no signup, per-IP rate limits.",
     keywords: ["receipt verification business", "payment verification ethiopia business", "merchant receipt check", "ecommerce receipt verification", "delivery payment verification"],
     intent: "commercial",
     faq: [
-      { q: "How much does cheki cost for businesses?", a: "Nothing. cheki is 100% free for businesses of any size. No per-verification fee, no monthly subscription, no API key, and no monthly cap; only a per-IP rate limit (30 checks per minute) applies. check.et charges 499 ETB/month after 200 verifications. cheki has no such limit." },
+      { q: "How much does cheki cost for businesses?", a: `Nothing. cheki is free for businesses of any size: no per-verification fee, no monthly subscription, no signup and no API key. The hosted API has ${RATE_LIMIT_SHORT}; self-host for more. ${competitorPrices(["check.et"])}` },
       { q: "Can I integrate cheki into my POS system?", a: "Yes. cheki provides a REST API and SDKs for TypeScript, Python, Go, PHP and Dart. You can integrate receipt verification into any POS, e-commerce, or accounting system. The API requires no authentication, so integration takes minutes, not days." },
       { q: "What about batch verification for end-of-day reconciliation?", a: "Use POST /api/verify/batch to verify up to 20 receipts in a single API call. This is designed for end-of-day reconciliation: submit all the day's receipts, get results in seconds, and match them against your orders." },
     ],
