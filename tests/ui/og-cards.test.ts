@@ -7,6 +7,8 @@
  *   - OG_VARIANT defaults to the shipped design, and every Ethiopic character
  *     an exploration card uses is in the subset font (no tofu)
  *   - every round-2 hero image exists, is a 1200x630 JPEG and stays small
+ *   - every round-4 hero image (painting or dither) exists, is 1200x630 and
+ *     stays small, and the dithered ones are true palette PNGs
  */
 import { describe, it, expect } from "vitest";
 import { existsSync, readFileSync, statSync } from "node:fs";
@@ -17,6 +19,7 @@ import { banks } from "@/lib/banks";
 import { OG_VARIANTS, resolveOgVariant } from "@/lib/og/variant";
 import { OG_AMHARIC } from "@/lib/og/concepts/parts";
 import { OG_ART } from "@/lib/og/concepts/photo";
+import { OG_ART4 } from "@/lib/og/concepts/painted";
 
 const root = join(__dirname, "..", "..");
 const read = (p: string) => readFileSync(join(root, p), "utf8");
@@ -35,6 +38,7 @@ const OG_FILES = [
   "src/lib/og/concepts/chat.tsx",
   "src/lib/og/concepts/paid.tsx",
   "src/lib/og/concepts/photo.tsx",
+  "src/lib/og/concepts/painted.tsx",
 ];
 
 /** Code points a TrueType font maps (cmap formats 4 and 12). */
@@ -150,6 +154,24 @@ describe("OG cards", () => {
           break;
         }
         i += 2 + len;
+      }
+    }
+  });
+
+  it("ships every round-4 hero image at 1200x630 and under 300KB", () => {
+    for (const [name, fileName] of Object.entries(OG_ART4)) {
+      expect(OG_VARIANTS, name).toContain(name);
+      const file = join(root, "public/og", fileName);
+      expect(existsSync(file), file).toBe(true);
+      expect(statSync(file).size, file).toBeLessThan(300 * 1024);
+      const buf = readFileSync(file);
+      if (fileName.endsWith(".png")) {
+        // IHDR: width, height, bit depth, colour type 3 (indexed) for the dithers
+        expect(buf.toString("ascii", 1, 4), name).toBe("PNG");
+        expect([buf.readUInt32BE(16), buf.readUInt32BE(20)], name).toEqual([1200, 630]);
+        expect(buf[25], `${name} is a palette PNG`).toBe(3);
+      } else {
+        expect(buf.readUInt16BE(0), `${name} is a JPEG`).toBe(0xffd8);
       }
     }
   });

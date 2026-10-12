@@ -14,6 +14,8 @@ export const OG_VARIANTS = [
   "stamp", "spot", "banknote", "chat", "paid",
   // round 2: one emotion, one hero image (src/lib/og/concepts/photo.tsx, art in public/og)
   "light", "lineup", "bait", "check",
+  // round 4: old masters and dithering (src/lib/og/concepts/painted.tsx, art in public/og)
+  "moneylender", "pixels", "bitmap", "ember",
 ] as const;
 export type OgVariant = (typeof OG_VARIANTS)[number];
 

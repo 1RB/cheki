@@ -29,17 +29,22 @@ import { Mark, type CardBank } from "./parts";
 export const OG_ART = ["light", "lineup", "bait", "check"] as const;
 export type OgArt = (typeof OG_ART)[number];
 
-const art = new Map<OgArt, string>();
+const art = new Map<string, string>();
+
+/** public/og/{file} (a .jpg or .png) as a data URL, read once per process. */
+export function heroUrl(file: string): string {
+  let url = art.get(file);
+  if (!url) {
+    const buf = readFileSync(join(process.cwd(), "public/og", file));
+    url = `data:image/${file.endsWith(".png") ? "png" : "jpeg"};base64,${buf.toString("base64")}`;
+    art.set(file, url);
+  }
+  return url;
+}
 
 /** public/og/{name}.jpg as a data URL, read once per process. */
 export function artUrl(name: OgArt): string {
-  let url = art.get(name);
-  if (!url) {
-    const buf = readFileSync(join(process.cwd(), "public/og", `${name}.jpg`));
-    url = `data:image/jpeg;base64,${buf.toString("base64")}`;
-    art.set(name, url);
-  }
-  return url;
+  return heroUrl(`${name}.jpg`);
 }
 
 const WHITE = "#ffffff";
@@ -51,7 +56,7 @@ const LIFT = "0 2px 22px rgba(0, 20, 60, 0.45)";
  * A headline as words that wrap, with the words in `italic` set in the
  * italic display serif (the hero type pairing). Hyphens never break.
  */
-function Words({ text, italic = [], size, color, align = "left", width, shadow }: { text: string; italic?: string[]; size: number; color: string; align?: "left" | "center"; width: number; shadow?: string }) {
+export function Words({ text, italic = [], size, color, align = "left", width, shadow }: { text: string; italic?: string[]; size: number; color: string; align?: "left" | "center"; width: number; shadow?: string }) {
   const words = text.split(" ");
   return (
     <div style={{ display: "flex", flexWrap: "wrap", justifyContent: align === "center" ? "center" : "flex-start", width, color, lineHeight: 1.02, ...(shadow ? { textShadow: shadow } : {}) }}>
@@ -136,7 +141,7 @@ function Art({ name, children }: { name: OgArt; children: ReactNode }) {
   );
 }
 
-function At({ children, ...pos }: { children: ReactNode } & Pick<CSSProperties, "left" | "right" | "top" | "bottom">) {
+export function At({ children, ...pos }: { children: ReactNode } & Pick<CSSProperties, "left" | "right" | "top" | "bottom">) {
   return <div style={{ display: "flex", position: "absolute", ...pos }}>{children}</div>;
 }
 

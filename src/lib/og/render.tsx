@@ -13,6 +13,7 @@ import { BanknoteCard } from "@/lib/og/concepts/banknote";
 import { ChatCard } from "@/lib/og/concepts/chat";
 import { PaidCard } from "@/lib/og/concepts/paid";
 import { BaitCard, CheckCard, LightCard, LineupCard } from "@/lib/og/concepts/photo";
+import { BitmapCard, EmberCard, MoneylenderCard, PixelsCard } from "@/lib/og/concepts/painted";
 
 function cardBank(code: string): CardBank {
   const b = getBank(code);
@@ -72,6 +73,14 @@ export function ogHome(variant: OgVariant = OG_VARIANT): ReactElement {
       return <BaitCard />;
     case "check":
       return <CheckCard />;
+    case "moneylender":
+      return <MoneylenderCard />;
+    case "ember":
+      return <EmberCard />;
+    case "pixels":
+      return <PixelsCard />;
+    case "bitmap":
+      return <BitmapCard />;
     default:
       return currentHome();
   }
@@ -102,5 +111,13 @@ export function ogBank(code: string, variant: OgVariant = OG_VARIANT): ReactElem
       return <BaitCard bank={b} />;
     case "check":
       return <CheckCard bank={b} />;
+    case "moneylender":
+      return <MoneylenderCard bank={b} />;
+    case "ember":
+      return <EmberCard bank={b} />;
+    case "pixels":
+      return <PixelsCard bank={b} />;
+    case "bitmap":
+      return <BitmapCard bank={b} />;
   }
 }
