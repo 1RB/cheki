@@ -1,45 +1,42 @@
 import { ImageResponse } from "next/og";
 import { banks, getBank } from "@/lib/banks";
+import { Frame, Headline, LogoMark, ResultCard, OG_SIZE, ogFonts, withArticle } from "@/lib/og/card";
 
-export const alt = "cheki - Bank Receipt Verification";
-export const size = { width: 1200, height: 630 };
+export const runtime = "nodejs";
+export const alt = "cheki: verify a bank receipt against the bank's own record";
+export const size = OG_SIZE;
 export const contentType = "image/png";
+// Every bank page has its card built at build time; unknown codes 404.
+export const dynamicParams = false;
 
 export function generateStaticParams() {
-  return banks.filter(b => b.status === "live").map((b) => ({ code: b.code }));
+  return banks.map((b) => ({ code: b.code }));
 }
 
-export default async function OgImage({
-  params,
-}: {
-  params: Promise<{ code: string }>;
-}) {
+// "Verify a {Bank} receipt" and that bank's verified result. Beta banks say
+// so in quiet text; banks still in development show only their mark, since a
+// verified result would claim something cheki cannot do for them yet.
+export default async function OgImage({ params }: { params: Promise<{ code: string }> }) {
   const { code } = await params;
   const bank = getBank(code);
-  const bankName = bank?.shortName || bank?.name || "Bank";
-  const bankFullName = bank?.name || "Ethiopian Bank";
-  const taglineText = `${bankName} verification`;
-  const headlineText = `Verify ${bankFullName}`;
-  const urlPath = `cheki.et/banks/${code}`;
+  const name = bank?.shortName ?? code.toUpperCase();
+  const live = bank?.status === "live";
+  const note = !live ? "In development" : bank?.beta ? "Beta" : undefined;
+  const fullName = bank?.name ?? name;
+  const kicker = (
+    <>
+      {!live && <div style={{ display: "flex", marginRight: 14 }}><LogoMark code={code} size={30} /></div>}
+      <span>{note ? `${fullName} · ${note}` : fullName}</span>
+    </>
+  );
 
   return new ImageResponse(
     (
-      <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", backgroundColor: "#080808", color: "#faf9f6", fontFamily: "system-ui, sans-serif", padding: "60px", borderTop: "6px solid #16a34a" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "14px", marginBottom: "36px" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "52px", height: "52px", backgroundColor: "#16a34a", fontSize: "28px", fontWeight: 800, color: "#fff" }}>c</div>
-          <div style={{ fontSize: "36px", fontWeight: 800, letterSpacing: "-0.03em" }}>cheki</div>
-          <div style={{ fontSize: "18px", fontWeight: 600, color: "#888", marginLeft: "8px" }}>{taglineText}</div>
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: "10px", flex: 1, justifyContent: "center" }}>
-          <div style={{ fontSize: "52px", fontWeight: 800, lineHeight: 1.12, letterSpacing: "-0.02em" }}>{headlineText}</div>
-          <div style={{ fontSize: "52px", fontWeight: 800, lineHeight: 1.12, letterSpacing: "-0.02em", color: "#16a34a" }}>Receipts for free.</div>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "16px", borderTop: "2px solid #222", paddingTop: "24px" }}>
-          <div style={{ fontSize: "20px", fontWeight: 600, color: "#16a34a", border: "2px solid #16a34a", padding: "6px 18px" }}>Free, no signup, instant</div>
-          <div style={{ marginLeft: "auto", fontSize: "16px", color: "#666" }}>{urlPath}</div>
-        </div>
-      </div>
+      <Frame
+        left={<Headline kicker={kicker} lead={`Verify ${withArticle(name)} receipt`} rest={`against ${name}’s own record.`} size={live ? 60 : 72} />}
+        right={live ? <ResultCard code={code} shortName={name} /> : undefined}
+      />
     ),
-    { ...size }
+    { ...size, fonts: await ogFonts() }
   );
 }
