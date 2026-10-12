@@ -1,43 +1,40 @@
 import { ImageResponse } from "next/og";
 import { indexableSeoPages, getSeoPage } from "@/lib/seo-pages";
+import { getBank } from "@/lib/banks";
+import { Frame, Headline, ResultCard, OG_SIZE, ogFonts } from "@/lib/og/card";
 
-export const alt = "cheki - Ethiopian Receipt Verification";
-export const size = { width: 1200, height: 630 };
+export const runtime = "nodejs";
+export const alt = "cheki: Ethiopian receipt verification";
+export const size = OG_SIZE;
 export const contentType = "image/png";
+// Built for every indexable guide page at build time; anything else 404s.
+export const dynamicParams = false;
 
 export function generateStaticParams() {
   return indexableSeoPages.map((p) => ({ slug: p.slug }));
 }
 
-export default async function OgImage({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}) {
+// Guide pages: the page's own H1 as the headline, under a quiet kicker naming
+// the bank (or "Guide"). Pages about one bank show that bank's verified
+// result; general guides show CBE's. The receipt is always synthetic: these
+// pages are articles, not receipts, and the card never carries receipt data.
+export default async function OgImage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const page = getSeoPage(slug);
-  const title = page?.h1 || "Verify Ethiopian Receipts";
-  const tagline = page?.bankCode
-    ? `${page.bankCode.toUpperCase()} receipt verification`
-    : "Free receipt verification";
+  const title = page?.h1 ?? "Verify Ethiopian receipts";
+  const bank = page?.bankCode ? getBank(page.bankCode) : undefined;
+  const cardBank = bank && bank.status === "live" ? bank : getBank("cbe");
+  const kicker = bank ? `${bank.shortName} guide` : "Guide";
 
   return new ImageResponse(
     (
-      <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", backgroundColor: "#080808", color: "#faf9f6", fontFamily: "system-ui, sans-serif", padding: "60px", borderTop: "6px solid #16a34a" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "14px", marginBottom: "36px" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "52px", height: "52px", backgroundColor: "#16a34a", fontSize: "28px", fontWeight: 800, color: "#fff" }}>c</div>
-          <div style={{ fontSize: "36px", fontWeight: 800, letterSpacing: "-0.03em" }}>cheki</div>
-          <div style={{ fontSize: "18px", fontWeight: 600, color: "#888", marginLeft: "8px" }}>{tagline}</div>
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: "10px", flex: 1, justifyContent: "center" }}>
-          <div style={{ fontSize: "48px", fontWeight: 800, lineHeight: 1.15, letterSpacing: "-0.02em" }}>{title}</div>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "16px", borderTop: "2px solid #222", paddingTop: "24px" }}>
-          <div style={{ fontSize: "20px", fontWeight: 600, color: "#16a34a", border: "2px solid #16a34a", padding: "6px 18px" }}>Free, no signup, no API key</div>
-          <div style={{ marginLeft: "auto", fontSize: "16px", color: "#666" }}>cheki.et</div>
-        </div>
-      </div>
+      <Frame
+        left={
+<Headline kicker={kicker} lead={title} size={title.length > 34 ? 52 : 58} />
+        }
+        right={<ResultCard code={cardBank?.code ?? "cbe"} shortName={cardBank?.shortName ?? "CBE"} />}
+      />
     ),
-    { ...size }
+    { ...size, fonts: await ogFonts() }
   );
 }

@@ -1,5 +1,24 @@
-// Bank logo SVGs - clean, professional vector logos using brand colors
-// Each logo is a rounded square with the bank's initials in a professional style
+// Bank logo marks: a rounded square in the bank's colour with its initials.
+// The marks are described once in BANK_LOGOS (src/lib/bank-logos.ts), so the
+// Open Graph cards (src/lib/og) draw the same mark the checker shows.
+import { bankLogoSpec, type BankLogoSpec } from "@/lib/bank-logos";
+
+function LogoMark({ size, spec }: { size: number; spec: BankLogoSpec }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+      <rect width="40" height="40" rx="8" fill={spec.color} />
+      <text
+        x="20" y="20"
+        dominantBaseline="central" textAnchor="middle"
+        fill="#fff" fontSize={spec.fontSize} fontWeight={spec.fontWeight}
+        fontFamily="Inter, system-ui, sans-serif"
+        letterSpacing={spec.letterSpacing}
+      >
+        {spec.label}
+      </text>
+    </svg>
+  );
+}
 
 interface LogoProps {
   size?: number;
@@ -7,104 +26,16 @@ interface LogoProps {
   color: string;
 }
 
+/** A generic mark: the first three letters of `shortName` on `color`. */
 export function BankLogo({ size = 36, shortName, color }: LogoProps) {
-  const initials = shortName.slice(0, 3).toUpperCase();
   return (
-    <svg width={size} height={size} viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
-      <rect width="40" height="40" rx="8" fill={color} />
-      <text
-        x="20" y="20"
-        dominantBaseline="central" textAnchor="middle"
-        fill="#fff" fontSize="13" fontWeight="700"
-        fontFamily="Inter, system-ui, sans-serif"
-        letterSpacing="-0.02em"
-      >
-        {initials}
-      </text>
-    </svg>
+    <LogoMark
+      size={size}
+      spec={{ label: shortName.slice(0, 3).toUpperCase(), color, fontSize: 13, fontWeight: 700, letterSpacing: "-0.02em" }}
+    />
   );
 }
-
-// CBE - green with "CBE"
-export function CBEOCogo({ size = 36 }: { size?: number }) {
-  return <BankLogo size={size} shortName="CBE" color="#1a5c3e" />;
-}
-
-// Telebirr - orange with "Tb"
-export function TelebirrLogo({ size = 36 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
-      <rect width="40" height="40" rx="8" fill="#e8a000" />
-      <text x="20" y="20" dominantBaseline="central" textAnchor="middle" fill="#fff" fontSize="14" fontWeight="800" fontFamily="Inter, system-ui, sans-serif">Tb</text>
-    </svg>
-  );
-}
-
-// BOA - purple
-export function BOALogo({ size = 36 }: { size?: number }) {
-  return <BankLogo size={size} shortName="BOA" color="#7c3aed" />;
-}
-
-// M-Pesa - green (Safaricom green)
-export function MPesaLogo({ size = 36 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
-      <rect width="40" height="40" rx="8" fill="#16a34a" />
-      <text x="20" y="20" dominantBaseline="central" textAnchor="middle" fill="#fff" fontSize="11" fontWeight="700" fontFamily="Inter, system-ui, sans-serif">M-P</text>
-    </svg>
-  );
-}
-
-// Dashen - red
-export function DashenLogo({ size = 36 }: { size?: number }) {
-  return <BankLogo size={size} shortName="DAS" color="#dc2626" />;
-}
-
-// Awash - amber
-export function AwashLogo({ size = 36 }: { size?: number }) {
-  return <BankLogo size={size} shortName="AWA" color="#f59e0b" />;
-}
-
-// Zemen - blue
-export function ZemenLogo({ size = 36 }: { size?: number }) {
-  return <BankLogo size={size} shortName="ZEM" color="#2563eb" />;
-}
-
-// CBE Birr - sky blue
-export function CBEBirrLogo({ size = 36 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
-      <rect width="40" height="40" rx="8" fill="#0ea5e9" />
-      <text x="20" y="20" dominantBaseline="central" textAnchor="middle" fill="#fff" fontSize="10" fontWeight="700" fontFamily="Inter, system-ui, sans-serif">CBEb</text>
-    </svg>
-  );
-}
-
-// Siinqee - pink
-export function SiinqeeLogo({ size = 36 }: { size?: number }) {
-  return <BankLogo size={size} shortName="SQE" color="#be185d" />;
-}
-
-// ZamZam - teal (the manifest colour)
-export function ZamZamLogo({ size = 36 }: { size?: number }) {
-  return <BankLogo size={size} shortName="ZZB" color="#0d9488" />;
-}
-
-const logoMap: Record<string, (props: { size?: number }) => React.ReactElement> = {
-  cbe: CBEOCogo,
-  telebirr: TelebirrLogo,
-  boa: BOALogo,
-  mpesa: MPesaLogo,
-  dashen: DashenLogo,
-  awash: AwashLogo,
-  zemen: ZemenLogo,
-  cbebirr: CBEBirrLogo,
-  siinqee: SiinqeeLogo,
-  zamzam: ZamZamLogo,
-};
 
 export function BankLogoByName({ code, size = 36 }: { code: string; size?: number }) {
-  const Logo = logoMap[code];
-  if (Logo) return <Logo size={size} />;
-  return <BankLogo size={size} shortName={code.slice(0, 3).toUpperCase()} color="#666" />;
+  return <LogoMark size={size} spec={bankLogoSpec(code)} />;
 }
