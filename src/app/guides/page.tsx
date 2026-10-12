@@ -43,7 +43,7 @@ export default function GuidesPage() {
                 <h2 id={`gx-${s.id}`} className="gx-h2"><T k={`guides.sections.${s.id}.title`} /></h2>
                 <p className="gx-blurb"><T k={`guides.sections.${s.id}.blurb`} /></p>
               </div>
-              <ul className="gx-rows">
+              <ul className="gx-rows" role="list">
                 {s.guides.map((a) => (
                   <li key={a.slug} data-guide-row data-search={guideSearchText(a)}>
                     <Link href={`/guides/${a.slug}`} prefetch={false} className="gx-row">

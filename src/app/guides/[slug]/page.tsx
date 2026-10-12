@@ -158,10 +158,10 @@ async function renderBlock(block: ContentBlock, key: number): Promise<React.Reac
 
     case "steps":
       return (
-        <ol key={key} className="ga-steps">
+        <ol key={key} className="ga-steps" role="list">
           {block.items.map((step, i) => (
             <li key={i}>
-              <span className="ga-step-n" aria-hidden="true">{i + 1}.</span>
+              <span className="ga-step-n">{i + 1}.</span>
               <div>
                 <p className="ga-step-title">{renderRichText(step.title)}</p>
                 <p className="ga-step-text">{renderRichText(step.text)}</p>
@@ -207,7 +207,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
   };
 
   const tocList = (
-    <ol className="ga-toc-list">
+    <ol className="ga-toc-list" role="list">
       {toc.map((h) => (
         <li key={h.id}><a href={`#${h.id}`}>{h.text}</a></li>
       ))}
@@ -222,7 +222,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript(breadcrumbJsonLd) }} />
       <main className="container ga">
         <nav aria-label="Breadcrumb">
-          <ol className="ga-crumb">
+          <ol className="ga-crumb" role="list">
             <li><Link href="/" prefetch={false}>Home</Link></li>
             <li><Link href="/guides" prefetch={false}><T k="guides.title" /></Link></li>
             <li aria-current="page">{article.title.length > 40 ? `${article.title.slice(0, 40).trimEnd()}...` : article.title}</li>
@@ -288,7 +288,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
               {related.length > 0 && (
                 <section className="ga-related" aria-labelledby="ga-related">
                   <h2 id="ga-related"><T k="guides.related" /></h2>
-                  <ul className="gx-rows">
+                  <ul className="gx-rows" role="list">
                     {related.map((r) => (
                       <li key={r.slug}>
                         <Link href={`/guides/${r.slug}`} prefetch={false} className="gx-row">

@@ -107,6 +107,8 @@ describe("GuidesPage (server render)", () => {
       "Verify a receipt", "Spot fraud", "For developers", "Open source", "Comparisons",
     ]);
     expect(doc.querySelectorAll("[data-guide-section] [data-guide-row]")).toHaveLength(articles.length);
+    // list-style: none drops list semantics in Safari unless the role is explicit
+    for (const ul of doc.querySelectorAll(".gx-rows")) expect(ul.getAttribute("role")).toBe("list");
   });
 
   it("has a search box and no card, featured card, pill or colour filter", () => {
@@ -145,6 +147,12 @@ describe("guides: server component, design language", () => {
       expect(src, name).not.toMatch(/textTransform|text-transform|letterSpacing:\s*"0\.0|uppercase/);
       expect(src, name).not.toMatch(/-light\)/); // no tinted (green-light, amber-light, red-light) fills
     }
+  });
+
+  it("unstyled lists keep list semantics, and step numbers are announced", () => {
+    expect(articleSrc).toMatch(/className="ga-steps" role="list"/);
+    expect(articleSrc).toMatch(/className="ga-toc-list" role="list"/);
+    expect(articleSrc).not.toMatch(/ga-step-n" aria-hidden/);
   });
 
   it("callouts carry no emoji icons", () => {
