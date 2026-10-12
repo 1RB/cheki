@@ -115,7 +115,7 @@ describe("formatTelegramMessage", () => {
 describe("contributeLeadMode", () => {
   const screenshotFirst = [
     "abay", "addis", "amhara", "berhan", "bunna", "enat", "global", "lion", "oromia",
-    "hibret", "zamzam", "hijra", "shabelle", "goh", "tsedey", "gadaa", "rammis",
+    "hibret", "hijra", "shabelle", "goh", "tsedey", "gadaa", "rammis",
   ];
   const linkFirst = ["zemen", "cbebirr", "nib", "wegagen", "ahadu", "kaafi"];
 

@@ -30,6 +30,7 @@ import { BOAParser } from "../parsers/boa";
 import { ZemenParser } from "../parsers/zemen";
 import { CBEBirrParser } from "../parsers/cbebirr";
 import { MpesaParser } from "../parsers/mpesa";
+import { ZamZamParser } from "../parsers/zamzam";
 import { verificationGate, gateFailureMessage } from "./gate";
 import { checkAccountSuffix, checkPhone, checkReference } from "../security/reference";
 import { parseTelebirrQr } from "../qr/telebirr";
@@ -282,7 +283,7 @@ export class Verifier {
     if (!fetchResult.ok) return fetchResult;
 
     const { data, contentType } = fetchResult.value;
-    const parsedResult = await this.parseResponse(manifestEntry, parser, data, contentType);
+    const parsedResult = await this.parseResponse(manifestEntry, parser, data, contentType, ref);
     if (!parsedResult.ok) return parsedResult;
     const parsed = parsedResult.value;
 
@@ -310,7 +311,8 @@ export class Verifier {
     manifestEntry: BankManifestEntry,
     parser: RegisteredParser,
     data: string | Buffer,
-    contentType: string
+    contentType: string,
+    requestedReference: string
   ): Promise<Result<ParsedReceipt, ChekiError>> {
     // Keyed by the parser, not the bank: one bank can have a PDF format
     // (CBE legacy) and a JSON one (CBE current).
@@ -391,6 +393,23 @@ export class Verifier {
           kind: "EXTRACTION_ERROR",
           bank: manifestEntry.name,
           message: "Could not read the M-Pesa receipt PDF. Check the transaction number.",
+        });
+      }
+      return ok(parsed);
+    }
+
+    // ZamZam: an unknown receipt id is HTTP 200 with the body `null`. The
+    // record must carry the id it was looked up by (the gate treats the id as
+    // an opaque key, so this is where it is matched).
+    if (id === "zamzam") {
+      const { parsed, notFound } = ZamZamParser.parseRecord(data, requestedReference);
+      if (!parsed.verified) {
+        return err({
+          kind: "EXTRACTION_ERROR",
+          bank: manifestEntry.name,
+          message: notFound
+            ? "ZamZam Bank has no receipt with this id. Check the number at the end of the receipt link."
+            : "Could not read the ZamZam Bank receipt.",
         });
       }
       return ok(parsed);

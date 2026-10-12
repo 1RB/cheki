@@ -1,6 +1,6 @@
 # cheki Dart SDK
 
-Dart client for the [cheki](https://cheki.et) receipt verification API: verify Ethiopian bank transfer receipts from CBE, Telebirr, BOA, Dashen, M-Pesa (beta: not yet confirmed with a real receipt), Awash, Siinqee and eBirr (the live banks; `getBanks()` lists the current set). No `dart:io` import, so it also builds for Flutter web (the hosted API sends no CORS headers on these routes, so browser calls still need your own backend).
+Dart client for the [cheki](https://cheki.et) receipt verification API: verify Ethiopian bank transfer receipts from CBE, Telebirr, BOA, Dashen, M-Pesa (beta: not yet confirmed with a real receipt), Awash, Siinqee, eBirr and ZamZam (beta: one receipt shape confirmed so far) (the live banks; `getBanks()` lists the current set). No `dart:io` import, so it also builds for Flutter web (the hosted API sends no CORS headers on these routes, so browser calls still need your own backend).
 
 ## Install
 
@@ -81,7 +81,7 @@ client.getReceiptUrl('cbe', 'fHCxExampleRcpt01');
 // https://cheki.et/api/receipt?bank=cbe&reference=fHCxExampleRcpt01
 ```
 
-Only `cbe`, `zemen` and `dashen`; anything else throws `ChekiValidationException`. CBE and Dashen links redirect to the bank's own receipt page; Zemen (and older CBE receipts) are served as the bank's PDF.
+Only `cbe`, `zemen`, `dashen` and `zamzam`; anything else throws `ChekiValidationException`. CBE, Dashen and ZamZam links redirect to the bank's own receipt page; Zemen (and older CBE receipts) are served as the bank's PDF.
 
 ### Older receipts
 

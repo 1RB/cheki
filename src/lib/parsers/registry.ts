@@ -17,6 +17,8 @@ export interface RegisteredParser {
   /** Validate and canonicalise a reference before it is put in a URL. */
   normalizeReference(ref: string): import("../security/reference").Checked<string>;
   parse(data: string | Buffer, contentType: string): import("../core/types").ParsedReceipt;
+  /** Bank-specific request headers (e.g. ZamZam's public Basic credential), for the health probe. */
+  probeHeaders?(): Record<string, string>;
   fetchReceipt(
     ref: string,
     account?: string,

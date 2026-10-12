@@ -1,6 +1,6 @@
 {
     "name": "cheki/cheki",
-    "description": "PHP SDK for cheki, a free Ethiopian receipt verification service. 8 live banks and wallets: CBE, Telebirr, BOA, M-Pesa, Dashen, Awash, Siinqee, and eBirr.",
+    "description": "PHP SDK for cheki, a free Ethiopian receipt verification service. 9 live banks and wallets: CBE, Telebirr, BOA, M-Pesa, Dashen, Awash, Siinqee, eBirr, and ZamZam.",
     "type": "library",
     "homepage": "https://cheki.et",
     "license": "MIT",

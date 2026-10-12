@@ -1,6 +1,6 @@
 # cheki PHP SDK
 
-PHP client for the [cheki](https://cheki.et) receipt verification API: verify Ethiopian bank transfer receipts from CBE, Telebirr, BOA, Dashen, M-Pesa (beta: not yet confirmed with a real receipt), Awash, Siinqee and eBirr (the live banks; `getBanks()` lists the current set). Needs PHP 8.0+ with `ext-curl` and `ext-json` (the tests run on 8.1 and 8.3).
+PHP client for the [cheki](https://cheki.et) receipt verification API: verify Ethiopian bank transfer receipts from CBE, Telebirr, BOA, Dashen, M-Pesa (beta: not yet confirmed with a real receipt), Awash, Siinqee, eBirr and ZamZam (beta: one receipt shape confirmed so far) (the live banks; `getBanks()` lists the current set). Needs PHP 8.0+ with `ext-curl` and `ext-json` (the tests run on 8.1 and 8.3).
 
 ```bash
 composer require cheki/cheki
@@ -73,7 +73,7 @@ $url = $client->getReceiptUrl('cbe', 'fHCxExampleRcpt01');
 // https://cheki.et/api/receipt?bank=cbe&reference=fHCxExampleRcpt01
 ```
 
-Only `cbe`, `zemen` and `dashen`; anything else throws `InvalidArgumentException`. CBE and Dashen links redirect to the bank's own receipt page; Zemen (and older CBE receipts) are served as the bank's PDF.
+Only `cbe`, `zemen`, `dashen` and `zamzam`; anything else throws `InvalidArgumentException`. CBE, Dashen and ZamZam links redirect to the bank's own receipt page; Zemen (and older CBE receipts) are served as the bank's PDF.
 
 ### Older receipts
 

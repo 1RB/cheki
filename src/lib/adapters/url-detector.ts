@@ -14,6 +14,7 @@
  *   - m-pesabusiness.safaricom.et/...       → M-Pesa
  *   - cbepay1.cbe.com.et/aureceipt?TID=     → CBE Birr
  *   - receipt.ebirr.com/{tenant}/{token}    → eBirr white-label (Siinqee, …)
+ *   - receipt.zamzambank.com.et/receipt/{id} → ZamZam (numeric receipt id)
  */
 export interface DetectedReceipt {
   bank: string;
@@ -193,6 +194,18 @@ export function detectBankFromUrl(input: string): DetectedReceipt | null {
         const bank = EBIRR_TENANTS[tenant];
         // Keep tenant/token: the eBirr parsers rebuild the URL from it.
         return { bank, reference: `${tenant}/${parts[1]}` };
+      }
+    }
+
+    // ZamZam: https://receipt.zamzambank.com.et/receipt/{id}
+    // Exactly that host (no subdomains, no other ZamZam host). Only the id is
+    // taken; the parser validates it (digits only) and fetches the JSON from
+    // its own fixed host, so the pasted link is never fetched. A trailing
+    // slash, a query or a fragment is ignored.
+    if (host === "receipt.zamzambank.com.et") {
+      const parts = url.pathname.split("/").filter(Boolean);
+      if (parts.length === 2 && parts[0].toLowerCase() === "receipt" && parts[1]) {
+        return { bank: "zamzam", reference: parts[1] };
       }
     }
 

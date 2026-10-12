@@ -48,7 +48,7 @@ class ChekiClient {
   /// Banks `/api/receipt` serves => account digits their legacy format needs
   /// (0 = none). For CBE only an older FT reference needs the account; the
   /// current format (a Receipt ID from the mbreciept.cbe.com.et link) does not.
-  static const Map<String, int> receiptDownloadBanks = {'cbe': 8, 'zemen': 0, 'dashen': 0};
+  static const Map<String, int> receiptDownloadBanks = {'cbe': 8, 'zemen': 0, 'dashen': 0, 'zamzam': 0};
 
   static final RegExp _legacyCbeReference = RegExp(r'^FT[A-Za-z0-9]{8,12}$', caseSensitive: false);
 
@@ -157,9 +157,9 @@ class ChekiClient {
   }
 
   /// URL of `GET /api/receipt`, which opens the bank's own copy of a receipt.
-  /// Supported: CBE, Dashen and Zemen. Lead with the current format: a CBE
-  /// Receipt ID or a Dashen FT Ref, which the server answers with a redirect
-  /// to the bank's own receipt page. An older CBE FT reference (legacy) also
+  /// Supported: CBE, Dashen, Zemen and ZamZam. Lead with the current format: a
+  /// CBE Receipt ID, a Dashen FT Ref or a ZamZam receipt id, which the server
+  /// answers with a redirect to the bank's own receipt page. An older CBE FT reference (legacy) also
   /// needs the receiving account (at least its last 8 digits) and comes back
   /// as the bank's PDF. No request is made.
   ///
@@ -169,7 +169,7 @@ class ChekiClient {
     final id = bank.trim().toLowerCase();
     final digits = receiptDownloadBanks[id];
     if (digits == null) {
-      throw const ChekiValidationException('Receipt download is only supported for: cbe, zemen, dashen.');
+      throw const ChekiValidationException('Receipt download is only supported for: cbe, zemen, dashen, zamzam.');
     }
     final ref = reference.trim();
     if (!_safeReference.hasMatch(ref) || ref.contains('..')) {

@@ -40,7 +40,7 @@ export interface Detection {
   accountDigits?: number;
   /** The bank's receipt host only answers Ethiopian networks: check from the browser first. */
   browserFirst: boolean;
-  /** Manifest `beta` flag (M-Pesa until a real receipt confirms the parser). */
+  /** Manifest `beta` flag (M-Pesa until a real receipt confirms the parser; ZamZam until more receipt shapes are seen). */
   beta: boolean;
   betaNote?: string;
 }

@@ -11,7 +11,7 @@
     "serverMaxDurationSeconds": 60,
     "sdkTimeoutSeconds": 65,
     "sdkMaxRetries": 1,
-    "receiptDownloadBanks": ["cbe", "zemen", "dashen"]
+    "receiptDownloadBanks": ["cbe", "zemen", "dashen", "zamzam"]
   },
   "receiptUrlCases": [
     { "name": "cbe_receipt_id", "format": "current", "served": "redirect", "bank": "cbe", "reference": "fHCxExampleRcpt01", "query": { "bank": "cbe", "reference": "fHCxExampleRcpt01" } },
@@ -21,6 +21,7 @@
     { "name": "cbe_legacy_ft_without_account", "format": "legacy", "bank": "cbe", "reference": "FT26140P01YB", "error": true },
     { "name": "cbe_legacy_ft_short_account", "format": "legacy", "bank": "cbe", "reference": "FT26140P01YB", "account": "1234", "error": true },
     { "name": "dashen_ft_ref", "format": "current", "served": "redirect", "bank": "dashen", "reference": "B22WDTI2619100WH", "query": { "bank": "dashen", "reference": "B22WDTI2619100WH" } },
+    { "name": "zamzam_receipt_id", "format": "current", "served": "redirect", "bank": "ZamZam", "reference": "12345678", "query": { "bank": "zamzam", "reference": "12345678" } },
     { "name": "zemen_token", "format": "current", "served": "pdf", "bank": "Zemen", "reference": "ZB123", "query": { "bank": "zemen", "reference": "ZB123" } },
     { "name": "unsupported_bank", "bank": "telebirr", "reference": "X1", "error": true },
     { "name": "prototype_name", "bank": "constructor", "reference": "X1", "error": true },

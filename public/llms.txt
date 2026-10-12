@@ -16,6 +16,7 @@ cheki verifies Ethiopian bank and mobile money receipts by fetching public bank 
 - CBE Birr (in development) - receipt number + payer phone at cbepay1.cbe.com.et
 - Siinqee Bank - eBirr receipt link (receipt.ebirr.com/siinqee/...)
 - eBirr - receipt.ebirr.com, also serves Nib, Wegagen, Ahadu and KAAFI
+- ZamZam Bank (beta) - receipt link (receipt.zamzambank.com.et/receipt/{id}) or its numeric id → JSON from receipt-backend.zamzambank.com.et; cheki confirms the record exists and shows the amount, date and account holder (account number masked)
 
 ## API
 
@@ -47,7 +48,7 @@ GET https://cheki.et/api/health - per-bank reachability, cached up to 5 minutes
 - No signup, no API key, no authentication required
 - Source code: https://github.com/1RB/cheki
 - Python library: https://github.com/1RB/cheki/tree/main/python
-- The bank receipt endpoints are public and require no authentication
+- The bank receipt endpoints are public and require no user login (ZamZam's expects a fixed credential that ZamZam ships in its own public receipt web app; cheki sends it)
 - check.et charges 499 ETB/month or 4,990 ETB/year for the same data, after 200 free verifications (one-time, not monthly); price as listed on 12 October 2026
 - verify.et has a free tier of 200 verifications a month, then API plans from 500 to 3,000 ETB/month for the same data; price as listed on 12 October 2026
 - verify.et blocked AI crawlers (GPTBot, ClaudeBot, CCBot) in robots.txt (as of June 2026)

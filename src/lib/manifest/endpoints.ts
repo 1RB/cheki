@@ -30,6 +30,8 @@ export interface ProbeExpectation {
   contentType?: string;
   /** Every string must appear in the body. */
   bodyIncludes?: string[];
+  /** The whole body (trimmed) must be exactly this, e.g. ZamZam's "null" for an unknown id. */
+  bodyIs?: string;
 }
 
 export interface ProbeSpec {
@@ -40,6 +42,11 @@ export interface ProbeSpec {
   phone?: string;
   /** Use the manifest headers for this bank (e.g. CBE QR receipts). */
   useManifestHeaders?: boolean;
+  /**
+   * Send the parser's own request headers (ZamZam: its public Basic
+   * credential, which is kept in the parser, not in banks.json).
+   */
+  useParserHeaders?: boolean;
   expect: ProbeExpectation;
   /** Where and when the shape was observed. */
   observed: string;
@@ -516,7 +523,44 @@ export const endpointDocs: EndpointDoc[] = [
   unknownBank("lion"),
   unknownBank("oromia"),
   unknownBank("hibret"),
-  unknownBank("zamzam"),
+  {
+    id: "zamzam",
+    label: "ZamZam",
+    inputNeeded: "Receipt link (receipt.zamzambank.com.et/receipt/{id}) or the numeric receipt id",
+    preferLink: true,
+    placeholders: [
+      {
+        name: "{RECEIPT_ID}",
+        what: "The numeric id of the ZamZam receipt, the last part of the receipt link.",
+        whereToFind: "The receipt link shared from the ZamZam app: https://receipt.zamzambank.com.et/receipt/{id}.",
+        format: "Digits only (8 digits on the receipts seen so far). cheki accepts up to 12.",
+        traps: "Not the transaction reference printed on the receipt (letters and digits). Only the number from the link works.",
+      },
+    ],
+    redactedExample: "https://receipt.zamzambank.com.et/receipt/XXXXXXXX",
+    fieldsParsed: ["senderName", "senderAccount", "receiverName", "receiverAccount", "amount", "currency", "date", "reference", "transactionType"],
+    unknownRef: "HTTP 200 application/json with the body null.",
+    gotchas: [
+      "The receipt page is a React app; the data comes from receipt-backend.zamzambank.com.et/api/v1/invoice/{id}, which answers HTTP 401 without an HTTP Basic credential. That credential is hardcoded in ZamZam's public receipt web app, so cheki sends it (kept in the parser, never in a response).",
+      "An unknown id still returns HTTP 200, with the body null.",
+      "The record names the ZamZam account holder (name, acc_NUM) and a debit/credit flag (drcr) from that account's side. cheki infers the holder is the sender on D and the receiver on C; other_NAME, when filled, is the other side. ZamZam does not document this.",
+      "acc_NUM is the full account number. cheki masks it (first digit and last 4) before it reaches any output or the cache.",
+      "dt carries a date only (time 00:00:00); other_NAME and parameter can be the literal string \"NULL\". vat is not mapped (it may be VAT on a fee, not on the amount).",
+      "Ids are sequential. cheki checks one id or link at a time, never a range, under the usual per-IP rate limits.",
+    ],
+    changelog: [
+      { date: "2026-10-12", note: "Live (beta): receipts are read from ZamZam's JSON endpoint. Confirmed with one real receipt." },
+    ],
+    parserSource: "src/lib/parsers/zamzam.ts",
+    fixture: "tests/parsers/zamzam.test.ts",
+    probe: {
+      ref: "999999999999",
+      useParserHeaders: true,
+      // Exactly "null": a real record also contains null values, so a substring check would not tell them apart.
+      expect: { status: 200, contentType: "json", bodyIs: "null" },
+      observed: "cheki, 2026-10-12",
+    },
+  },
   unknownBank("hijra"),
   unknownBank("shabelle"),
   unknownBank("goh"),

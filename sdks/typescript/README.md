@@ -2,7 +2,7 @@
 
 > TypeScript SDK for the [cheki](https://cheki.et) receipt verification API.
 
-Verify Ethiopian bank transfer receipts from CBE, Telebirr, BOA, Dashen, M-Pesa (beta: not yet confirmed with a real receipt), Awash, Siinqee and eBirr (the live banks; `getBanks()` lists the current set). Zero runtime dependencies (uses the global `fetch`, Node.js ≥ 18).
+Verify Ethiopian bank transfer receipts from CBE, Telebirr, BOA, Dashen, M-Pesa (beta: not yet confirmed with a real receipt), Awash, Siinqee, eBirr and ZamZam (beta: one receipt shape confirmed so far) (the live banks; `getBanks()` lists the current set). Zero runtime dependencies (uses the global `fetch`, Node.js ≥ 18).
 
 > **Server-side only.** The hosted API does not send CORS headers on `/api/verify`, `/api/verify/batch`, `/api/banks` or `/api/health`, so browsers block these calls. Call cheki from your backend.
 
@@ -87,7 +87,7 @@ cheki.getReceiptUrl("dashen", "B22WDTI2619100WH");
 // https://cheki.et/api/receipt?bank=dashen&reference=B22WDTI2619100WH (redirects to Dashen's own receipt page)
 ```
 
-Only `cbe`, `zemen` and `dashen` are supported; anything else throws `ChekiValidationError`. CBE and Dashen links redirect to the bank's own page; Zemen (and older CBE receipts) are served as the bank's PDF.
+Only `cbe`, `zemen`, `dashen` and `zamzam` are supported; anything else throws `ChekiValidationError`. CBE, Dashen and ZamZam links redirect to the bank's own page; Zemen (and older CBE receipts) are served as the bank's PDF.
 
 ### Older receipts
 

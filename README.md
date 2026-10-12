@@ -13,7 +13,7 @@
 [![Stars](https://img.shields.io/github/stars/1RB/cheki?style=flat&label=Stars&logo=github)](https://github.com/1RB/cheki/stargazers)
 [![Issues](https://img.shields.io/github/issues/1RB/cheki?style=flat&label=Issues&logo=github)](https://github.com/1RB/cheki/issues)
 [![Tests](https://img.shields.io/badge/tests-122%20vitest-2ddb6a?style=flat&logo=vitest&logoColor=fff)](https://github.com/1RB/cheki/blob/main/src/lib/parsers/__tests__)
-[![Banks](https://img.shields.io/badge/banks-8%20live%20%E2%80%A2%2023%20researching-2ddb6a?style=flat)](https://cheki.et/banks)
+[![Banks](https://img.shields.io/badge/banks-9%20live%20%E2%80%A2%2022%20researching-2ddb6a?style=flat)](https://cheki.et/banks)
 [![Website](https://img.shields.io/website?style=flat&label=cheki.et&url=https%3A%2F%2Fcheki.et&logo=vercel&logoColor=fff)](https://cheki.et)
 
 cheki verifies Ethiopian bank and mobile money receipts by fetching public bank endpoints. The data is free. The code is MIT licensed. No one should charge you for accessing public bank data.
@@ -24,7 +24,7 @@ check.et charges 499 ETB/month or 4,990 ETB/year after 200 one-time free verific
 
 ## Supported banks
 
-**8 live banks** · 23 in research
+**9 live banks** · 22 in research
 
 | Bank | Code | Type | Status | Current input | Geo-blocked |
 |------|------|------|--------|---------------|-------------|
@@ -36,12 +36,13 @@ check.et charges 499 ETB/month or 4,990 ETB/year after 200 one-time free verific
 | Awash Bank | `awash` | Bank | ✅ Live | Share link from the SMS | No |
 | Siinqee Bank | `siinqee` | Bank | ✅ Live | eBirr receipt link | No |
 | eBirr | `ebirr` | Mobile money | ✅ Live | Receipt link (tenant/token) | No |
+| ZamZam Bank | `zamzam` | Bank | ✅ Live (beta) | Receipt link (receipt.zamzambank.com.et/receipt/…) or its numeric id | No |
 
 Every bank lists its receipt formats in `src/lib/manifest/banks.json`, current first. Older formats keep working (an older CBE receipt with only an FT reference still verifies with the last 8 digits of the receiving account; old Dashen Super App links are read for their FT Ref), but the UI, docs and SDKs lead with the current one. `GET /api/banks` returns each bank's `formats`, and [/endpoints](https://cheki.et/endpoints) shows them with a dated changelog.
 
-### In research (23)
+### In research (22)
 
-Zemen Bank and CBE Birr (parsers exist, waiting on a confirmed real receipt), Nib, Wegagen, Ahadu, KAAFI, Abay, Addis International, Amhara, Berhan, Bunna, Enat, Global Bank Ethiopia, Lion International, Oromia International, Hibret, ZamZam, Hijra, Shabelle, Goh Betoch, Tsedey, Gadaa, Rammis.
+Zemen Bank and CBE Birr (parsers exist, waiting on a confirmed real receipt), Nib, Wegagen, Ahadu, KAAFI, Abay, Addis International, Amhara, Berhan, Bunna, Enat, Global Bank Ethiopia, Lion International, Oromia International, Hibret, Hijra, Shabelle, Goh Betoch, Tsedey, Gadaa, Rammis.
 
 Want to help? See [contributing a new bank](#adding-a-bank) below or [open an issue](https://github.com/1RB/cheki/issues).
 
@@ -57,7 +58,7 @@ What every SDK does the same way:
 - **Batch: at most 20 receipts**, checked before sending. The response has `results`, `total`, `verified`, `failed` and `cached`; `failed` includes decoded-only QR results.
 - **Typed errors** for 429 (with the `Retry-After` seconds) and 413, and the server's `error` text and `fallbackUrl` (geo-blocked banks) on every API error.
 - **Timeouts and retries:** each attempt waits up to 65 s (the server may take up to 60 s). A 4xx (other than 429) or a timeout is never retried. A network error, 5xx or 429 is retried at most once, after `Retry-After` when the server sends one (up to 60 s). The server itself makes at most 2 attempts per bank fetch, so one SDK call reaches a bank at most **4** times (a batch: 4 per receipt).
-- **`getReceiptUrl`** builds `/api/receipt` links for CBE, Dashen and Zemen only, and rejects anything else. A CBE Receipt ID needs no account; an older CBE FT reference (legacy) needs the receiving account. `/api/receipt` redirects to the bank's own page for HTML receipts (CBE Receipt ID, Dashen) and returns the PDF for PDF ones.
+- **`getReceiptUrl`** builds `/api/receipt` links for CBE, Dashen, Zemen and ZamZam only, and rejects anything else. A CBE Receipt ID needs no account; an older CBE FT reference (legacy) needs the receiving account. `/api/receipt` redirects to the bank's own page for HTML receipts (CBE Receipt ID, Dashen) and returns the PDF for PDF ones.
 
 | Language | Install | Package | Registry |
 |----------|---------|---------|----------|
@@ -191,7 +192,7 @@ Self-hosting on an Ethiopian IP bypasses Telebirr/M-Pesa geo-blocks.
 - **REST API**: free, no API key, per-IP rate limits (verify 30/min, batch 5/min, parse and ocr 20/min each, per instance; 429 with Retry-After), batch verification up to 20 receipts
 - **CLI**: verify receipts from the terminal (`npm run cli -- verify ...` in a clone, or `cheki-verify` from `pip install cheki`)
 - **5 SDKs**: TypeScript, Python, Go, Dart, PHP with typed errors and retry
-- **8 live banks**: CBE, Telebirr, BOA, M-Pesa, Dashen, Awash, Siinqee, eBirr (Zemen and CBE Birr are in development)
+- **9 live banks**: CBE, Telebirr, BOA, M-Pesa, Dashen, Awash, Siinqee, eBirr, ZamZam (M-Pesa and ZamZam in beta; Zemen and CBE Birr are in development)
 - **Docker**: self-hosting with docker-compose
 - **SEO**: bank-specific pages, task-grouped guides, sitemap with per-guide lastmod, structured data (Article, ItemList, FAQ, Breadcrumb)
 - **AI-friendly**: `llms.txt`, allows all AI crawlers in `robots.txt`
@@ -211,6 +212,7 @@ Each Ethiopian bank publishes transaction receipts at public URLs:
 8. **CBE Birr** (in development): reference + payer phone → PDF (inferred; a miss returns an HTML shell)
 9. **Siinqee**: eBirr receipt URL → HTML (links.et reports a newer Siinqee host, receipts.siinqeebank.com:871, not supported yet)
 10. **eBirr**: receipt URL → HTML (covers Nib, Wegagen, Ahadu, KAAFI)
+11. **ZamZam** (beta): receipt id from `https://receipt.zamzambank.com.et/receipt/{RECEIPT_ID}`, read through `https://receipt-backend.zamzambank.com.et/api/v1/invoice/{RECEIPT_ID}` → JSON (`null` for an unknown id). That service expects an HTTP Basic credential hardcoded in ZamZam's own public receipt web app, the same precedent as BOA's public QR key; cheki sends it from the parser and never returns it. The record carries the full account number, which cheki masks (first digit and last 4) before any output or cache. Payer/receiver sides are inferred from its debit/credit flag.
 
 cheki fetches these URLs, parses the response (PDF/HTML/JSON), and returns structured JSON.
 

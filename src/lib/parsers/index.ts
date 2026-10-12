@@ -16,6 +16,7 @@ import { ZemenParser } from "./zemen";
 import { CBEBirrParser } from "./cbebirr";
 import { SiinqeeParser } from "./siinqee";
 import { AwashParser } from "./awash";
+import { ZamZamParser } from "./zamzam";
 
 // Register all parsers
 registerParser(new CBEParser());
@@ -29,6 +30,7 @@ registerParser(new ZemenParser());
 registerParser(new CBEBirrParser());
 registerParser(new SiinqeeParser());
 registerParser(new AwashParser());
+registerParser(new ZamZamParser());
 
 // Re-export for convenience
 export { CBEParser, CBENewParser } from "./cbe";
@@ -41,6 +43,7 @@ export { ZemenParser } from "./zemen";
 export { CBEBirrParser } from "./cbebirr";
 export { SiinqeeParser } from "./siinqee";
 export { AwashParser } from "./awash";
+export { ZamZamParser } from "./zamzam";
 export { BaseParser } from "./base";
 export {
   registerParser,

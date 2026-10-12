@@ -56,6 +56,18 @@ function olderFormatNotes(b: Bank): string[] {
     .map((f) => `Older receipt: ${f.label} (legacy format, still accepted)`);
 }
 
+/**
+ * What a confirmed check shows, for copy. Most banks return both parties;
+ * ZamZam's record names only its own account holder (the other side only
+ * sometimes), so its copy must not promise a sender and a receiver.
+ */
+const SHOWN_OVERRIDE: Record<string, string> = {
+  zamzam: "the amount, the date and the ZamZam account holder (account number masked)",
+};
+function whatItShows(b: Bank): string {
+  return SHOWN_OVERRIDE[b.code] ?? "the sender name, receiver name, amount, and date";
+}
+
 function accountRequirement(b: Bank): string {
   if (b.requiresAccount) {
     return `the transaction reference number plus the last ${b.accountDigits} digits of the account on the receipt`;
@@ -161,7 +173,7 @@ const checkPaymentPages: SeoPage[] = banks.map((b): SeoPage => ({
   faq: [
     {
       q: `How do I check if a ${b.shortName} payment was successful?`,
-      a: `Select ${b.name} on cheki, enter the ${refNoun(b)}${b.requiresAccount ? ` and the last ${b.accountDigits} digits of the account on the receipt` : ``}, and click Verify. If the payment exists, cheki shows you the sender name, receiver name, amount, and date. If it doesn't exist, the payment was not completed or the receipt is fake.`,
+      a: `Select ${b.name} on cheki, enter the ${refNoun(b)}${b.requiresAccount ? ` and the last ${b.accountDigits} digits of the account on the receipt` : ``}, and click Verify. If the payment exists, cheki shows you ${whatItShows(b)}. If it doesn't exist, the payment was not completed or the receipt is fake.`,
     },
     {
       q: `Can I check a ${b.shortName} payment without the receipt?`,
@@ -177,7 +189,7 @@ const checkPaymentPages: SeoPage[] = banks.map((b): SeoPage => ({
   sections: [
     {
       heading: `Checking ${b.shortName} payment status`,
-      body: `${b.name} publishes transaction data at ${b.endpointFormat}. When someone sends you a payment via ${b.shortName}, a receipt is generated at this URL. cheki fetches the receipt, parses it, and tells you whether the payment is real, who sent it, and for how much. This takes 2 to 10 seconds.`,
+      body: `${b.name} publishes transaction data at ${b.endpointFormat}. When someone sends you a payment via ${b.shortName}, a receipt is generated at this URL. cheki fetches the receipt, parses it, and tells you whether ${b.shortName} has the record and what it shows: ${whatItShows(b)}. This takes 2 to 10 seconds.`,
     },
     {
       heading: `What information you need`,
@@ -670,7 +682,7 @@ const developerPages: SeoPage[] = [
           "verifyBatch(receipts): verify up to 20 receipts in one request (checked before sending); returns results, total, verified, failed and cached",
           "getBanks(): all supported banks and wallets; each bank's id is the value to pass as bank",
           "getHealth(): per-bank reachability (cached by the server for up to 5 minutes)",
-          "getReceiptUrl(bank, reference, accountNumber?): builds the /api/receipt link for CBE, Dashen and Zemen (no request is made). A CBE Receipt ID needs no account; an older CBE FT reference does",
+          "getReceiptUrl(bank, reference, accountNumber?): builds the /api/receipt link for CBE, Dashen, Zemen and ZamZam (no request is made). A CBE Receipt ID needs no account; an older CBE FT reference does",
         ],
       },
     ],

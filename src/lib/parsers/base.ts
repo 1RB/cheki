@@ -90,6 +90,15 @@ export abstract class BaseParser {
     return {};
   }
 
+  /**
+   * The bank-specific headers every fetch sends (requestHeaders), for the
+   * daily health probe so it asks the endpoint the same way the parser does.
+   * Server-side only: never put these in a response.
+   */
+  probeHeaders(): Record<string, string> {
+    return { ...this.requestHeaders() };
+  }
+
   protected get timeoutMs(): number {
     return this.bankId === "cbe" ? SLOW_BANK_TIMEOUT_MS : DEFAULT_TIMEOUT_MS;
   }

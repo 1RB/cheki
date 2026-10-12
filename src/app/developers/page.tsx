@@ -57,7 +57,7 @@ export default function DevelopersPage() {
     { method: "POST", path: "/api/verify/batch", desc: "Verify up to 20 receipts at once. Send an array of receipt objects." },
     { method: "GET", path: "/api/banks", desc: "List all supported banks and their verification status." },
     { method: "GET", path: "/api/health", desc: "Check API health and per-bank endpoint latency." },
-    { method: "GET", path: "/api/receipt", desc: "Download the bank's receipt file. CBE (with account), Zemen and Dashen only." },
+    { method: "GET", path: "/api/receipt", desc: "Open the bank's own receipt: CBE, Dashen, Zemen and ZamZam only (an older CBE FT reference also needs the account)." },
   ];
 
   const breadcrumbJsonLd = {

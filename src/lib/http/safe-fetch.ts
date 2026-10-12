@@ -61,10 +61,11 @@ export async function readCapped(resp: Response, maxBytes: number): Promise<Buff
 export async function safeFetch(url: string, opts: SafeFetchOptions): Promise<SafeResponse> {
   const signal = AbortSignal.timeout(opts.timeoutMs);
   let current = url;
+  let headers = opts.headers;
   for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
     assertAllowedUrl(current);
     const resp = await fetch(current, {
-      headers: opts.headers,
+      headers,
       redirect: "manual",
       signal,
     });
@@ -74,7 +75,11 @@ export async function safeFetch(url: string, opts: SafeFetchOptions): Promise<Sa
       if (!location) {
         return { status: resp.status, contentType: "", body: Buffer.alloc(0), url: current };
       }
-      current = new URL(location, current).href;
+      const next = new URL(location, current);
+      // Like a browser: credentials never follow a redirect to another
+      // origin, even an allowlisted one (ZamZam's Basic header, for one).
+      if (headers && next.origin !== new URL(current).origin) headers = withoutCredentials(headers);
+      current = next.href;
       continue;
     }
     const body = await readCapped(resp, opts.maxBytes);
@@ -86,6 +91,15 @@ export async function safeFetch(url: string, opts: SafeFetchOptions): Promise<Sa
     };
   }
   throw new Error("Too many redirects.");
+}
+
+/** A copy of `headers` without Authorization, Cookie or Proxy-Authorization (any case). */
+export function withoutCredentials(headers: Record<string, string>): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const [k, v] of Object.entries(headers)) {
+    if (!/^(authorization|proxy-authorization|cookie)$/i.test(k)) out[k] = v;
+  }
+  return out;
 }
 
 /** Fixed, non-leaky description of a fetch failure. */

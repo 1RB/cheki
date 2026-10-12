@@ -134,7 +134,7 @@ describe("SDK contract fixtures match the route handlers", () => {
       const r = await receiptGET(new NextRequest(`https://cheki.et/api/receipt?${q}`, { headers: freshIp() }));
       if (c.error) {
         // SDK-side rejections the server must also refuse (no bank request).
-        if (c.query === undefined && ["cbe", "zemen", "dashen"].includes(c.bank.toLowerCase()) && !/[/.]/.test(c.reference)) {
+        if (c.query === undefined && ["cbe", "zemen", "dashen", "zamzam"].includes(c.bank.toLowerCase()) && !/[/.]/.test(c.reference)) {
           expect(r.status, c.name).toBe(400);
         } else {
           expect(r.status, c.name).toBeGreaterThanOrEqual(400);
@@ -143,7 +143,7 @@ describe("SDK contract fixtures match the route handlers", () => {
       }
       if (c.served === "redirect") {
         expect(r.status, c.name).toBe(302);
-        expect(r.headers.get("location"), c.name).toMatch(/^https:\/\/(mbreciept\.cbe\.com\.et|receipts\.dashenbanksc\.com)\//);
+        expect(r.headers.get("location"), c.name).toMatch(/^https:\/\/(mbreciept\.cbe\.com\.et|receipts\.dashenbanksc\.com|receipt\.zamzambank\.com\.et)\//);
       } else {
         expect(r.status, c.name).toBe(200);
         expect(r.headers.get("content-type"), c.name).toBe("application/pdf");

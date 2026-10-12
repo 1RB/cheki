@@ -89,6 +89,7 @@ export function matchExpectation(r: ObservedResponse, e: ProbeExpectation): stri
   for (const s of e.bodyIncludes ?? []) {
     if (!r.body.includes(s)) problems.push(`body is missing "${s}"`);
   }
+  if (e.bodyIs !== undefined && r.body.trim() !== e.bodyIs) problems.push(`body is not exactly "${e.bodyIs}"`);
   if (e.status === undefined && r.status >= 500) problems.push(`server error HTTP ${r.status}`);
   return problems;
 }
@@ -138,7 +139,11 @@ export function buildProbeTargets(opts: { checkGeoRestricted: boolean }): ProbeT
         ...base,
         probe: doc.probe,
         url: parser.buildUrl(doc.probe.ref, doc.probe.account, doc.probe.phone),
-        headers: doc.probe.useManifestHeaders ? headersFor(bank, parser.bankId) : undefined,
+        headers: doc.probe.useParserHeaders
+          ? parser.probeHeaders?.()
+          : doc.probe.useManifestHeaders
+            ? headersFor(bank, parser.bankId)
+            : undefined,
       },
       ...legacy,
     ];

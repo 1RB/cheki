@@ -66,7 +66,7 @@ const (
 // of trailing account digits their legacy format needs (0 when none). For CBE
 // only an older FT reference (legacyCBEReference) needs the account; the
 // current format, a Receipt ID from a mbreciept.cbe.com.et link, needs none.
-var ReceiptDownloadBanks = map[string]int{"cbe": 8, "zemen": 0, "dashen": 0}
+var ReceiptDownloadBanks = map[string]int{"cbe": 8, "zemen": 0, "dashen": 0, "zamzam": 0}
 
 // legacyCBEReference matches an older CBE FT reference (legacy format).
 var legacyCBEReference = regexp.MustCompile(`(?i)^FT[A-Za-z0-9]{8,12}$`)
@@ -233,16 +233,16 @@ func (c *Client) GetHealth(ctx context.Context) (*HealthStatus, error) {
 }
 
 // GetReceiptURL returns the URL of GET /api/receipt, which opens the bank's
-// own copy of a receipt. Supported: CBE, Dashen and Zemen. Lead with the
-// current format: a CBE Receipt ID or a Dashen FT Ref, which the server
-// answers with a redirect to the bank's own receipt page. An older CBE FT
+// own copy of a receipt. Supported: CBE, Dashen, Zemen and ZamZam. Lead with
+// the current format: a CBE Receipt ID, a Dashen FT Ref or a ZamZam receipt
+// id, which the server answers with a redirect to the bank's own receipt page. An older CBE FT
 // reference (legacy) also needs the receiving account (at least its last 8
 // digits) and comes back as the bank's PDF. No request is made.
 func (c *Client) GetReceiptURL(bank, reference, accountNumber string) (string, error) {
 	id := strings.ToLower(strings.TrimSpace(bank))
 	digits, ok := ReceiptDownloadBanks[id]
 	if !ok {
-		return "", fmt.Errorf("%w: receipt download is only supported for cbe, zemen and dashen", ErrInvalidInput)
+		return "", fmt.Errorf("%w: receipt download is only supported for cbe, zemen, dashen and zamzam", ErrInvalidInput)
 	}
 	ref := strings.TrimSpace(reference)
 	if !safeReference.MatchString(ref) || strings.Contains(ref, "..") {
