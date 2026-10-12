@@ -13,8 +13,9 @@ export class RateLimiter {
   private hits = new Map<string, number[]>();
 
   constructor(
-    private readonly limit: number,
-    private readonly windowMs: number,
+    /** Requests allowed per window (read by the guides' rate-limit copy). */
+    readonly limit: number,
+    readonly windowMs: number,
     private readonly maxKeys = 5000,
   ) {}
 
