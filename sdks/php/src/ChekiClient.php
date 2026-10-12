@@ -26,7 +26,7 @@ class ChekiClient
 
     /** Banks /api/receipt can download => account digits needed (0 = none). */
     /** Banks GET /api/receipt serves, with the account digits their legacy format needs (0 when none). */
-    public const RECEIPT_DOWNLOAD_BANKS = ['cbe' => 8, 'zemen' => 0, 'dashen' => 0];
+    public const RECEIPT_DOWNLOAD_BANKS = ['cbe' => 8, 'zemen' => 0, 'dashen' => 0, 'zamzam' => 0];
     /** An older CBE FT reference (legacy format, needs the account). A Receipt ID does not. */
     public const LEGACY_CBE_REFERENCE = '/^FT[A-Za-z0-9]{8,12}$/i';
 
@@ -165,9 +165,10 @@ class ChekiClient
 
     /**
      * URL of GET /api/receipt, which opens the bank's own copy of a receipt.
-     * Supported: CBE, Dashen and Zemen. Lead with the current format: a CBE
-     * Receipt ID (from the mbreciept.cbe.com.et link) or a Dashen FT Ref,
-     * which the server answers with a redirect to the bank's own page. An
+     * Supported: CBE, Dashen, Zemen and ZamZam. Lead with the current format:
+     * a CBE Receipt ID (from the mbreciept.cbe.com.et link), a Dashen FT Ref
+     * or a ZamZam receipt id, which the server answers with a redirect to the
+     * bank's own page. An
      * older CBE FT reference (legacy) also needs the receiving account (at
      * least its last 8 digits) and comes back as the bank's PDF. No request
      * is made.
@@ -178,7 +179,7 @@ class ChekiClient
     {
         $id = strtolower(trim($bank));
         if (!array_key_exists($id, self::RECEIPT_DOWNLOAD_BANKS)) {
-            throw new \InvalidArgumentException('Receipt download is only supported for: cbe, zemen, dashen.');
+            throw new \InvalidArgumentException('Receipt download is only supported for: cbe, zemen, dashen, zamzam.');
         }
         $ref = trim($reference);
         if (!preg_match('/^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$/', $ref) || str_contains($ref, '..')) {

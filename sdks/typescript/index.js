@@ -62,6 +62,7 @@ exports.RECEIPT_DOWNLOAD_BANKS = Object.freeze({
     cbe: { accountDigits: 8, legacyReference: /^FT[A-Za-z0-9]{8,12}$/i },
     zemen: {},
     dashen: {},
+    zamzam: {},
 });
 const SAFE_REFERENCE_RE = /^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$/;
 /** True only when the bank confirmed the receipt. `success`, `decodedOnly` and `parsed` are not proof. */
@@ -246,9 +247,10 @@ class Cheki {
     }
     /**
      * URL of `GET /api/receipt`, which opens the bank's own copy of a receipt.
-     * Supported: CBE, Dashen and Zemen. Lead with the current format: a CBE
-     * Receipt ID (from the mbreciept.cbe.com.et link) or a Dashen FT Ref, which
-     * the server answers with a redirect to the bank's own receipt page. An
+     * Supported: CBE, Dashen, Zemen and ZamZam. Lead with the current format: a
+     * CBE Receipt ID (from the mbreciept.cbe.com.et link), a Dashen FT Ref or a
+     * ZamZam receipt id (the number at the end of its receipt link), which the
+     * server answers with a redirect to the bank's own receipt page. An
      * older CBE FT reference (legacy) also needs the receiving account (at least
      * its last 8 digits) and comes back as the bank's PDF. Pure helper, no
      * request is made.

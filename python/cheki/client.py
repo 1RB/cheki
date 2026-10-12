@@ -92,7 +92,7 @@ _RETRY_BASE_DELAY = 1.0
 #: Banks ``/api/receipt`` serves -> account digits their legacy format needs
 #: (0 = none). For CBE only an older FT reference needs the account; the
 #: current format, a Receipt ID from a mbreciept.cbe.com.et link, needs none.
-RECEIPT_DOWNLOAD_BANKS: dict[str, int] = {"cbe": 8, "zemen": 0, "dashen": 0}
+RECEIPT_DOWNLOAD_BANKS: dict[str, int] = {"cbe": 8, "zemen": 0, "dashen": 0, "zamzam": 0}
 
 #: An older CBE FT reference (legacy format, needs the account).
 _LEGACY_CBE_REFERENCE = re.compile(r"FT[A-Za-z0-9]{8,12}", re.IGNORECASE)
@@ -268,10 +268,10 @@ class ChekiClient:
     ) -> str:
         """URL of ``GET /api/receipt``, which opens the bank's own copy of a receipt.
 
-        Supported: CBE, Dashen and Zemen. Lead with the current format: a CBE
-        Receipt ID (from the mbreciept.cbe.com.et link) or a Dashen FT Ref,
-        which the server answers with a redirect to the bank's own receipt
-        page. An older CBE FT reference (legacy) also needs the receiving
+        Supported: CBE, Dashen, Zemen and ZamZam. Lead with the current
+        format: a CBE Receipt ID (from the mbreciept.cbe.com.et link), a Dashen
+        FT Ref or a ZamZam receipt id, which the server answers with a redirect
+        to the bank's own receipt page. An older CBE FT reference (legacy) also needs the receiving
         account (at least its last 8 digits) and comes back as the bank's
         PDF. No request is made.
 
@@ -281,7 +281,7 @@ class ChekiClient:
         """
         bank_id = bank.strip().lower()
         if bank_id not in RECEIPT_DOWNLOAD_BANKS:
-            raise ValueError("Receipt download is only supported for: cbe, zemen, dashen.")
+            raise ValueError("Receipt download is only supported for: cbe, zemen, dashen, zamzam.")
         ref = reference.strip()
         if not _SAFE_REFERENCE.fullmatch(ref) or ".." in ref:
             raise ValueError("reference must be 1-64 letters, digits, dots, dashes or underscores.")
