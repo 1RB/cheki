@@ -6,15 +6,17 @@
  *   - copy helpers: "a"/"an", and M-Pesa never breaks at its hyphen
  *   - OG_VARIANT defaults to the shipped design, and every Ethiopic character
  *     an exploration card uses is in the subset font (no tofu)
+ *   - every round-2 hero image exists, is a 1200x630 JPEG and stays small
  */
 import { describe, it, expect } from "vitest";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { demoReference, nobreak, withArticle } from "@/lib/og/card";
 import { BANK_LOGOS, bankLogoSpec } from "@/lib/bank-logos";
 import { banks } from "@/lib/banks";
 import { OG_VARIANTS, resolveOgVariant } from "@/lib/og/variant";
 import { OG_AMHARIC } from "@/lib/og/concepts/parts";
+import { OG_ART } from "@/lib/og/concepts/photo";
 
 const root = join(__dirname, "..", "..");
 const read = (p: string) => readFileSync(join(root, p), "utf8");
@@ -32,6 +34,7 @@ const OG_FILES = [
   "src/lib/og/concepts/banknote.tsx",
   "src/lib/og/concepts/chat.tsx",
   "src/lib/og/concepts/paid.tsx",
+  "src/lib/og/concepts/photo.tsx",
 ];
 
 /** Code points a TrueType font maps (cmap formats 4 and 12). */
@@ -127,6 +130,28 @@ describe("OG cards", () => {
     }
     // the subset script builds the font from the same list
     expect(read("scripts/subset-og-fonts.sh")).toContain(`OG_AMHARIC="${OG_AMHARIC}"`);
+  });
+
+  it("ships every round-2 hero image as a small 1200x630 JPEG", () => {
+    for (const name of OG_ART) {
+      expect(OG_VARIANTS, name).toContain(name);
+      const file = join(root, "public/og", `${name}.jpg`);
+      expect(existsSync(file), file).toBe(true);
+      expect(statSync(file).size, file).toBeLessThan(300 * 1024);
+      const buf = readFileSync(file);
+      expect(buf.readUInt16BE(0), `${name} is a JPEG`).toBe(0xffd8);
+      // the first SOFn marker holds the frame size
+      let i = 2;
+      while (i < buf.length) {
+        const marker = buf.readUInt16BE(i);
+        const len = buf.readUInt16BE(i + 2);
+        if (marker >= 0xffc0 && marker <= 0xffcf && marker !== 0xffc4 && marker !== 0xffc8 && marker !== 0xffcc) {
+          expect([buf.readUInt16BE(i + 7), buf.readUInt16BE(i + 5)], name).toEqual([1200, 630]);
+          break;
+        }
+        i += 2 + len;
+      }
+    }
   });
 
   it("spells the Amharic right", () => {

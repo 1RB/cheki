@@ -12,6 +12,7 @@ import { SpotCard } from "@/lib/og/concepts/spot";
 import { BanknoteCard } from "@/lib/og/concepts/banknote";
 import { ChatCard } from "@/lib/og/concepts/chat";
 import { PaidCard } from "@/lib/og/concepts/paid";
+import { BaitCard, CheckCard, LightCard, LineupCard } from "@/lib/og/concepts/photo";
 
 function cardBank(code: string): CardBank {
   const b = getBank(code);
@@ -63,6 +64,14 @@ export function ogHome(variant: OgVariant = OG_VARIANT): ReactElement {
       return <ChatCard bank={cardBank("telebirr")} />;
     case "paid":
       return <PaidCard />;
+    case "light":
+      return <LightCard />;
+    case "lineup":
+      return <LineupCard />;
+    case "bait":
+      return <BaitCard />;
+    case "check":
+      return <CheckCard />;
     default:
       return currentHome();
   }
@@ -85,5 +94,13 @@ export function ogBank(code: string, variant: OgVariant = OG_VARIANT): ReactElem
       return <ChatCard bank={b} />;
     case "paid":
       return <PaidCard bank={b} />;
+    case "light":
+      return <LightCard bank={b} />;
+    case "lineup":
+      return <LineupCard bank={b} />;
+    case "bait":
+      return <BaitCard bank={b} />;
+    case "check":
+      return <CheckCard bank={b} />;
   }
 }

@@ -8,7 +8,13 @@
  * byte-for-byte as before. The others live in src/lib/og/concepts.
  * Guide cards (/verify/[slug]) always use the current design.
  */
-export const OG_VARIANTS = ["current", "stamp", "spot", "banknote", "chat", "paid"] as const;
+export const OG_VARIANTS = [
+  "current",
+  // round 1: drawn objects (src/lib/og/concepts/{stamp,spot,banknote,chat,paid}.tsx)
+  "stamp", "spot", "banknote", "chat", "paid",
+  // round 2: one emotion, one hero image (src/lib/og/concepts/photo.tsx, art in public/og)
+  "light", "lineup", "bait", "check",
+] as const;
 export type OgVariant = (typeof OG_VARIANTS)[number];
 
 export function resolveOgVariant(value: string | undefined): OgVariant {
