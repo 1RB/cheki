@@ -1,0 +1,124 @@
+/* ── Bank chooser (BankSelect) ───────────────────────────────────────────
+   Closed: 13px text in ink-2 with a chevron, a 32px face over a 44px hit
+   area, the same quiet control the native select was.
+   Open: one surface (white, hairline + layered shadow), radius 16 with 4px
+   padding so the 12px rows are concentric; under 560px a bottom sheet,
+   radius 20 with 8px padding. The active row is a surface-alt wash; the
+   chosen row has a tick. Colour stays out: beta is a word in ink-3.
+   Motion: transform/opacity only, ease-out, enters 180/240ms, exits
+   120/180ms, nothing under reduced motion. */
+
+.bs { position: relative; flex-shrink: 0; min-width: 0; max-width: 150px; display: inline-flex; }
+
+.bs-trigger {
+  position: relative; display: inline-flex; align-items: center; gap: 6px; min-width: 0; max-width: 100%;
+  height: 32px; padding: 0 8px 0 10px; border: none; border-radius: var(--radius-sm);
+  background: transparent; color: var(--ink-2); font-size: 13px; font-weight: 500; line-height: 1; cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
+}
+/* 44px tall hit area around the 32px face. */
+.bs-trigger::before { content: ""; position: absolute; left: 0; right: 0; top: -6px; bottom: -6px; }
+.bs-trigger > svg { flex-shrink: 0; }
+.bs-trigger:active { transform: scale(0.98); }
+@media (hover: hover) { .bs-trigger:hover { background-color: var(--border); } }
+.bs[data-open] .bs-trigger { background-color: var(--border); color: var(--ink); }
+.bs-trigger-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bs-chev { display: inline-flex; flex-shrink: 0; color: var(--ink-3); transition: transform var(--dur-base) var(--ease-out); }
+.bs[data-open] .bs-chev { transform: rotate(180deg); }
+
+/* Popover (560px and up): under the trigger, right edges aligned. */
+.bs-pop {
+  position: absolute; right: 0; top: calc(100% + 6px); z-index: 60;
+  width: 248px; transform-origin: top right;
+}
+.bs-pop[data-side="top"] { top: auto; bottom: calc(100% + 6px); transform-origin: bottom right; }
+.bs-pop-inner {
+  /* max-height is set inline on open: the room below (or above) the trigger. */
+  display: flex; flex-direction: column;
+  background: var(--surface); border-radius: var(--radius-lg); overflow: hidden;
+  box-shadow: 0 0 0 1px var(--border), var(--shadow-lg);
+}
+.bs-pop[data-state="open"] { animation: bs-pop-in var(--dur-base) var(--ease-out) both; }
+.bs-pop[data-state="closed"] { animation: bs-pop-out var(--dur-fast) var(--ease-out) both; pointer-events: none; }
+.bs-pop[data-side="top"][data-state="open"] { animation-name: bs-pop-in-up; }
+@keyframes bs-pop-in { from { opacity: 0; transform: translateY(-4px) scale(0.98); } }
+@keyframes bs-pop-in-up { from { opacity: 0; transform: translateY(4px) scale(0.98); } }
+@keyframes bs-pop-out { to { opacity: 0; transform: scale(0.98); } }
+
+/* Filter: a borderless field set off by a hairline, not a box in a box. */
+.bs-search { display: flex; align-items: center; gap: 8px; flex-shrink: 0; padding: 0 12px; border-bottom: 1px solid var(--border); }
+.bs-search > svg { flex-shrink: 0; }
+.bs-filter {
+  flex: 1; min-width: 0; height: 44px; border: none; background: transparent; color: var(--ink);
+  font-size: 14px; font-family: var(--sans);
+}
+.bs-filter::placeholder { color: var(--ink-3); }
+.bs-filter:focus, .bs-filter:focus-visible { outline: none; }
+
+/* position: relative makes the list the rows' offsetParent (scroll-into-view). */
+.bs-list {
+  position: relative; list-style: none; margin: 0; padding: 4px; overflow-y: auto; overscroll-behavior: contain;
+  flex: 1 1 auto; min-height: 0;
+}
+.bs-list:focus, .bs-list:focus-visible { outline: none; }
+
+.bs-opt {
+  display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 6px 10px; border-radius: var(--radius-md);
+  color: var(--ink); font-size: 14px; font-weight: 500; cursor: pointer; user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.bs-opt > svg { flex-shrink: 0; }
+.bs-opt[data-active] { background: var(--surface-alt); }
+/* One focus ring, on the active row, and only while the keyboard drives. */
+.bs-pop[data-kbd] .bs-opt[data-active], .bs-sheet-root[data-kbd] .bs-opt[data-active] { outline: 2px solid var(--ring); outline-offset: -2px; }
+.bs-opt-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.bs-opt-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 20px; }
+.bs-opt-sub { font-size: 12px; font-weight: 400; line-height: 16px; color: var(--ink-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bs-opt-beta { flex-shrink: 0; font-size: 12px; font-weight: 400; color: var(--ink-3); }
+.bs-opt-tick { flex-shrink: 0; width: 16px; height: 16px; display: inline-flex; color: var(--ink); }
+/* Auto-detect leads the list; a hairline sets it apart from the banks. */
+.bs-opt[data-auto] { position: relative; margin-bottom: 9px; }
+.bs-opt[data-auto]::after {
+  content: ""; position: absolute; left: 10px; right: 10px; bottom: -5px; height: 1px; background: var(--border);
+}
+.bs-empty { padding: 20px 12px; text-align: center; font-size: 13px; color: var(--ink-3); }
+
+/* Bottom sheet (under 560px). */
+.bs-sheet-root { position: fixed; inset: 0; z-index: 250; }
+.bs-scrim { position: absolute; inset: 0; background: rgba(20, 18, 16, 0.32); }
+.bs-sheet {
+  position: absolute; left: 8px; right: 8px; bottom: max(8px, env(safe-area-inset-bottom));
+  display: flex; flex-direction: column; max-height: min(600px, calc(100dvh - 96px));
+  padding: 4px 4px 4px; background: var(--surface); border-radius: var(--radius-xl); overflow: hidden;
+  box-shadow: 0 0 0 1px var(--border), var(--shadow-lg);
+}
+.bs-sheet .bs-list { padding: 4px 4px 4px; }
+.bs-sheet .bs-opt { padding: 6px 12px; font-size: 15px; }
+.bs-sheet .bs-opt[data-auto]::after { left: 12px; right: 12px; }
+.bs-sheet .bs-search { margin: 0 4px; padding: 0 8px; }
+.bs-sheet .bs-filter { font-size: 16px; }
+.bs-sheet-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 4px 4px 0 16px; flex-shrink: 0; }
+.bs-sheet-title { font-size: 15px; font-weight: 600; color: var(--ink); }
+.bs-sheet-close {
+  min-height: 44px; min-width: 44px; padding: 0 12px; border: none; border-radius: var(--radius-md); background: transparent;
+  color: var(--ink-2); font-size: 14px; font-weight: 550; cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
+}
+.bs-sheet-close:active { transform: scale(0.98); }
+@media (hover: hover) { .bs-sheet-close:hover { background: var(--surface-alt); } }
+.bs-sheet-root[data-state="open"] .bs-scrim { animation: bs-fade var(--dur-slow) var(--ease-out) both; }
+.bs-sheet-root[data-state="open"] .bs-sheet { animation: bs-sheet-in var(--dur-slow) var(--ease-out) both; }
+.bs-sheet-root[data-state="closed"] { pointer-events: none; }
+.bs-sheet-root[data-state="closed"] .bs-scrim { animation: bs-fade-out var(--dur-base) var(--ease-out) both; }
+.bs-sheet-root[data-state="closed"] .bs-sheet { animation: bs-sheet-out var(--dur-base) var(--ease-out) both; }
+@keyframes bs-fade { from { opacity: 0; } }
+@keyframes bs-fade-out { to { opacity: 0; } }
+@keyframes bs-sheet-in { from { opacity: 0; transform: translateY(24px); } }
+@keyframes bs-sheet-out { to { opacity: 0; transform: translateY(16px); } }
+
+@media (max-width: 380px) { .bs { max-width: 128px; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .bs-trigger, .bs-chev, .bs-pop, .bs-scrim, .bs-sheet, .bs-sheet-close { animation: none !important; transition: none !important; }
+}

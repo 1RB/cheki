@@ -54,7 +54,8 @@ describe("VerifyPanel: Telebirr receipt QR", () => {
     const { input, file } = setup();
     await upload(file);
     await waitFor(() => expect(input.value).toBe(SYNTHETIC_REF));
-    expect((screen.getByLabelText("Bank") as HTMLSelectElement).value).toBe("telebirr");
+    expect(screen.getByLabelText("Bank").getAttribute("data-value")).toBe("telebirr");
+    expect(screen.getByRole("button", { name: "Bank Telebirr" })).toBeTruthy();
     const open = await screen.findByRole("link", { name: /Open the Telebirr receipt/ });
     expect(open.getAttribute("href")).toBe(RECEIPT);
     expect(screen.getByText(/not proof of payment/)).toBeTruthy();

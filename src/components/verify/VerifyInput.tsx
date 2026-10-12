@@ -3,7 +3,7 @@
 /**
  * One smart input: a receipt link, a reference, a BOA QR payload, or an image
  * (paste, drop, upload, camera). Under it, a single fixed-height row says what
- * was detected, with a native <select> to override the bank. The extra field
+ * was detected, with the bank chooser (BankSelect) to override it. The extra field
  * (account suffix or phone) opens only when the detected format needs it.
  *
  * Presentational: the panel owns the state. No refs are read during render.
@@ -14,6 +14,7 @@ import type { Detection } from "@/lib/verify/detect";
 import { accountFieldKeys, liveBanks } from "@/lib/verify/detect";
 import type { Translate } from "@/lib/i18n/translate";
 import { BankLogoByName } from "@/components/BankLogo";
+import { BankSelect } from "@/components/ui/BankSelect";
 import { Icon, Camera01Icon, Upload01Icon, Alert01Icon } from "@/components/Icon";
 
 interface Props {
@@ -64,6 +65,10 @@ export function VerifyInput({
   const needsExtra = d.needsAccount || d.needsPhone;
   const lockedName = lockedBank ? liveBanks.find((b) => b.code === lockedBank)?.shortName : undefined;
   const otherBank = Boolean(lockedBank && d.bank && d.bank.code !== lockedBank);
+  const ambiguous = Boolean(d.bank) && !d.overridden && !lockedBank && d.kind === "reference" && d.candidates.length > 1;
+  // What auto-detect found, for the chooser's closed face ("Auto · CBE").
+  // Not while two banks are still possible: the status row asks instead.
+  const detected = !d.overridden && !ambiguous && d.bank && d.kind !== "empty" && d.kind !== "unknownUrl" ? d.bank : undefined;
 
   const onDrop = (e: DragEvent) => {
     e.preventDefault();
@@ -107,7 +112,6 @@ export function VerifyInput({
     status = <span className="vi-status-text">{t("verify.detect.unknownRef")}</span>;
   } else {
     const name = d.bank.shortName;
-    const ambiguous = !d.overridden && !lockedBank && d.kind === "reference" && d.candidates.length > 1;
     const label =
       d.kind === "boaQr"
         ? t("verify.detect.boaQr")
@@ -189,20 +193,14 @@ export function VerifyInput({
           </span>
         </p>
         {!lockedBank && (
-          <div className="vi-select-wrap">
-            <label htmlFor={`${id}-bank`} className="sr-only">{t("verify.bankSelect")}</label>
-            {/* The visible face is 13px text; the real select sits on top,
-                transparent and 16px, so iOS never zooms when it opens. */}
-            <span className="vi-select-face" aria-hidden="true">
-              {(overrideBank && liveBanks.find((b) => b.code === overrideBank)?.shortName) || t("verify.autoDetect")}
-            </span>
-            <select id={`${id}-bank`} className="vi-select" value={overrideBank} onChange={(e) => onOverride(e.target.value)}>
-              <option value="">{t("verify.autoDetect")}</option>
-              {liveBanks.map((b) => (
-                <option key={b.code} value={b.code}>{b.shortName}</option>
-              ))}
-            </select>
-          </div>
+          <BankSelect
+            id={`${id}-bank`}
+            value={overrideBank}
+            onChange={onOverride}
+            banks={liveBanks}
+            detected={detected}
+            t={t}
+          />
         )}
       </div>
 
