@@ -76,4 +76,18 @@ describe("VerdictCard", () => {
     expect(text).not.toMatch(/verified by cheki/i);
     expect(text).toMatch(/Confirmed with CBE's own receipt record/);
   });
+  it("a receipt with no receiver gets no To row, and shows its fee rows", () => {
+    // Synthetic BOA fee receipt (tests/fixtures/boa/no-receiver.ts): payer only.
+    const { container } = card({
+      success: true, verified: true, bankCode: "boa", reference: "FT26999ABCD1", amount: 100, currency: "ETB",
+      senderName: "TEST PAYER ONE", senderAccount: "1******45", serviceFee: 5, totalPaid: 120, reason: "Test fee note",
+      sourceUrl: "https://cs.bankofabyssinia.com/api/onlineSlip/getDetails/?id=FT26999ABCD112345",
+    });
+    const labels = Array.from(container.querySelectorAll(".vc-rows dt")).map((n) => n.textContent);
+    expect(labels).toContain(tEn("verify.card.from"));
+    expect(labels).not.toContain(tEn("verify.card.to"));
+    expect(Array.from(container.querySelectorAll(".vc-rows dd")).map((n) => n.textContent)).not.toContain("-");
+    const extra = Array.from(container.querySelectorAll(".vc-xrows dt")).map((n) => n.textContent);
+    expect(extra).toEqual(expect.arrayContaining(["Reason", "Service fee", "Total paid"]));
+  });
 });

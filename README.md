@@ -30,7 +30,7 @@ check.et charges 499 ETB/month or 4,990 ETB/year after 200 one-time free verific
 |------|------|------|--------|---------------|-------------|
 | Commercial Bank of Ethiopia | `cbe` | Bank | ✅ Live | Receipt ID or mbreciept.cbe.com.et link (older FT receipts: + last 8 account digits) | No |
 | Telebirr (Ethio Telecom) | `telebirr` | Mobile money | ✅ Live | Transaction number, or the receipt's Payment QR Code | Yes (Ethiopia only) |
-| Bank of Abyssinia | `boa` | Bank | ✅ Live | Reference + last 5 account digits, or the receipt QR | No |
+| Bank of Abyssinia | `boa` | Bank | ✅ Live | Slip link, reference + last 5 digits of the account on the receipt, or the receipt QR | No |
 | M-Pesa Ethiopia | `mpesa` | Mobile money | ✅ Live (beta) | Transaction number | Yes (Ethiopia only) |
 | Dashen Bank | `dashen` | Bank | ✅ Live | FT Ref (16 characters) | No |
 | Awash Bank | `awash` | Bank | ✅ Live | Share link from the SMS | No |

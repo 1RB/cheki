@@ -58,7 +58,7 @@ function olderFormatNotes(b: Bank): string[] {
 
 function accountRequirement(b: Bank): string {
   if (b.requiresAccount) {
-    return `the transaction reference number plus the last ${b.accountDigits} digits of the receiving account number`;
+    return `the transaction reference number plus the last ${b.accountDigits} digits of the account on the receipt`;
   }
   if (b.requiresPhone) {
     return "the transaction reference number plus the payer's phone number (in 2519XXXXXXXXX format)";
@@ -88,7 +88,7 @@ const bankVerificationPages: SeoPage[] = banks
       {
         q: `How do I verify a ${b.shortName} receipt?`,
         a: b.requiresAccount
-          ? `Select ${b.name}, paste your transaction reference number, enter the last ${b.accountDigits} digits of the receiving account, and click Verify. cheki fetches the receipt from ${b.shortName}'s public endpoint and shows you the result in seconds.`
+          ? `Select ${b.name}, paste your transaction reference number, enter the last ${b.accountDigits} digits of the account on the receipt, and click Verify. cheki fetches the receipt from ${b.shortName}'s public endpoint and shows you the result in seconds.`
           : b.requiresPhone
           ? `Select ${b.name}, paste your transaction reference number and the payer's phone number (2519XXXXXXXXX format), and click Verify. cheki fetches the receipt from ${b.shortName}'s public endpoint and shows you the result instantly.`
           : `Select ${b.name}, paste your transaction reference number, and click Verify. cheki fetches the receipt from ${b.shortName}'s public endpoint and shows you the result instantly.`,
@@ -96,7 +96,7 @@ const bankVerificationPages: SeoPage[] = banks
       {
         q: `Do I need an account number to verify ${b.shortName}?`,
         a: b.requiresAccount
-          ? `Yes. ${b.shortName}'s receipt endpoint requires the transaction reference plus the last ${b.accountDigits} digits of the receiving account number. Without the account digits, the endpoint returns no data.`
+          ? `Yes. ${b.shortName}'s receipt endpoint requires the transaction reference plus the last ${b.accountDigits} digits of the account on the receipt. Without the account digits, the endpoint returns no data.`
           : b.requiresPhone
           ? `No account number, but ${b.shortName} requires the payer's phone number (2519XXXXXXXXX format) in addition to the transaction reference. This is a security measure to prevent unauthorized receipt enumeration.`
           : `No. ${b.shortName} only requires the transaction reference number. The receipt is returned as a ${receiptTypeLabel(b)} with payer name, receiver name, amount, and date.`,
@@ -121,7 +121,7 @@ const bankVerificationPages: SeoPage[] = banks
         bullets: b.requiresAccount
           ? [
               `Transaction reference number (e.g. ${b.referenceExample}), found on the receipt or in the ${b.shortName} app`,
-              `Last ${b.accountDigits} digits of the receiving account number, the account that received the payment`,
+              `Last ${b.accountDigits} digits of the account on the receipt`,
             ]
           : [
               `Transaction reference number (e.g. ${b.referenceExample}), found on the receipt or in the ${b.shortName} app`,
@@ -161,12 +161,12 @@ const checkPaymentPages: SeoPage[] = banks.map((b): SeoPage => ({
   faq: [
     {
       q: `How do I check if a ${b.shortName} payment was successful?`,
-      a: `Select ${b.name} on cheki, enter the ${refNoun(b)}${b.requiresAccount ? ` and the last ${b.accountDigits} digits of the receiving account` : ``}, and click Verify. If the payment exists, cheki shows you the sender name, receiver name, amount, and date. If it doesn't exist, the payment was not completed or the receipt is fake.`,
+      a: `Select ${b.name} on cheki, enter the ${refNoun(b)}${b.requiresAccount ? ` and the last ${b.accountDigits} digits of the account on the receipt` : ``}, and click Verify. If the payment exists, cheki shows you the sender name, receiver name, amount, and date. If it doesn't exist, the payment was not completed or the receipt is fake.`,
     },
     {
       q: `Can I check a ${b.shortName} payment without the receipt?`,
       a: b.requiresAccount
-        ? `You need the transaction reference number and the last ${b.accountDigits} digits of the receiving account. Both are shown on the receipt. Without them, there is no way to look up a ${b.shortName} transaction through public endpoints.`
+        ? `You need the transaction reference number and the last ${b.accountDigits} digits of the account on the receipt. Both are shown on the receipt. Without them, there is no way to look up a ${b.shortName} transaction through public endpoints.`
         : `You need the ${refNoun(b)}. This is shown on the receipt and in the ${b.shortName} app. Without it, there is no way to look up a ${b.shortName} transaction through public endpoints.`,
     },
     {
@@ -181,10 +181,10 @@ const checkPaymentPages: SeoPage[] = banks.map((b): SeoPage => ({
     },
     {
       heading: `What information you need`,
-      body: `To check a ${b.shortName} payment, ask the sender for the ${refNoun(b)} from their receipt${b.requiresAccount ? ` and make sure you know the last ${b.accountDigits} digits of your receiving account` : ``}. ${b.requiresAccount ? `Both pieces of information are required by the endpoint.` : `That's all you need, no account number required.`}`,
+      body: `To check a ${b.shortName} payment, ask the sender for the ${refNoun(b)} from their receipt${b.requiresAccount ? ` and the last ${b.accountDigits} digits of the account on it` : ``}. ${b.requiresAccount ? `Both pieces of information are required by the endpoint.` : `That's all you need, no account number required.`}`,
       bullets: [
         `${refNoun(b).charAt(0).toUpperCase()}${refNoun(b).slice(1)} (e.g. ${b.referenceExample})`,
-        ...(b.requiresAccount ? [`Last ${b.accountDigits} digits of your account number`] : []),
+        ...(b.requiresAccount ? [`Last ${b.accountDigits} digits of the account on the receipt`] : []),
         ...olderFormatNotes(b),
         ...(b.geoBlocked ? [`If accessing from outside Ethiopia, cheki provides a fallback link`] : []),
       ],
@@ -305,7 +305,7 @@ const receiptFormatPages: SeoPage[] = banks
     sections: [
       {
         heading: `${b.shortName} endpoint URL format`,
-        body: `The ${b.shortName} receipt endpoint is: ${b.endpointFormat}. ${b.requiresAccount ? `The URL combines the transaction reference and the last ${b.accountDigits} digits of the receiving account into a single id parameter.` : `The URL takes only the transaction reference as a path parameter.`} Example: ${b.referenceExample}.`,
+        body: `The ${b.shortName} receipt endpoint is: ${b.endpointFormat}. ${b.requiresAccount ? `The URL combines the transaction reference and the last ${b.accountDigits} digits of the account on the receipt into a single id parameter.` : `The URL takes only the transaction reference as a path parameter.`} Example: ${b.referenceExample}.`,
       },
       {
         heading: `${responseTypeName(b)} response structure`,

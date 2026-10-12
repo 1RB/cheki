@@ -40,6 +40,11 @@ export const BATCH_CONCURRENCY = 5;
 const MAX_QR_LENGTH = 4096;
 const MAX_BANK_LENGTH = 32;
 
+/** "Account on the receipt" → "account on the receipt" (keeps "FT" etc. intact). */
+function lowerFirst(s: string): string {
+  return s.charAt(0).toLowerCase() + s.slice(1);
+}
+
 function asOptionalString(v: unknown): string | undefined {
   return typeof v === "string" ? v : undefined;
 }
@@ -231,7 +236,7 @@ export class Verifier {
         return err({
           kind: "MISSING_INPUT",
           field: "accountNumber",
-          message: `${manifestEntry.name} requires the full receiving account number.`,
+          message: `${manifestEntry.name} requires the ${lowerFirst(manifestEntry.accountLabel || "account number")}.`,
         });
       }
       const digits = formatAccountDigits(format) ?? manifestEntry.accountDigits ?? parser.accountDigits ?? 1;

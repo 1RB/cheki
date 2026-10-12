@@ -14,7 +14,8 @@ class BOAVerifier(BankVerifier):
     BOA serves a SPA receipt page, but the data comes from a public T24 API:
         https://cs.bankofabyssinia.com/api/onlineSlip/getDetails/?id=<trx_id>
     where trx_id is the transaction reference concatenated with the last 5
-    digits of the receiver account.
+    digits of the account on the receipt. That is not always the receiver's:
+    a fee receipt with no receiver uses the source account.
     """
 
     BANK_CODE = "boa"
@@ -24,7 +25,7 @@ class BOAVerifier(BankVerifier):
         account_number = str(kwargs.get("account_number", "")).replace(" ", "")
         if not account_number or len(account_number) < 5:
             raise ValueError(
-                "BOA verification requires the full receiving account_number (at least 5 digits)."
+                "BOA verification requires the account_number on the receipt (at least the last 5 digits)."
             )
         suffix = account_number[-5:]
         trx_id = f"{reference}{suffix}"

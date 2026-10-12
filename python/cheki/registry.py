@@ -116,7 +116,8 @@ def verify(bank: str, reference: str, **kwargs: object) -> VerificationResult:
             the receipt link (mbreciept.cbe.com.et/<Receipt ID>); an older FT
             reference also needs account_number.
         **kwargs: Bank-specific extras:
-            - cbe (older FT reference only), boa: account_number (full receiving account)
+            - cbe (older FT reference only): account_number (receiving account)
+            - boa: account_number (the account on the receipt, last 5 digits)
             - cbebirr: phone_number (payer phone)
 
     Raises:

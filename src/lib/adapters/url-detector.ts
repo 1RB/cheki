@@ -6,7 +6,7 @@
  *   - mbreciept.cbe.com.et/FT...-12345678  → CBE, legacy FT format (dashed)
  *   - apps.cbe.com.et:100/?id={ref}{acct}  → CBE, legacy FT format
  *   - transactioninfo.ethiotelecom.et/...  → Telebirr
- *   - cs.bankofabyssinia.com/...            → BOA
+ *   - cs.bankofabyssinia.com/slip/?trx=     → BOA (reference + 5-digit suffix)
  *   - receipts.dashenbanksc.com/receipt/... → Dashen
  *   - receipt.dashensuperapp.com/...        → Dashen (legacy)
  *   - awashpay.awashbank.com:8225/-{ref}   → Awash
@@ -40,6 +40,30 @@ const EBIRR_TENANTS: Record<string, string> = {
  */
 function hostIs(host: string, ...allowed: string[]): boolean {
   return allowed.some((h) => host === h || host.endsWith("." + h));
+}
+
+/** A BOA FT transaction reference: "FT" + 10 letters or digits (FT26999ABCD1). */
+const BOA_FT_REF = /^FT[A-Z0-9]{10}$/i;
+/** A BOA slip id: an FT reference followed by the 5-digit account suffix. */
+const BOA_SLIP_ID = /^(FT[A-Z0-9]{10})(\d{5})$/i;
+
+/**
+ * Split a BOA slip id ({reference}{last 5 digits of an account}) into its
+ * parts. BOA's slip links (`/slip/?trx=`) and its API (`getDetails/?id=`)
+ * use the same id, e.g. FT26999ABCD112345 → FT26999ABCD1 + 12345.
+ *
+ * The suffix is the last 5 digits of an account on the receipt, which BOA
+ * looks the receipt up by. It is not always the receiver's: a fee receipt
+ * has no receiver and is looked up by the source account. So it is returned as `accountNumber`,
+ * never labelled as the receiving account.
+ *
+ * Only the unambiguous FT shape (exactly 17 characters) is split; anything
+ * else returns null and the caller keeps its own behaviour.
+ */
+export function splitBoaSlipId(value: string): { reference: string; accountNumber: string } | null {
+  const m = value.trim().match(BOA_SLIP_ID);
+  if (!m) return null;
+  return { reference: m[1].toUpperCase(), accountNumber: m[2] };
 }
 
 export function detectBankFromUrl(input: string): DetectedReceipt | null {
@@ -88,18 +112,26 @@ export function detectBankFromUrl(input: string): DetectedReceipt | null {
       }
     }
 
-    // BOA: https://cs.bankofabyssinia.com/slip/?trx={REFERENCE} or /api/onlineSlip/getDetails/?id={REFERENCE}{SUFFIX}
+    // BOA: https://cs.bankofabyssinia.com/slip/?trx={REFERENCE}{SUFFIX}
+    //      https://cs.bankofabyssinia.com/api/onlineSlip/getDetails/?id={REFERENCE}{SUFFIX}
+    // Both carry the same lookup id; see splitBoaSlipId.
     if (hostIs(host, "bankofabyssinia.com")) {
-      const trx = url.searchParams.get("trx");
-      const id = url.searchParams.get("id");
-      if (trx) return { bank: "boa", reference: trx };
+      const trx = url.searchParams.get("trx")?.trim();
+      const id = url.searchParams.get("id")?.trim();
+      if (trx) {
+        const split = splitBoaSlipId(trx);
+        // A bare reference (no suffix) is passed through as before.
+        return split ? { bank: "boa", ...split } : { bank: "boa", reference: trx };
+      }
       if (id) {
-        // id = reference + last 5 digits of account
-        const accountSuffix = id.slice(-5);
-        const ref = id.slice(0, -5);
-        if (ref.length > 0) {
-          return { bank: "boa", reference: ref, accountNumber: accountSuffix };
-        }
+        const split = splitBoaSlipId(id);
+        if (split) return { bank: "boa", ...split };
+        // A bare FT reference: there is no suffix to take.
+        if (BOA_FT_REF.test(id)) return { bank: "boa", reference: id.toUpperCase() };
+        // Other reference shapes: the API id is always {reference}{last 5
+        // digits}, so take the trailing 5 digits when they are digits.
+        const legacy = id.match(/^(.+)(\d{5})$/);
+        if (legacy) return { bank: "boa", reference: legacy[1], accountNumber: legacy[2] };
         return { bank: "boa", reference: id };
       }
     }

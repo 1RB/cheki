@@ -139,8 +139,8 @@ export const seoPages: SeoPage[] = [
     intent: "transactional",
     bankCode: "boa",
     faq: [
-      { q: "How do I verify a Bank of Abyssinia receipt?", a: "Select Bank of Abyssinia, paste your transaction reference number, enter the last 5 digits of the receiving account, and click Verify. cheki fetches the receipt from BOA's public API and returns structured JSON." },
-      { q: "Do I need an account number for BOA?", a: "For normal API lookup, yes. BOA requires the transaction reference plus the last 5 digits of the receiving account number. For inter-bank transfers, you can use the QR code payload instead." },
+      { q: "How do I verify a Bank of Abyssinia receipt?", a: "Paste the BOA slip link and click Verify; when the link carries the 5 account digits, cheki reads both parts from it. Otherwise, select Bank of Abyssinia, paste the transaction reference number and enter the last 5 digits of the account on the receipt. cheki fetches the receipt from BOA's public API and returns structured JSON." },
+      { q: "Do I need an account number for BOA?", a: "Not if your BOA slip link carries the 5 account digits after the reference. Otherwise, yes: BOA needs the transaction reference plus the last 5 digits of the account on the receipt. That is not always the receiving account (a fee receipt with no receiver uses the source account). For inter-bank transfers, you can use the QR code payload instead." },
       { q: "Does BOA use an API or PDF?", a: "Bank of Abyssinia uses a JSON API at cs.bankofabyssinia.com. This is faster than CBE's PDF system and returns structured data directly, making it more reliable for automated verification." },
       { q: "What if BOA's API returns 'Invalid reference number'?", a: "Inter-bank transfers (e.g., FT... references sent to CBE) are not exposed in BOA's API. In that case, scan the QR code on the receipt and paste the payload into cheki. cheki decrypts it with the key embedded in BOA's public receipt web app." },
     ],
@@ -157,7 +157,7 @@ export const seoPages: SeoPage[] = [
         heading: "What you need to verify a BOA receipt",
         body: "To verify a Bank of Abyssinia receipt, you need one of:",
         bullets: [
-          "Transaction reference number + last 5 digits of the receiving account (for same-bank transfers)",
+          "The BOA slip link, or the transaction reference number + last 5 digits of the account on the receipt (for same-bank receipts)",
           "QR code payload from the receipt (for inter-bank transfers)",
         ],
       },

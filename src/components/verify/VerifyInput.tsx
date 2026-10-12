@@ -11,7 +11,7 @@
 import { useRef, useState, type ChangeEvent, type ClipboardEvent, type DragEvent, type RefObject } from "react";
 import Link from "next/link";
 import type { Detection } from "@/lib/verify/detect";
-import { liveBanks } from "@/lib/verify/detect";
+import { accountFieldKeys, liveBanks } from "@/lib/verify/detect";
 import type { Translate } from "@/lib/i18n/translate";
 import { BankLogoByName } from "@/components/BankLogo";
 import { Icon, Camera01Icon, Upload01Icon, Alert01Icon } from "@/components/Icon";
@@ -209,7 +209,7 @@ export function VerifyInput({
       <div className="vi-extra" data-open={needsExtra || undefined} inert={!needsExtra}>
         <div className="vi-extra-inner">
           <label htmlFor={`${id}-extra`} className="vi-label">
-            {d.needsPhone ? t("verify.extra.phone") : t("verify.extra.account", { digits: d.accountDigits ?? 8 })}
+            {d.needsPhone ? t("verify.extra.phone") : t(accountFieldKeys(d).label, { digits: d.accountDigits ?? d.bank?.accountDigits ?? 8 })}
           </label>
           <input
             ref={extraRef}
@@ -220,7 +220,7 @@ export function VerifyInput({
             autoComplete="off"
             value={extra}
             onChange={(e) => onExtraChange(e.target.value)}
-            placeholder={d.needsPhone ? "2519XXXXXXXX" : t("verify.extra.accountPlaceholder", { digits: d.accountDigits ?? 8 })}
+            placeholder={d.needsPhone ? "2519XXXXXXXX" : t("verify.extra.accountPlaceholder", { digits: d.accountDigits ?? d.bank?.accountDigits ?? 8 })}
             aria-invalid={extraError ? true : undefined}
             aria-describedby={`${id}-extra-hint`}
           />
