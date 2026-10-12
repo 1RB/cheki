@@ -41,7 +41,9 @@ _FAILURE_STATUS = re.compile(
 # Same set as src/lib/core/gate.ts (REFERENCE_IS_OPAQUE_TOKEN): lookup keys that are
 # share tokens, so the receipt's own reference never equals the requested one.
 # "cbe-new" is CBE's current format (the Receipt ID); the receipt carries the FT id.
-_REFERENCE_IS_OPAQUE_TOKEN = frozenset({"awash", "ebirr", "siinqee", "cbe-new"})
+# "zamzam" is looked up by its numeric receipt id; the record carries ZamZam's own
+# transaction reference (no direct verifier here: use ChekiClient for ZamZam).
+_REFERENCE_IS_OPAQUE_TOKEN = frozenset({"awash", "ebirr", "siinqee", "cbe-new", "zamzam"})
 
 _DEPRECATION = (
     "cheki.verify() (direct verification) is deprecated and will be removed in the next major "

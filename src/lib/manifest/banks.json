@@ -1824,56 +1824,98 @@
     "name": "ZamZam Bank",
     "shortName": "ZamZam",
     "type": "bank",
-    "status": "in-development",
+    "status": "live",
+    "beta": true,
+    "betaNote": "Beta: cheki confirms the receipt exists in ZamZam Bank's record and shows its amount and date. Only one receipt shape has been checked so far, and whether the account holder paid or received is inferred from the record's debit/credit flag.",
     "parser": "zamzam",
     "responseType": "json",
     "requiresAccount": false,
-    "endpoint": "Unknown",
-    "endpointFormat": "Researching public receipt endpoint",
+    "requiresPhone": false,
+    "endpoint": "https://receipt-backend.zamzambank.com.et/api/v1/invoice/{ref}",
+    "endpointFormat": "https://receipt-backend.zamzambank.com.et/api/v1/invoice/{RECEIPT_ID}",
+    "endpointAuth": "The endpoint expects an HTTP Basic credential that ZamZam ships inside its own public receipt web app, so every visitor's browser already sends it. cheki sends the same credential. No customer login is involved.",
     "sslVerify": true,
     "color": "#0d9488",
-    "initials": "ZamZam",
-    "description": "ZamZam Bank is an Islamic bank established in 2021. No public receipt verification endpoint has been identified yet.",
-    "referenceFormat": "Unknown, researching",
-    "referenceExample": "",
+    "initials": "ZZ",
+    "notes": "Beta. The receipt link (receipt.zamzambank.com.et/receipt/{id}) opens a React app whose data comes from this JSON endpoint. An unknown id answers HTTP 200 with the body null. The record carries the full account number, which cheki masks (first digit and last 4).",
+    "description": "ZamZam Bank is an Islamic bank established in 2021. Its receipt links (receipt.zamzambank.com.et/receipt/...) are backed by a JSON service: cheki looks the receipt id up there and confirms that ZamZam has the record, with its amount, date and the ZamZam account holder (account number masked). ZamZam support is in beta.",
+    "referenceFormat": "Numeric receipt id, the number at the end of the receipt link (8 digits on the receipts seen so far). Not the transaction reference printed on the receipt.",
+    "referenceExample": "12345678",
     "howToVerify": [
-      "Researching receipt verification options for ZamZam Bank"
+      "Paste the ZamZam receipt link (https://receipt.zamzambank.com.et/receipt/...), or choose ZamZam Bank and enter the number at the end of it",
+      "cheki looks the receipt id up in ZamZam Bank's receipt service",
+      "If ZamZam has the record, cheki shows the amount, the date and the ZamZam account holder, with the account number masked",
+      "Compare the amount, date and name with the payment you expected"
     ],
     "useCases": [
-      "Future support for ZamZam Bank receipt verification"
+      "Merchants confirming a ZamZam Bank transfer before releasing goods",
+      "Businesses reconciling ZamZam Bank receipts sent by customers",
+      "Apps checking ZamZam Bank receipt links via the cheki API"
     ],
     "faq": [
       {
-        "q": "Can I verify ZamZam Bank receipts with cheki?",
-        "a": "Not yet. We are researching ZamZam Bank's receipt system."
+        "q": "What does cheki confirm for a ZamZam Bank receipt?",
+        "a": "That ZamZam Bank's receipt service has a record for that receipt id, and what the record says: the amount, the date (ZamZam gives no time) and the ZamZam account holder's name with a masked account number. When ZamZam names the other side, cheki shows it too. Compare these with the payment you expected. ZamZam support is in beta: whether the account holder paid or received is inferred from the record's debit/credit flag."
+      },
+      {
+        "q": "What do I need to verify a ZamZam Bank receipt?",
+        "a": "The receipt link from the ZamZam app (https://receipt.zamzambank.com.et/receipt/...) or the number at the end of it. No account number is needed. The transaction reference printed on the receipt does not work on its own."
+      },
+      {
+        "q": "Does cheki show the full ZamZam account number?",
+        "a": "No. ZamZam's record carries the full account number; cheki masks it to the first digit and the last 4 before showing, returning or caching anything."
+      },
+      {
+        "q": "Is the ZamZam receipt endpoint public?",
+        "a": "The receipt page is public. Its data comes from a ZamZam service that expects a fixed credential which ZamZam ships inside its public receipt web app, so every visitor's browser sends it. cheki sends the same credential. No customer login is involved."
       }
     ],
     "seo": {
-      "title": "Verify ZamZam Bank Receipts Online",
-      "description": "ZamZam Bank receipt verification is coming to cheki.",
+      "title": "ZamZam Bank Receipt Check: Verify ZamZam Payments",
+      "description": "Check a ZamZam Bank receipt link against ZamZam's own record: cheki confirms the receipt exists and shows the amount, date and account holder. Free, no signup.",
       "keywords": [
-        "ZamZam Bank receipt",
-        "verify ZamZam Bank",
+        "zamzam bank receipt",
+        "zamzam receipt check",
+        "verify ZamZam Bank transfer",
+        "ZamZam Bank payment check",
         "Islamic bank Ethiopia receipt"
       ]
     },
     "formats": [
       {
-        "id": "zamzam-reported",
+        "id": "zamzam-invoice-json",
         "status": "current",
-        "label": "Receipt link",
+        "label": "Receipt link or receipt id",
+        "parser": "zamzam",
+        "endpoint": "https://receipt-backend.zamzambank.com.et/api/v1/invoice/{ref}",
+        "link": "https://receipt.zamzambank.com.et/receipt/{ref}",
         "linkHosts": [
           "receipt.zamzambank.com.et"
         ],
         "inputs": [
           {
-            "name": "link",
-            "label": "Receipt link"
+            "name": "receiptId",
+            "label": "Receipt link or receipt id",
+            "example": "12345678"
           }
         ],
+        "refPattern": {
+          "source": "^\\d{1,12}$",
+          "flags": ""
+        },
         "responseType": "json",
-        "confidence": "inferred",
-        "evidence": "links.et lists receipt.zamzambank.com.et (JSON). Not tested by cheki and not supported yet."
+        "receiptPage": "redirect",
+        "confidence": "verified",
+        "evidence": "cheki, 2026-10-12: the receipt page's web app (receipt.zamzambank.com.et/assets/index-*.js) fetches receipt-backend.zamzambank.com.et/api/v1/invoice/{id} with a hardcoded HTTP Basic credential. Without it the endpoint answers 401; an unknown id answers HTTP 200 with the body null; a real receipt answered a JSON object (name, reference, id, amount, vat, dt, acc_NUM, drcr, other_NAME, trn_DESCRIPTION, currency, code) in about 2 seconds. links.et also lists receipt.zamzambank.com.et (JSON).",
+        "notes": "Party sides are inferred from drcr (D: the account holder paid; C: received). One receipt shape checked so far."
+      }
+    ],
+    "endpointHistory": [
+      {
+        "date": "2026-10-12",
+        "formatId": "zamzam-invoice-json",
+        "change": "cheki reads ZamZam receipts from the JSON service behind receipt.zamzambank.com.et (beta).",
+        "source": "cheki (ZamZam's public receipt web app and one real receipt)"
       }
     ]
   },

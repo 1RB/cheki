@@ -290,9 +290,11 @@ export interface BankManifestEntry {
   type: "bank" | "wallet" | "mobile";
   status: "live" | "in-development";
   /**
-   * Live but not yet confirmed with a real receipt (the parser follows other
-   * verifiers' source). Copy and clients should label it beta; `betaNote`
-   * says why. Cleared once a real receipt verifies.
+   * Live, but the parser is only partly confirmed: not yet confirmed with a
+   * real receipt (M-Pesa, whose parser follows other verifiers' source), or
+   * confirmed with a single receipt shape and an inferred field mapping
+   * (ZamZam). Copy and clients should label it beta; `betaNote` says why.
+   * Cleared once real receipts settle it.
    */
   beta?: boolean;
   betaNote?: string;
@@ -304,6 +306,12 @@ export interface BankManifestEntry {
   requiresPhone: boolean;
   endpoint: string;
   endpointFormat?: string;
+  /**
+   * How the receipt endpoint authenticates, when it does (ZamZam: a public
+   * Basic credential from the bank's own web app, kept in the parser).
+   * Absent: the endpoint needs no authentication.
+   */
+  endpointAuth?: string;
   sslVerify: boolean;
   headers?: Record<string, string>;
   geoBlocked?: boolean;

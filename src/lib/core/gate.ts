@@ -26,8 +26,11 @@ import { classifyStatus } from "./status";
  *   - ebirr / siinqee: the link carries an opaque token.
  *   - cbe-new: the current CBE format is looked up by its Receipt ID (share
  *     token); the receipt it returns carries the FT transaction id instead.
+ *   - zamzam: looked up by the numeric receipt id from the link; the record
+ *     carries ZamZam's transaction reference instead. The parser checks that
+ *     the record's own id equals the id requested (ZamZamParser.parseRecord).
  */
-const REFERENCE_IS_OPAQUE_TOKEN = new Set(["awash", "ebirr", "siinqee", "cbe-new"]);
+const REFERENCE_IS_OPAQUE_TOKEN = new Set(["awash", "ebirr", "siinqee", "cbe-new", "zamzam"]);
 
 export type GateFailure = "amount" | "reference" | "party" | "status";
 

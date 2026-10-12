@@ -22,7 +22,7 @@ export interface Bank {
   accountDigits?: number;
   requiresPhone?: boolean;
   status: "live" | "soon";
-  /** Live, but not yet confirmed with a real receipt (see BankManifestEntry.beta). */
+  /** Live, but only partly confirmed (see BankManifestEntry.beta). */
   beta?: boolean;
   betaNote?: string;
   refPattern?: RegExp;
@@ -31,6 +31,8 @@ export interface Bank {
   geoBlocked?: boolean;
   endpoint: string;
   endpointFormat: string;
+  /** How the endpoint authenticates (a public credential cheki sends); absent: none. */
+  endpointAuth?: string;
   responseType: ManifestResponseType;
   description: string;
   referenceFormat: string;
@@ -80,6 +82,7 @@ function manifestToBank(entry: BankManifestEntry): Bank {
     geoBlocked: entry.geoBlocked,
     endpoint: entry.endpoint,
     endpointFormat: entry.endpointFormat ?? entry.endpoint,
+    endpointAuth: entry.endpointAuth,
     responseType: entry.responseType,
     description: entry.description ?? "",
     referenceFormat: entry.referenceFormat ?? "",

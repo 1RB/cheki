@@ -18,9 +18,9 @@ export const dynamic = "force-dynamic";
  * its `receiptPage` in banks.json, and the format is picked from the
  * reference's shape, current first (no extra bank request):
  *
- *   - "redirect" (CBE Receipt ID, Dashen FT Ref): a 302 to the bank's own
- *     receipt page. These banks answer with HTML. Proxying bank HTML from
- *     cheki's origin would run the bank's markup and scripts as cheki (stored
+ *   - "redirect" (CBE Receipt ID, Dashen FT Ref, ZamZam receipt id): a 302
+ *     to the bank's own receipt page. These banks answer with HTML (ZamZam:
+ *     a web app). Proxying bank HTML from cheki's origin would run the bank's markup and scripts as cheki (stored
  *     XSS if the page ever reflects input); a sandbox CSP or an attachment
  *     download would make it inert but useless (no styles, a .html file to
  *     open). A redirect shows the real page on the bank's origin, costs cheki
@@ -35,7 +35,7 @@ export const dynamic = "force-dynamic";
  * "__proto__" are not banks.
  */
 const RECEIPT_BANKS = new Map(
-  ["cbe", "zemen", "dashen"].map((id) => [id, getBank(id)] as const).filter(([, b]) => b?.formats?.some((f) => f.receiptPage))
+  ["cbe", "zemen", "dashen", "zamzam"].map((id) => [id, getBank(id)] as const).filter(([, b]) => b?.formats?.some((f) => f.receiptPage))
 );
 
 const fail = (error: string, status: number) =>
@@ -69,6 +69,14 @@ export async function GET(request: NextRequest) {
     return fail("This receipt format can't be opened through cheki. Verify it with POST /api/verify instead.", 400);
   }
 
+  // A format whose parser has a stricter reference rule (ZamZam: digits
+  // only) applies it here too, before any redirect is built.
+  const formatParser = format.parser ? getParser(format.parser) : undefined;
+  if (formatParser) {
+    const strict = formatParser.normalizeReference(ref.value);
+    if (!strict.ok) return fail(strict.message, 400);
+  }
+
   let account: string | undefined;
   if (formatNeeds(format, "account")) {
     const digits = formatAccountDigits(format) ?? 1;
@@ -96,7 +104,7 @@ export async function GET(request: NextRequest) {
     });
   }
 
-  const parser = format.parser ? getParser(format.parser) : undefined;
+  const parser = formatParser;
   if (!parser) return fail("Receipt download is not available for this format.", 400);
 
   try {
