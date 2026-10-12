@@ -13,7 +13,14 @@
 #     can embed it. assets/fonts/og/NotoSerif-Italic.ttf, Google Fonts (OFL).
 #   - JetBrains Mono Medium for the reference ID (the site's --mono stack).
 #     assets/fonts/og/JetBrainsMono-Medium.ttf, Google Fonts (OFL).
-# The cards render English only; Ethiopic is not included.
+#   - Noto Serif Display Italic for the very large italic word on the
+#     typographic concept (high-contrast cut, made for display sizes).
+#     assets/fonts/og/NotoSerifDisplay-Italic.ttf, notofonts (OFL).
+#   - Noto Serif Ethiopic Black for the Amharic on the exploration concepts
+#     (src/lib/og/concepts). Subset to exactly the characters in
+#     OG_AMHARIC below; tests/ui/og-cards.test.ts fails if a card uses an
+#     Ethiopic character that is not in this list (it would render as tofu).
+#     assets/fonts/og/NotoSerifEthiopic-Black.ttf, notofonts (OFL).
 #
 # Requires fonttools and brotli:  pip install fonttools brotli
 set -euo pipefail
@@ -39,5 +46,13 @@ for spec in "Inter-Regular:400:20" "Inter-Medium:500:20" "Inter-SemiBold:600:20"
 done
 subset assets/fonts/og/NotoSerif-Italic.ttf "$OUT/NotoSerif-Italic.ttf"
 subset assets/fonts/og/JetBrainsMono-Medium.ttf "$OUT/JetBrainsMono-Medium.ttf"
+
+subset assets/fonts/og/NotoSerifDisplay-Italic.ttf "$OUT/NotoSerifDisplay-Italic.ttf"
+
+# Keep in sync with OG_AMHARIC in src/lib/og/concepts/parts.tsx.
+OG_AMHARIC="ተረጋግጧልከፍያለሁብር"
+pyftsubset assets/fonts/og/NotoSerifEthiopic-Black.ttf --text="$OG_AMHARIC " \
+  --layout-features="*" --no-hinting --desubroutinize \
+  --output-file="$OUT/NotoSerifEthiopic-Black.ttf"
 
 ls -l "$OUT"

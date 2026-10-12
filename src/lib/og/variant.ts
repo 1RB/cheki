@@ -1,0 +1,19 @@
+/**
+ * Which Open Graph design the home and bank cards use. One switch for the
+ * whole exploration (PR "seo/og-explore"):
+ *
+ *   OG_VARIANT=stamp npm run build      # or set it on Vercel
+ *
+ * "current" (the default) is the shipped design from PR #43 and renders
+ * byte-for-byte as before. The others live in src/lib/og/concepts.
+ * Guide cards (/verify/[slug]) always use the current design.
+ */
+export const OG_VARIANTS = ["current", "stamp", "spot", "banknote", "chat", "paid"] as const;
+export type OgVariant = (typeof OG_VARIANTS)[number];
+
+export function resolveOgVariant(value: string | undefined): OgVariant {
+  const v = (value ?? "").trim().toLowerCase();
+  return (OG_VARIANTS as readonly string[]).includes(v) ? (v as OgVariant) : "current";
+}
+
+export const OG_VARIANT: OgVariant = resolveOgVariant(process.env.OG_VARIANT);
