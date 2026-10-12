@@ -1,0 +1,174 @@
+/* ── Guides: the /guides index (gx-) and an article (ga-) ─────────────
+   Mobile first. Hierarchy comes from type, not colour: labels are ink,
+   sentence case, never pills or tracked caps. Green means "the bank
+   confirmed it" and appears nowhere here, so these pages draw their one
+   focus ring (and selection) in ink. Motion is transform/opacity only,
+   120ms on the press, and off under reduced motion. Targets are 44px. */
+
+.guides-scope {
+  --ring: color-mix(in srgb, var(--ink) 50%, transparent);
+}
+.guides-scope ::selection { background: color-mix(in srgb, var(--ink) 16%, transparent); color: var(--ink); }
+.guides-scope .sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
+
+/* ── Index ── */
+.gx { padding-top: 20px; padding-bottom: 56px; }
+.gx-title { font-size: clamp(30px, 7.6vw, 44px); line-height: 1.08; font-weight: 700; letter-spacing: -0.035em; color: var(--ink); }
+.gx-lede { margin-top: 8px; font-size: 16px; line-height: 1.5; color: var(--ink-2); max-width: 46ch; text-wrap: pretty; }
+
+.gx-search { position: relative; margin-top: 16px; max-width: 560px; }
+.gx-search-icon { position: absolute; left: 14px; top: 14px; color: var(--ink-3); pointer-events: none; }
+.gx-search-input {
+  display: block; width: 100%; min-height: 44px; padding: 11px 14px 11px 40px;
+  font-size: 16px; line-height: 22px; color: var(--ink);
+  background: var(--surface); border: none; border-radius: var(--radius-md);
+  box-shadow: 0 0 0 1px var(--border), var(--shadow-sm);
+  -webkit-appearance: none; appearance: none;
+}
+.gx-search-input:focus { box-shadow: 0 0 0 1px var(--border-strong), var(--shadow-sm); }
+.gx-search-input::-webkit-search-cancel-button { -webkit-appearance: none; display: none; }
+.gx-search-status { margin-top: 8px; font-size: 13px; line-height: 1.4; color: var(--ink-3); }
+.gx-search-status:empty { display: none; }
+.gx-empty { margin-top: 4px; }
+.gx-clear {
+  min-height: 44px; padding: 0; border: none; background: none; cursor: pointer;
+  font-size: 14px; font-weight: 600; color: var(--ink);
+  text-decoration: underline; text-decoration-color: var(--border-strong); text-underline-offset: 3px;
+}
+
+.gx-list { margin-top: 24px; }
+.gx-section + .gx-section { margin-top: 32px; }
+.gx-section[hidden], .gx-rows > li[hidden] { display: none; }
+.gx-h2 { font-size: 18px; line-height: 1.3; font-weight: 650; letter-spacing: -0.01em; color: var(--ink); }
+.gx-blurb { margin-top: 2px; font-size: 14px; line-height: 1.45; color: var(--ink-3); max-width: 46ch; }
+
+.gx-rows { list-style: none; margin: 8px 0 0; padding: 0; }
+.gx-rows > li + li { border-top: 1px solid var(--border); }
+.gx-row {
+  display: grid; gap: 4px; padding: 14px 0; min-height: 44px;
+  color: inherit; text-decoration: none;
+  transform-origin: left center;
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+.gx-row:active { transform: scale(0.98); }
+.gx-row-title { font-size: 16px; line-height: 1.35; font-weight: 600; color: var(--ink); text-wrap: pretty; }
+.gx-row-excerpt {
+  font-size: 14px; line-height: 1.5; color: var(--ink-2);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.gx-row-meta { font-size: 13px; line-height: 1.4; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.gx-row-meta > span + span::before { content: "·"; margin: 0 8px; }
+@media (hover: hover) {
+  .gx-row:hover .gx-row-title { text-decoration: underline; text-decoration-color: var(--border-strong); text-underline-offset: 3px; }
+}
+
+@media (min-width: 640px) {
+  .gx-row-excerpt { -webkit-line-clamp: 1; }
+}
+@media (min-width: 900px) {
+  .gx { padding-top: 48px; padding-bottom: 80px; }
+  .gx-lede { font-size: 18px; margin-top: 12px; }
+  .gx-search { margin-top: 24px; }
+  .gx-list { margin-top: 40px; }
+  .gx-section { display: grid; grid-template-columns: minmax(0, 240px) minmax(0, 1fr); gap: 48px; align-items: start; }
+  .gx-section + .gx-section { margin-top: 40px; padding-top: 32px; border-top: 1px solid var(--border); }
+  .gx-section-head { position: sticky; top: calc(var(--nav-h) + 24px); }
+  .gx-rows { margin-top: -14px; }
+}
+
+/* ── Article ── */
+.ga { padding-top: 20px; padding-bottom: 56px; }
+.ga-crumb { list-style: none; margin: 0 0 4px; padding: 0; display: flex; flex-wrap: wrap; font-size: 13px; color: var(--ink-3); }
+.ga-crumb > li { display: inline-flex; align-items: center; min-height: 44px; min-width: 0; }
+.ga-crumb > li + li::before { content: "/"; margin: 0 8px; color: var(--ink-3); }
+.ga-crumb a { color: var(--ink-3); text-decoration: none; display: inline-flex; align-items: center; min-height: 44px; }
+.ga-crumb [aria-current] { color: var(--ink-2); overflow-wrap: anywhere; }
+/* On a phone the page title is the next line down: the trail stops at Guides. */
+@media (max-width: 639px) { .ga-crumb [aria-current] { display: none; } }
+@media (hover: hover) { .ga-crumb a:hover { color: var(--ink); } }
+
+.ga-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px; }
+.ga-grid > * { min-width: 0; }
+.ga-title { font-size: clamp(28px, 6.4vw, 40px); line-height: 1.12; font-weight: 700; letter-spacing: -0.03em; color: var(--ink); }
+.ga-desc { margin-top: 12px; font-size: 17px; line-height: 1.55; color: var(--ink-2); text-wrap: pretty; }
+.ga-meta { margin-top: 12px; font-size: 13px; line-height: 1.5; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.ga-meta > span + span::before { content: "·"; margin: 0 8px; }
+
+/* TOC: a disclosure above the article on phones, a sticky list beside it on desktop. */
+.ga-toc-m { margin-top: 24px; border-radius: var(--radius-md); background: var(--surface); box-shadow: 0 0 0 1px var(--border), var(--shadow-sm); }
+.ga-toc-m > summary {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  min-height: 48px; padding: 0 16px; cursor: pointer; list-style: none;
+  font-size: 14px; font-weight: 600; color: var(--ink);
+}
+.ga-toc-m > summary::-webkit-details-marker { display: none; }
+.ga-toc-m > summary::after {
+  content: ""; width: 8px; height: 8px; margin-top: -4px;
+  border-right: 1.5px solid var(--ink-3); border-bottom: 1.5px solid var(--ink-3);
+  transform: rotate(45deg); transition: transform var(--dur-base) var(--ease-out);
+}
+.ga-toc-m[open] > summary::after { transform: rotate(225deg); margin-top: 4px; }
+.ga-toc-m .ga-toc-list { padding: 0 16px 12px; }
+.ga-toc-count { margin-left: auto; font-weight: 400; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.ga-toc-d { display: none; }
+.ga-toc-title { font-size: 13px; font-weight: 600; color: var(--ink); margin-bottom: 8px; }
+.ga-toc-list { list-style: none; margin: 0; }
+.ga-toc-list a {
+  display: block; padding: 8px 0 8px 12px; border-left: 1px solid var(--border);
+  font-size: 14px; line-height: 1.4; color: var(--ink-2); text-decoration: none;
+}
+@media (hover: hover) { .ga-toc-list a:hover { color: var(--ink); border-left-color: var(--ink-3); } }
+
+@media (min-width: 1024px) {
+  .ga { padding-top: 40px; padding-bottom: 80px; }
+  .ga-grid { grid-template-columns: minmax(0, 720px) minmax(0, 240px); gap: 64px; justify-content: space-between; align-items: start; }
+  .ga-toc-m { display: none; }
+  .ga-toc-d { display: block; position: sticky; top: calc(var(--nav-h) + 24px); max-height: calc(100vh - var(--nav-h) - 48px); overflow-y: auto; }
+  .ga-toc-list a { padding: 6px 0 6px 12px; font-size: 13px; }
+}
+
+/* Body copy: links and inline code in ink, not green. */
+.ga-prose { margin-top: 28px; overflow-wrap: break-word; }
+.ga-prose a { color: var(--ink); text-decoration: underline; text-decoration-color: var(--border-strong); text-underline-offset: 3px; text-decoration-thickness: 1px; }
+@media (hover: hover) { .ga-prose a:hover { text-decoration-color: var(--ink); } }
+.ga-code { font-family: var(--mono); font-size: 0.88em; background: var(--surface-alt); color: var(--ink); padding: 1px 5px; border-radius: 4px; }
+
+/* Callouts: a quiet surface; colour only as an 8px dot, and only for warnings. */
+.ga-callout { margin: 20px 0; padding: 14px 16px; border-radius: var(--radius-md); background: var(--surface); box-shadow: 0 0 0 1px var(--border); }
+.ga-prose .ga-callout p { margin: 0; font-size: 14px; line-height: 1.6; color: var(--ink-2); }
+.ga-prose .ga-callout p.ga-callout-title { margin-bottom: 4px; font-weight: 600; color: var(--ink); display: flex; align-items: baseline; gap: 8px; }
+.ga-dot { flex: none; width: 8px; height: 8px; border-radius: 999px; transform: translateY(-1px); display: inline-block; }
+.ga-callout[data-tone="warning"] .ga-dot { background: var(--amber); }
+.ga-callout[data-tone="danger"] .ga-dot { background: var(--red); }
+
+/* Steps: a numbered list, numbers in ink, hairlines between. */
+.ga-steps { list-style: none; margin: 16px 0; padding: 0; }
+.ga-steps > li { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 8px; padding: 12px 0; }
+.ga-steps > li + li { border-top: 1px solid var(--border); }
+.ga-steps > li > div { min-width: 0; overflow-wrap: break-word; }
+.ga-step-n { font-size: 15px; line-height: 1.5; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+.ga-prose .ga-steps p { margin: 0; }
+.ga-prose .ga-steps .ga-step-title { font-size: 15px; font-weight: 600; color: var(--ink); line-height: 1.5; }
+.ga-prose .ga-steps .ga-step-text { font-size: 14px; color: var(--ink-2); line-height: 1.6; margin-top: 2px; }
+
+.ga-quote { border-left: 2px solid var(--border-strong); padding-left: 16px; margin: 16px 0; font-size: 16px; font-style: italic; color: var(--ink-2); }
+.ga-quote cite { display: block; margin-top: 4px; font-size: 13px; font-style: normal; color: var(--ink-3); }
+
+.ga-foot { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0 16px; }
+.ga-prose .ga-foot a { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; font-size: 13px; color: var(--ink-3); text-decoration: none; }
+@media (hover: hover) { .ga-prose .ga-foot a:hover { color: var(--ink); } }
+
+.ga-related { margin-top: 40px; }
+.ga-prose .ga-related a { text-decoration: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .gx-row, .ga-toc-m > summary::after { transition: none; }
+  .gx-row:active { transform: none; }
+}
+
+/* .prose list defaults (indent, 15px, gaps) don't apply to these lists. */
+.ga-prose .gx-rows, .ga-prose .ga-steps { padding-left: 0; }
+.ga-prose .gx-rows > li, .ga-prose .ga-steps > li { margin: 0; font-size: inherit; color: inherit; line-height: inherit; }
