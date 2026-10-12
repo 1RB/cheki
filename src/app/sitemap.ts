@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { banks } from "@/lib/banks";
 import { guides } from "@/lib/guides";
+import { latestGuideUpdate } from "@/lib/guides-index";
 import { indexableSeoPages } from "@/lib/seo-pages";
 
 export default function sitemap(): MetadataRoute.Sitemap {
@@ -10,7 +11,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const staticPages: MetadataRoute.Sitemap = [
     { url: `${base}/`, lastModified: now, changeFrequency: "weekly", priority: 1 },
     { url: `${base}/banks`, lastModified: now, changeFrequency: "weekly", priority: 0.9 },
-    { url: `${base}/guides`, lastModified: now, changeFrequency: "weekly", priority: 0.9 },
+    { url: `${base}/guides`, lastModified: new Date(latestGuideUpdate(guides)), changeFrequency: "weekly", priority: 0.9 },
     { url: `${base}/developers`, lastModified: now, changeFrequency: "monthly", priority: 0.85 },
     { url: `${base}/compare`, lastModified: now, changeFrequency: "monthly", priority: 0.85 },
     { url: `${base}/docs`, lastModified: now, changeFrequency: "monthly", priority: 0.8 },
@@ -30,7 +31,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   const guidePages: MetadataRoute.Sitemap = guides.map((g) => ({
     url: `${base}/guides/${g.slug}`,
-    lastModified: now,
+    // The article's own last content change, not the build time.
+    lastModified: new Date(g.updated),
     changeFrequency: "monthly" as const,
     priority: 0.85,
   }));
