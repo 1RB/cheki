@@ -11,7 +11,10 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { homeFaqs } from "@/lib/home-faq";
-import { allSeoPages } from "@/lib/seo-pages";
+import { banks } from "@/lib/banks";
+import { bankPageContent } from "@/lib/bank-page-content";
+import { compareFaqs } from "@/lib/compare-content";
+import { docsFaqs, developersFaqs } from "@/lib/api-faq";
 import { articles } from "@/lib/guides";
 import { getAllBanks } from "@/lib/manifest/loader";
 import { LIVE_BANK_COUNT, TOTAL_BANK_COUNT, IN_DEVELOPMENT_BANK_COUNT, liveBankList, liveProviders } from "@/lib/bank-counts";
@@ -23,8 +26,9 @@ import { metadata as banksMetadata } from "@/app/banks/layout";
 const read = (p: string) => readFileSync(join(__dirname, "..", "..", p), "utf8");
 
 const COPY_FILES = [
-  "src/lib/seo-pages.ts",
-  "src/lib/seo-pages-generated.ts",
+  "src/lib/bank-page-content.ts",
+  "src/lib/compare-content.ts",
+  "src/lib/api-faq.ts",
   "src/lib/guides.ts",
   "src/lib/home-faq.ts",
   "src/app/layout.tsx",
@@ -40,10 +44,11 @@ const COPY_FILES = [
 /** Every FAQ that is rendered as FAQPage JSON-LD, plus page text and metadata. */
 const rendered = JSON.stringify({
   homeFaqs,
-  seo: allSeoPages,
+  pageFaqs: [compareFaqs, docsFaqs, developersFaqs],
   articles,
-  // /banks/[code] renders each bank's manifest FAQ as FAQPage JSON-LD.
+  // /banks/[code] renders the manifest FAQ plus the merged content as FAQPage JSON-LD.
   manifestFaqs: getAllBanks().map((b) => b.faq ?? []),
+  bankPages: banks.map(bankPageContent),
   meta: [rootMetadata, docsMetadata, developersMetadata, banksMetadata],
 });
 
@@ -67,7 +72,7 @@ describe("rate-limit and batch claims", () => {
   });
 
   it("the FAQ that answers 'Is there a rate limit?' states the per-IP limits", () => {
-    const faqs = allSeoPages.flatMap((p) => p.faq);
+    const faqs = [...docsFaqs, ...developersFaqs, ...compareFaqs, ...homeFaqs, ...articles.flatMap((a) => a.faq ?? [])];
     const rl = faqs.filter((f) => /rate limit/i.test(f.q));
     expect(rl.length).toBeGreaterThan(0);
     for (const f of rl) {
@@ -78,8 +83,7 @@ describe("rate-limit and batch claims", () => {
   });
 
   it("the /api/health FAQ reflects the 5-minute cache", () => {
-    const health = allSeoPages.find((p) => p.slug === "receipt-health-check-api");
-    expect(health?.faq.find((f) => /how often/i.test(f.q))?.a).toMatch(/cached for 5 minutes/);
+    expect(docsFaqs.find((f) => /health check/i.test(f.q))?.a).toMatch(/cached for 5 minutes/);
   });
 });
 
@@ -108,8 +112,8 @@ describe("live bank counts match the manifest", () => {
 
   it("in-development banks are never listed as supported in FAQ answers", () => {
     const inDev = providers.filter((b) => b.status !== "live");
-    const supportFaqs = [...homeFaqs, ...allSeoPages.flatMap((p) => p.faq)].filter((f) =>
-      /which banks|how many banks/i.test(f.q)
+    const supportFaqs = [...homeFaqs, ...docsFaqs, ...articles.flatMap((a) => a.faq ?? [])].filter((f) =>
+      /which banks (are supported|can i verify)|how many banks/i.test(f.q)
     );
     expect(supportFaqs.length).toBeGreaterThan(0);
     for (const f of supportFaqs) {

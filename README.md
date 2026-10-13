@@ -224,9 +224,7 @@ src/
     page.tsx                # Homepage with verify widget
     banks/
       page.tsx              # Bank listing
-      [code]/page.tsx       # Individual bank pages (SSG)
-    verify/
-      [slug]/page.tsx       # Per-bank verify pages (SSG)
+      [code]/page.tsx       # Bank pages (SSG): checker, how-to, format, fake receipts
     guides/
       page.tsx              # Guide index, grouped by task (server component)
       [slug]/page.tsx       # Individual guide pages (SSG)

@@ -9,7 +9,7 @@ import { metadata as indexMetadata } from "@/app/guides/layout";
 import sitemap from "@/app/sitemap";
 
 describe("Article JSON-LD", () => {
-  const a = getArticle("how-to-verify-telebirr-receipt")!;
+  const a = getArticle("payment-fraud-ethiopia")!;
   const ld = guideArticleJsonLd(a);
 
   it("has an image, datePublished and dateModified", () => {
@@ -21,7 +21,7 @@ describe("Article JSON-LD", () => {
   });
 
   it("points at the canonical URL", () => {
-    expect(ld.url).toBe("https://cheki.et/guides/how-to-verify-telebirr-receipt");
+    expect(ld.url).toBe("https://cheki.et/guides/payment-fraud-ethiopia");
     expect(ld.mainEntityOfPage).toEqual({ "@type": "WebPage", "@id": ld.url });
     expect(ld["@type"]).toBe("Article");
   });
@@ -48,7 +48,7 @@ describe("jsonLdScript", () => {
 describe("metadata", () => {
   it("keeps the canonicals and adds the OG image and modified time", () => {
     expect(indexMetadata.alternates?.canonical).toBe("/guides");
-    const a = getArticle("check-et-vs-verify-et-vs-cheki")!;
+    const a = getArticle("free-receipt-verification-no-api-key")!;
     const m = guideMetadata(a);
     expect(m.alternates?.canonical).toBe(`/guides/${a.slug}`);
     const og = m.openGraph as { modifiedTime?: string; publishedTime?: string; images?: { url: string }[] };

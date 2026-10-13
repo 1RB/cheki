@@ -2,7 +2,6 @@ import type { MetadataRoute } from "next";
 import { banks } from "@/lib/banks";
 import { guides } from "@/lib/guides";
 import { latestGuideUpdate } from "@/lib/guides-index";
-import { indexableSeoPages } from "@/lib/seo-pages";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const base = "https://cheki.et";
@@ -17,7 +16,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${base}/docs`, lastModified: now, changeFrequency: "monthly", priority: 0.8 },
     { url: `${base}/endpoints`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
     { url: `${base}/status`, lastModified: now, changeFrequency: "daily", priority: 0.5 },
-    { url: `${base}/verify`, lastModified: now, changeFrequency: "weekly", priority: 0.9 },
   ];
 
   // Only live providers: pages for banks still in development are noindexed
@@ -37,12 +35,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.85,
   }));
 
-  const seoPagesSitemap: MetadataRoute.Sitemap = indexableSeoPages.map((p) => ({
-    url: `${base}/verify/${p.slug}`,
-    lastModified: now,
-    changeFrequency: "weekly" as const,
-    priority: p.intent === "transactional" ? 0.92 : p.intent === "commercial" ? 0.9 : 0.85,
-  }));
-
-  return [...staticPages, ...bankPages, ...guidePages, ...seoPagesSitemap];
+  // Canonical, indexable URLs only. Nothing that 301s (src/lib/seo-redirects.ts,
+  // next.config.ts) belongs here.
+  return [...staticPages, ...bankPages, ...guidePages];
 }

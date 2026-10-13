@@ -192,7 +192,7 @@ describe("theme palette", () => {
 describe("cross-page anchors", () => {
   it("gives every linked id a real target", () => {
     expect(read("src/components/HomePage.tsx")).toContain('id="verify"');
-    expect(read("src/app/verify/[slug]/page.tsx")).toContain('id="faq"');
+    expect(read("src/app/compare/page.tsx")).toContain('id="faq"');
     // The bank page's link to the full checker lives in its locked VerifyPanel.
     expect(read("src/app/banks/[code]/page.tsx")).toContain("<VerifyPanel");
     expect(read("src/components/verify/VerifyInput.tsx")).toContain("/#verify");

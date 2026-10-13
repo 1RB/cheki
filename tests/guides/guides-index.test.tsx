@@ -9,6 +9,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { articles } from "@/lib/guides";
+import { banks } from "@/lib/banks";
 import { formatGuideDate, guideSections, latestGuideUpdate, oneLine, orderedGuides, sectionOf } from "@/lib/guides-index";
 import { I18nProvider } from "@/lib/i18n/context";
 import { translations } from "@/lib/i18n/translations";
@@ -31,13 +32,9 @@ describe("guide sections", () => {
     expect(orderedGuides().map((a) => a.slug)).toEqual(slugs);
   });
 
-  it("puts the bank how-tos first, by bank, how-to before the deep dive", () => {
-    expect(sections[0].guides.map((a) => a.slug)).toEqual([
-      "how-to-verify-cbe-receipt",
-      "cbe-receipt-qr-code",
-      "how-to-verify-telebirr-receipt",
-      "how-to-verify-boa-receipt",
-    ]);
+  it("keeps only bank deep dives under verify: the step-by-step how-tos are the bank pages", () => {
+    expect(sections[0].guides.map((a) => a.slug)).toEqual(["cbe-receipt-qr-code"]);
+    expect(articles.some((a) => a.slug.startsWith("how-to-verify-"))).toBe(false);
     expect(sections[0].guides.every((a) => a.category === "bank")).toBe(true);
   });
 
@@ -87,7 +84,9 @@ describe("GuidesPage (server render)", () => {
     </I18nProvider>
   );
   const doc = new DOMParser().parseFromString(html, "text/html");
-  const rows = [...doc.querySelectorAll("[data-guide-row]")];
+  // Guide rows; the verify section also leads with one row per live bank page.
+  const rows = [...doc.querySelectorAll("[data-guide-row]:not([data-bank-row])")];
+  const bankRows = [...doc.querySelectorAll("[data-bank-row]")];
 
   it("renders every guide as a plain row: title, one-line excerpt, read time, updated date", () => {
     expect(rows).toHaveLength(articles.length);
@@ -106,9 +105,17 @@ describe("GuidesPage (server render)", () => {
     expect([...doc.querySelectorAll(".gx-h2")].map((h) => h.textContent)).toEqual([
       "Verify a receipt", "Spot fraud", "For developers", "Open source", "Comparisons",
     ]);
-    expect(doc.querySelectorAll("[data-guide-section] [data-guide-row]")).toHaveLength(articles.length);
+    expect(doc.querySelectorAll("[data-guide-section] [data-guide-row]:not([data-bank-row])")).toHaveLength(articles.length);
     // list-style: none drops list semantics in Safari unless the role is explicit
     for (const ul of doc.querySelectorAll(".gx-rows")) expect(ul.getAttribute("role")).toBe("list");
+  });
+
+  it("leads 'Verify a receipt' with every live bank page, the one how-to per bank", () => {
+    const live = banks.filter((b) => b.status === "live");
+    expect(bankRows.map((r) => r.querySelector("a")!.getAttribute("href"))).toEqual(live.map((b) => `/banks/${b.code}`));
+    const verify = doc.querySelector('[data-guide-section="verify"]')!;
+    expect(verify.querySelector("[data-guide-row]")!.hasAttribute("data-bank-row")).toBe(true);
+    for (const r of bankRows) expect(r.getAttribute("data-search")).toBe(r.getAttribute("data-search")!.toLowerCase());
   });
 
   it("has a search box and no card, featured card, pill or colour filter", () => {

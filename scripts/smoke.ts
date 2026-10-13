@@ -108,6 +108,18 @@ const checks: Check[] = [
       return loc;
     },
   },
+  {
+    name: "GET consolidated /verify URL → one 301 to its section",
+    run: async (base) => {
+      const r = await get(base, "/verify/fake-cbe-receipt-detection");
+      expect(r.status === 301, `status ${r.status} (want 301)`);
+      const loc = new URL(r.headers.get("location") ?? "", base);
+      expect(loc.pathname === "/banks/cbe" && loc.hash === "#fake-receipt", `location ${loc}`);
+      const next = await get(base, loc.pathname);
+      expect(next.status === 200, `destination status ${next.status} (want 200, no chain)`);
+      return `${loc.pathname}${loc.hash}`;
+    },
+  },
 ];
 
 async function main() {
