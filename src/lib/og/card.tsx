@@ -39,12 +39,15 @@ const FONT_FILES = [
   { name: "Inter Display", file: "InterDisplay-Bold.ttf", weight: 700, style: "normal" },
   { name: "Serif", file: "NotoSerif-Italic.ttf", weight: 400, style: "italic" },
   { name: "Mono", file: "JetBrainsMono-Medium.ttf", weight: 500, style: "normal" },
+  // Used only by the exploration concepts in src/lib/og/concepts (OG_VARIANT).
+  { name: "Serif Display", file: "NotoSerifDisplay-Italic.ttf", weight: 400, style: "italic" },
+  { name: "Ethiopic", file: "NotoSerifEthiopic-Black.ttf", weight: 900, style: "normal" },
 ] as const;
 
 type OgFont = {
   name: string;
   data: Buffer;
-  weight: 400 | 500 | 600 | 700;
+  weight: 400 | 500 | 600 | 700 | 900;
   style: "normal" | "italic";
 };
 

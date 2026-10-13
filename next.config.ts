@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 import manifest from "./src/lib/manifest/banks.json";
+import { OG_ARMS } from "./src/lib/og/ab";
 
 // Per-bank /verify pages merged into /banks/[code] (see MERGED_INTO_BANK_PAGE
 // in src/lib/seo-pages.ts). Live providers go to their own bank page, which now
@@ -25,6 +26,20 @@ const nextConfig: NextConfig = {
   // validates the size. There are no server actions, so no serverActions config.
   // Keep native/self-contained packages external so QR decoding and sharp work.
   serverExternalPackages: ["sharp", "jsqr"],
+  // Share-link A/B test for the home card (src/lib/og/ab.ts): "/?v=a" serves
+  // /ab/a, whose only difference is its og:image. beforeFiles so it wins over
+  // the "/" page; the address bar keeps "/?v=a".
+  async rewrites() {
+    return {
+      beforeFiles: OG_ARMS.map((v) => ({
+        source: "/",
+        has: [{ type: "query" as const, key: "v", value: v }],
+        destination: `/ab/${v}`,
+      })),
+      afterFiles: [],
+      fallback: [],
+    };
+  },
   async redirects() {
     return [
       ...mergedBankRedirects,

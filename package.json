@@ -33,6 +33,7 @@
     "@fontsource/inter": "^5.0.8",
     "@hugeicons/core-free-icons": "^4.2.1",
     "@hugeicons/react": "^1.1.7",
+    "@vercel/analytics": "^2.0.1",
     "cheerio": "^1.0.0",
     "clsx": "^2.1.1",
     "jsqr": "^1.4.0",
