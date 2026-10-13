@@ -29,7 +29,6 @@ const OG_FILES = [
   "src/app/opengraph-image.tsx",
   "src/app/twitter-image.tsx",
   "src/app/banks/[code]/opengraph-image.tsx",
-  "src/app/verify/[slug]/opengraph-image.tsx",
   "src/lib/og/render.tsx",
   "src/lib/og/concepts/parts.tsx",
   "src/lib/og/concepts/stamp.tsx",

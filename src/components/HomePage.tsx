@@ -19,8 +19,16 @@ const FEATURED_GUIDES = [
   "boa-qr-code-receipts",
   "free-receipt-verification-no-api-key",
   "cbe-receipt-qr-code",
-  "check-et-vs-verify-et-vs-cheki",
+  "ethiopian-bank-receipt-formats",
   "contribute-new-bank",
+];
+
+/** Who checks receipts, and how cheki fits each (the "for business" section). */
+const BUSINESS_USES = [
+  { title: "Shops and counters", body: "Staff check a transfer on cheki.et before the goods leave the counter. No integration, no accounts to set up." },
+  { title: "Online orders", body: "Your backend calls POST /api/verify before an order ships, or the SDK for TypeScript, Python, Go, PHP or Dart." },
+  { title: "Delivery", body: "Riders check cash-on-delivery transfers at the door, and the day's receipts are checked again in one batch." },
+  { title: "Accounting", body: "POST /api/verify/batch checks up to 20 receipts per call for end-of-day reconciliation. Self-host if you need more." },
 ];
 
 const FEATURES = [
@@ -101,6 +109,21 @@ export function HomePage() {
           </div>
           <ol className="hp-feature-list">
             {FEATURES.map((f) => (
+              <li key={f.title}>
+                <h3>{f.title}</h3>
+                <p>{f.body}</p>
+              </li>
+            ))}
+          </ol>
+        </section>
+
+        <section className="container hp-section hp-features">
+          <div>
+            <h2 id="business" className="hp-h2" style={{ scrollMarginTop: "80px" }}>Receipt verification for your business</h2>
+            <p className="hp-p">Free for a business of any size: no per-check fee, no subscription, no signup. Fake screenshots, reused receipts and made-up references are caught the same way, by asking the bank.</p>
+          </div>
+          <ol className="hp-feature-list">
+            {BUSINESS_USES.map((f) => (
               <li key={f.title}>
                 <h3>{f.title}</h3>
                 <p>{f.body}</p>

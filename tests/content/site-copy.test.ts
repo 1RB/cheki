@@ -1,6 +1,6 @@
 /**
  * The guides' content rules, applied to the rest of the site: /compare, the
- * SEO pages, the home FAQ, docs, translations, README, llms.txt and the SDK
+ * bank pages' merged content, the home, docs and developers FAQs, docs, translations, README, llms.txt and the SDK
  * READMEs and package manifests.
  *
  *   - no "no quota" / "unlimited" / "no limits" claim about cheki; the hosted
@@ -12,7 +12,10 @@ import { describe, it, expect } from "vitest";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { homeFaqs } from "@/lib/home-faq";
-import { allSeoPages } from "@/lib/seo-pages";
+import { banks } from "@/lib/banks";
+import { bankPageContent } from "@/lib/bank-page-content";
+import { compareFaqs, chekiShortfalls, DATA_SOURCE_EVIDENCE } from "@/lib/compare-content";
+import { docsFaqs, developersFaqs } from "@/lib/api-faq";
 import { translations } from "@/lib/i18n/translations";
 import { IN_DEVELOPMENT_BANK_COUNT, LIVE_BANK_COUNT } from "@/lib/bank-counts";
 import { limiters } from "@/lib/rate-limit";
@@ -40,8 +43,10 @@ function walk(dir: string, exts: RegExp): string[] {
 const SOURCE_COPY = [
   ...walk("src/app", /\.(tsx?|json)$/).filter((p) => !p.startsWith(join("src", "app", "api"))),
   ...walk("src/components", /\.tsx?$/),
-  "src/lib/seo-pages.ts",
-  "src/lib/seo-pages-generated.ts",
+  "src/lib/bank-page-content.ts",
+  "src/lib/compare-content.ts",
+  "src/lib/api-faq.ts",
+  "src/lib/seo-redirects.ts",
   "src/lib/home-faq.ts",
   "src/lib/guides.ts",
   "src/lib/guides-facts.ts",
@@ -61,14 +66,18 @@ const STATIC_COPY = [
 
 const ALL_COPY = [...SOURCE_COPY, ...STATIC_COPY];
 
-/** What the SEO pages and home FAQ render, as text. */
+/** What the bank pages, /compare and the home, docs and developers FAQs render from copy modules, as text. */
 const seoTexts: { where: string; text: string }[] = [
   ...homeFaqs.map((f) => ({ where: `home FAQ: ${f.q}`, text: `${f.q} ${f.a}` })),
-  ...allSeoPages.flatMap((p) => [
-    { where: `${p.slug} meta`, text: `${p.title} ${p.h1} ${p.metaDescription}` },
-    ...p.faq.map((f) => ({ where: `${p.slug} FAQ: ${f.q}`, text: `${f.q} ${f.a}` })),
-    ...p.sections.map((s) => ({ where: `${p.slug} section: ${s.heading}`, text: [s.heading, s.body, ...(s.bullets ?? [])].join("\n") })),
-  ]),
+  ...[...compareFaqs, ...docsFaqs, ...developersFaqs].map((f) => ({ where: `FAQ: ${f.q}`, text: `${f.q} ${f.a}` })),
+  { where: "compare copy", text: [chekiShortfalls(), ...DATA_SOURCE_EVIDENCE].join("\n") },
+  ...banks.flatMap((b) => {
+    const c = bankPageContent(b);
+    return [
+      ...c.faq.map((f) => ({ where: `/banks/${b.code} FAQ: ${f.q}`, text: `${f.q} ${f.a}` })),
+      ...c.sections.map((s) => ({ where: `/banks/${b.code} section: ${s.heading}`, text: [s.heading, s.body, ...(s.bullets ?? []), ...(s.steps ?? [])].join("\n") })),
+    ];
+  }),
 ];
 
 const rendered = [JSON.stringify(translations), ...seoTexts.map((t) => t.text)].join("\n");
@@ -124,7 +133,7 @@ describe("site copy: rate limits, not quotas", () => {
     // Pages under src/app keep literal numbers (tests/security pins them, and
     // the test above checks them against the limiters); the shared copy
     // modules and /compare interpolate HOSTED_RATE_LIMITS.
-    for (const f of ["src/lib/seo-pages.ts", "src/lib/seo-pages-generated.ts", "src/lib/home-faq.ts", "src/app/compare/page.tsx"]) {
+    for (const f of ["src/lib/bank-page-content.ts", "src/lib/compare-content.ts", "src/lib/api-faq.ts", "src/lib/home-faq.ts", "src/app/compare/page.tsx"]) {
       expect(read(f), f).not.toMatch(/(verify|batch|\/api\/verify|\/api\/verify\/batch|\/api\/ocr):? \d+ per minute|\d+ checks per minute|\d+ batch requests/i);
     }
   });

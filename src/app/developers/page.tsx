@@ -3,6 +3,11 @@
 import { useState } from "react";
 import { Nav, Footer } from "@/components/Chrome";
 import { Icon, ArrowRight01Icon } from "@/components/Icon";
+import { BouncyAccordion } from "@/components/motion/bouncy-accordion";
+import { developersFaqs, faqPageJsonLd } from "@/lib/api-faq";
+
+const h3Style = { fontSize: "17px", fontWeight: 700, marginBottom: "8px", scrollMarginTop: "80px" } as const;
+const proseStyle = { fontSize: "15px", color: "var(--ink-2)", lineHeight: 1.6, maxWidth: "68ch", marginBottom: "12px" } as const;
 
 const codeExamples: Record<string, string> = {
   cURL: `curl -X POST https://cheki.et/api/verify \\
@@ -72,6 +77,7 @@ export default function DevelopersPage() {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqPageJsonLd(developersFaqs)) }} />
       <Nav />
       <main className="container" style={{ paddingTop: "48px", paddingBottom: "48px" }}>
         <h1 style={{ fontSize: "clamp(28px, 5vw, 40px)", fontWeight: 800, letterSpacing: "-0.03em", marginBottom: "16px" }}>
@@ -153,7 +159,7 @@ export default function DevelopersPage() {
         </div>
 
         {/* SDKs with interactive tabs */}
-        <h2 style={{ fontSize: "24px", fontWeight: 800, marginBottom: "20px" }}>SDKs and libraries</h2>
+        <h2 id="sdks" style={{ fontSize: "24px", fontWeight: 800, marginBottom: "20px", scrollMarginTop: "80px" }}>SDKs and libraries</h2>
         <div style={{ marginBottom: "40px" }}>
           <div style={{ display: "flex", gap: "0", marginBottom: "0", overflowX: "auto" }}>
             {Object.keys(sdkCode).map((lang) => (
@@ -179,6 +185,20 @@ export default function DevelopersPage() {
           }}>
             <code>{sdkCode[activeSdk]}</code>
           </pre>
+        </div>
+
+        <div style={{ marginBottom: "40px" }}>
+          <h3 id="typescript-sdk" style={h3Style}>TypeScript SDK for receipt verification</h3>
+          <p style={proseStyle}>
+            npm install cheki-verify. A typed client for the REST API with verify, verifyBatch (up to 20 receipts), getBanks, getHealth and getReceiptUrl. It has no runtime dependencies (native fetch, Node.js 18+), waits up to 65 seconds per attempt and retries a network error, 5xx or 429 at most once. Treat a receipt as paid only when isVerified(result) is true: a 200 can still be unverified, such as a BOA QR code BOA could not confirm.
+          </p>
+          <h3 id="python-library" style={{ ...h3Style, marginTop: "24px" }}>Python library for receipt verification</h3>
+          <p style={proseStyle}>
+            pip install cheki (Python 3.10+). ChekiClient calls the cheki API, which fetches and parses the receipt and applies the verification gate on the server; it has verify, verify_batch, get_banks, get_health and get_receipt_url. verify returns a result instead of raising, so check result.is_verified, the only success signal. The package also installs the cheki-verify command, which exits 0 only when the receipt is verified.
+          </p>
+          <p style={proseStyle}>
+            Go, PHP and Dart SDKs follow the same API contract: <a href="https://github.com/1RB/cheki/tree/main/sdks" target="_blank" rel="noopener noreferrer">all SDKs on GitHub</a>.
+          </p>
         </div>
 
         {/* Self-hosting */}
@@ -213,6 +233,12 @@ docker-compose up -d
               }}>{tag}</span>
             ))}
           </div>
+        </div>
+
+        {/* Visible FAQ: the FAQPage JSON-LD above is built from the same list. */}
+        <h2 id="faq" style={{ fontSize: "24px", fontWeight: 800, marginBottom: "20px" }}>SDK questions</h2>
+        <div style={{ marginBottom: "40px" }}>
+          <BouncyAccordion items={developersFaqs.map((f, i) => ({ id: `faq-${i}`, title: f.q, description: f.a }))} />
         </div>
 
         <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>

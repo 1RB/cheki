@@ -1,11 +1,14 @@
 import type { NextConfig } from "next";
 import manifest from "./src/lib/manifest/banks.json";
 import { OG_ARMS } from "./src/lib/og/ab";
+import { consolidatedRedirects } from "./src/lib/seo-redirects";
 
-// Per-bank /verify pages merged into /banks/[code] (see MERGED_INTO_BANK_PAGE
-// in src/lib/seo-pages.ts). Live providers go to their own bank page, which now
-// carries the checker and the merged content. Providers still in development
-// go to the /banks list: their individual pages are noindexed until live.
+// The first merge: per-bank /verify pages ("verify-X-receipt-online",
+// "check-X-payment-online") folded into /banks/[code] (their content is in
+// src/lib/bank-page-content.ts). Live providers go to their own bank page,
+// which carries the checker and the merged content. Providers still in
+// development go to the /banks list: their individual pages are noindexed
+// until live. Everything else that left /verify is in consolidatedRedirects.
 const PARSER_ONLY_IDS = new Set(["cbe-new"]);
 const mergedBankRedirects = (manifest as { id: string; status: string }[])
   .filter((b) => !PARSER_ONLY_IDS.has(b.id))
@@ -43,6 +46,7 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       ...mergedBankRedirects,
+      ...consolidatedRedirects,
       {
         // cheki.et is the canonical home. chekiapp.vercel.app was only ever
         // the deployment address, so permanent-redirect it rather than serve

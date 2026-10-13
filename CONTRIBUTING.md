@@ -335,7 +335,7 @@ Check new UI at 360, 390 and 430px wide, light and dark, with touch emulation. T
 
 ### Smoke test and deploys
 
-`npm run smoke` checks a running site: the main pages, `/api/health`, that a bad `/api/verify` request gets a clean 4xx (never "verified"), and that an old `/verify` URL 301s. It defaults to `http://localhost:3000` (`npx next build && npx next start`); pass another base URL to check a deployment:
+`npm run smoke` checks a running site: the main pages, `/api/health`, that a bad `/api/verify` request gets a clean 4xx (never "verified"), and that old `/verify/...` URLs answer a single 301 to their new page. It defaults to `http://localhost:3000` (`npx next build && npx next start`); pass another base URL to check a deployment:
 
 ```bash
 npm run smoke -- https://cheki.et

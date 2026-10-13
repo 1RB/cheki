@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Nav, Footer } from "@/components/Chrome";
 import { IN_DEVELOPMENT_BANK_COUNT, LIVE_BANK_COUNT } from "@/lib/bank-counts";
 import {
@@ -12,6 +13,8 @@ import {
 } from "@/lib/guides-facts";
 import { useTranslation } from "@/lib/i18n/use-translation";
 import { Icon, ArrowRight01Icon } from "@/components/Icon";
+import { BouncyAccordion } from "@/components/motion/bouncy-accordion";
+import { DATA_SOURCE_EVIDENCE, FIT_ROWS, chekiShortfalls, compareFaqs } from "@/lib/compare-content";
 
 const check = "\u2713";
 const dash = "-";
@@ -32,6 +35,9 @@ function byService(cell: (c: Competitor) => string): Record<string, string> {
 
 /** A table row: the feature name, then one cell per service column. */
 type Row = { feature: string } & Record<string, string>;
+
+const h2Style = { fontSize: "22px", fontWeight: 800, marginBottom: "16px" } as const;
+const proseStyle = { color: "var(--ink-2)", fontSize: "15px", lineHeight: 1.7, marginBottom: "12px", maxWidth: "720px" } as const;
 
 const noteStyle = { fontSize: "13px", color: "var(--ink-3)", lineHeight: 1.5, marginBottom: "32px", maxWidth: "720px" } as const;
 
@@ -192,13 +198,21 @@ export default function ComparePage() {
     ],
   };
 
+  // Built from the same objects as the visible FAQ at the end of the page.
+  const faqJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: compareFaqs.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })),
+  };
+
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
       <Nav />
       <main className="container" style={{ paddingTop: "48px", paddingBottom: "48px" }}>
         <nav aria-label="Breadcrumb" style={{ fontSize: "13px", color: "var(--ink-3)", marginBottom: "16px" }}>
-          <a href="/" style={{ color: "var(--ink-3)" }}>Home</a>
+          <Link href="/" style={{ color: "var(--ink-3)" }}>Home</Link>
           <span style={{ margin: "0 6px"}}>/</span>
           <span style={{ color: "var(--ink)" }}>{t("nav.compare")}</span>
         </nav>
@@ -215,13 +229,38 @@ export default function ComparePage() {
           <p style={{ fontSize: "15px", color: "var(--ink-2)", lineHeight: 1.6, marginBottom: "14px" }}>
             {t("compare.verdict")}
           </p>
-          <a href="/" style={{
+          <Link href="/" style={{
             display: "inline-flex", alignItems: "center", gap: "6px", padding: "10px 20px", borderRadius: "8px", background: "var(--green-cta)", color: "var(--green-cta-fg)", fontSize: "14px", fontWeight: 600,
           }}>
             {t("compare.cta")}
             <Icon icon={ArrowRight01Icon} size={14} color="var(--green-cta-fg)" />
-          </a>
+          </Link>
         </div>
+
+        {/* Who each service fits */}
+        <h2 id="which-fits" style={h2Style}>check.et vs verify.et vs cheki: which one fits you</h2>
+        <p style={proseStyle}>
+          Choose by the job, not the longest feature list. Most people need one thing: to confirm the payment happened.
+        </p>
+        <div className="table-wrap" style={{ marginBottom: "12px" }}>
+          <table style={{ borderCollapse: "collapse", fontSize: "13px", background: "var(--surface)", borderRadius: "12px", overflow: "hidden", width: "100%" }}>
+            <thead>
+              <tr style={{ borderBottom: "2px solid var(--border)" }}>
+                <th style={{ textAlign: "left", padding: "12px 14px", fontWeight: 700 }}>You need</th>
+                <th style={{ textAlign: "left", padding: "12px 14px", fontWeight: 700 }}>Use</th>
+              </tr>
+            </thead>
+            <tbody>
+              {FIT_ROWS.map(([need, service], i) => (
+                <tr key={need} style={{ borderBottom: "1px solid var(--border)", background: i % 2 === 0 ? "var(--surface)" : "var(--surface-alt)" }}>
+                  <td style={{ padding: "11px 14px", color: "var(--ink-2)" }}>{need}</td>
+                  <td style={{ padding: "11px 14px", fontWeight: 600, color: "var(--ink)" }}>{service}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p style={noteStyle}>{chekiShortfalls()}</p>
 
         {/* The table scrolls sideways on narrow screens and its scrollbar is
             the only in-flow signal that more columns exist past the edge. */}
@@ -256,16 +295,16 @@ export default function ComparePage() {
           <p style={{ color: "var(--ink-2)", fontSize: "15px", lineHeight: 1.7, marginBottom: "12px" }}>
             {t("compare.coreFactText")}
           </p>
-          <a href="/guides/check-et-vs-verify-et-vs-cheki" style={{
+          <a href="#data-source" style={{
             display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "14px", color: "var(--green-dark)", fontWeight: 600,
           }}>
-            Read the full guide
+            See the evidence
             <Icon icon={ArrowRight01Icon} size={14} color="var(--green)" />
           </a>
         </div>
 
         {/* Competitor profiles */}
-        <h2 style={{ fontSize: "22px", fontWeight: 800, marginBottom: "8px" }}>Service profiles</h2>
+        <h2 id="profiles" style={{ fontSize: "22px", fontWeight: 800, marginBottom: "8px" }}>cheki vs the competition, service by service</h2>
         <p style={{ fontSize: "13px", color: "var(--ink-3)", lineHeight: 1.5, marginBottom: "20px", maxWidth: "720px" }}>
           Prices and bank counts as listed on {COMPETITORS_CHECKED}. Strengths, limitations and stacks are as of {COMPETITOR_FACTS_AS_OF}, except mobile apps, qbirr&apos;s SDKs and tally&apos;s site, re-checked on {COMPETITORS_CHECKED}.
         </p>
@@ -282,21 +321,21 @@ export default function ComparePage() {
               <p style={{ fontSize: "13px", color: "var(--ink-2)", marginBottom: "16px" }}>{c.pricing}</p>
               <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: "16px" }}>
                 <div>
-                  <p style={{ fontSize: "12px", fontWeight: 700, color: "var(--green-dark)", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.04em" }}>Strengths</p>
+                  <p style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink)", marginBottom: "8px" }}>Strengths</p>
                   <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
                     {c.strengths.map((s) => (
                       <li key={s} style={{ fontSize: "13px", color: "var(--ink-2)", lineHeight: 1.5, marginBottom: "4px", paddingLeft: "14px", position: "relative" }}>
-                        <span style={{ position: "absolute", left: 0, color: "var(--green-dark)" }}>+</span>{s}
+                        <span aria-hidden="true" style={{ position: "absolute", left: 0, color: "var(--ink-3)" }}>+</span>{s}
                       </li>
                     ))}
                   </ul>
                 </div>
                 <div>
-                  <p style={{ fontSize: "12px", fontWeight: 700, color: "var(--red-text)", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.04em" }}>Limitations</p>
+                  <p style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink)", marginBottom: "8px" }}>Limitations</p>
                   <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
                     {c.limitations.map((w) => (
                       <li key={w} style={{ fontSize: "13px", color: "var(--ink-2)", lineHeight: 1.5, marginBottom: "4px", paddingLeft: "14px", position: "relative" }}>
-                        <span style={{ position: "absolute", left: 0, color: "var(--red-text)" }}>-</span>{w}
+                        <span aria-hidden="true" style={{ position: "absolute", left: 0, color: "var(--ink-3)" }}>-</span>{w}
                       </li>
                     ))}
                   </ul>
@@ -306,6 +345,25 @@ export default function ComparePage() {
             </div>
           ))}
         </div>
+
+        {/* The shared geo-block */}
+        <h2 id="geo-blocking" style={h2Style}>Geo-blocking: the shared problem</h2>
+        <p style={proseStyle}>
+          Telebirr and M-Pesa block non-Ethiopian IP addresses at the network level. That affects every service without an Ethiopian relay or server, cheki&apos;s hosted version included. No service has a private line to Ethio Telecom or Safaricom.
+        </p>
+        <p style={proseStyle}>
+          When cheki cannot reach a geo-blocked bank, it returns the bank&apos;s own receipt link to open on a phone on an Ethiopian network, and you can paste the receipt text instead. A pasted or decoded receipt is marked as not confirmed: only the bank&apos;s record turns a result green.
+        </p>
+        <p style={{ ...proseStyle, marginBottom: "40px" }}>
+          The permanent fixes are to self-host cheki on an Ethiopian server, or to use a service that has an Ethiopian relay or server: as of {COMPETITOR_FACTS_AS_OF}, qbirr offered a relay and tally ran on an Ethio Telecom IP.
+        </p>
+
+        {/* Where the data comes from */}
+        <h2 id="data-source" style={h2Style}>Do the paid services use private bank APIs?</h2>
+        <p style={proseStyle}>No. All six read the same public endpoints. The evidence:</p>
+        <ul style={{ ...proseStyle, paddingLeft: "20px", marginBottom: "40px" }}>
+          {DATA_SOURCE_EVIDENCE.map((e) => <li key={e} style={{ marginBottom: "4px" }}>{e}</li>)}
+        </ul>
 
         {/* Other OSS competitors */}
         <h2 style={{ fontSize: "22px", fontWeight: 800, marginBottom: "16px" }}>Other open source projects</h2>
@@ -332,6 +390,10 @@ export default function ComparePage() {
         <p style={{ marginTop: "16px", fontSize: "14px", color: "var(--ink-2)" }}>
           cheki combines these approaches: a web UI, REST API, batch verification, TypeScript SDK, Python library, Docker, {LIVE_BANK_COUNT} live banks, guide pages, and BOA QR decryption. All free and open source.
         </p>
+
+        {/* Visible FAQ: the FAQPage JSON-LD above is built from these exact objects. */}
+        <h2 id="faq" style={{ ...h2Style, marginTop: "48px" }}>Questions about the comparison</h2>
+        <BouncyAccordion items={compareFaqs.map((f, i) => ({ id: `faq-${i}`, title: f.q, description: f.a }))} />
       </main>
       <Footer />
     </>

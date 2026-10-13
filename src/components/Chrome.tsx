@@ -208,9 +208,10 @@ export function Footer() {
     { href: "/banks/dashen", label: "Dashen" },
   ];
   const guideLinks = [
-    { href: "/guides/how-to-verify-cbe-receipt", label: t("footer.verify") + " CBE" },
-    { href: "/guides/how-to-verify-telebirr-receipt", label: t("footer.verify") + " Telebirr" },
-    { href: "/guides/free-receipt-verification-no-api-key", label: t("footer.guides") },
+    { href: "/compare", label: t("nav.compare") },
+    // Not t("footer.guides"): that is the column heading, and "All guides" closes the list.
+    { href: "/guides/free-receipt-verification-no-api-key", label: "Free verification" },
+    { href: "/guides/ethiopian-bank-receipt-formats", label: "Receipt formats" },
     { href: "/guides/payment-fraud-ethiopia", label: "Payment fraud" },
     { href: "/guides/contribute-new-bank", label: "Add a bank" },
   ];
@@ -219,7 +220,6 @@ export function Footer() {
     { href: "/docs", label: t("footer.apiDocs") },
     { href: "/endpoints", label: "Endpoints" },
     { href: "/status", label: "Status" },
-    { href: "/verify", label: "Verify guides" },
     { href: "https://github.com/1RB/cheki", label: t("footer.github") },
     { href: "https://github.com/1RB/cheki/tree/main/python", label: t("footer.python") },
   ];

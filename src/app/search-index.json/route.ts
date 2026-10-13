@@ -19,7 +19,6 @@ const PAGES: SearchItem[] = [
   { id: "page-docs", href: "/docs", label: "API documentation", group: "Pages" },
   { id: "page-compare", href: "/compare", label: "Compare services", group: "Pages" },
   { id: "page-developers", href: "/developers", label: "Developers", group: "Pages" },
-  { id: "page-verify-index", href: "/verify", label: "Verify guides", group: "Pages" },
   { id: "page-endpoints", href: "/endpoints", label: "Bank endpoint reference", group: "Pages" },
   { id: "page-status", href: "/status", label: "Bank status", group: "Pages" },
 ];

@@ -3,9 +3,11 @@ import { Nav, Footer } from "@/components/Chrome";
 import { CodeBlock } from "@/components/CodeBlock";
 import { DocsSidebar } from "@/components/docs/DocsSidebar";
 import { DocsTabs } from "@/components/docs/DocsTabs";
-import { highlightCode, getLangLabel } from "@/lib/highlight";
+import { highlightCode } from "@/lib/highlight";
 import { Icon, ArrowRight01Icon } from "@/components/Icon";
 import { liveProviders } from "@/lib/bank-counts";
+import { BouncyAccordion } from "@/components/motion/bouncy-accordion";
+import { docsFaqs, faqPageJsonLd } from "@/lib/api-faq";
 
 const sections = [
   { id: "overview", label: "Overview", group: "Getting Started" },
@@ -19,6 +21,7 @@ const sections = [
   { id: "errors", label: "Error Codes", group: "Reference" },
   { id: "bank-endpoints", label: "Bank endpoints", group: "Reference" },
   { id: "self-host", label: "Self-hosting", group: "Reference" },
+  { id: "faq", label: "FAQ", group: "Reference" },
 ];
 
 const sdkExamples = [
@@ -269,6 +272,18 @@ function SectionTitle({ id, children }: { id: string; children: React.ReactNode 
     </h2>
   );
 }
+
+/** An h3 under an endpoint section. */
+function SubTitle({ id, children }: { id: string; children: React.ReactNode }) {
+  return (
+    <h3 id={id} style={{ fontSize: "16px", fontWeight: 700, color: "var(--ink)", marginTop: "24px", marginBottom: "8px", scrollMarginTop: "80px" }}>
+      {children}
+    </h3>
+  );
+}
+
+const prose = { fontSize: "15px", color: "var(--ink-2)", lineHeight: 1.6, marginBottom: "16px", maxWidth: "60ch" } as const;
+const proseList = { ...prose, paddingLeft: "20px" } as const;
 
 function MethodBadge({ method }: { method: string }) {
   return (
@@ -574,9 +589,9 @@ docker-compose up -d
               marginBottom: "20px",
             }}
           >
-            <a href="/" style={{ color: "var(--ink-3)" }}>
+            <Link href="/" style={{ color: "var(--ink-3)" }}>
               Home
-            </a>
+            </Link>
             <span style={{ margin: "0 6px" }}>/</span>
             <span style={{ color: "var(--ink)" }}>API Docs</span>
           </nav>
@@ -739,7 +754,7 @@ docker-compose up -d
               />
 
               {/* POST /api/verify */}
-              <SectionTitle id="verify">POST /api/verify</SectionTitle>
+              <SectionTitle id="verify">POST /api/verify: receipt verification API</SectionTitle>
               <EndpointHeader
                 method="POST"
                 path="/api/verify"
@@ -873,7 +888,7 @@ docker-compose up -d
               </details>
 
               {/* POST /api/verify/batch */}
-              <SectionTitle id="batch">POST /api/verify/batch</SectionTitle>
+              <SectionTitle id="batch">POST /api/verify/batch: batch receipt verification</SectionTitle>
               <EndpointHeader
                 method="POST"
                 path="/api/verify/batch"
@@ -919,9 +934,15 @@ docker-compose up -d
                 highlightedHtml={batchRespHtml}
                 langLabel="json"
               />
+              <SubTitle id="batch-use-cases">When to use batch verification</SubTitle>
+              <ul style={proseList}>
+                <li>End-of-day reconciliation: check every incoming transfer of the day in a few calls.</li>
+                <li>Online orders: check the pending payment receipts before you ship.</li>
+                <li>Delivery: check the cash-on-delivery transfers collected on a route.</li>
+              </ul>
 
               {/* GET /api/banks */}
-              <SectionTitle id="banks">GET /api/banks</SectionTitle>
+              <SectionTitle id="banks">GET /api/banks: list supported banks</SectionTitle>
               <EndpointHeader
                 method="GET"
                 path="/api/banks"
@@ -975,9 +996,13 @@ docker-compose up -d
                 highlightedHtml={banksRespHtml}
                 langLabel="json"
               />
+              <SubTitle id="bank-picker">Building a bank picker</SubTitle>
+              <p style={prose}>
+                Show the banks with status live, and use requiresAccount, accountDigits and requiresPhone to decide which extra field to ask for. Only live banks can be verified; the others answer 404 from /api/verify. With a receipt link instead of a reference you can skip the picker: send the link as the reference and cheki detects the bank.
+              </p>
 
               {/* GET /api/health */}
-              <SectionTitle id="health">GET /api/health</SectionTitle>
+              <SectionTitle id="health">GET /api/health: bank endpoint health check</SectionTitle>
               <EndpointHeader
                 method="GET"
                 path="/api/health"
@@ -1011,6 +1036,12 @@ docker-compose up -d
                 highlightedHtml={healthRespHtml}
                 langLabel="json"
               />
+              <SubTitle id="health-patterns">Using the health check</SubTitle>
+              <ul style={proseList}>
+                <li>Before a batch, skip the banks that are unreachable right now.</li>
+                <li>Show bank status on your dashboard, refreshed at most every 5 minutes.</li>
+                <li>Fall back to a manual check when a bank is geo-blocked from your server.</li>
+              </ul>
 
               {/* GET /api/receipt */}
               <SectionTitle id="receipt">GET /api/receipt</SectionTitle>
@@ -1103,6 +1134,11 @@ docker-compose up -d
                 highlightedHtml={dockerHtml}
                 langLabel="bash"
               />
+
+              {/* FAQ: the FAQPage JSON-LD is built from the same list */}
+              <SectionTitle id="faq">API questions</SectionTitle>
+              <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqPageJsonLd(docsFaqs)) }} />
+              <BouncyAccordion items={docsFaqs.map((f, i) => ({ id: `faq-${i}`, title: f.q, description: f.a }))} />
 
               {/* Footer links */}
               <div

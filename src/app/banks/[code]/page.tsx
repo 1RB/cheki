@@ -9,7 +9,10 @@ import { ContributeBox } from "@/components/ContributeBox";
 import { getEndpointDoc } from "@/lib/manifest/endpoints";
 import { formatNeeds, primaryFormat, secondaryFormats } from "@/lib/manifest/formats";
 import { contributeLeadMode } from "@/lib/contribute";
-import { getMergedPagesForBank, getBankTopicPages, stripBrandSuffix } from "@/lib/seo-pages";
+import { bankPageContent, hasGeoSection, receiptTypeLabel, requiredInfoIntro } from "@/lib/bank-page-content";
+import { articles } from "@/lib/guides";
+import { BANK_HEADING } from "@/lib/seo-redirects";
+import { withArticle } from "@/lib/indefinite-article";
 
 export function generateStaticParams() {
   return banks.map((b) => ({ code: b.code }));
@@ -56,36 +59,19 @@ export default async function BankPage({ params }: { params: Promise<{ code: str
   const primary = primaryFormat(bank);
   const olderFormats = secondaryFormats(bank).filter((f) => f.status !== "current");
 
-  // Content from the per-bank /verify pages that now 301 here. Sections whose
-  // heading this page already covers are skipped; FAQs are de-duplicated by
-  // question so the visible list and the FAQPage JSON-LD stay identical.
-  const merged = isLive ? getMergedPagesForBank(bank.code) : [];
-  const seenHeadings = new Set<string>(
-    [
-      "Required information",
-      "Reference number format",
-      `How to verify ${bank.shortName} with cheki`,
-      `How ${bank.shortName} receipt verification works`,
-      `Who uses ${bank.shortName} verification`,
-      `Verifying ${bank.shortName} via API`,
-    ].map((h) => h.toLowerCase()),
-  );
-  const mergedSections = merged
-    .flatMap((p) => p.sections)
-    .filter((sec) => {
-      const key = sec.heading.toLowerCase();
-      if (seenHeadings.has(key)) return false;
-      seenHeadings.add(key);
-      return true;
-    });
-  const seenQ = new Set<string>();
-  const allFaq = [...bank.faq, ...merged.flatMap((p) => p.faq)].filter((f) => {
-    const key = f.q.toLowerCase().replace(/[^a-z0-9]/g, "");
-    if (seenQ.has(key)) return false;
-    seenQ.add(key);
-    return true;
-  });
-  const topicPages = isLive ? getBankTopicPages(bank.code) : [];
+  // Extra sections and FAQs: the content of the per-bank pages that now 301
+  // here (src/lib/seo-redirects.ts). FAQs are de-duplicated by question so the
+  // visible list and the FAQPage JSON-LD stay identical.
+  const content = bankPageContent(bank);
+  const { sections: extraSections, faq: allFaq } = content;
+  // Telebirr and M-Pesa explain geo-blocking in their own section; the short
+  // note under "How X receipt verification works" is for the others.
+  const geoNote = bank.geoBlocked && !hasGeoSection(content);
+  const reqIntro = requiredInfoIntro(bank);
+  // Guides that go deeper on this bank, plus the two cross-bank references.
+  const relatedGuides = isLive
+    ? articles.filter((a) => a.bankCode === bank.code || a.slug === "payment-fraud-ethiopia" || a.slug === "ethiopian-bank-receipt-formats")
+    : [];
 
   const faqJsonLd = {
     "@context": "https://schema.org",
@@ -180,7 +166,7 @@ export default async function BankPage({ params }: { params: Promise<{ code: str
 
         <div className="two-col" style={{ gap: "48px" }}>
           <div className="prose">
-            <h2>Required information</h2>
+            <h2 id={BANK_HEADING.requiredInfo.id}>{BANK_HEADING.requiredInfo.text(bank.shortName)}</h2>
             {primary ? (
               <ul>
                 {primary.inputs.map((i) => (
@@ -201,6 +187,7 @@ export default async function BankPage({ params }: { params: Promise<{ code: str
                 )}
               </ul>
             )}
+            {reqIntro && <p>{reqIntro}</p>}
             {olderFormats.length > 0 && (
               <details>
                 <summary>Older receipt?</summary>
@@ -222,7 +209,7 @@ export default async function BankPage({ params }: { params: Promise<{ code: str
             <p>{bank.referenceFormat}</p>
             <p>Example: <code>{bank.referenceExample}</code></p>
 
-            <h2>How to verify {bank.shortName} with cheki</h2>
+            <h2 id={BANK_HEADING.howToVerify.id}>{BANK_HEADING.howToVerify.text(bank.shortName)}</h2>
             <ol style={{ paddingLeft: "20px" }}>
               {bank.howToVerify.map((step, i) => (
                 <li key={i} style={{ marginBottom: "8px", color: "var(--ink-2)", fontSize: "15px", lineHeight: 1.7 }}>{step}</li>
@@ -232,8 +219,8 @@ export default async function BankPage({ params }: { params: Promise<{ code: str
             <h2>How {bank.shortName} receipt verification works</h2>
             <p>The {bank.shortName} receipt endpoint is: <code>{bank.endpointFormat}</code>{olderFormats.length > 0 ? " (current format)" : ""}</p>
             <p>Placeholders, error shapes and gotchas are in the <Link href={`/endpoints#${bank.code}`}>{bank.shortName} endpoint reference</Link>.</p>
-            <p>This is a public URL that returns a {bank.responseType === "pdf" ? "PDF document" : bank.responseType === "json" ? "JSON response" : "HTML page"} containing the official transaction data. {bank.endpointAuth ?? "No authentication is required."}</p>
-            {bank.geoBlocked && (
+            <p>This is a public URL that returns {withArticle(receiptTypeLabel(bank))} containing the official transaction data. {bank.endpointAuth ?? "No authentication is required."}</p>
+            {geoNote && (
               <p><strong>Note:</strong> This endpoint is geo-blocked to Ethiopian IP addresses. If cheki&apos;s server cannot reach it, use the fallback URL or self-host on an Ethiopian network.</p>
             )}
 
@@ -260,24 +247,30 @@ export default async function BankPage({ params }: { params: Promise<{ code: str
             )}
             <p>See the <Link href="/docs">API documentation</Link> for full details.</p>
 
-            {mergedSections.map((sec, i) => (
-              <div key={`merged-${i}`}>
-                <h2>{sec.heading}</h2>
+            {extraSections.map((sec) => (
+              <div key={sec.heading}>
+                <h2 id={sec.id}>{sec.heading}</h2>
                 {sec.body && <p>{sec.body}</p>}
+                {sec.steps && (
+                  <ol style={{ paddingLeft: "20px" }}>
+                    {sec.steps.map((step, j) => <li key={j}>{step}</li>)}
+                  </ol>
+                )}
                 {sec.bullets && (
                   <ul>
                     {sec.bullets.map((b, j) => <li key={j}>{b}</li>)}
                   </ul>
                 )}
+                {sec.link && <p><Link href={sec.link.href}>{sec.link.text}</Link></p>}
               </div>
             ))}
 
-            {topicPages.length > 0 && (
+            {relatedGuides.length > 0 && (
               <>
                 <h2>More about {bank.shortName} receipts</h2>
                 <ul>
-                  {topicPages.map((tp) => (
-                    <li key={tp.slug}><Link href={`/verify/${tp.slug}`}>{stripBrandSuffix(tp.h1)}</Link></li>
+                  {relatedGuides.map((g) => (
+                    <li key={g.slug}><Link href={`/guides/${g.slug}`}>{g.title}</Link></li>
                   ))}
                 </ul>
               </>

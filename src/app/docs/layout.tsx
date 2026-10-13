@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "API Documentation - Free Receipt Verification REST API",
   description:
-    "Free REST API for verifying Ethiopian bank receipts. No auth, no API key, per-IP rate limits. POST /api/verify with bank code and reference. TypeScript, Python, Dart, PHP, Go SDKs.",
+    "Free REST API for Ethiopian bank receipts: single and batch verification, bank list and health check. No API key, per-IP rate limits. SDKs in 5 languages.",
   alternates: {
     canonical: "/docs",
   },

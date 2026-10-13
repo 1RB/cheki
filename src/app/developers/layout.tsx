@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Developer Guide - Integrate Ethiopian Receipt Verification",
+  title: "Developer Guide - Receipt Verification SDK for TypeScript and Python",
   description:
-    "Integrate cheki's free receipt verification API into your app. Code examples in cURL, JavaScript, Python, TypeScript, CLI. Self-hosting with Docker. SDKs for 5 languages.",
+    "Integrate cheki's free receipt verification API: a TypeScript SDK, a Python library, Go, PHP and Dart SDKs, a CLI and Docker self-hosting. No API key.",
   alternates: {
     canonical: "/developers",
   },

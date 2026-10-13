@@ -1,5 +1,5 @@
 /**
- * The five questions the homepage actually answers on the page.
+ * The questions the homepage actually answers on the page.
  *
  * One source of truth: the same objects drive the visible FAQ block and the
  * FAQPage JSON-LD. Google requires the marked-up questions to appear in the
@@ -32,5 +32,13 @@ export const homeFaqs: FaqItem[] = [
   {
     q: "Can I self-host cheki?",
     a: "Yes. cheki is MIT licensed and ships with Docker support: clone the repo, run docker-compose up, and the API is live on localhost:3000. Self-hosting from an Ethiopian IP also bypasses geo-blocks on the Telebirr and M-Pesa endpoints.",
+  },  {
+    q: "Can I integrate cheki into my POS system?",
+    a: "Yes. cheki has a REST API and SDKs for TypeScript, Python, Go, PHP and Dart, and needs no API key, so any POS, online shop or accounting system can call it. Staff can also check receipts on cheki.et with no integration at all.",
   },
+  {
+    q: "How do I reconcile a day's receipts?",
+    a: "Send them to POST /api/verify/batch, up to 20 receipts per call, and match the results against your orders. Count a receipt as paid only when it comes back verified: true, which means the bank's own record confirmed it.",
+  },
+
 ];

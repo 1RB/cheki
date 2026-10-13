@@ -6,7 +6,6 @@
  *
  * "current" (the default) is the shipped design from PR #43 and renders
  * byte-for-byte as before. The others live in src/lib/og/concepts.
- * Guide cards (/verify/[slug]) always use the current design.
  */
 export const OG_VARIANTS = [
   "current",
