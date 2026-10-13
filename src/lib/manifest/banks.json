@@ -61,7 +61,7 @@
     ],
     "seo": {
       "title": "CBE Receipt Check: Verify a CBE Receipt Online Free",
-      "description": "Check a Commercial Bank of Ethiopia receipt by its Receipt ID or mbreciept link, or an older FT reference. Confirm sender, receiver, amount and date against CBE's own record. Free, no signup.",
+      "description": "Check a CBE receipt by Receipt ID, mbreciept link or older FT reference against CBE's own record. Spot a fake CBE receipt and see the receipt format. Free.",
       "keywords": [
         "cbe receipt check",
         "CBE receipt verification",
@@ -70,7 +70,10 @@
         "verify CBE transaction",
         "FT reference number",
         "Commercial Bank of Ethiopia receipt",
-        "CBE payment check"
+        "CBE payment check",
+        "fake CBE receipt",
+        "CBE receipt format",
+        "how to verify CBE receipt"
       ]
     },
     "formats": [
@@ -240,7 +243,7 @@
     ],
     "seo": {
       "title": "Telebirr Receipt Check Online: Free, Instant",
-      "description": "Paste a Telebirr transaction number to confirm amount, sender and date against Ethio telecom's receipt record. Spot fake screenshots. Free, no account needed.",
+      "description": "Paste a Telebirr transaction number to confirm amount, sender and date against Ethio telecom's record. Spot fake receipts and SMS. Free, no account needed.",
       "keywords": [
         "telebirr receipt check",
         "telebirr receipt verification",
@@ -248,7 +251,10 @@
         "telebirr transaction ID",
         "ethio telecom receipt check",
         "telebirr payment verify",
-        "ethiopian mobile money verification"
+        "ethiopian mobile money verification",
+        "fake telebirr receipt",
+        "telebirr receipt format",
+        "how to verify telebirr receipt"
       ]
     },
     "formats": [
@@ -368,7 +374,7 @@
     ],
     "seo": {
       "title": "BOA Receipt Check: Verify Bank of Abyssinia Payments",
-      "description": "Check a Bank of Abyssinia receipt by reference and account digits against BOA's own record, or decode the data in a BOA receipt QR code. Free, no signup.",
+      "description": "Check a Bank of Abyssinia receipt by reference and account digits against BOA's own record, or read its QR code. Spot a fake BOA receipt. Free, no signup.",
       "keywords": [
         "boa receipt check",
         "BOA receipt verification",
@@ -379,7 +385,10 @@
         "BOA online slip",
         "BOA QR code verification",
         "BOA inter-bank transfer verify",
-        "BOA AES QR decryption"
+        "BOA AES QR decryption",
+        "fake BOA receipt",
+        "BOA receipt format",
+        "how to verify BOA receipt"
       ]
     },
     "formats": [
@@ -467,14 +476,16 @@
     ],
     "seo": {
       "title": "M-Pesa Ethiopia Receipt Check Online: Free",
-      "description": "Verify a Safaricom M-Pesa Ethiopia receipt by transaction ID. Confirm the amount, sender and date against M-Pesa's record. Free, no signup.",
+      "description": "Verify an M-Pesa Ethiopia receipt by transaction ID against Safaricom's record. Spot a fake M-Pesa receipt and see the receipt format. Free, no signup.",
       "keywords": [
         "m-pesa receipt check",
         "M-Pesa receipt verification",
         "verify M-Pesa Ethiopia transaction",
         "Safaricom Ethiopia receipt",
         "M-Pesa payment check",
-        "ethiopian mobile money verification"
+        "ethiopian mobile money verification",
+        "fake M-Pesa receipt",
+        "M-Pesa receipt format"
       ]
     },
     "formats": [
@@ -568,13 +579,15 @@
     ],
     "seo": {
       "title": "Dashen Bank Receipt Check Online: Free Verifier",
-      "description": "Verify a Dashen Bank transfer receipt by reference. Confirm amount, sender and date against Dashen's own record before you hand over goods. Free.",
+      "description": "Verify a Dashen Bank receipt by FT Ref against Dashen's own record before you hand over goods. Spot a fake Dashen receipt, see its format. Free.",
       "keywords": [
         "dashen receipt check",
         "Dashen Bank receipt verification",
         "verify Dashen transaction",
         "Dashen payment check",
-        "ethiopian bank receipt verify"
+        "ethiopian bank receipt verify",
+        "fake Dashen receipt",
+        "Dashen receipt format"
       ]
     },
     "formats": [
