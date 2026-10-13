@@ -54,7 +54,7 @@ export function sectionOf(a: Article): GuideSectionId {
 const PINNED: Partial<Record<GuideSectionId, readonly string[]>> = {
   developers: ["payment-verification-api-guide", "self-hosting-docker-guide", "ethiopian-bank-receipt-formats", "boa-qr-code-receipts"],
   "open-source": ["contribute-new-bank", "contribute-translations", "open-source-ethiopian-fintech"],
-  comparisons: ["free-receipt-verification-no-api-key", "check-et-vs-verify-et-vs-cheki"],
+  comparisons: ["free-receipt-verification-no-api-key"],
 };
 
 const bankOrder = new Map(getAllBanks().map((b, i) => [b.id, i]));
@@ -64,14 +64,11 @@ function byUpdatedThenTitle(a: Article, b: Article): number {
   return b.updated.localeCompare(a.updated) || a.title.localeCompare(b.title);
 }
 
-/** Bank how-tos in manifest (bank) order; within a bank the "how to verify" guide leads. */
+/** Bank guides in manifest (bank) order. The step-by-step how-to for each bank is its /banks page. */
 function byBank(a: Article, b: Article): number {
   const ba = bankOrder.get(a.bankCode ?? "") ?? Number.MAX_SAFE_INTEGER;
   const bb = bankOrder.get(b.bankCode ?? "") ?? Number.MAX_SAFE_INTEGER;
-  if (ba !== bb) return ba - bb;
-  const ha = a.slug.startsWith("how-to-verify-") ? 0 : 1;
-  const hb = b.slug.startsWith("how-to-verify-") ? 0 : 1;
-  return ha - hb || byUpdatedThenTitle(a, b);
+  return ba - bb || byUpdatedThenTitle(a, b);
 }
 
 function sortSection(id: GuideSectionId, list: Article[]): Article[] {

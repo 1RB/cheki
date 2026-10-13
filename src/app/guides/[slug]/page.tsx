@@ -81,10 +81,15 @@ function renderRichText(text: string): React.ReactNode[] {
   return nodes;
 }
 
+/** A heading's anchor: its stable id when it has one, else its position. */
+function headingId(block: Extract<ContentBlock, { type: "heading" }>, index: number): string {
+  return block.id ?? `section-${index}`;
+}
+
 async function renderBlock(block: ContentBlock, key: number): Promise<React.ReactNode> {
   switch (block.type) {
     case "heading":
-      return <h2 key={key} id={`section-${key}`}>{block.text}</h2>;
+      return <h2 key={key} id={headingId(block, key)}>{block.text}</h2>;
 
     case "text":
       return <p key={key}>{renderRichText(block.text)}</p>;
@@ -185,7 +190,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
   if (!article) notFound();
 
   const related = getRelatedArticles(slug);
-  const toc = article.content.flatMap((b, i) => (b.type === "heading" ? [{ id: `section-${i}`, text: b.text }] : []));
+  const toc = article.content.flatMap((b, i) => (b.type === "heading" ? [{ id: headingId(b, i), text: b.text }] : []));
 
   const faqJsonLd = article.faq ? {
     "@context": "https://schema.org",
