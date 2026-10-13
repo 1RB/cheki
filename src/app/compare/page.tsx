@@ -321,21 +321,21 @@ export default function ComparePage() {
               <p style={{ fontSize: "13px", color: "var(--ink-2)", marginBottom: "16px" }}>{c.pricing}</p>
               <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: "16px" }}>
                 <div>
-                  <p style={{ fontSize: "12px", fontWeight: 700, color: "var(--green-dark)", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.04em" }}>Strengths</p>
+                  <p style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink)", marginBottom: "8px" }}>Strengths</p>
                   <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
                     {c.strengths.map((s) => (
                       <li key={s} style={{ fontSize: "13px", color: "var(--ink-2)", lineHeight: 1.5, marginBottom: "4px", paddingLeft: "14px", position: "relative" }}>
-                        <span style={{ position: "absolute", left: 0, color: "var(--green-dark)" }}>+</span>{s}
+                        <span aria-hidden="true" style={{ position: "absolute", left: 0, color: "var(--ink-3)" }}>+</span>{s}
                       </li>
                     ))}
                   </ul>
                 </div>
                 <div>
-                  <p style={{ fontSize: "12px", fontWeight: 700, color: "var(--red-text)", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.04em" }}>Limitations</p>
+                  <p style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink)", marginBottom: "8px" }}>Limitations</p>
                   <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
                     {c.limitations.map((w) => (
                       <li key={w} style={{ fontSize: "13px", color: "var(--ink-2)", lineHeight: 1.5, marginBottom: "4px", paddingLeft: "14px", position: "relative" }}>
-                        <span style={{ position: "absolute", left: 0, color: "var(--red-text)" }}>-</span>{w}
+                        <span aria-hidden="true" style={{ position: "absolute", left: 0, color: "var(--ink-3)" }}>-</span>{w}
                       </li>
                     ))}
                   </ul>

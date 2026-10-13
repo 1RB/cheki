@@ -209,7 +209,8 @@ export function Footer() {
   ];
   const guideLinks = [
     { href: "/compare", label: t("nav.compare") },
-    { href: "/guides/free-receipt-verification-no-api-key", label: t("footer.guides") },
+    // Not t("footer.guides"): that is the column heading, and "All guides" closes the list.
+    { href: "/guides/free-receipt-verification-no-api-key", label: "Free verification" },
     { href: "/guides/ethiopian-bank-receipt-formats", label: "Receipt formats" },
     { href: "/guides/payment-fraud-ethiopia", label: "Payment fraud" },
     { href: "/guides/contribute-new-bank", label: "Add a bank" },

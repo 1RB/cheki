@@ -12,6 +12,7 @@ import { contributeLeadMode } from "@/lib/contribute";
 import { bankPageContent, receiptTypeLabel } from "@/lib/bank-page-content";
 import { articles } from "@/lib/guides";
 import { BANK_HEADING } from "@/lib/seo-redirects";
+import { withArticle } from "@/lib/indefinite-article";
 
 export function generateStaticParams() {
   return banks.map((b) => ({ code: b.code }));
@@ -212,7 +213,7 @@ export default async function BankPage({ params }: { params: Promise<{ code: str
             <h2>How {bank.shortName} receipt verification works</h2>
             <p>The {bank.shortName} receipt endpoint is: <code>{bank.endpointFormat}</code>{olderFormats.length > 0 ? " (current format)" : ""}</p>
             <p>Placeholders, error shapes and gotchas are in the <Link href={`/endpoints#${bank.code}`}>{bank.shortName} endpoint reference</Link>.</p>
-            <p>This is a public URL that returns a {receiptTypeLabel(bank)} containing the official transaction data. {bank.endpointAuth ?? "No authentication is required."}</p>
+            <p>This is a public URL that returns {withArticle(receiptTypeLabel(bank))} containing the official transaction data. {bank.endpointAuth ?? "No authentication is required."}</p>
             {bank.geoBlocked && (
               <p><strong>Note:</strong> This endpoint is geo-blocked to Ethiopian IP addresses. If cheki&apos;s server cannot reach it, use the fallback URL or self-host on an Ethiopian network.</p>
             )}

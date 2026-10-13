@@ -15,6 +15,7 @@ import { primaryFormat, secondaryFormats } from "./manifest/formats";
 import type { Bank } from "./banks";
 import { NO_SIGNUP_SENTENCE, competitorPrices } from "./guides-facts";
 import { BANK_HEADING, BANKS_WITH_TOPIC_PAGES } from "./seo-redirects";
+import { withArticle } from "./indefinite-article";
 
 export interface BankFaq {
   q: string;
@@ -148,7 +149,7 @@ function generatedVerify(b: Bank): { sections: BankSection[]; faq: BankFaq[] } {
   return {
     faq: [
       {
-        q: `How do I verify a ${b.shortName} receipt?`,
+        q: `How do I verify ${withArticle(b.shortName)} receipt?`,
         a: b.requiresAccount
           ? `Select ${b.name}, paste your transaction reference number, enter the last ${b.accountDigits} digits of the account on the receipt, and click Verify. cheki fetches the receipt from ${b.shortName}'s public endpoint and shows you the result in seconds.`
           : b.requiresPhone
@@ -161,7 +162,7 @@ function generatedVerify(b: Bank): { sections: BankSection[]; faq: BankFaq[] } {
           ? `Yes. ${b.shortName}'s receipt endpoint requires the transaction reference plus the last ${b.accountDigits} digits of the account on the receipt. Without the account digits, the endpoint returns no data.`
           : b.requiresPhone
           ? `No account number, but ${b.shortName} requires the payer's phone number (2519XXXXXXXXX format) in addition to the transaction reference. This is a security measure to prevent unauthorized receipt enumeration.`
-          : `No. ${b.shortName} only requires the transaction reference number. The receipt is returned as a ${receiptTypeLabel(b)} with payer name, receiver name, amount, and date.`,
+          : `No. ${b.shortName} only requires the transaction reference number. The receipt is returned as ${withArticle(receiptTypeLabel(b))} with payer name, receiver name, amount, and date.`,
       },
       {
         q: b.geoBlocked ? `Why does ${b.shortName} verification sometimes fail from outside Ethiopia?` : `Is ${b.shortName} receipt verification free?`,
@@ -186,14 +187,14 @@ function checkPayment(b: Bank): { sections: BankSection[]; faq: BankFaq[] } {
   return {
     faq: [
       {
-        q: `How do I check if a ${b.shortName} payment was successful?`,
+        q: `How do I check if ${withArticle(b.shortName)} payment was successful?`,
         a: `Select ${b.name} on cheki, enter the ${ref}${b.requiresAccount ? ` and the last ${b.accountDigits} digits of the account on the receipt` : ``}, and click Verify. If the payment exists, cheki shows you ${whatItShows(b)}. If it doesn't exist, the payment was not completed or the receipt is fake.`,
       },
       {
-        q: `Can I check a ${b.shortName} payment without the receipt?`,
+        q: `Can I check ${withArticle(b.shortName)} payment without the receipt?`,
         a: b.requiresAccount
-          ? `You need the transaction reference number and the last ${b.accountDigits} digits of the account on the receipt. Both are shown on the receipt. Without them, there is no way to look up a ${b.shortName} transaction through public endpoints.`
-          : `You need the ${ref}. This is shown on the receipt and in the ${b.shortName} app. Without it, there is no way to look up a ${b.shortName} transaction through public endpoints.`,
+          ? `You need the transaction reference number and the last ${b.accountDigits} digits of the account on the receipt. Both are shown on the receipt. Without them, there is no way to look up ${withArticle(b.shortName)} transaction through public endpoints.`
+          : `You need the ${ref}. This is shown on the receipt and in the ${b.shortName} app. Without it, there is no way to look up ${withArticle(b.shortName)} transaction through public endpoints.`,
       },
       {
         q: `Is checking ${b.shortName} payments free?`,
@@ -207,7 +208,7 @@ function checkPayment(b: Bank): { sections: BankSection[]; faq: BankFaq[] } {
       },
       {
         heading: `What information you need`,
-        body: `To check a ${b.shortName} payment, ask the sender for the ${ref} from their receipt${b.requiresAccount ? ` and the last ${b.accountDigits} digits of the account on it` : ``}. ${b.requiresAccount ? `Both pieces of information are required by the endpoint.` : `That's all you need, no account number required.`}`,
+        body: `To check ${withArticle(b.shortName)} payment, ask the sender for the ${ref} from their receipt${b.requiresAccount ? ` and the last ${b.accountDigits} digits of the account on it` : ``}. ${b.requiresAccount ? `Both pieces of information are required by the endpoint.` : `That's all you need, no account number required.`}`,
         bullets: [
           `${ref.charAt(0).toUpperCase()}${ref.slice(1)} (e.g. ${b.referenceExample})`,
           ...(b.requiresAccount ? [`Last ${b.accountDigits} digits of the account on the receipt`] : []),
@@ -217,8 +218,8 @@ function checkPayment(b: Bank): { sections: BankSection[]; faq: BankFaq[] } {
       },
       {
         heading: `Common ${b.shortName} payment verification scenarios`,
+        // No bullets: they would repeat "Who uses X verification" (bank.useCases) word for word.
         body: `${b.shortName} payment verification is used by merchants, delivery services, and businesses across Ethiopia. Common scenarios include confirming a customer has actually paid before releasing goods, verifying a delivery payment before handing over a package, and reconciling end-of-day bank transfers.`,
-        bullets: b.useCases.slice(0, 4),
       },
     ],
   };
@@ -364,15 +365,15 @@ function fakeReceipt(b: Bank): { section: BankSection; faq: BankFaq[] } {
     },
     faq: [
       {
-        q: `How do I know if a ${s} receipt is fake?`,
+        q: `How do I know if ${withArticle(s)} receipt is fake?`,
         a: `Check it against ${s}'s own record. Paste the ${refNoun(b)} into cheki: if ${s} has no record of it, do not accept it. If the record exists but the amount, sender or date differs from what you were shown, the screenshot was edited or the receipt belongs to another payment.`,
       },
       {
-        q: `Can someone edit a ${s} receipt screenshot?`,
+        q: `Can someone edit ${withArticle(s)} receipt screenshot?`,
         a: `Yes, in seconds, with any photo editor. The edited screenshot can look real, but ${s}'s record still shows the original amount, names and date. Never accept a screenshot on its own.`,
       },
       {
-        q: `What should I do if a ${s} receipt is fake?`,
+        q: `What should I do if ${withArticle(s)} receipt is fake?`,
         a: `Do not release the goods. Ask the sender to complete the payment, keep the fake receipt as evidence, and report intentional fraud to ${b.name} and the Ethiopian police.`,
       },
     ],
@@ -383,10 +384,26 @@ function fakeReceipt(b: Bank): { section: BankSection; faq: BankFaq[] } {
 
 const normQ = (q: string) => q.toLowerCase().replace(/[^a-z0-9]/g, "");
 
+/**
+ * The key two FAQs share when they ask the same thing in other words. The
+ * folded pages each asked "is it free?", "do I need an account number?" and
+ * "why does it fail?" in their own phrasing ("Does CBE charge for receipt
+ * verification?", "Is CBE receipt verification free?", "Is checking CBE
+ * payments free?"), so de-duplicating by wording alone left three answers to
+ * one question on the page and in the FAQPage JSON-LD. The first one (the
+ * manifest's, when it has one) is kept.
+ */
+export function faqTopic(q: string): string {
+  if (/^(?:is|does)\b.*\b(?:free|charge)\b/i.test(q)) return "topic:free";
+  if (/^(?:do i need|does .+ (?:verification )?require) (?:an|the) account number\b/i.test(q)) return "topic:account-number";
+  if (/^why does .+ verification (?:sometimes )?fail\b/i.test(q)) return "topic:fails";
+  return normQ(q);
+}
+
 export interface BankPageContent {
   /** Sections after the built-in ones, in page order, never repeating a built-in heading. */
   sections: BankSection[];
-  /** Every FAQ on the page, manifest first, de-duplicated by question: the visible list and the FAQPage JSON-LD. */
+  /** Every FAQ on the page, manifest first, one per question (faqTopic): the visible list and the FAQPage JSON-LD. */
   faq: BankFaq[];
 }
 
@@ -414,7 +431,7 @@ export function bankPageContent(b: Bank): BankPageContent {
 
   const seenQ = new Set<string>();
   const faq = [...b.faq, ...verify.faq, ...howto.faq, ...check.faq, ...formatFaq, ...(fake?.faq ?? [])].filter((f) => {
-    const key = normQ(f.q);
+    const key = faqTopic(f.q);
     if (seenQ.has(key)) return false;
     seenQ.add(key);
     return true;

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Nav, Footer } from "@/components/Chrome";
 import { banks } from "@/lib/banks";
+import { withArticle } from "@/lib/indefinite-article";
 import { T } from "@/components/home/T";
 import { GuidesSearch } from "@/components/guides/GuidesSearch";
 import { formatGuideDate, guideSearchText, guideSections, oneLine, orderedGuides } from "@/lib/guides-index";
@@ -52,7 +53,7 @@ export default function GuidesPage() {
                   bankRows.map((b) => (
                     <li key={`bank-${b.code}`} data-guide-row data-bank-row data-search={`${b.shortName} ${b.name} receipt check verify how to`.toLowerCase()}>
                       <Link href={`/banks/${b.code}`} prefetch={false} className="gx-row">
-                        <span className="gx-row-title">How to verify a {b.shortName} receipt</span>
+                        <span className="gx-row-title">How to verify {withArticle(b.shortName)} receipt</span>
                         <span className="gx-row-excerpt">{oneLine(b.seo.description)}</span>
                       </Link>
                     </li>

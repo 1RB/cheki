@@ -5,7 +5,8 @@
  */
 import { describe, it, expect } from "vitest";
 import { banks, getBank } from "@/lib/banks";
-import { bankPageContent, builtInHeadings, receiptTypeLabel } from "@/lib/bank-page-content";
+import { bankPageContent, builtInHeadings, faqTopic, receiptTypeLabel } from "@/lib/bank-page-content";
+import { aOrAn } from "@/lib/indefinite-article";
 import { BANKS_WITH_TOPIC_PAGES } from "@/lib/seo-redirects";
 
 const live = banks.filter((b) => b.status === "live");
@@ -75,5 +76,34 @@ describe("bank page content", () => {
 
   it("does not promise a sender and receiver for ZamZam", () => {
     expect(text("zamzam")).not.toMatch(/sender name, receiver name/);
+  });
+
+  it("asks each question once, however the folded pages worded it", () => {
+    for (const b of live) {
+      const topics = bankPageContent(b).faq.map((f) => faqTopic(f.q));
+      expect(new Set(topics).size, b.code).toBe(topics.length);
+    }
+    expect(faqTopic("Does CBE charge for receipt verification?")).toBe(faqTopic("Is checking CBE payments free?"));
+    expect(faqTopic("Does Dashen verification require an account number?")).toBe(faqTopic("Do I need an account number to verify Dashen?"));
+    expect(faqTopic("Why does Telebirr verification sometimes fail?")).toBe(faqTopic("Why does Telebirr verification fail from outside Ethiopia?"));
+  });
+
+  it("does not repeat the use-case list under the payment scenarios", () => {
+    for (const b of live) {
+      const bullets = bankPageContent(b).sections.flatMap((s) => s.bullets ?? []);
+      for (const u of b.useCases) expect(bullets, b.code).not.toContain(u);
+    }
+  });
+
+  it("uses an before a vowel sound", () => {
+    expect(aOrAn("M-Pesa")).toBe("an");
+    expect(aOrAn("Awash")).toBe("an");
+    expect(aOrAn("eBirr")).toBe("an");
+    expect(aOrAn("HTML page")).toBe("an");
+    expect(aOrAn("CBE")).toBe("a");
+    expect(aOrAn("BOA")).toBe("a");
+    expect(aOrAn("Telebirr")).toBe("a");
+    expect(aOrAn("Siinqee")).toBe("a");
+    for (const b of live) expect(text(b.code), b.code).not.toMatch(/\ba (?:M-Pesa|Awash|eBirr|HTML)\b/);
   });
 });

@@ -14,6 +14,7 @@
  * Imported by next.config.ts, so relative imports only.
  */
 import manifest from "./manifest/banks.json";
+import { withArticle } from "./indefinite-article";
 
 export interface ConsolidatedUrl {
   /** The removed path. */
@@ -42,7 +43,7 @@ const shortName = (id: string): string => {
 
 /** Bank page headings, shared with src/lib/bank-page-content.ts. */
 export const BANK_HEADING = {
-  howToVerify: { id: "how-to-verify", text: (short: string) => `How to verify a ${short} receipt, step by step` },
+  howToVerify: { id: "how-to-verify", text: (short: string) => `How to verify ${withArticle(short)} receipt, step by step` },
   fake: { id: "fake-receipt", text: (short: string) => `How to detect a fake ${short} receipt` },
   format: { id: "receipt-format", text: (short: string) => `${short} receipt format explained` },
 } as const;
@@ -85,7 +86,7 @@ export const CONSOLIDATED_URLS: ConsolidatedUrl[] = [
       headingId: BANK_HEADING.fake.id,
       heading: BANK_HEADING.fake.text(shortName(code)),
       anchor: true,
-      faq: `How do I know if a ${shortName(code)} receipt is fake?`,
+      faq: `How do I know if ${withArticle(shortName(code))} receipt is fake?`,
     },
     {
       source: `/verify/${code}-receipt-format-explained`,
