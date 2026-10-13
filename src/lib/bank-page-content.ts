@@ -11,7 +11,7 @@
  * 301 here (next.config.ts, src/lib/seo-redirects.ts), and their distinct
  * content lives in this file.
  */
-import { primaryFormat, secondaryFormats } from "./manifest/formats";
+import { formatNeeds, primaryFormat } from "./manifest/formats";
 import type { Bank } from "./banks";
 import { NO_SIGNUP_SENTENCE, competitorPrices } from "./guides-facts";
 import { BANK_HEADING, BANKS_WITH_TOPIC_PAGES } from "./seo-redirects";
@@ -51,13 +51,6 @@ function refNoun(b: Bank): string {
   return /^[A-Z][a-z]/.test(label) ? label.charAt(0).toLowerCase() + label.slice(1) : label;
 }
 
-/** One line per older format cheki still accepts, so the copy leads with the current one. */
-function olderFormatNotes(b: Bank): string[] {
-  return secondaryFormats(b)
-    .filter((f) => f.status === "legacy" && f.parser)
-    .map((f) => `Older receipt: ${f.label} (legacy format, still accepted)`);
-}
-
 /**
  * What a confirmed check shows, for copy. Most banks return both parties;
  * ZamZam's record names only its own account holder (the other side only
@@ -70,10 +63,25 @@ function whatItShows(b: Bank): string {
   return SHOWN_OVERRIDE[b.code] ?? "the sender name, receiver name, amount, and date";
 }
 
+/**
+ * The line under "What you need to verify X receipt": where the inputs come
+ * from, and whether an account number is needed. It replaces the "What
+ * information you need" section the check-payment page brought, which listed
+ * the same inputs a second time. Only live banks have a checker to feed.
+ */
+export function requiredInfoIntro(b: Bank): string | null {
+  if (b.status !== "live") return null;
+  const primary = primaryFormat(b);
+  const needsAccount = primary ? formatNeeds(primary, "account") : Boolean(b.requiresAccount);
+  return needsAccount
+    ? `Ask the sender for the ${refNoun(b)} and the account digits from their receipt: ${b.shortName}'s receipt record needs both.`
+    : `Ask the sender for the ${refNoun(b)} from their receipt. No account number is needed.`;
+}
+
 /** The headings the bank page renders itself; extra sections never repeat them. */
 export function builtInHeadings(b: Bank): string[] {
   return [
-    "Required information",
+    BANK_HEADING.requiredInfo.text(b.shortName),
     "Reference number format",
     BANK_HEADING.howToVerify.text(b.shortName),
     `How ${b.shortName} receipt verification works`,
@@ -108,8 +116,12 @@ const VERIFY_BY_HAND: Record<string, { sections: BankSection[]; faq: BankFaq[] }
     ],
     sections: [
       {
-        heading: "Telebirr geo-blocking",
-        body: "Telebirr's receipt endpoint blocks requests from IP addresses outside Ethiopia. If you're using cheki from outside Ethiopia, the verification may fail. In that case, cheki provides a direct link to open the receipt in your browser. For reliable verification, self-host cheki on a server with an Ethiopian IP address.",
+        // The one place the page explains the block: the page drops its own
+        // geo-blocked note under "How Telebirr receipt verification works"
+        // when this section is there (hasGeoSection).
+        id: BANK_HEADING.geoBlocking.id,
+        heading: BANK_HEADING.geoBlocking.text("Telebirr"),
+        body: "Telebirr's receipt endpoint (transactioninfo.ethiotelecom.et) only answers Ethiopian IP addresses. When cheki's server cannot reach it, cheki gives you the fallback: a direct link to open the receipt yourself in a browser on an Ethiopian network. For reliable verification, self-host cheki on a server with an Ethiopian IP address.",
       },
     ],
   },
@@ -136,7 +148,8 @@ const VERIFY_BY_HAND: Record<string, { sections: BankSection[]; faq: BankFaq[] }
     ],
     sections: [
       {
-        heading: "M-Pesa geo-blocking",
+        id: BANK_HEADING.geoBlocking.id,
+        heading: BANK_HEADING.geoBlocking.text("M-Pesa"),
         body: "Like Telebirr, M-Pesa's endpoint restricts access to Ethiopian and Kenyan IP addresses. cheki does not try to get around the block: when the endpoint won't answer, it hands you the receipt link to open yourself. For reliable verification, self-host cheki on an Ethiopian server.",
       },
     ],
@@ -171,8 +184,8 @@ function generatedVerify(b: Bank): { sections: BankSection[]; faq: BankFaq[] } {
           : `Yes. cheki is free. ${NO_SIGNUP_SENTENCE} ${competitorPrices(["check.et"])} cheki uses the same public ${b.shortName} endpoint but charges nothing.`,
       },
     ],
-    // "What you need" is already on the page (Required information, What
-    // information you need), so the generated pages bring only their FAQs.
+    // "What you need" is already on the page (What you need to verify X
+    // receipt), so the generated pages bring only their FAQs.
     sections: [],
   };
 }
@@ -206,16 +219,8 @@ function checkPayment(b: Bank): { sections: BankSection[]; faq: BankFaq[] } {
         heading: `Checking ${b.shortName} payment status`,
         body: `${b.name} publishes transaction data at ${b.endpointFormat}. When someone sends you a payment via ${b.shortName}, a receipt is generated at this URL. cheki fetches the receipt, parses it, and tells you whether ${b.shortName} has the record and what it shows: ${whatItShows(b)}. This takes 2 to 10 seconds.`,
       },
-      {
-        heading: `What information you need`,
-        body: `To check ${withArticle(b.shortName)} payment, ask the sender for the ${ref} from their receipt${b.requiresAccount ? ` and the last ${b.accountDigits} digits of the account on it` : ``}. ${b.requiresAccount ? `Both pieces of information are required by the endpoint.` : `That's all you need, no account number required.`}`,
-        bullets: [
-          `${ref.charAt(0).toUpperCase()}${ref.slice(1)} (e.g. ${b.referenceExample})`,
-          ...(b.requiresAccount ? [`Last ${b.accountDigits} digits of the account on the receipt`] : []),
-          ...olderFormatNotes(b),
-          ...(b.geoBlocked ? [`If accessing from outside Ethiopia, cheki provides a fallback link`] : []),
-        ],
-      },
+      // No "What information you need" section: it listed the inputs a second
+      // time under "What you need to verify X receipt" (requiredInfoIntro).
       {
         heading: `Common ${b.shortName} payment verification scenarios`,
         // No bullets: they would repeat "Who uses X verification" (bank.useCases) word for word.
@@ -405,6 +410,11 @@ export interface BankPageContent {
   sections: BankSection[];
   /** Every FAQ on the page, manifest first, one per question (faqTopic): the visible list and the FAQPage JSON-LD. */
   faq: BankFaq[];
+}
+
+/** True when the bank's extra sections explain geo-blocking, so the page does not say it twice. */
+export function hasGeoSection(content: Pick<BankPageContent, "sections">): boolean {
+  return content.sections.some((s) => s.id === BANK_HEADING.geoBlocking.id);
 }
 
 export function bankPageContent(b: Bank): BankPageContent {

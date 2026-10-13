@@ -5,9 +5,11 @@
  */
 import { describe, it, expect } from "vitest";
 import { banks, getBank } from "@/lib/banks";
-import { bankPageContent, builtInHeadings, faqTopic, receiptTypeLabel } from "@/lib/bank-page-content";
+import { bankPageContent, builtInHeadings, faqTopic, hasGeoSection, receiptTypeLabel, requiredInfoIntro } from "@/lib/bank-page-content";
 import { aOrAn } from "@/lib/indefinite-article";
-import { BANKS_WITH_TOPIC_PAGES } from "@/lib/seo-redirects";
+import { BANK_HEADING, BANKS_WITH_TOPIC_PAGES } from "@/lib/seo-redirects";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 
 const live = banks.filter((b) => b.status === "live");
 const text = (code: string) => {
@@ -105,5 +107,36 @@ describe("bank page content", () => {
     expect(aOrAn("Telebirr")).toBe("a");
     expect(aOrAn("Siinqee")).toBe("a");
     for (const b of live) expect(text(b.code), b.code).not.toMatch(/\ba (?:M-Pesa|Awash|eBirr|HTML)\b/);
+  });
+
+  it("lists what you need once: no second inputs section under the check-payment content", () => {
+    for (const b of live) {
+      const headings = bankPageContent(b).sections.map((s) => s.heading.toLowerCase());
+      expect(headings.some((h) => /what (?:information|you need)|required information/.test(h)), b.code).toBe(false);
+      expect(builtInHeadings(b)[0]).toBe(`What you need to verify ${aOrAn(b.shortName)} ${b.shortName} receipt`);
+      // The one fact the removed section added: where the inputs come from, and whether an account is needed.
+      expect(requiredInfoIntro(b), b.code).toMatch(/^Ask the sender for the /);
+    }
+    expect(requiredInfoIntro(getBank("boa")!)).toMatch(/needs both/);
+    expect(requiredInfoIntro(getBank("cbe")!)).toMatch(/No account number is needed/);
+    for (const b of banks.filter((x) => x.status !== "live")) expect(requiredInfoIntro(b)).toBeNull();
+  });
+
+  it("explains geo-blocking once on Telebirr and M-Pesa, and the page drops its own note there", () => {
+    for (const code of ["telebirr", "mpesa"]) {
+      const c = bankPageContent(getBank(code)!);
+      expect(hasGeoSection(c), code).toBe(true);
+      expect(c.sections.filter((s) => /geo-block/i.test(s.heading)).length, code).toBe(1);
+      expect(c.sections.find((s) => s.id === BANK_HEADING.geoBlocking.id)!.heading).toBe(`${getBank(code)!.shortName} geo-blocking`);
+    }
+    const tb = bankPageContent(getBank("telebirr")!).sections.find((s) => s.id === "geo-blocking")!;
+    expect(tb.body).toMatch(/fallback/);
+    expect(tb.body).toMatch(/self-host/);
+    for (const code of ["cbe", "boa", "dashen"]) expect(hasGeoSection(bankPageContent(getBank(code)!)), code).toBe(false);
+    // The page wires the note to hasGeoSection, so it never renders beside the section.
+    const page = readFileSync(join(__dirname, "../../src/app/banks/[code]/page.tsx"), "utf8");
+    expect(page).toMatch(/const geoNote = bank\.geoBlocked && !hasGeoSection\(content\)/);
+    expect(page).toMatch(/\{geoNote && \(/);
+    expect(page).not.toMatch(/<h2>Required information<\/h2>/);
   });
 });

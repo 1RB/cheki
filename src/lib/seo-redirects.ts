@@ -43,9 +43,11 @@ const shortName = (id: string): string => {
 
 /** Bank page headings, shared with src/lib/bank-page-content.ts. */
 export const BANK_HEADING = {
+  requiredInfo: { id: "what-you-need", text: (short: string) => `What you need to verify ${withArticle(short)} receipt` },
   howToVerify: { id: "how-to-verify", text: (short: string) => `How to verify ${withArticle(short)} receipt, step by step` },
   fake: { id: "fake-receipt", text: (short: string) => `How to detect a fake ${short} receipt` },
   format: { id: "receipt-format", text: (short: string) => `${short} receipt format explained` },
+  geoBlocking: { id: "geo-blocking", text: (short: string) => `${short} geo-blocking` },
 } as const;
 
 /** The banks that had their own fake-receipt and receipt-format pages. */

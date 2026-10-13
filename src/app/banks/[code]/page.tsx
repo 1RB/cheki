@@ -9,7 +9,7 @@ import { ContributeBox } from "@/components/ContributeBox";
 import { getEndpointDoc } from "@/lib/manifest/endpoints";
 import { formatNeeds, primaryFormat, secondaryFormats } from "@/lib/manifest/formats";
 import { contributeLeadMode } from "@/lib/contribute";
-import { bankPageContent, receiptTypeLabel } from "@/lib/bank-page-content";
+import { bankPageContent, hasGeoSection, receiptTypeLabel, requiredInfoIntro } from "@/lib/bank-page-content";
 import { articles } from "@/lib/guides";
 import { BANK_HEADING } from "@/lib/seo-redirects";
 import { withArticle } from "@/lib/indefinite-article";
@@ -62,7 +62,12 @@ export default async function BankPage({ params }: { params: Promise<{ code: str
   // Extra sections and FAQs: the content of the per-bank pages that now 301
   // here (src/lib/seo-redirects.ts). FAQs are de-duplicated by question so the
   // visible list and the FAQPage JSON-LD stay identical.
-  const { sections: extraSections, faq: allFaq } = bankPageContent(bank);
+  const content = bankPageContent(bank);
+  const { sections: extraSections, faq: allFaq } = content;
+  // Telebirr and M-Pesa explain geo-blocking in their own section; the short
+  // note under "How X receipt verification works" is for the others.
+  const geoNote = bank.geoBlocked && !hasGeoSection(content);
+  const reqIntro = requiredInfoIntro(bank);
   // Guides that go deeper on this bank, plus the two cross-bank references.
   const relatedGuides = isLive
     ? articles.filter((a) => a.bankCode === bank.code || a.slug === "payment-fraud-ethiopia" || a.slug === "ethiopian-bank-receipt-formats")
@@ -161,7 +166,7 @@ export default async function BankPage({ params }: { params: Promise<{ code: str
 
         <div className="two-col" style={{ gap: "48px" }}>
           <div className="prose">
-            <h2>Required information</h2>
+            <h2 id={BANK_HEADING.requiredInfo.id}>{BANK_HEADING.requiredInfo.text(bank.shortName)}</h2>
             {primary ? (
               <ul>
                 {primary.inputs.map((i) => (
@@ -182,6 +187,7 @@ export default async function BankPage({ params }: { params: Promise<{ code: str
                 )}
               </ul>
             )}
+            {reqIntro && <p>{reqIntro}</p>}
             {olderFormats.length > 0 && (
               <details>
                 <summary>Older receipt?</summary>
@@ -214,7 +220,7 @@ export default async function BankPage({ params }: { params: Promise<{ code: str
             <p>The {bank.shortName} receipt endpoint is: <code>{bank.endpointFormat}</code>{olderFormats.length > 0 ? " (current format)" : ""}</p>
             <p>Placeholders, error shapes and gotchas are in the <Link href={`/endpoints#${bank.code}`}>{bank.shortName} endpoint reference</Link>.</p>
             <p>This is a public URL that returns {withArticle(receiptTypeLabel(bank))} containing the official transaction data. {bank.endpointAuth ?? "No authentication is required."}</p>
-            {bank.geoBlocked && (
+            {geoNote && (
               <p><strong>Note:</strong> This endpoint is geo-blocked to Ethiopian IP addresses. If cheki&apos;s server cannot reach it, use the fallback URL or self-host on an Ethiopian network.</p>
             )}
 
