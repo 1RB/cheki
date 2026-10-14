@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { articles, getArticle, getRelatedArticles, type ContentBlock } from "@/lib/guides";
+import { articles, getArticle, getRelatedArticles, getRelatedPages, type ContentBlock } from "@/lib/guides";
 import { Nav, Footer } from "@/components/Chrome";
 import { CodeBlock } from "@/components/CodeBlock";
 import { highlightCode, getLangLabel } from "@/lib/highlight";
@@ -190,6 +190,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
   if (!article) notFound();
 
   const related = getRelatedArticles(slug);
+  const relatedPages = getRelatedPages(slug);
   const toc = article.content.flatMap((b, i) => (b.type === "heading" ? [{ id: headingId(b, i), text: b.text }] : []));
 
   const faqJsonLd = article.faq ? {
@@ -290,7 +291,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
                 </a>
               </div>
 
-              {related.length > 0 && (
+              {related.length + relatedPages.length > 0 && (
                 <section className="ga-related" aria-labelledby="ga-related">
                   <h2 id="ga-related"><T k="guides.related" /></h2>
                   <ul className="gx-rows" role="list">
@@ -302,6 +303,14 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
                           <span className="gx-row-meta">
                             <span><T k="guides.read" vars={{ time: r.readTime }} /></span>
                           </span>
+                        </Link>
+                      </li>
+                    ))}
+                    {relatedPages.map((p) => (
+                      <li key={p.href}>
+                        <Link href={p.href} prefetch={false} className="gx-row">
+                          <span className="gx-row-title">{p.title}</span>
+                          <span className="gx-row-excerpt">{oneLine(p.excerpt)}</span>
                         </Link>
                       </li>
                     ))}

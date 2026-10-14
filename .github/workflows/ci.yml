@@ -47,6 +47,8 @@ jobs:
           npx next start -p 3000 > next-start.log 2>&1 &
           for i in $(seq 1 30); do curl -fsS -o /dev/null http://localhost:3000/ && break; sleep 1; done
           npm run smoke -- http://localhost:3000 || { cat next-start.log; exit 1; }
+          # Every sitemap page needs an in-content link from another page.
+          npm run link-audit -- http://localhost:3000
 
   sdk-typescript:
     name: TypeScript SDK

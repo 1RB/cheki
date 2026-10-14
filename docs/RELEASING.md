@@ -21,6 +21,7 @@ npx next build
 # Smoke-test the production build locally
 npx next start -p 3000 &
 npm run smoke                       # defaults to http://localhost:3000
+npm run link-audit                  # every sitemap page has an in-content inbound link
 ```
 
 ## Smoke test

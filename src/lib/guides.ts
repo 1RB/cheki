@@ -1,3 +1,4 @@
+import { internalPageLink, type InternalPageLink } from "./internal-links";
 import { IN_DEVELOPMENT_BANK_COUNT, LIVE_BANK_COUNT, TOTAL_BANK_COUNT, liveBankList } from "./bank-counts";
 import { COMPETITORS_CHECKED, RATE_LIMIT_SENTENCE } from "./guides-facts";
 // Block-based content system for guides and blog posts
@@ -42,7 +43,14 @@ export interface Article {
     keywords: string[];
   };
   faq?: { q: string; a: string }[];
+  /** Slugs of related guides, shown first under "Continue reading". */
   related?: string[];
+  /**
+   * Related non-guide pages (live bank pages and hubs, see
+   * src/lib/internal-links.ts), listed after the related guides. Gives bank
+   * pages and hubs in-content links from the guides that discuss them.
+   */
+  relatedPages?: string[];
 }
 
 export const articles: Article[] = [
@@ -123,6 +131,7 @@ export const articles: Article[] = [
       { q: "What if the CBE receipt link doesn't work?", a: "The mbreciept.cbe.com.et service may occasionally be down. If the link returns a 502 or timeout, try again later. An old FT reference + account is a legacy fallback, but that endpoint is often unreachable too." },
     ],
     related: ["free-receipt-verification-no-api-key", "ethiopian-bank-receipt-formats", "payment-fraud-ethiopia"],
+    relatedPages: ["/banks/cbe"],
     seo: {
       title: "CBE Receipt QR Codes: What They Contain and How to Scan Them",
       description: "CBE's new receipt sharing system uses short URLs and QR codes. Learn what's inside, how the API works, and how to verify instantly with cheki for free.",
@@ -222,6 +231,7 @@ export const articles: Article[] = [
       { q: "Is there an SDK for the free API?", a: "Yes. There are SDKs for TypeScript (npm install cheki-verify), Python (pip install cheki), Go, PHP and Dart, plus a command-line tool. None of them needs an API key." },
     ],
     related: ["payment-verification-api-guide", "self-hosting-docker-guide", "payment-fraud-ethiopia"],
+    relatedPages: ["/compare", "/developers"],
     seo: {
       title: "Free Receipt Verification in Ethiopia: No API Key, No Signup",
       description: "Stop paying check.et 499 ETB/month. Verify CBE, Telebirr, BOA, and M-Pesa receipts for free with no signup and no API key, under fair per-IP rate limits.",
@@ -331,6 +341,7 @@ export const articles: Article[] = [
       { q: "What should I do if a receipt is fake?", a: "Do not release the goods. Ask the sender to complete the payment, keep the fake receipt as evidence, and report intentional fraud to the bank and the police." },
     ],
     related: ["cbe-receipt-qr-code", "free-receipt-verification-no-api-key", "self-hosting-docker-guide"],
+    relatedPages: ["/banks"],
     seo: {
       title: "How to Check if a Receipt Is Fake: Payment Fraud in Ethiopia",
       description: "How to check if a receipt is fake in Ethiopia: edited screenshots, reused receipts, made-up reference numbers and Telebirr SMS spoofing, and how to catch each one.",
@@ -710,7 +721,8 @@ export const articles: Article[] = [
       { q: "Can the banks change or remove these endpoints?", a: "Yes. If a bank changes their endpoint, cheki needs to update its parser. Because cheki is open source, anyone can submit a fix. This is an advantage over closed services like check.et." },
       { q: "Which banks require an account number?", a: "BOA requires the last 5 digits of the account on the receipt, which a full BOA slip link can carry. CBE's current receipts (the mbreciept link or Receipt ID) need no account number; only an older CBE receipt with just an FT reference needs the last 8 digits. CBE Birr needs the payer's phone. All other banks only need the receipt link or reference." },
     ],
-    related: ["cbe-receipt-qr-code", "self-hosting-docker-guide", "payment-verification-api-guide"],
+    related: ["cbe-receipt-qr-code", "boa-qr-code-receipts", "payment-verification-api-guide"],
+    relatedPages: ["/endpoints", "/banks"],
     seo: {
       title: "Ethiopian Bank Receipt Formats: Complete Reference",
       description: "Every Ethiopian bank receipt reference format, endpoint URL, and response type. CBE, Telebirr, BOA, M-Pesa, Dashen, Awash, Zemen, CBE Birr, Siinqee, eBirr, ZamZam.",
@@ -789,6 +801,7 @@ export const articles: Article[] = [
       { q: "How much does self-hosting cost?", a: "The software is free (MIT license). You only pay for your server. A small VPS in Ethiopia costs a few hundred birr per month. cheki has no per-verification cost." },
     ],
     related: ["free-receipt-verification-no-api-key", "ethiopian-bank-receipt-formats", "payment-verification-api-guide"],
+    relatedPages: ["/developers", "/docs"],
     seo: {
       title: "Self-Hosting cheki with Docker: Complete Guide",
       description: "Run your own free Ethiopian receipt verification API with Docker. Bypass geo-blocks, keep data in-house, and customize for your needs.",
@@ -881,6 +894,7 @@ export const articles: Article[] = [
       { q: "Can I use the API commercially?", a: "Yes. cheki is MIT licensed. Use it in commercial products, SaaS, internal tools, or anything else. No attribution required (though appreciated)." },
     ],
     related: ["free-receipt-verification-no-api-key", "self-hosting-docker-guide", "ethiopian-bank-receipt-formats"],
+    relatedPages: ["/docs", "/developers"],
     seo: {
       title: "Building a Payment Verification System with cheki's Free API",
       description: "Complete developer guide to integrating Ethiopian bank receipt verification with cheki's free REST API. JavaScript, Python, batch verification, and fraud prevention.",
@@ -964,7 +978,8 @@ export const articles: Article[] = [
       { q: "Can I fork cheki and build my own paid service?", a: "Technically yes, since it's MIT licensed. But we'd prefer you didn't put a paywall on public data. If you build something on top of cheki, keep it free or open source." },
       { q: "How can I contribute to cheki?", a: "Fork the repo on GitHub, make your changes, and submit a pull request. Read the contributing guide in the README for details on adding bank support, improving the UI, or writing guides." },
     ],
-    related: ["free-receipt-verification-no-api-key", "contribute-new-bank", "self-hosting-docker-guide"],
+    related: ["contribute-new-bank", "contribute-translations", "self-hosting-docker-guide"],
+    relatedPages: ["/compare"],
     seo: {
       title: "Open Source Ethiopian Fintech: Why It Matters",
       description: "Why open source matters for Ethiopian financial technology, how cheki fits in, and why community-built tools are better than paywalled services wrapping public data.",
@@ -1088,6 +1103,7 @@ export const articles: Article[] = [
       { q: "What if the BOA key changes?", a: "If BOA rotates the encryption key in their web app, cheki's parser will fail to decrypt new QR codes. The cheki team monitors BOA's JavaScript bundle for changes and updates the key when needed. If you're self-hosting, check src/lib/parsers/boa.ts for the current key." },
     ],
     related: ["cbe-receipt-qr-code", "ethiopian-bank-receipt-formats", "payment-fraud-ethiopia"],
+    relatedPages: ["/banks/boa"],
     seo: {
       title: "BOA QR Codes: Encrypted Receipts and How Decryption Works",
       description: "Bank of Abyssinia QR codes use AES-256-CBC encryption. Here's how the encryption works, what's inside the payload, and how cheki decrypts it for instant inter-bank receipt verification.",
@@ -1175,7 +1191,8 @@ export const articles: Article[] = [
       { q: "Can I add a bank that no verification service supports?", a: `Yes. That's the whole point. If you find the receipt endpoint, we'll add it. cheki lists ${TOTAL_BANK_COUNT} banks and wallets, including the ones no paid service covers yet, not just the profitable ones.` },
       { q: "What if a bank doesn't have a public receipt endpoint?", a: "Some banks may not have receipt sharing yet. In that case, we list them as 'researching' and wait until they launch a digital receipt system. We don't fake it." },
     ],
-    related: ["open-source-ethiopian-fintech", "ethiopian-bank-receipt-formats", "self-hosting-docker-guide"],
+    related: ["open-source-ethiopian-fintech", "contribute-translations", "ethiopian-bank-receipt-formats"],
+    relatedPages: ["/endpoints"],
     seo: {
       title: "How to Add a New Bank to cheki (Community Guide)",
       description: "Help cheki support all Ethiopian banks. Share a receipt, write a parser, or report broken endpoints. No coding required to contribute.",
@@ -1259,6 +1276,16 @@ export function getRelatedArticles(slug: string, limit = 3): Article[] {
   return article.related
     .map((s) => getArticle(s))
     .filter((a): a is Article => a !== undefined)
+    .slice(0, limit);
+}
+
+/** The article's related non-guide pages that resolve to a linkable page. */
+export function getRelatedPages(slug: string, limit = 2): InternalPageLink[] {
+  const article = getArticle(slug);
+  if (!article || !article.relatedPages) return [];
+  return article.relatedPages
+    .map((href) => internalPageLink(href))
+    .filter((l): l is InternalPageLink => l !== undefined)
     .slice(0, limit);
 }
 
