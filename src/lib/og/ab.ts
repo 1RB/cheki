@@ -8,9 +8,9 @@
  *   https://cheki.et/?v=b   -> OG_AB.b card
  *
  * next.config.ts rewrites those to /ab/{a,b} (the URL in the address bar stays
- * "/?v=a"). The page is the normal home page, noindexed with canonical "/", and
- * it is the only page that records a visit: one cookieless Vercel Web
- * Analytics page view reported as "/ab/{arm}". Plain cheki.et is untouched.
+ * "/?v=a"). The page is the normal home page, noindexed with canonical "/".
+ * The site-wide analytics (src/lib/analytics/url.ts) report its visits as
+ * "/ab/{arm}", so the two arms show up as separate pages.
  */
 import type { OgVariant } from "@/lib/og/variant";
 

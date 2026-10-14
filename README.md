@@ -186,6 +186,10 @@ docker-compose up -d
 
 Self-hosting on an Ethiopian IP bypasses Telebirr/M-Pesa geo-blocks.
 
+### Analytics
+
+cheki.et counts anonymous page views with [Vercel Web Analytics](https://vercel.com/docs/analytics/privacy-policy): no cookies, no personal identifier. Before an event leaves the browser, `src/lib/analytics/url.ts` reduces its URL to one of cheki's page paths with the query string and `#` part removed (A/B share links `/?v=a|b` are reported as `/ab/a|b`), never counts `/api` or `/dashboard`, and drops any address that is not a cheki page, so no receipt reference, receipt link or account number is sent. A self-hosted copy outside Vercel records nothing: the analytics script is only served on a Vercel deployment with Web Analytics enabled.
+
 ## Features
 
 - **Web UI**: receipt aesthetic, auto-detect bank from reference format, Light / Dark / System theme

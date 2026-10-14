@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import HomeRoute from "@/app/page";
 import { OG_ARMS, isOgArm } from "@/lib/og/ab";
-import { AbVisit } from "@/components/AbVisit";
 
 // Reached through the "/?v=a|b" rewrite in next.config.ts (see src/lib/og/ab.ts).
 // Same page as "/", only the shared card differs; built statically per arm.
@@ -21,10 +20,6 @@ export const metadata: Metadata = {
 export default async function AbHome({ params }: { params: Promise<{ v: string }> }) {
   const { v } = await params;
   if (!isOgArm(v)) notFound();
-  return (
-    <>
-      <HomeRoute />
-      <AbVisit arm={v} />
-    </>
-  );
+  // The visit is counted by SiteAnalytics in the root layout, as "/ab/{v}".
+  return <HomeRoute />;
 }

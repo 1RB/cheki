@@ -5,6 +5,8 @@ import { LIVE_BANK_COUNT, liveBankList } from "@/lib/bank-counts";
 import { I18nProvider } from "@/lib/i18n/context";
 import { THEME_INIT_SCRIPT } from "@/lib/theme";
 import { LOCALE_INIT_SCRIPT } from "@/lib/i18n/locale-store";
+import { SiteAnalytics } from "@/components/SiteAnalytics";
+import { analyticsPaths } from "@/lib/analytics/paths";
 
 const SITE_URL = "https://cheki.et";
 
@@ -176,6 +178,8 @@ export default function RootLayout({
       </head>
       <body>
         <I18nProvider>{children}</I18nProvider>
+        {/* Cookieless page-view counts; see src/lib/analytics/url.ts for what an event may carry. */}
+        <SiteAnalytics paths={analyticsPaths()} />
       </body>
     </html>
   );
