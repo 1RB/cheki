@@ -43,6 +43,30 @@ It checks:
 
 It sends no real receipt references, so it is safe against production.
 
+## After a deploy: ping IndexNow
+
+Once a deploy that adds or changes pages is Ready on production and the smoke
+test passed, tell the IndexNow engines (Bing and the others that share
+submissions; Google does not take part) to recrawl:
+
+```bash
+npm run indexnow -- --dry-run       # prints the payload, sends nothing
+npm run indexnow                    # POSTs every https://cheki.et/sitemap.xml URL
+```
+
+- Run it only after the merge to `main` is deployed. Never against a preview
+  URL or before the deploy: it reads the live sitemap, and it refuses to post
+  unless `https://cheki.et/{key}.txt` is live and holds the key.
+- The key is `INDEXNOW_KEY` in `scripts/lib/indexnow.ts`; the matching file is
+  `public/{key}.txt`. The protocol needs the file publicly served, so the key
+  only proves we control the host; it is not a credential. To rotate it, change both in one commit and deploy before the next
+  submission.
+- A 200 or 202 answer is success (202: the key is still being validated). On
+  403 the key file is missing or wrong on production; 429 means "too many
+  requests (potential spam)", so wait before retrying. Run it once per deploy
+  that adds or changes pages, not on every deploy.
+- Google still needs the sitemap in Search Console; IndexNow does not reach it.
+
 ## Shipping several dependent PRs at once
 
 When PRs only work together (a stack), production must never build an
