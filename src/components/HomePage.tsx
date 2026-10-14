@@ -105,7 +105,7 @@ export function HomePage() {
         <section className="container hp-section hp-features">
           <div>
             <h2 className="hp-h2">Everything you need, nothing you don&apos;t</h2>
-            <p className="hp-p">A single-purpose tool. No dashboards, no analytics, no billing portal.</p>
+            <p className="hp-p">A single-purpose tool. No dashboards, no accounts, no billing portal.</p>
           </div>
           <ol className="hp-feature-list">
             {FEATURES.map((f) => (

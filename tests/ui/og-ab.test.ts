@@ -2,7 +2,9 @@
  * Share-link A/B test for the home card (src/lib/og/ab.ts):
  *   - every arm maps to a real OG variant, never the shipped "current" twice
  *   - next.config rewrites exactly the arms, so "/?v=x" for anything else is plain home
- *   - the arm page is noindexed with canonical "/" and is the only page with analytics
+ *   - the arm page is noindexed with canonical "/"
+ *   - analytics is mounted once, in the root layout (src/lib/analytics/url.ts
+ *     reports the arms as "/ab/{arm}"; tests/ui/analytics.test.ts)
  */
 import { describe, it, expect } from "vitest";
 import { readFileSync, readdirSync, statSync } from "node:fs";
@@ -43,16 +45,17 @@ describe("og a/b", () => {
     expect(page).toMatch(/canonical:\s*"\/"/);
   });
 
-  it("loads analytics only on the arm page", () => {
-    const users = walk(join(root, "src"))
-      .filter((p) => /\.(tsx?|jsx?)$/.test(p))
+  it("mounts analytics once, in the root layout, not on the arm page", () => {
+    const src = walk(join(root, "src")).filter((p) => /\.(tsx?|jsx?)$/.test(p));
+    const users = src
       .filter((p) => readFileSync(p, "utf8").includes("@vercel/analytics"))
       .map((p) => p.slice(root.length + 1));
-    expect(users).toEqual(["src/components/AbVisit.tsx"]);
-    const importers = walk(join(root, "src"))
-      .filter((p) => /\.tsx?$/.test(p) && !p.endsWith("AbVisit.tsx"))
-      .filter((p) => /from "@\/components\/AbVisit"/.test(readFileSync(p, "utf8")))
+    expect(users).toEqual(["src/components/SiteAnalytics.tsx"]);
+    const importers = src
+      .filter((p) => !p.endsWith("SiteAnalytics.tsx"))
+      .filter((p) => /from "@\/components\/SiteAnalytics"/.test(readFileSync(p, "utf8")))
       .map((p) => p.slice(root.length + 1));
-    expect(importers).toEqual(["src/app/ab/[v]/page.tsx"]);
+    expect(importers).toEqual(["src/app/layout.tsx"]);
+    expect(readFileSync(join(root, "src/app/layout.tsx"), "utf8").match(/<SiteAnalytics\b/g)).toHaveLength(1);
   });
 });

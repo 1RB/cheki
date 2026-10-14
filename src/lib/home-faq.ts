@@ -40,5 +40,9 @@ export const homeFaqs: FaqItem[] = [
     q: "How do I reconcile a day's receipts?",
     a: "Send them to POST /api/verify/batch, up to 20 receipts per call, and match the results against your orders. Count a receipt as paid only when it comes back verified: true, which means the bank's own record confirmed it.",
   },
+  {
+    q: "Does cheki.et track visitors?",
+    a: "Only as anonymous page-view counts. cheki.et uses Vercel Web Analytics, which sets no cookies and keeps no personal identifier. Each page view is recorded with its query string and # part removed, API calls are never counted, and an address that is not one of cheki's pages is not recorded at all, so no receipt reference, receipt link or account number reaches analytics.",
+  },
 
 ];
