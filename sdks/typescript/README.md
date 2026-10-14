@@ -4,6 +4,8 @@
 
 Verify Ethiopian bank transfer receipts from CBE, Telebirr, BOA, Dashen, M-Pesa (beta: not yet confirmed with a real receipt), Awash, Siinqee, eBirr and ZamZam (beta: one receipt shape confirmed so far) (the live banks; `getBanks()` lists the current set). Zero runtime dependencies (uses the global `fetch`, Node.js ≥ 18).
 
+Website: [cheki.et](https://cheki.et) · API reference: [cheki.et/docs](https://cheki.et/docs) · Integration guide and every SDK: [cheki.et/developers](https://cheki.et/developers) · Supported banks: [cheki.et/banks](https://cheki.et/banks)
+
 > **Server-side only.** The hosted API does not send CORS headers on `/api/verify`, `/api/verify/batch`, `/api/banks` or `/api/health`, so browsers block these calls. Call cheki from your backend.
 
 ## Install

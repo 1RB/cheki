@@ -2,6 +2,8 @@
 
 PHP client for the [cheki](https://cheki.et) receipt verification API: verify Ethiopian bank transfer receipts from CBE, Telebirr, BOA, Dashen, M-Pesa (beta: not yet confirmed with a real receipt), Awash, Siinqee, eBirr and ZamZam (beta: one receipt shape confirmed so far) (the live banks; `getBanks()` lists the current set). Needs PHP 8.0+ with `ext-curl` and `ext-json` (the tests run on 8.1 and 8.3).
 
+Website: [cheki.et](https://cheki.et) · API reference: [cheki.et/docs](https://cheki.et/docs) · Integration guide and every SDK: [cheki.et/developers](https://cheki.et/developers) · Supported banks: [cheki.et/banks](https://cheki.et/banks)
+
 ```bash
 composer require cheki/cheki
 ```
