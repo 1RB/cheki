@@ -1,5 +1,5 @@
 {
-  "$comment": "Canonical cheki HTTP API contract fixtures. Every SDK test suite decodes these, and tests/contract/sdk-fixtures.test.ts checks that the real route handlers still produce the same shapes (same keys, same JSON types). Change a route and this file together, or CI fails. Values are illustrative; references and names are fake. receiptUrlCases: what getReceiptUrl must build (query params, any order) or reject. Current formats need no account; a legacy CBE FT reference does. served says how /api/receipt answers: a redirect to the bank's own page, or the bank's PDF.",
+  "$comment": "Canonical cheki HTTP API contract fixtures. Every SDK test suite decodes these, and tests/contract/sdk-fixtures.test.ts checks that the real route handlers still produce the same shapes (same keys, same JSON types). Change a route and this file together, or CI fails. Values are illustrative; references and names are fake. receiptUrlCases: what getReceiptUrl must build (query params, any order) or reject. Current formats need no account; a legacy CBE FT reference does. served says how /api/receipt answers: a redirect to the bank's own page, or the bank's PDF. retryCases is SDK-only (not checked against the routes): what every SDK must do when an attempt gets that answer, served on every attempt with maxRetries 1. retried true means exactly 2 attempts, false exactly 1. A body or rawBody (non-JSON, as the platform sends on a 504) is the response.",
   "limits": {
     "batchMaxReceipts": 20,
     "verifyBodyBytes": 16384,
@@ -22,11 +22,32 @@
     { "name": "cbe_legacy_ft_short_account", "format": "legacy", "bank": "cbe", "reference": "FT26140P01YB", "account": "1234", "error": true },
     { "name": "dashen_ft_ref", "format": "current", "served": "redirect", "bank": "dashen", "reference": "B22WDTI2619100WH", "query": { "bank": "dashen", "reference": "B22WDTI2619100WH" } },
     { "name": "zamzam_receipt_id", "format": "current", "served": "redirect", "bank": "ZamZam", "reference": "12345678", "query": { "bank": "zamzam", "reference": "12345678" } },
+    { "name": "zamzam_non_numeric", "format": "current", "bank": "zamzam", "reference": "ABC-123", "error": true },
     { "name": "zemen_token", "format": "current", "served": "pdf", "bank": "Zemen", "reference": "ZB123", "query": { "bank": "zemen", "reference": "ZB123" } },
     { "name": "unsupported_bank", "bank": "telebirr", "reference": "X1", "error": true },
     { "name": "prototype_name", "bank": "constructor", "reference": "X1", "error": true },
     { "name": "path_traversal", "bank": "zemen", "reference": "../admin", "error": true },
     { "name": "slash", "bank": "zemen", "reference": "a/b", "error": true }
+  ],
+  "retryCases": [
+    { "name": "verify_422_not_found", "method": "POST", "path": "/api/verify", "status": 422, "headers": {}, "body": { "success": false, "error": "[Telebirr] Receipt not found. Check the reference number." }, "retried": false },
+    { "name": "verify_500_internal", "method": "POST", "path": "/api/verify", "status": 500, "headers": { "retry-after": "0" }, "body": { "success": false, "error": "Internal server error." }, "retried": false },
+    { "name": "verify_502_geo_blocked", "method": "POST", "path": "/api/verify", "status": 502, "headers": { "retry-after": "0" }, "body": { "success": false, "error": "[Telebirr] Our server can't reach this bank (it blocks cloud IPs).", "fallbackUrl": "https://transactioninfo.ethiotelecom.et/receipt/CHQ0FJ403O" }, "retried": false },
+    { "name": "verify_504_platform", "method": "POST", "path": "/api/verify", "status": 504, "headers": { "content-type": "text/plain" }, "rawBody": "An error occurred with your deployment\n\nFUNCTION_INVOCATION_TIMEOUT", "retried": false },
+    { "name": "verify_503_retry_after", "method": "POST", "path": "/api/verify", "status": 503, "headers": { "retry-after": "0" }, "body": { "success": false, "error": "Temporarily unavailable." }, "retried": true },
+    { "name": "verify_503_no_retry_after", "method": "POST", "path": "/api/verify", "status": 503, "headers": {}, "body": { "success": false, "error": "Temporarily unavailable." }, "retried": false },
+    { "name": "verify_503_not_retryable", "method": "POST", "path": "/api/verify", "status": 503, "headers": { "retry-after": "0" }, "body": { "success": false, "error": "Temporarily unavailable.", "retryable": false }, "retried": false },
+    { "name": "verify_429_retry_after", "method": "POST", "path": "/api/verify", "status": 429, "headers": { "retry-after": "0" }, "body": { "success": false, "error": "Too many requests from your network. Wait a minute and try again." }, "retried": true },
+    { "name": "verify_429_no_retry_after", "method": "POST", "path": "/api/verify", "status": 429, "headers": {}, "body": { "success": false, "error": "Too many requests from your network. Wait a minute and try again." }, "retried": false },
+    { "name": "verify_429_long_retry_after", "method": "POST", "path": "/api/verify", "status": 429, "headers": { "retry-after": "120" }, "body": { "success": false, "error": "Too many requests from your network. Wait a minute and try again." }, "retried": false },
+    { "name": "batch_500_internal", "method": "POST", "path": "/api/verify/batch", "status": 500, "headers": { "retry-after": "0" }, "body": { "success": false, "error": "Internal server error." }, "retried": false },
+    { "name": "batch_504_platform", "method": "POST", "path": "/api/verify/batch", "status": 504, "headers": { "content-type": "text/plain" }, "rawBody": "An error occurred with your deployment\n\nFUNCTION_INVOCATION_TIMEOUT", "retried": false },
+    { "name": "batch_429_retry_after", "method": "POST", "path": "/api/verify/batch", "status": 429, "headers": { "retry-after": "0" }, "body": { "success": false, "error": "Too many requests from your network. Wait a minute and try again." }, "retried": true },
+    { "name": "banks_500_internal", "method": "GET", "path": "/api/banks", "status": 500, "headers": { "retry-after": "0" }, "body": { "success": false, "error": "Internal server error." }, "retried": true },
+    { "name": "banks_504_platform", "method": "GET", "path": "/api/banks", "status": 504, "headers": { "content-type": "text/plain", "retry-after": "0" }, "rawBody": "An error occurred with your deployment\n\nFUNCTION_INVOCATION_TIMEOUT", "retried": true },
+    { "name": "banks_502_not_retryable", "method": "GET", "path": "/api/banks", "status": 502, "headers": { "retry-after": "0" }, "body": { "success": false, "error": "Bad gateway.", "retryable": false }, "retried": false },
+    { "name": "health_502", "method": "GET", "path": "/api/health", "status": 502, "headers": { "retry-after": "0" }, "body": { "success": false, "error": "Bad gateway." }, "retried": true },
+    { "name": "health_404", "method": "GET", "path": "/api/health", "status": 404, "headers": {}, "body": { "success": false, "error": "Not found." }, "retried": false }
   ],
   "cases": {
     "verify_verified": {
@@ -70,6 +91,29 @@
         "bankCode": "cbe",
         "sourceUrl": "https://apps.cbe.com.et:100/?id=FT26140P01YB60536171",
         "cached": true
+      }
+    },
+    "verify_order_id": {
+      "method": "POST",
+      "path": "/api/verify",
+      "status": 200,
+      "headers": { "x-cheki-cache": "miss" },
+      "body": {
+        "success": true,
+        "senderName": "ABEBE KEBEDE",
+        "receiverName": "HANA SHOP",
+        "amount": 320,
+        "currency": "ETB",
+        "date": "2026-10-02 14:11:05",
+        "reference": "CB2610ABCD",
+        "orderId": "ORD123456789",
+        "transactionStatus": "Completed",
+        "verified": true,
+        "bank": "CBE Birr",
+        "bankCode": "cbebirr",
+        "sourceUrl": "https://cbepay1.cbe.com.et/aureceipt?TID=CB2610ABCD&PH=251911000000",
+        "durationMs": 2100,
+        "cached": false
       }
     },
     "verify_decoded_only": {
@@ -243,6 +287,21 @@
             "initials": "MP",
             "formats": [
               { "id": "mpesa-getreceipt", "status": "current", "label": "Transaction number", "inputs": ["reference"], "responseType": "pdf-in-json", "supported": true, "confidence": "inferred" }
+            ]
+          },
+          {
+            "id": "zamzam",
+            "name": "ZamZam Bank",
+            "type": "bank",
+            "status": "live",
+            "beta": true,
+            "requiresAccount": false,
+            "requiresPhone": false,
+            "endpoint": "https://receipt-backend.zamzambank.com.et/api/v1/invoice/{ref}",
+            "color": "#0d9488",
+            "initials": "ZZ",
+            "formats": [
+              { "id": "zamzam-invoice-json", "status": "current", "label": "Receipt link or receipt id", "inputs": ["receiptId"], "responseType": "json", "supported": true, "confidence": "verified" }
             ]
           }
         ]

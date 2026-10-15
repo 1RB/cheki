@@ -24,8 +24,25 @@ import re
 import warnings
 from typing import Any
 
-from cheki.banks import VERIFIERS
 from cheki.result import VerificationResult, VerificationStatus
+
+_DIRECT_EXTRA_MISSING = (
+    "Direct verification needs extra dependencies (beautifulsoup4, pdfplumber) that the API client "
+    "does not: pip install 'cheki[direct]'. Prefer cheki.ChekiClient, which needs neither."
+)
+
+
+class DirectModeUnavailableError(ImportError):
+    """Raised by the deprecated direct mode when ``cheki[direct]`` is not installed."""
+
+
+def _verifiers() -> dict[str, Any]:
+    """The direct verifiers, imported on first use so ``import cheki`` needs only requests."""
+    try:
+        from cheki.banks import VERIFIERS
+    except ImportError as exc:  # beautifulsoup4 / pdfplumber missing
+        raise DirectModeUnavailableError(_DIRECT_EXTRA_MISSING) from exc
+    return VERIFIERS
 
 _SAFE_REFERENCE = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,63}")
 
@@ -53,8 +70,12 @@ _DEPRECATION = (
 
 
 def supported_banks() -> dict[str, str]:
-    """Banks the deprecated direct verifiers know (not the hosted API's list)."""
-    return {code: cls.BANK_NAME for code, cls in VERIFIERS.items()}
+    """Banks the deprecated direct verifiers know (not the hosted API's list).
+
+    Raises:
+        DirectModeUnavailableError: When ``cheki[direct]`` is not installed.
+    """
+    return {code: cls.BANK_NAME for code, cls in _verifiers().items()}
 
 
 def _status_text(result: VerificationResult) -> str | None:
@@ -125,16 +146,19 @@ def verify(bank: str, reference: str, **kwargs: object) -> VerificationResult:
     Raises:
         ValueError: For an unknown bank or a reference that is not a plain
             receipt number.
+        DirectModeUnavailableError: When ``cheki[direct]`` is not installed
+            (``pip install 'cheki[direct]'``).
     """
     warnings.warn(_DEPRECATION, DeprecationWarning, stacklevel=2)
+    verifiers = _verifiers()
     bank = bank.lower().strip()
-    if bank not in VERIFIERS:
-        raise ValueError(f"Unsupported bank '{bank}'. Supported: {', '.join(VERIFIERS)}")
+    if bank not in verifiers:
+        raise ValueError(f"Unsupported bank '{bank}'. Supported: {', '.join(verifiers)}")
     ref = (reference or "").strip()
     if not _SAFE_REFERENCE.fullmatch(ref) or ".." in ref:
         raise ValueError(
             "A reference can only contain letters, digits, dots, dashes and underscores "
             "(no /, ?, #, &, %, '..' or spaces), up to 64 characters."
         )
-    verifier = VERIFIERS[bank]()
+    verifier = verifiers[bank]()
     return gate(verifier.verify(ref, **kwargs), requested_reference=ref)

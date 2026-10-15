@@ -3,7 +3,7 @@
  *
  * Verify Ethiopian bank transfer receipts from CBE, Telebirr, BOA, Dashen,
  * M-Pesa, and more. Zero runtime dependencies: uses the global Fetch API
- * (Node.js >= 18). The hosted API does not send CORS headers on the verify,
+ * (Node.js >= 20). The hosted API does not send CORS headers on the verify,
  * batch, banks and health routes, so call it from a server, not a browser.
  *
  * `verified === true` is the ONLY success signal. A 200 response can still
@@ -40,14 +40,26 @@ const DEFAULT_BASE_URL = "https://cheki.et";
 export const DEFAULT_TIMEOUT_MS = 65_000;
 
 /**
- * SDK retries on top of the first attempt. The server already makes up to 2
- * attempts per bank fetch, so the SDK retries at most once: one SDK call
- * reaches a bank at most 2 x 2 = 4 times.
+ * SDK retries on top of the first attempt, and only where a retry is safe
+ * (see {@link Cheki} "Retries"). The server already makes up to 2 attempts
+ * per bank fetch, so the SDK retries at most once.
  */
 export const MAX_RETRIES = 1;
 
-/** Maximum receipts per batch request, enforced client-side. */
+/**
+ * Maximum receipts per batch request, enforced client-side. Every item costs
+ * one token of the per-IP verify limit (30 per minute), and the whole batch
+ * must finish inside the server's 60 s budget, so send large lists in chunks
+ * of at most {@link RECOMMENDED_BATCH_CHUNK}.
+ */
 export const MAX_BATCH_SIZE = 20;
+
+/**
+ * Recommended chunk size for long lists. A batch is never retried, so
+ * smaller chunks lose less work to a 504, and 15 leaves room in the per-IP
+ * verify budget (30 per minute) for single checks.
+ */
+export const RECOMMENDED_BATCH_CHUNK = 15;
 
 /** A Retry-After longer than this is not waited out; the 429 is thrown. */
 const MAX_RETRY_AFTER_MS = 60_000;
@@ -55,21 +67,25 @@ const MAX_RETRY_AFTER_MS = 60_000;
 /** Base delay before a retry when the server sends no Retry-After. */
 const RETRY_BASE_DELAY_MS = 1_000;
 
-/** Banks `/api/receipt` can download, and the account digits each needs. */
 /**
  * Banks `GET /api/receipt` serves. `legacyReference` and `accountDigits` mark
  * a legacy format that needs the receiving account: CBE's older FT reference.
  * The current CBE format (a Receipt ID from a mbreciept.cbe.com.et link)
- * needs no account.
+ * needs no account. `referencePattern` is a stricter rule the server applies
+ * to that bank's reference (ZamZam receipt ids are digits only).
  */
-export const RECEIPT_DOWNLOAD_BANKS: Readonly<Record<string, { accountDigits?: number; legacyReference?: RegExp }>> = Object.freeze({
+export const RECEIPT_DOWNLOAD_BANKS: Readonly<
+  Record<string, { accountDigits?: number; legacyReference?: RegExp; referencePattern?: RegExp; referenceHint?: string }>
+> = Object.freeze({
   cbe: { accountDigits: 8, legacyReference: /^FT[A-Za-z0-9]{8,12}$/i },
   zemen: {},
   dashen: {},
-  zamzam: {},
+  zamzam: { referencePattern: /^\d+$/, referenceHint: "A ZamZam receipt id is digits only (the number at the end of the receipt link)." },
 });
 
 const SAFE_REFERENCE_RE = /^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$/;
+
+const BATCH_PATH = "/api/verify/batch";
 
 // ============================================================================
 // Types - Request
@@ -158,6 +174,8 @@ export interface VerifyResult {
   paymentChannel?: string;
   bankAccountNumber?: string;
   bankAccountName?: string;
+  /** Order ID printed on the receipt (CBE Birr). */
+  orderId?: string;
 }
 
 /** A batch item that verified or decoded (the `index` is added by the SDK). */
@@ -168,6 +186,8 @@ export interface BatchItemError {
   success: false;
   error: string;
   status: number;
+  /** For a geo-blocked bank: open this link in a browser in Ethiopia instead (when the server sends it). */
+  fallbackUrl?: string;
   /** Position in the input array (added by the SDK). */
   index: number;
 }
@@ -199,8 +219,8 @@ export interface BankInfo {
   swift?: string;
   type: "bank" | "mobile" | "wallet";
   status: "live" | "in-development";
-  /** Live, but the parser has not yet been confirmed with a real receipt (M-Pesa as of 2.0). Absent when false. */
-  beta?: boolean;
+  /** Live, but the parser has not yet been confirmed with enough real receipts (M-Pesa and ZamZam today). Always set by the SDK (false when the server omits it). */
+  beta: boolean;
   requiresAccount: boolean;
   /** How many trailing account digits the bank needs, when it needs an account. */
   accountDigits?: number;
@@ -373,8 +393,7 @@ export interface ChekiConfig {
   /** Per-attempt timeout in ms. @default 65000 */
   timeoutMs?: number;
   /**
-   * Retries for network errors, 5xx and 429 (honouring Retry-After). 4xx
-   * other than 429 and timeouts are never retried. Capped at 1.
+   * Retries where a retry is safe (see {@link Cheki} "Retries"). Capped at 1.
    * @default 1
    */
   maxRetries?: number;
@@ -420,10 +439,47 @@ export function parseRetryAfter(value: string | null | undefined, now: number = 
   return Math.max(0, Math.ceil((date - now) / 1000));
 }
 
+/**
+ * Whether one more attempt is safe for this answer. Shared rule of every
+ * cheki SDK (sdks/fixtures/api-contract.json `retryCases`):
+ *
+ * - never when the body says `retryable: false` or carries a `fallbackUrl`
+ *   (a geo-blocked bank answers the same way every time);
+ * - 429 and 503 only with a Retry-After of at most 60 s (the server refused
+ *   the request before doing any work);
+ * - any other 5xx (500, 502, 504) only for GET: `POST /api/verify` and
+ *   `POST /api/verify/batch` already ran (and hit the banks) once, and a
+ *   replayed batch costs every receipt again against the rate limit;
+ * - never for other statuses.
+ */
+function shouldRetryStatus(method: string, status: number, retryAfterSeconds: number | undefined, body: unknown): boolean {
+  const obj = body && typeof body === "object" ? (body as Record<string, unknown>) : undefined;
+  if (obj?.retryable === false || typeof obj?.fallbackUrl === "string") return false;
+  if (status === 429 || status === 503) {
+    return retryAfterSeconds !== undefined && retryAfterSeconds * 1000 <= MAX_RETRY_AFTER_MS;
+  }
+  if (status >= 500 && method === "GET") {
+    return retryAfterSeconds === undefined || retryAfterSeconds * 1000 <= MAX_RETRY_AFTER_MS;
+  }
+  return false;
+}
+
 // ============================================================================
 // Cheki Client
 // ============================================================================
 
+/**
+ * cheki API client.
+ *
+ * Retries (at most one, the same in every cheki SDK):
+ * - `GET` (banks, health): network errors and 5xx.
+ * - `POST /api/verify`: network errors only, plus 429/503 with a short Retry-After.
+ * - `POST /api/verify/batch`: only 429/503 with a short Retry-After. Never on a
+ *   network error or 5xx (a 504 means the batch ran out of time; replaying it
+ *   would hit every bank again and cost every receipt against the limit).
+ * - Never: timeouts, other 4xx, and any answer with `retryable: false` or a
+ *   `fallbackUrl` (geo-blocked bank).
+ */
 export class Cheki {
   private readonly config: ResolvedConfig;
 
@@ -459,7 +515,9 @@ export class Cheki {
 
   /**
    * Verify up to {@link MAX_BATCH_SIZE} receipts in one request. Each item
-   * also counts against the per-IP verify limit (30/min).
+   * also counts against the per-IP verify limit (30/min). A batch is never
+   * replayed on a 5xx or network error; split long lists into chunks of
+   * {@link RECOMMENDED_BATCH_CHUNK} or fewer.
    *
    * @throws {ChekiValidationError} For an empty batch or more than 20 receipts (no request is made).
    */
@@ -474,7 +532,7 @@ export class Cheki {
     }
     const raw = await this.request<Omit<BatchResult, "results"> & { results: Omit<BatchItem, "index">[] }>(
       "POST",
-      "/api/verify/batch",
+      BATCH_PATH,
       { receipts: receipts.map(cleanReceipt) },
       requestOptions,
     );
@@ -495,7 +553,14 @@ export class Cheki {
     const raw = await this.request<{ banks?: Partial<BankInfo>[] }>("GET", "/api/banks", undefined, requestOptions);
     const banks = (raw.banks ?? []).map((b) => {
       const id = String(b.id ?? b.code ?? "");
-      return { ...b, id, code: id, requiresPhone: b.requiresPhone === true, formats: Array.isArray(b.formats) ? b.formats : [] } as BankInfo;
+      return {
+        ...b,
+        id,
+        code: id,
+        beta: b.beta === true,
+        requiresPhone: b.requiresPhone === true,
+        formats: Array.isArray(b.formats) ? b.formats : [],
+      } as BankInfo;
     });
     return { banks };
   }
@@ -515,8 +580,8 @@ export class Cheki {
    * URL of `GET /api/receipt`, which opens the bank's own copy of a receipt.
    * Supported: CBE, Dashen, Zemen and ZamZam. Lead with the current format: a
    * CBE Receipt ID (from the mbreciept.cbe.com.et link), a Dashen FT Ref or a
-   * ZamZam receipt id (the number at the end of its receipt link), which the
-   * server answers with a redirect to the bank's own receipt page. An
+   * ZamZam receipt id (digits only: the number at the end of its receipt
+   * link), which the server answers with a redirect to the bank's own receipt page. An
    * older CBE FT reference (legacy) also needs the receiving account (at least
    * its last 8 digits) and comes back as the bank's PDF. Pure helper, no
    * request is made.
@@ -534,6 +599,9 @@ export class Cheki {
     const ref = String(reference ?? "").trim();
     if (!SAFE_REFERENCE_RE.test(ref) || ref.includes("..")) {
       throw new ChekiValidationError("reference must be 1-64 letters, digits, dots, dashes or underscores.");
+    }
+    if (spec.referencePattern && !spec.referencePattern.test(ref)) {
+      throw new ChekiValidationError(spec.referenceHint ?? `That reference is not valid for ${id}.`);
     }
     const params = new URLSearchParams({ bank: id, reference: ref });
     // Only the legacy format needs the account (CBE FT reference); a current Receipt ID never sends it.
@@ -589,10 +657,9 @@ export class Cheki {
   }
 
   /**
-   * One request with at most one retry.
-   *
-   * Retried: network errors, 5xx, and 429 when Retry-After is at most 60 s.
-   * Never retried: other 4xx, timeouts, caller aborts.
+   * One request with at most one retry, only where it is safe (see the
+   * class docs and {@link shouldRetryStatus}). Never retried: timeouts and
+   * caller aborts.
    */
   private async request<T>(method: string, path: string, body: unknown, options: RequestOptions | undefined): Promise<T> {
     const maxRetries = clampRetries(options?.retries, this.config.maxRetries);
@@ -640,7 +707,9 @@ export class Cheki {
           `Network request to ${path} failed: ${err instanceof Error ? err.message : String(err)}`,
           err instanceof Error ? err : undefined,
         );
-        if (canRetry) {
+        // A batch may have reached the server before the connection broke;
+        // replaying it would run (and charge) every receipt again.
+        if (canRetry && path !== BATCH_PATH) {
           await this.sleep(this.retryDelayMs(), externalSignal);
           continue;
         }
@@ -669,22 +738,13 @@ export class Cheki {
           : undefined;
       const message = `cheki API returned ${status} for ${method} ${path}${serverMessage ? `: ${serverMessage}` : ""}`;
 
-      if (status === 429) {
-        const retryAfter = parseRetryAfter(response.headers.get("retry-after"));
-        if (canRetry && (retryAfter === undefined || retryAfter * 1000 <= MAX_RETRY_AFTER_MS)) {
-          await this.sleep(this.retryDelayMs(retryAfter), externalSignal);
-          continue;
-        }
-        throw new ChekiRateLimitError(message, parsed, path, retryAfter);
+      const retryAfter = parseRetryAfter(response.headers.get("retry-after"));
+      if (canRetry && shouldRetryStatus(method, status, retryAfter, parsed)) {
+        await this.sleep(this.retryDelayMs(retryAfter), externalSignal);
+        continue;
       }
+      if (status === 429) throw new ChekiRateLimitError(message, parsed, path, retryAfter);
       if (status === 413) throw new ChekiPayloadTooLargeError(message, parsed, path);
-      if (status >= 500 && canRetry) {
-        const retryAfter = parseRetryAfter(response.headers.get("retry-after"));
-        if (retryAfter === undefined || retryAfter * 1000 <= MAX_RETRY_AFTER_MS) {
-          await this.sleep(this.retryDelayMs(retryAfter), externalSignal);
-          continue;
-        }
-      }
       throw new ChekiAPIError(message, status, parsed, path);
     }
   }

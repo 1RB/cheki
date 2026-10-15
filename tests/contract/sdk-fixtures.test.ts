@@ -42,7 +42,7 @@ const RECEIPT_OPTIONAL = new Set([
   "senderName", "senderAccount", "receiverName", "receiverAccount", "amount", "currency", "date",
   "branch", "reason", "transactionType", "durationMs", "invoiceNumber", "transactionStatus",
   "settledAmount", "stampDuty", "discountAmount", "serviceFee", "serviceFeeVat", "totalPaid",
-  "amountInWords", "paymentMode", "paymentChannel", "bankAccountNumber", "bankAccountName", "decodedOnly",
+  "amountInWords", "paymentMode", "paymentChannel", "bankAccountNumber", "bankAccountName", "decodedOnly", "orderId",
 ]);
 const BANK_OPTIONAL = new Set(["swift", "accountDigits", "requiresPhone", "beta"]);
 
@@ -177,6 +177,16 @@ describe("SDK contract fixtures match the route handlers", () => {
     expectShape(body, f.body, RECEIPT_OPTIONAL, "verify_cached");
     expect(body.cached).toBe(true);
     expect("durationMs" in body).toBe(false);
+  });
+
+  it("verify_order_id: a CBE Birr receipt passes orderId through", async () => {
+    const f = fx("verify_order_id");
+    vi.spyOn(Verifier.prototype, "verify").mockResolvedValue(ok(receiptOf(f.body, uniqueRef())));
+    const r = await verifyPOST(jsonReq("/api/verify", { bank: "cbebirr", reference: uniqueRef(), phoneNumber: "251911000000" }));
+    expect(r.status).toBe(f.status);
+    const body = await r.json();
+    expectShape(body, f.body, RECEIPT_OPTIONAL, "verify_order_id");
+    expect(body.orderId).toBe(f.body.orderId);
   });
 
   it("verify_decoded_only: success true, verified false, decodedOnly true", async () => {

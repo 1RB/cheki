@@ -21,6 +21,7 @@ export const parseRetryAfter = cjs.parseRetryAfter;
 export const DEFAULT_TIMEOUT_MS = cjs.DEFAULT_TIMEOUT_MS;
 export const MAX_RETRIES = cjs.MAX_RETRIES;
 export const MAX_BATCH_SIZE = cjs.MAX_BATCH_SIZE;
+export const RECOMMENDED_BATCH_CHUNK = cjs.RECOMMENDED_BATCH_CHUNK;
 export const RECEIPT_DOWNLOAD_BANKS = cjs.RECEIPT_DOWNLOAD_BANKS;
 
 export default cjs.default;

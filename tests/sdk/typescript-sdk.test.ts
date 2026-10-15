@@ -19,13 +19,16 @@ import {
   ChekiTimeoutError,
   DEFAULT_TIMEOUT_MS,
   MAX_BATCH_SIZE,
+  RECOMMENDED_BATCH_CHUNK,
   type BatchItemError,
 } from "../../sdks/typescript/src/index";
 
 type Case = { status: number; headers: Record<string, string>; body: unknown };
+type RetryCase = { name: string; method: string; path: string; status: number; headers: Record<string, string>; body?: unknown; rawBody?: string; retried: boolean };
 const contract = JSON.parse(readFileSync(path.resolve(__dirname, "../../sdks/fixtures/api-contract.json"), "utf8")) as {
   limits: Record<string, number>;
   cases: Record<string, Case>;
+  retryCases: RetryCase[];
 };
 const fx = (name: string) => contract.cases[name];
 const respond = (c: Case, extraHeaders: Record<string, string> = {}) =>
@@ -95,6 +98,27 @@ describe("TS SDK: models decode the contract fixtures", () => {
     expect(e).toMatchObject({ success: false, status: 422 });
   });
 
+  it("verify: orderId is passed through", async () => {
+    serve(fx("verify_order_id"));
+    const r = await client().verify("cbebirr", "CB2610ABCD", { phoneNumber: "251911000000" });
+    expect(r.orderId).toBe("ORD123456789");
+  });
+
+  it("batch error items keep fallbackUrl when the server sends it", async () => {
+    serve(() =>
+      new Response(
+        JSON.stringify({
+          success: true,
+          results: [{ success: false, error: "geo-blocked", status: 502, fallbackUrl: "https://transactioninfo.ethiotelecom.et/receipt/X1" }],
+          total: 1, verified: 0, failed: 1, cached: 0,
+        }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      ),
+    );
+    const b = await client().verifyBatch([{ bank: "telebirr", reference: "X1" }]);
+    expect((b.results[0] as BatchItemError).fallbackUrl).toBe("https://transactioninfo.ethiotelecom.et/receipt/X1");
+  });
+
   it("banks: id is the bank id; code is a deprecated alias; requiresPhone defaults to false", async () => {
     serve(fx("banks"));
     const { banks } = await client().getBanks();
@@ -103,6 +127,10 @@ describe("TS SDK: models decode the contract fixtures", () => {
     expect(banks[0].requiresPhone).toBe(false);
     expect(banks.find((b) => b.id === "cbebirr")?.requiresPhone).toBe(true);
     expect(banks.find((b) => b.id === "telebirr")?.type).toBe("mobile");
+    // beta is always a boolean: true for M-Pesa and ZamZam, false when omitted.
+    expect(banks.find((b) => b.id === "zamzam")?.beta).toBe(true);
+    expect(banks.find((b) => b.id === "mpesa")?.beta).toBe(true);
+    expect(banks[0].beta).toBe(false);
     // Formats come current first: CBE leads with the Receipt ID, the FT reference is legacy.
     expect(banks[0].requiresAccount).toBe(false);
     expect(banks[0].formats.map((f) => f.status)).toEqual(["current", "legacy"]);
@@ -153,13 +181,6 @@ describe("TS SDK: errors and retries", () => {
     expect(calls).toHaveLength(1);
   });
 
-  it("429 with a short Retry-After is retried once", async () => {
-    const calls = serve(() => respond(fx("error_429_rate_limited"), { "retry-after": "0" }), fx("verify_verified"));
-    const r = await client().verify("cbe", "X", { accountNumber: "1" });
-    expect(isVerified(r)).toBe(true);
-    expect(calls).toHaveLength(2);
-  });
-
   it("429 twice: one retry, then ChekiRateLimitError with retryAfterSeconds", async () => {
     const calls = serve(() => respond(fx("error_429_rate_limited"), { "retry-after": "0" }));
     const e = await client().verify("cbe", "X").catch((x) => x);
@@ -168,40 +189,82 @@ describe("TS SDK: errors and retries", () => {
     expect(calls).toHaveLength(2);
   });
 
-  it("429 with a long Retry-After is thrown straight away", async () => {
-    const calls = serve(() => respond(fx("error_429_rate_limited"), { "retry-after": "120" }));
-    const e = await client().verify("cbe", "X").catch((x) => x);
-    expect(e).toBeInstanceOf(ChekiRateLimitError);
-    expect(e.retryAfterSeconds).toBe(120);
-    expect(calls).toHaveLength(1);
+  it("429 with a short Retry-After, then success", async () => {
+    const calls = serve(() => respond(fx("error_429_rate_limited"), { "retry-after": "0" }), fx("verify_verified"));
+    const r = await client().verify("cbe", "X", { accountNumber: "1" });
+    expect(isVerified(r)).toBe(true);
+    expect(calls).toHaveLength(2);
   });
 
-  it("502: at most one retry, fallbackUrl exposed", async () => {
+  it("502 geo-blocked: never retried, fallbackUrl exposed", async () => {
     const calls = serve(() => respond(fx("error_502_geo_blocked"), { "retry-after": "0" }));
     const e = await client().verify("telebirr", "CHQ0FJ403O").catch((x) => x);
     expect(e).toBeInstanceOf(ChekiAPIError);
     expect(e.fallbackUrl).toMatch(/^https:\/\/transactioninfo/);
-    expect(calls).toHaveLength(2);
+    expect(calls).toHaveLength(1);
+  });
+
+  describe("shared retryCases fixture (the same rule in every SDK)", () => {
+    for (const rc of contract.retryCases) {
+      it(`${rc.name}: ${rc.retried ? "retried once" : "not retried"}`, async () => {
+        const calls = serve(
+          () =>
+            new Response(rc.rawBody ?? JSON.stringify(rc.body), {
+              status: rc.status,
+              headers: { "content-type": "application/json", ...rc.headers },
+            }),
+        );
+        const c = client();
+        const run =
+          rc.path === "/api/verify"
+            ? c.verify("telebirr", "CHQ0FJ403O")
+            : rc.path === "/api/verify/batch"
+              ? c.verifyBatch([{ bank: "telebirr", reference: "CHQ0FJ403O" }])
+              : rc.path === "/api/banks"
+                ? c.getBanks()
+                : c.getHealth();
+        const e = await run.catch((x) => x);
+        expect(e).toBeInstanceOf(ChekiAPIError);
+        expect(e.statusCode).toBe(rc.status);
+        expect(calls[0].init.method).toBe(rc.method);
+        expect(calls).toHaveLength(rc.retried ? 2 : 1);
+      });
+    }
   });
 
   it("maxRetries above 1 is capped at 1", async () => {
     const calls = serve(() => respond(fx("error_500_internal"), { "retry-after": "0" }));
-    await new Cheki({ baseUrl: "https://api.test", maxRetries: 5 }).verify("cbe", "X").catch(() => {});
+    await new Cheki({ baseUrl: "https://api.test", maxRetries: 5 }).getHealth().catch(() => {});
     expect(calls).toHaveLength(2);
   });
 
   it("retries: 0 disables the retry", async () => {
     const calls = serve(() => respond(fx("error_500_internal"), { "retry-after": "0" }));
-    await client().verify("cbe", "X", undefined, { retries: 0 }).catch(() => {});
+    await client().getHealth({ retries: 0 }).catch(() => {});
     expect(calls).toHaveLength(1);
   });
 
-  it("network errors are retried once", async () => {
-    const calls = serve(new TypeError("fetch failed"));
-    const e = await client().getBanks().catch((x) => x);
+  it("network errors are retried once for GET and verify", async () => {
+    let calls = serve(new TypeError("fetch failed"));
+    let e = await client().getBanks().catch((x) => x);
+    expect(e).toBeInstanceOf(ChekiNetworkError);
+    expect(calls).toHaveLength(2);
+    calls = serve(new TypeError("fetch failed"));
+    e = await client().verify("cbe", "X").catch((x) => x);
     expect(e).toBeInstanceOf(ChekiNetworkError);
     expect(calls).toHaveLength(2);
   }, 10_000);
+
+  it("a batch is not replayed after a network error", async () => {
+    const calls = serve(new TypeError("fetch failed"));
+    const e = await client().verifyBatch([{ bank: "cbe", reference: "X" }]).catch((x) => x);
+    expect(e).toBeInstanceOf(ChekiNetworkError);
+    expect(calls).toHaveLength(1);
+  });
+
+  it("recommended batch chunk is within the batch limit", () => {
+    expect(RECOMMENDED_BATCH_CHUNK).toBeLessThanOrEqual(MAX_BATCH_SIZE);
+  });
 
   it("timeouts are not retried", async () => {
     const fn = vi.fn(

@@ -21,8 +21,19 @@ const String chekiSdkVersion = '1.4.1';
 /// [VerifyResult.isVerified] is the only success signal. A 200 response can
 /// still be unverified (a decoded-only BOA QR code).
 ///
-/// Retries: at most one, on network errors, 5xx and 429 (waiting out a
-/// Retry-After of up to 60 s). Other 4xx and timeouts are never retried.
+/// Retries (at most one, the same in every cheki SDK):
+/// * `GET` ([getBanks], [getHealth]): network errors and 5xx.
+/// * `POST /api/verify`: network errors, and 429/503 with a Retry-After of at
+///   most 60 s. Never 500/502/504: the server already ran the check (a
+///   geo-blocked bank answers 502 every time).
+/// * `POST /api/verify/batch`: only 429/503 with a short Retry-After. A 504
+///   means the batch ran out of time; replaying it would hit every bank again
+///   and charge every receipt against the rate limit.
+/// * Never: timeouts, other 4xx, and any answer with `"retryable": false` or
+///   a `fallbackUrl`.
+///
+/// Responses are decoded as UTF-8 whatever the `content-type` charset says,
+/// so Amharic names and messages arrive intact.
 ///
 /// ```dart
 /// final client = ChekiClient();
@@ -36,6 +47,22 @@ const String chekiSdkVersion = '1.4.1';
 class ChekiClient {
   /// Maximum receipts per batch, enforced client-side.
   static const int maxBatchSize = 20;
+
+  /// Recommended chunk size for long lists. A batch is never retried, so
+  /// smaller chunks lose less work to a 504, and 15 leaves room in the per-IP
+  /// verify budget (30 per minute) for single checks.
+  static const int recommendedBatchChunk = 15;
+
+  static const String _batchPath = '/api/verify/batch';
+
+  /// Stricter reference rules the server applies per bank: a ZamZam receipt
+  /// id is digits only.
+  static final Map<String, (RegExp, String)> _receiptReferenceRules = {
+    'zamzam': (
+      RegExp(r'^[0-9]+$'),
+      'A ZamZam receipt id is digits only (the number at the end of the receipt link).',
+    ),
+  };
 
   /// Default per-attempt timeout. The server gives a verification up to
   /// 60 s, so the client waits a little longer.
@@ -64,7 +91,7 @@ class ChekiClient {
   /// Per-attempt timeout. `null` disables it.
   final Duration? timeout;
 
-  /// Retries on network errors, 5xx and 429 (0 or 1).
+  /// Retries where a retry is safe (0 or 1; see the class docs).
   final int maxRetries;
 
   final String _userAgent;
@@ -121,7 +148,9 @@ class ChekiClient {
   }
 
   /// Verifies up to [maxBatchSize] receipts in one request. Each item also
-  /// counts against the per-IP verify limit (30 per minute).
+  /// counts against the per-IP verify limit (30 per minute). A batch is never
+  /// replayed on a 5xx or network error; split long lists into chunks of
+  /// [recommendedBatchChunk] or fewer.
   ///
   /// Throws [ChekiValidationException] for an empty batch or more than 20
   /// receipts, without making a request.
@@ -135,7 +164,7 @@ class ChekiClient {
         'Split the list into chunks of $maxBatchSize.',
       );
     }
-    final json = await _request('POST', '/api/verify/batch', {
+    final json = await _request('POST', _batchPath, {
       'receipts': receipts.map((r) => r.toJson()).toList(),
     });
     return BatchResult.fromJson(json);
@@ -158,7 +187,7 @@ class ChekiClient {
 
   /// URL of `GET /api/receipt`, which opens the bank's own copy of a receipt.
   /// Supported: CBE, Dashen, Zemen and ZamZam. Lead with the current format: a
-  /// CBE Receipt ID, a Dashen FT Ref or a ZamZam receipt id, which the server
+  /// CBE Receipt ID, a Dashen FT Ref or a ZamZam receipt id (digits only), which the server
   /// answers with a redirect to the bank's own receipt page. An older CBE FT reference (legacy) also
   /// needs the receiving account (at least its last 8 digits) and comes back
   /// as the bank's PDF. No request is made.
@@ -174,6 +203,10 @@ class ChekiClient {
     final ref = reference.trim();
     if (!_safeReference.hasMatch(ref) || ref.contains('..')) {
       throw const ChekiValidationException('reference must be 1-64 letters, digits, dots, dashes or underscores.');
+    }
+    final rule = _receiptReferenceRules[id];
+    if (rule != null && !rule.$1.hasMatch(ref)) {
+      throw ChekiValidationException(rule.$2);
     }
     final params = <String, String>{'bank': id, 'reference': ref};
     if (digits > 0 && (id != 'cbe' || _legacyCbeReference.hasMatch(ref))) {
@@ -214,7 +247,9 @@ class ChekiClient {
       } on TimeoutException {
         throw ChekiTimeoutException('Request to $path timed out after ${timeout!.inMilliseconds}ms', path: path);
       } on http.ClientException catch (e) {
-        if (canRetry) {
+        // A batch may have reached the server before the connection broke;
+        // replaying it would run (and charge) every receipt again.
+        if (canRetry && path != _batchPath) {
           await Future<void>.delayed(_retryDelay(null));
           continue;
         }
@@ -222,19 +257,14 @@ class ChekiClient {
       }
 
       final status = response.statusCode;
+      final decoded = _decodeJson(response);
       if (status >= 200 && status < 300) {
-        try {
-          final decoded = jsonDecode(response.body);
-          if (decoded is Map<String, dynamic>) return decoded;
-        } on FormatException {
-          // fall through
-        }
+        if (decoded is Map<String, dynamic>) return decoded;
         throw ChekiException('Unexpected response: expected a JSON object', statusCode: status, path: path);
       }
 
       final retryAfter = parseRetryAfter(response.headers['retry-after']);
-      final retryable = status == 429 || status >= 500;
-      if (retryable && canRetry && (retryAfter == null || retryAfter <= _maxRetryAfter)) {
+      if (canRetry && _shouldRetry(method, status, retryAfter, decoded)) {
         await Future<void>.delayed(_retryDelay(retryAfter));
         continue;
       }
@@ -242,7 +272,32 @@ class ChekiClient {
     }
   }
 
+  /// The retry rule shared by every cheki SDK (`retryCases` in
+  /// sdks/fixtures/api-contract.json): never when the body says
+  /// `"retryable": false` or carries a `fallbackUrl`; 429 and 503 only with a
+  /// Retry-After of at most 60 s; any other 5xx only for GET.
+  static bool _shouldRetry(String method, int status, Duration? retryAfter, Object? body) {
+    if (status != 429 && status < 500) return false;
+    if (body is Map && (body['retryable'] == false || body['fallbackUrl'] is String)) return false;
+    if (status == 429 || status == 503) return retryAfter != null && retryAfter <= _maxRetryAfter;
+    return method == 'GET' && (retryAfter == null || retryAfter <= _maxRetryAfter);
+  }
+
   Duration _retryDelay(Duration? retryAfter) => retryAfter ?? Duration(milliseconds: 1000 + _random.nextInt(1000));
+}
+
+/// The body as text, always decoded as UTF-8. `Response.body` uses the
+/// `content-type` charset, and before http 1.4.0 it fell back to latin1 for
+/// `application/json` without one, which garbled every non-ASCII character.
+String _utf8Body(http.Response response) => utf8.decode(response.bodyBytes, allowMalformed: true);
+
+/// The decoded JSON body, or null when it is not JSON.
+Object? _decodeJson(http.Response response) {
+  try {
+    return jsonDecode(_utf8Body(response));
+  } on FormatException {
+    return null;
+  }
 }
 
 /// Parses a Retry-After header (delta-seconds or HTTP-date).
@@ -285,14 +340,13 @@ class ChekiException implements Exception {
   factory ChekiException.fromResponse(http.Response response, String path, Duration? retryAfter) {
     String? serverMessage;
     String? fallbackUrl;
-    try {
-      final json = jsonDecode(response.body);
-      if (json is Map<String, dynamic>) {
-        serverMessage = json['error'] is String ? json['error'] as String : null;
-        fallbackUrl = json['fallbackUrl'] is String ? json['fallbackUrl'] as String : null;
-      }
-    } on FormatException {
-      serverMessage = response.body.isNotEmpty ? response.body : null;
+    final json = _decodeJson(response);
+    if (json is Map<String, dynamic>) {
+      serverMessage = json['error'] is String ? json['error'] as String : null;
+      fallbackUrl = json['fallbackUrl'] is String ? json['fallbackUrl'] as String : null;
+    } else if (json == null) {
+      final text = _utf8Body(response);
+      serverMessage = text.isNotEmpty ? text : null;
     }
     final status = response.statusCode;
     final message = serverMessage ?? 'HTTP $status';

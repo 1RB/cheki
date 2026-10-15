@@ -29,10 +29,22 @@ type receiptURLCase struct {
 	Error     bool              `json:"error"`
 }
 
+type retryCase struct {
+	Name    string            `json:"name"`
+	Method  string            `json:"method"`
+	Path    string            `json:"path"`
+	Status  int               `json:"status"`
+	Headers map[string]string `json:"headers"`
+	Body    json.RawMessage   `json:"body"`
+	RawBody *string           `json:"rawBody"`
+	Retried bool              `json:"retried"`
+}
+
 type contract struct {
 	Limits          map[string]json.RawMessage `json:"limits"`
 	Cases           map[string]fixtureCase     `json:"cases"`
 	ReceiptURLCases []receiptURLCase           `json:"receiptUrlCases"`
+	RetryCases      []retryCase                `json:"retryCases"`
 }
 
 func loadContract(t *testing.T) contract {
@@ -250,7 +262,7 @@ func TestLongRetryAfterIsNotWaited(t *testing.T) {
 	}
 }
 
-func TestServerErrorRetriedOnceWithFallback(t *testing.T) {
+func TestGeoBlocked502NotRetried(t *testing.T) {
 	c := loadContract(t)
 	client, calls := serve(t, withRetryAfter(c.Cases["error_502_geo_blocked"], "0"))
 	_, err := client.Verify(context.Background(), VerifyOptions{Bank: "telebirr", Reference: "CHQ0FJ403O"})
@@ -258,8 +270,98 @@ func TestServerErrorRetriedOnceWithFallback(t *testing.T) {
 	if !errors.As(err, &apiErr) || !strings.HasPrefix(apiErr.FallbackURL, "https://transactioninfo") {
 		t.Fatalf("got %v", err)
 	}
-	if *calls != 2 {
-		t.Fatalf("%d calls, want 2", *calls)
+	if *calls != 1 {
+		t.Fatalf("%d calls, want 1", *calls)
+	}
+}
+
+// TestSharedRetryCases runs the retry rule every cheki SDK shares
+// (retryCases in sdks/fixtures/api-contract.json).
+func TestSharedRetryCases(t *testing.T) {
+	c := loadContract(t)
+	if len(c.RetryCases) < 10 {
+		t.Fatalf("expected the shared retryCases, got %d", len(c.RetryCases))
+	}
+	for _, rc := range c.RetryCases {
+		rc := rc
+		t.Run(rc.Name, func(t *testing.T) {
+			var calls int32
+			var method atomic.Value
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				atomic.AddInt32(&calls, 1)
+				method.Store(r.Method)
+				for k, v := range rc.Headers {
+					w.Header().Set(k, v)
+				}
+				w.WriteHeader(rc.Status)
+				if rc.RawBody != nil {
+					_, _ = w.Write([]byte(*rc.RawBody))
+				} else {
+					_, _ = w.Write(rc.Body)
+				}
+			}))
+			defer srv.Close()
+			client := NewClient(WithBaseURL(srv.URL))
+			ctx := context.Background()
+			var err error
+			switch rc.Path {
+			case "/api/verify":
+				_, err = client.Verify(ctx, VerifyOptions{Bank: "telebirr", Reference: "CHQ0FJ403O"})
+			case "/api/verify/batch":
+				_, err = client.VerifyBatch(ctx, []VerifyOptions{{Bank: "telebirr", Reference: "CHQ0FJ403O"}})
+			case "/api/banks":
+				_, err = client.GetBanks(ctx)
+			default:
+				_, err = client.GetHealth(ctx)
+			}
+			var apiErr *APIError
+			if !errors.As(err, &apiErr) || apiErr.StatusCode != rc.Status {
+				t.Fatalf("want *APIError %d, got %v", rc.Status, err)
+			}
+			if m, _ := method.Load().(string); m != rc.Method {
+				t.Fatalf("method %s, want %s", m, rc.Method)
+			}
+			want := int32(1)
+			if rc.Retried {
+				want = 2
+			}
+			if got := atomic.LoadInt32(&calls); got != want {
+				t.Fatalf("%d calls, want %d", got, want)
+			}
+		})
+	}
+}
+
+// brokenServer closes every connection without answering (a network error).
+func brokenServer(t *testing.T) (string, *int32) {
+	t.Helper()
+	var calls int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		atomic.AddInt32(&calls, 1)
+		hj, ok := w.(http.Hijacker)
+		if !ok {
+			t.Fatal("no hijacker")
+		}
+		conn, _, _ := hj.Hijack()
+		_ = conn.Close()
+	}))
+	t.Cleanup(srv.Close)
+	return srv.URL, &calls
+}
+
+func TestNetworkErrors(t *testing.T) {
+	u, calls := brokenServer(t)
+	client := NewClient(WithBaseURL(u))
+	if _, err := client.GetBanks(context.Background()); err == nil || atomic.LoadInt32(calls) != 2 {
+		t.Fatalf("GET: err %v, %d calls (want 2)", err, *calls)
+	}
+	atomic.StoreInt32(calls, 0)
+	if _, err := client.Verify(context.Background(), VerifyOptions{Bank: "cbe", Reference: "X"}); err == nil || atomic.LoadInt32(calls) != 2 {
+		t.Fatalf("verify: err %v, %d calls (want 2)", err, *calls)
+	}
+	atomic.StoreInt32(calls, 0)
+	if _, err := client.VerifyBatch(context.Background(), []VerifyOptions{{Bank: "cbe", Reference: "X"}}); err == nil || atomic.LoadInt32(calls) != 1 {
+		t.Fatalf("batch must not be replayed: err %v, %d calls (want 1)", err, *calls)
 	}
 }
 
@@ -267,15 +369,44 @@ func TestMaxRetriesClamped(t *testing.T) {
 	c := loadContract(t)
 	client, calls := serve(t, withRetryAfter(c.Cases["error_500_internal"], "0"))
 	client = NewClient(WithBaseURL(client.baseURL), WithMaxRetries(5))
-	_, _ = client.Verify(context.Background(), VerifyOptions{Bank: "cbe", Reference: "X"})
+	_, _ = client.GetHealth(context.Background())
 	if *calls != 2 {
 		t.Fatalf("%d calls, want 2", *calls)
 	}
 	client = NewClient(WithBaseURL(client.baseURL), WithMaxRetries(0))
 	*calls = 0
-	_, _ = client.Verify(context.Background(), VerifyOptions{Bank: "cbe", Reference: "X"})
+	_, _ = client.GetHealth(context.Background())
 	if *calls != 1 {
 		t.Fatalf("%d calls, want 1", *calls)
+	}
+}
+
+func TestOrderIDBetaAndBatchFallback(t *testing.T) {
+	c := loadContract(t)
+	client, _ := serve(t, c.Cases["verify_order_id"])
+	r, err := client.Verify(context.Background(), VerifyOptions{Bank: "cbebirr", Reference: "CB2610ABCD", PhoneNumber: "251911000000"})
+	if err != nil || r.OrderID != "ORD123456789" {
+		t.Fatalf("orderId: %v %+v", err, r)
+	}
+	client, _ = serve(t, c.Cases["banks"])
+	banks, err := client.GetBanks(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	beta := map[string]bool{}
+	for _, b := range banks {
+		beta[b.ID] = b.Beta
+	}
+	if !beta["zamzam"] || !beta["mpesa"] || beta["cbe"] {
+		t.Fatalf("beta %+v", beta)
+	}
+	client, _ = serve(t, fixtureCase{Status: 200, Body: json.RawMessage(`{"success":true,"results":[{"success":false,"error":"geo","status":502,"fallbackUrl":"https://x.test/r"}],"total":1,"verified":0,"failed":1,"cached":0}`)})
+	b, err := client.VerifyBatch(context.Background(), []VerifyOptions{{Bank: "telebirr", Reference: "A1"}})
+	if err != nil || b.Results[0].FallbackURL != "https://x.test/r" {
+		t.Fatalf("batch fallback: %v %+v", err, b)
+	}
+	if RecommendedBatchChunk > MaxBatchSize {
+		t.Fatal("RecommendedBatchChunk above MaxBatchSize")
 	}
 }
 
