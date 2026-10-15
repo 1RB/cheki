@@ -28,7 +28,8 @@
     ],
     "support": {
         "issues": "https://github.com/1RB/cheki/issues",
-        "source": "https://github.com/1RB/cheki"
+        "source": "https://github.com/1RB/cheki",
+        "docs": "https://cheki.et/docs"
     },
     "require": {
         "php": ">=8.0",

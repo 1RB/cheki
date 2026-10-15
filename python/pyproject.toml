@@ -44,7 +44,8 @@ dev = [
 cheki-verify = "cheki.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/1RB/cheki"
+Homepage = "https://cheki.et"
+Documentation = "https://cheki.et/docs"
 Repository = "https://github.com/1RB/cheki"
 Issues = "https://github.com/1RB/cheki/issues"
 

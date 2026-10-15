@@ -24,7 +24,9 @@
     "cli": "tsx src/cli/index.ts",
     "probe": "tsx scripts/probe.ts",
     "health-check": "tsx scripts/health-check.ts",
-    "smoke": "tsx scripts/smoke.ts"
+    "smoke": "tsx scripts/smoke.ts",
+    "link-audit": "tsx scripts/link-audit.ts",
+    "indexnow": "tsx scripts/indexnow.ts"
   },
   "bin": {
     "cheki": "src/cli/index.ts"

@@ -341,6 +341,8 @@ Check new UI at 360, 390 and 430px wide, light and dark, with touch emulation. T
 npm run smoke -- https://cheki.et
 ```
 
+`npm run link-audit` (same default base URL) crawls every page in the sitemap and fails if one has no link from the main content of another sitemap page; nav and footer links don't count. CI runs it after the smoke test. When you add an indexable page, link it from a page that is about the same thing, for example a guide's `relatedPages` (`src/lib/internal-links.ts`).
+
 Only `main` deploys (see `vercel.json`). How to ship a stack of PRs in one deploy, and how to roll back, is in [docs/RELEASING.md](docs/RELEASING.md).
 
 ### Changing an API response
