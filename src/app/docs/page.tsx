@@ -115,10 +115,7 @@ health, err := client.GetHealth(ctx) // health.Banks[i].Status`,
   {
     lang: "Dart",
     shikiLang: "bash",
-    code: `// pubspec.yaml (not on pub.dev yet; use a git dependency)
-// dependencies:
-//   cheki:
-//     git: { url: https://github.com/1RB/cheki.git, path: sdks/dart }
+    code: `// dart pub add cheki   (or: flutter pub add cheki)
 
 import 'package:cheki/cheki.dart';
 

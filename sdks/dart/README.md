@@ -6,7 +6,13 @@ Website: [cheki.et](https://cheki.et) · API reference: [cheki.et/docs](https://
 
 ## Install
 
-Not on pub.dev yet (`dart pub add cheki` does not work). Use a git dependency:
+From [pub.dev](https://pub.dev/packages/cheki):
+
+```bash
+dart pub add cheki      # or: flutter pub add cheki
+```
+
+To track unreleased changes on `main`, use a git dependency instead:
 
 ```yaml
 dependencies:

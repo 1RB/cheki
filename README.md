@@ -65,7 +65,7 @@ What every SDK does the same way:
 | **TypeScript** | `npm install cheki-verify` | [`cheki-verify`](https://www.npmjs.com/package/cheki-verify) | npm · [GitHub Packages](https://github.com/1RB/cheki/pkgs/npm/cheki-verify) |
 | **Python** | `pip install cheki` | [`cheki`](https://pypi.org/project/cheki/) | PyPI |
 | **Go** | `go get github.com/1RB/cheki/sdks/go` | `github.com/1RB/cheki/sdks/go` | [Go modules](https://pkg.go.dev/github.com/1RB/cheki/sdks/go) |
-| **Dart** | git dependency (see [sdks/dart](sdks/dart/README.md)) | `cheki` | pub.dev (not published yet) |
+| **Dart** | `dart pub add cheki` | [`cheki`](https://pub.dev/packages/cheki) | pub.dev |
 | **PHP** | `composer require cheki/cheki` | [`cheki/cheki`](https://packagist.org/packages/cheki/cheki) | Packagist |
 
 ### TypeScript
@@ -315,8 +315,8 @@ src/
 sdks/
   fixtures/                 # Shared API contract fixtures every SDK test decodes
   typescript/               # TypeScript SDK (npm: cheki-verify, GH Packages: @1rb/cheki-verify)
-  go/                       # Go SDK (go get)
-  dart/                     # Dart SDK (not on pub.dev yet)
+  go/                       # Go SDK (go get, tags sdks/go/vX.Y.Z)
+  dart/                     # Dart SDK (pub.dev: cheki)
   php/                      # PHP SDK (Packagist)
 python/                     # Python SDK (PyPI: cheki)
 Dockerfile
@@ -515,14 +515,15 @@ Include the reference number you tested with (or note that you tested from an Et
 
 Deploying the site is separate from versioning: only `main` deploys to cheki.et. The deploy checklist, the smoke test (`npm run smoke -- <base-url>`) and rollback steps are in [docs/RELEASING.md](docs/RELEASING.md).
 
-Version bumps are automated. All package versions (web, TypeScript SDK, Python SDK, Dart SDK, PHP SDK) stay in sync.
+Version bumps are automated. All package versions (web, TypeScript, Python, Go, Dart and PHP SDKs) stay in sync.
 
 ```bash
-# Bump to a new version: updates all packages, commits, tags, and pushes
+# Bump to a new version: updates every package and SDK constant, commits,
+# tags vX.Y.Z and sdks/go/vX.Y.Z, and pushes
 ./scripts/bump-version.sh 1.4.2
 ```
 
-This triggers the publish workflow which publishes to npm, GitHub Packages, PyPI, and Packagist simultaneously.
+The `vX.Y.Z` tag runs the publish workflow: npm, GitHub Packages, PyPI, Packagist and pub.dev (GitHub OIDC, no token), and it warms the Go module proxy for `sdks/go/vX.Y.Z`. Details in [docs/RELEASING.md](docs/RELEASING.md#releasing-sdks).
 
 ## Contributing
 
