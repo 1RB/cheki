@@ -20,15 +20,8 @@ dev_dependencies:
   test: ^1.25.0
 
 topics:
-  - api
-  - http
+  - ethiopia
+  - payments
   - receipt
   - verification
-  - ethiopia
-  - cbe
-  - telebirr
-  - m-pesa
-  - dashen
-  - awash
-  - zemen
-  - eBirr
+  - api

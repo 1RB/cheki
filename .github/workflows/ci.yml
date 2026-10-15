@@ -118,6 +118,8 @@ jobs:
       - run: dart pub get
       - run: dart analyze --fatal-infos
       - run: dart test
+      - name: pub.dev package check (fails on any warning)
+        run: dart pub publish --dry-run
 
   python-test:
     name: Python SDK (Python ${{ matrix.python }})
