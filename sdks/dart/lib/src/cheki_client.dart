@@ -9,7 +9,7 @@ import 'models.dart';
 import 'verify_options.dart';
 
 /// SDK version, sent in the User-Agent header.
-const String chekiSdkVersion = '1.4.1';
+const String chekiSdkVersion = '1.5.0';
 
 /// A client for the cheki receipt verification API.
 ///

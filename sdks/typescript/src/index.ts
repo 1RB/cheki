@@ -27,7 +27,7 @@
 // ============================================================================
 
 /** SDK version, reflected in the default User-Agent header. */
-const VERSION = "1.4.1";
+const VERSION = "1.5.0";
 
 /** Default API base URL. */
 const DEFAULT_BASE_URL = "https://cheki.et";

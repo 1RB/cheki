@@ -1,6 +1,6 @@
 {
   "name": "cheki-verify",
-  "version": "1.4.1",
+  "version": "1.5.0",
   "description": "Free Ethiopian receipt verification SDK for the cheki API. Verify bank transfers from CBE, Telebirr, BOA, Dashen, M-Pesa, Awash, Siinqee, eBirr, and ZamZam.",
   "type": "commonjs",
   "main": "index.js",

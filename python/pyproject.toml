@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "cheki"
-version = "1.4.1"
+version = "1.5.0"
 description = "Python client for the cheki API: free, open-source Ethiopian bank/wallet receipt verification (CBE, Telebirr, BOA, M-Pesa, Dashen, Awash, Siinqee, eBirr, ZamZam)."
 readme = "README.md"
 license = "MIT"
