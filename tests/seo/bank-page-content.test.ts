@@ -139,4 +139,36 @@ describe("bank page content", () => {
     expect(page).toMatch(/\{geoNote && \(/);
     expect(page).not.toMatch(/<h2>Required information<\/h2>/);
   });
+
+  it("Telebirr and CBE answer how to get or download the receipt, as a section and as FAQs", () => {
+    for (const [code, host] of [["telebirr", "transactioninfo.ethiotelecom.et/receipt/"], ["cbe", "mbreciept.cbe.com.et/"]] as const) {
+      const bank = getBank(code)!;
+      const c = bankPageContent(bank);
+      const sec = c.sections.filter((s) => s.id === BANK_HEADING.download.id);
+      expect(sec.length, code).toBe(1);
+      expect(sec[0].heading).toBe(`How to get or download a ${bank.shortName} receipt (PDF)`);
+      expect(sec[0].body).toContain(host);
+      expect(sec[0].steps!.length).toBeGreaterThanOrEqual(3);
+      // A PDF is a copy, never the proof: every version sends the link or number too.
+      expect(sec[0].steps!.join(" ")).toMatch(/not only the PDF/);
+      const pdfFaq = c.faq.filter((f) => /download .+ as a PDF\?$/.test(f.q));
+      expect(pdfFaq.length, code).toBe(1);
+      expect(pdfFaq[0].a).toContain(host);
+    }
+    // The other banks have no confirmed receipt-download steps, so they get none.
+    for (const b of live.filter((x) => !["telebirr", "cbe"].includes(x.code))) {
+      expect(bankPageContent(b).sections.some((s) => s.id === BANK_HEADING.download.id), b.code).toBe(false);
+    }
+  });
+
+  it("never invents a PDF portal or an in-app menu path for receipt downloads", () => {
+    for (const code of ["telebirr", "cbe"]) {
+      const t = text(code);
+      expect(t, code).not.toMatch(/download (?:site|portal) at/i);
+      // The app step stays conditional: neither bank documents a PDF button.
+      expect(t, code).toMatch(/if it offers one/);
+    }
+    expect(text("telebirr")).toMatch(/only opens on an Ethiopian network/);
+    expect(text("cbe")).toMatch(/cannot be worked out from an FT reference/);
+  });
 });

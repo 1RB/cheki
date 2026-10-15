@@ -283,6 +283,53 @@ const HOWTO_EXTRA: Record<string, { sections: BankSection[]; faq: BankFaq[] }> =
   },
 };
 
+// ─── Getting or downloading the receipt (PDF) ─────────────────────
+//
+// Answers "how do I get / download my receipt", which people search for as
+// often as "verify". Only what the banks' own pages and cheki's manifest
+// confirm: Telebirr's receipt is an HTML page at transactioninfo.ethiotelecom.et
+// (receipt number in every confirmation SMS, ethiotelecom.et/telebirr), CBE's
+// is the mbreciept.cbe.com.et link the app shares (src/lib/manifest/endpoints.ts).
+// Neither bank documents an in-app PDF button, so the app step is phrased as
+// "if it offers one" and the PDF comes from the browser's own Save as PDF.
+
+const RECEIPT_DOWNLOAD: Record<string, { section: (b: Bank) => BankSection; faq: BankFaq[] }> = {
+  telebirr: {
+    section: (b) => ({
+      id: BANK_HEADING.download.id,
+      heading: BANK_HEADING.download.text(b.shortName),
+      body: "Telebirr's official receipt is a web page, not a PDF file: transactioninfo.ethiotelecom.et/receipt/ followed by the transaction number. A PDF is a copy you save from that page.",
+      steps: [
+        "Find the transaction number. Telebirr sends it in the confirmation SMS after every transaction, and it is on the transaction in the telebirr app's history.",
+        "Open the receipt: tap the link in the SMS, or open transactioninfo.ethiotelecom.et/receipt/ followed by the transaction number in a browser. The page only opens on an Ethiopian network.",
+        "To keep a PDF, use the browser's Share or Print option and choose Save as PDF. In the telebirr app, use the transaction's share option if it offers one.",
+        "When you send proof of payment, send the transaction number or the link, not only the PDF: a PDF or screenshot can be edited, Telebirr's record cannot.",
+      ],
+    }),
+    faq: [
+      { q: "How do I download a Telebirr receipt as a PDF?", a: "Open the receipt page from the SMS link (transactioninfo.ethiotelecom.et/receipt/ followed by the transaction number) on an Ethiopian network, then use the browser's Share or Print option and choose Save as PDF. Telebirr has no separate PDF download site: the web page is the official receipt." },
+      { q: "How do I get a Telebirr receipt from a transaction number?", a: "Add the transaction number to the end of transactioninfo.ethiotelecom.et/receipt/ and open it on an Ethiopian network, or paste the number into cheki, which reads that same page. Then check that the receiver and the amount are the ones you expected: anyone who has the number can open the receipt." },
+    ],
+  },
+  cbe: {
+    section: (b) => ({
+      id: BANK_HEADING.download.id,
+      heading: BANK_HEADING.download.text(b.shortName),
+      body: "Current CBE receipts are shared as a link: mbreciept.cbe.com.et/ followed by the Receipt ID. The CBE mobile banking app creates it when you share a transaction's receipt, and the QR code on the receipt holds the same link.",
+      steps: [
+        "In the CBE mobile banking app, open the transaction and share its receipt. The shared link is mbreciept.cbe.com.et/ followed by the Receipt ID.",
+        "Open the link in any browser to see the receipt on CBE's own site. It opens from outside Ethiopia too.",
+        "To keep a PDF, use the browser's Share or Print option and choose Save as PDF, or the app's download option if it offers one.",
+        "When you send proof of payment, send the link or the Receipt ID, not only the PDF: a PDF or screenshot can be edited, CBE's record cannot.",
+      ],
+    }),
+    faq: [
+      { q: "How do I download a CBE receipt as a PDF?", a: "Share the transaction's receipt from the CBE mobile banking app to get its link (mbreciept.cbe.com.et/ followed by the Receipt ID), open the link in a browser, and use the browser's Share or Print option to save it as a PDF. The link itself is the receipt CBE keeps; the PDF is your copy." },
+      { q: "Can I get a CBE receipt from the FT reference?", a: "Not a current one. The Receipt ID cannot be worked out from an FT reference, so ask the sender to share the receipt link from the CBE app. Older receipts can still be looked up by the FT reference plus the last 8 digits of the receiving account, but CBE's older receipt service often does not answer." },
+    ],
+  },
+};
+
 // ─── Receipt format (the five banks that had a format page) ───────
 
 const RECEIPT_FORMAT: Record<string, { body: (b: Bank) => string; fields: string[]; faq: string }> = {
@@ -366,7 +413,7 @@ function fakeReceipt(b: Bank): { section: BankSection; faq: BankFaq[] } {
         "The sender pushes you to hand over the goods before you can check, or avoids a phone call",
         "A blurry screenshot or photo that is hard to read",
       ],
-      link: { href: "/guides/payment-fraud-ethiopia", text: "Payment fraud in Ethiopia: every tactic and how to catch it" },
+      link: { href: "/guides/payment-fraud-ethiopia", text: "How to check if a receipt is fake: every fraud tactic and how to catch it" },
     },
     faq: [
       {
@@ -425,6 +472,7 @@ export function bankPageContent(b: Bank): BankPageContent {
   const howto = HOWTO_EXTRA[b.code] ?? { sections: [], faq: [] };
   const format = RECEIPT_FORMAT[b.code];
   const fake = FAKE_SECTION.has(b.code) ? fakeReceipt(b) : null;
+  const download = RECEIPT_DOWNLOAD[b.code];
 
   const formatSection: BankSection[] = format
     ? [{ id: BANK_HEADING.format.id, heading: BANK_HEADING.format.text(b.shortName), body: format.body(b), bullets: format.fields }]
@@ -432,7 +480,7 @@ export function bankPageContent(b: Bank): BankPageContent {
   const formatFaq: BankFaq[] = format ? [{ q: `What format does ${b.shortName} use for receipts?`, a: format.faq }] : [];
 
   const seen = new Set(builtInHeadings(b).map((h) => h.toLowerCase()));
-  const sections = [...howto.sections, ...verify.sections, ...check.sections, ...formatSection, ...(fake ? [fake.section] : [])].filter((sec) => {
+  const sections = [...howto.sections, ...(download ? [download.section(b)] : []), ...verify.sections, ...check.sections, ...formatSection, ...(fake ? [fake.section] : [])].filter((sec) => {
     const key = sec.heading.toLowerCase();
     if (seen.has(key)) return false;
     seen.add(key);
@@ -440,7 +488,7 @@ export function bankPageContent(b: Bank): BankPageContent {
   });
 
   const seenQ = new Set<string>();
-  const faq = [...b.faq, ...verify.faq, ...howto.faq, ...check.faq, ...formatFaq, ...(fake?.faq ?? [])].filter((f) => {
+  const faq = [...b.faq, ...verify.faq, ...howto.faq, ...(download?.faq ?? []), ...check.faq, ...formatFaq, ...(fake?.faq ?? [])].filter((f) => {
     const key = faqTopic(f.q);
     if (seenQ.has(key)) return false;
     seenQ.add(key);

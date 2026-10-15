@@ -48,6 +48,7 @@ export const BANK_HEADING = {
   fake: { id: "fake-receipt", text: (short: string) => `How to detect a fake ${short} receipt` },
   format: { id: "receipt-format", text: (short: string) => `${short} receipt format explained` },
   geoBlocking: { id: "geo-blocking", text: (short: string) => `${short} geo-blocking` },
+  download: { id: "download-receipt", text: (short: string) => `How to get or download ${withArticle(short)} receipt (PDF)` },
 } as const;
 
 /** The banks that had their own fake-receipt and receipt-format pages. */
