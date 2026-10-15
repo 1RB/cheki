@@ -60,6 +60,25 @@ describe("maintainer identity", () => {
     expect(hrefs).toContain("https://github.com/1RB");
   });
 
+  it("about has Ray's \"Why I built it\" between how a check works and free and open source, naming no competitor", () => {
+    const ids = ABOUT.sections.map((s) => s.id);
+    const why = ids.indexOf("why-i-built-it");
+    expect(why).toBeGreaterThan(-1);
+    expect(ids[why - 1]).toBe("how-it-works");
+    expect(ids[why + 1]).toBe("free-and-open-source");
+    const sec = ABOUT.sections[why];
+    expect(sec.heading).toBe("Why I built it");
+    const text = sec.paragraphs!.map((p) => p.map((x) => (typeof x === "string" ? x : x.text)).join("")).join("\n");
+    expect(text).toMatch(/^Every day in Ethiopia, shops hand over goods/);
+    expect(text).toMatch(/If cheki saves one shop from one fake receipt, it's done its job\.$/);
+    for (const name of [/verify\.et/i, /check\.et/i, /veritas/i, /leul/i, /verifier-api/i]) {
+      expect(text).not.toMatch(name);
+      expect(trustPageText(ABOUT)).not.toMatch(name);
+    }
+    // "no account, no API key" is said once, in Ray's words, not repeated under "Free and open source".
+    expect(trustPageText(ABOUT).match(/no account/gi)).toHaveLength(1);
+  });
+
   it("about: green means bank-confirmed only", () => {
     const t = trustPageText(ABOUT);
     expect(t).toMatch(/A green result means one thing only: the bank confirmed the receipt/);

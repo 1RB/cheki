@@ -9,8 +9,8 @@
  * The maintainer is named as Ray (@1RB on GitHub): first name and GitHub
  * handle only. No surname, no photo, no personal email, no location: that is
  * Ray's rule, and tests/content/trust-pages.test.ts enforces it. /about's
- * maintainer section is written by Ray in the first person; everything else
- * stays in the product's voice ("cheki does X").
+ * "Why I built it" and maintainer sections are written by Ray in the first
+ * person; everything else stays in the product's voice ("cheki does X").
  */
 import { LIVE_BANK_COUNT } from "./bank-counts";
 import { RATE_LIMITS } from "./rate-limit-config";
@@ -81,6 +81,22 @@ export const ABOUT: TrustPage = {
       ],
     },
     {
+      id: "why-i-built-it",
+      heading: "Why I built it",
+      paragraphs: [
+        [
+          "Every day in Ethiopia, shops hand over goods because a customer showed them a screenshot that says \"Transfer successful.\" Some of those screenshots are fake, and a small shop can lose a week's profit to one of them.",
+        ],
+        [
+          "The fix already exists. Each bank and wallet publishes the receipt at a public address on its own servers. Checking a payment just means asking the bank's page what it says. Yet I kept seeing that answer sold back to businesses through monthly plans, API keys and per-check quotas.",
+        ],
+        [
+          "I don't think a shop owner should have to pay to read a page their own bank already made public. So cheki is free for everyone, with no account and no key. It's open source, so any developer can build it into a checkout, a Telegram bot or a point-of-sale app, or run it on their own server.",
+        ],
+        ["If cheki saves one shop from one fake receipt, it's done its job."],
+      ],
+    },
+    {
       id: "free-and-open-source",
       heading: "Free and open source",
       paragraphs: [
@@ -90,7 +106,7 @@ export const ABOUT: TrustPage = {
           ". Anyone can read how a receipt is checked, run it on their own server, or send a fix.",
         ],
         [
-          "There is no account, no API key and no paid plan. The hosted API at cheki.et has per-IP rate limits so one client cannot crowd out everyone else; ",
+          "The hosted API at cheki.et has per-IP rate limits so one client cannot crowd out everyone else; ",
           { href: "/docs", text: "the docs" },
           " list them, and self-hosting removes them.",
         ],
