@@ -147,7 +147,7 @@ export const articles: Article[] = [
     excerpt:
       "check.et charges 499 ETB/month after 200 one-time free verifications, and verify.et's API plans start at 500 ETB/month. Both use the same public bank endpoints cheki uses for free. Here's the complete guide to free verification.",
     date: "2026-06-18",
-    updated: "2026-10-13",
+    updated: "2026-10-15",
     readTime: "5 min",
     content: [
       { type: "text", text: "If you're an Ethiopian business owner, you've probably heard of check.et or verify.et. They verify bank receipts so you can confirm payments before releasing goods. They charge you for data that is already free." },
@@ -176,7 +176,7 @@ export const articles: Article[] = [
         rows: [
           ["cheki", "No signup, no key; per-IP rate limits", "None (free)", "0 ETB"],
           ["check.et", "200 (one-time, not monthly)", "499 ETB/month or 4,990 ETB/year", "Flat fee (Pro is unlimited)"],
-          ["verify.et", "200/month", "500-3,000 ETB/month (API), 4,000 ETB/year (app)", "~0.10 ETB per API verification"],
+          ["verify.et", "200/month", "500-3,000 ETB/month (API), 699 ETB/month or 4,000 ETB/year (app)", "~0.10 ETB per API verification"],
           ["qbirr", "50/month", "500-8,000 ETB/month", "0.08-0.50 ETB per verification"],
           ["tinaverify", "None listed", "3,000-8,000 ETB per 90 days (credits)", "0.84-0.91 ETB per verification"],
           ["tally", "1-day trial", "500-12,000+ ETB/month", "Flat fee"],
@@ -214,9 +214,8 @@ export const articles: Article[] = [
       { type: "callout", variant: "success", title: "Migrating from check.et", text: "If you're currently using check.et's API, migrating to cheki is simple. Change the URL from api.check.et to cheki.et, remove the Authorization header, and rename transaction_number to reference and account_number to accountNumber. The response structure is similar." },
 
       { type: "heading", text: "What about verify.et?" },
-      { type: "text", text: `verify.et is made by Suba Software. On ${COMPETITORS_CHECKED} its pricing page listed a free Starter tier (200 verifications a month), API plans from 500 ETB a month, and a 4,000 ETB/year app plan, and its site offered a free receipt check with no account. It has an Android app on the Play Store and uses Telegram for sign-in. Here's the interesting part: as of June 2026, verify.et blocked AI crawlers in its robots.txt:` },
-      { type: "code", code: "# From verify.et/robots.txt\nUser-agent: GPTBot\nDisallow: /\n\nUser-agent: ClaudeBot\nDisallow: /\n\nUser-agent: CCBot\nDisallow: /\n\nUser-agent: Google-Extended\nDisallow: /" },
-      { type: "text", text: "This means verify.et prevented ChatGPT, Claude, and Google's AI from reading its content. Why? Possibly to prevent users from discovering that the underlying data is public. cheki does the opposite: our robots.txt explicitly allows all AI crawlers, and we publish an llms.txt file with key facts for AI assistants." },
+      { type: "text", text: `verify.et is made by Suba Software. On ${COMPETITORS_CHECKED} its pricing page listed a free Hobby tier (200 verifications a month), API plans from 500 ETB a month, and app plans of 699 ETB a month (team) or 4,000 ETB a year, and its site offered a free receipt check with no account. It has an Android app on the Play Store, and as of June 2026 it used Telegram for sign-in. Its REST API is the way to integrate: its docs say official SDK packages are not published yet.` },
+      { type: "text", text: `verify.et's robots.txt blocked AI crawlers as of June 2026; on ${COMPETITORS_CHECKED} it welcomed them by name, and cheki's allows them too. cheki also publishes an llms.txt file with key facts for AI assistants.` },
 
       { type: "heading", text: "Self-hosting for zero cost and zero dependency" },
       { type: "text", text: "If you don't want to depend on cheki.et at all, you can self-host the entire system with Docker:" },
@@ -913,7 +912,7 @@ export const articles: Article[] = [
     excerpt:
       "Ethiopian fintech is dominated by paid services wrapping public data. Open source changes the equation. This is what community-built tools like cheki do differently.",
     date: "2026-06-18",
-    updated: "2026-10-07",
+    updated: "2026-10-15",
     readTime: "5 min",
     content: [
       { type: "text", text: "Ethiopia's fintech scene has a peculiar characteristic: many of the most useful services are built on top of public data that anyone can access, yet wrapped in paywalls and closed source code. cheki challenges this model by being completely open source and free." },
@@ -960,8 +959,7 @@ export const articles: Article[] = [
 
       { type: "heading", text: "Why AI access matters" },
       { type: "text", text: "More people are asking AI assistants like ChatGPT and Claude for help with Ethiopian payment verification. When someone asks 'how do I verify a CBE receipt for free', the AI should be able to find and cite cheki." },
-      { type: "text", text: "verify.et blocks all AI crawlers in its robots.txt. This means AI assistants can't read verify.et's content. When someone asks ChatGPT about verify.et, the AI has no information. This is anti-user and anti-transparency." },
-      { type: "text", text: "cheki does the opposite. Our robots.txt explicitly allows GPTBot, ClaudeBot, CCBot, Google-Extended, PerplexityBot, and all other AI crawlers. We also publish an llms.txt file with key facts that AI assistants can reference directly." },
+      { type: "text", text: "cheki's robots.txt explicitly allows GPTBot, ClaudeBot, CCBot, Google-Extended, PerplexityBot, and all other AI crawlers. We also publish an llms.txt file with key facts that AI assistants can reference directly." },
       { type: "callout", variant: "tip", title: "llms.txt", text: "cheki publishes a /llms.txt file with structured facts about the service, supported banks, API endpoints, and key data. This is a new standard for making websites AI-readable. Visit https://cheki.et/llms.txt to see it." },
 
       { type: "heading", text: "Contributing to cheki" },

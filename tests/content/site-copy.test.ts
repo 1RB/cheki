@@ -224,3 +224,33 @@ describe("site copy: cheki's bank counts are derived", () => {
     expect(read("public/llms.txt")).toMatch(/CBE Birr \(in development\)/);
   });
 });
+
+describe("competitor facts re-checked on 15 October 2026", () => {
+  // verify.et/robots.txt now welcomes AI crawlers by name and verify.et/docs/sdk
+  // says its SDKs are not published (see the note in src/lib/guides-facts.ts).
+  const sources = ["src/app/compare/page.tsx", "src/lib/compare-content.ts", "src/lib/guides.ts", "public/llms.txt", "README.md"];
+
+  it("nothing says verify.et blocks AI crawlers today", () => {
+    for (const p of sources) {
+      const src = read(p);
+      expect(src, p).not.toMatch(/Blocks AI crawlers|verify\.et blocks|Why does verify\.et block/i);
+      // A past block may be mentioned only with its date.
+      for (const m of src.matchAll(/verify\.et[^.\n]{0,80}blocked AI crawlers[^.\n]*/gi)) expect(m[0], p).toMatch(/June 2026/);
+    }
+    const compare = read("src/app/compare/page.tsx");
+    expect(compare).toMatch(/feature: "AI crawler access", cheki: check, checket: check, verifyet: check/);
+  });
+
+  it("verify.et is not credited with a published TypeScript SDK", () => {
+    const compare = read("src/app/compare/page.tsx");
+    expect(compare).not.toMatch(/TypeScript SDK published/);
+    expect(compare).toMatch(/feature: "TypeScript SDK", cheki: check, checket: dash, verifyet: "Planned"/);
+  });
+
+  it("the re-check date is the one every dated competitor line quotes", () => {
+    expect(COMPETITORS_CHECKED).toBe("15 October 2026");
+    for (const p of ["public/llms.txt", "README.md"]) {
+      expect(read(p), p).not.toMatch(/12 October 2026/);
+    }
+  });
+});
