@@ -7,6 +7,7 @@
  *   node scripts/check-registries.mjs                 # package.json version
  *   node scripts/check-registries.mjs 1.5.0
  *   node scripts/check-registries.mjs 1.5.0 --once    # no polling
+ *   node scripts/check-registries.mjs 1.5.0 --only npm   # registries whose name starts with "npm"
  *   EXPECT_SHA=<commit> node scripts/check-registries.mjs 1.5.0
  *
  * EXPECT_SHA (publish.yml passes the tag's commit) also checks that Packagist
@@ -18,6 +19,12 @@ import { readFileSync } from "node:fs";
 
 const args = process.argv.slice(2);
 const once = args.includes("--once");
+const onlyAt = args.indexOf("--only");
+const only = onlyAt >= 0 ? (args[onlyAt + 1] ?? "").toLowerCase() : null;
+if (only === "") {
+  console.error("--only needs a registry name prefix, e.g. --only npm");
+  process.exit(2);
+}
 const version = args.find((a) => /^\d+\.\d+\.\d+$/.test(a)) ?? JSON.parse(readFileSync("package.json", "utf8")).version;
 const sha = (process.env.EXPECT_SHA ?? "").trim();
 const ATTEMPTS = once ? 1 : Number(process.env.ATTEMPTS ?? 20);
@@ -76,7 +83,11 @@ if (process.env.GH_PACKAGES_TOKEN) {
   };
 }
 
-const pending = new Map(Object.entries(checks));
+const pending = new Map(Object.entries(checks).filter(([name]) => only === null || name.toLowerCase().startsWith(only)));
+if (pending.size === 0) {
+  console.error(`--only ${only} matches no registry (${Object.keys(checks).join(", ")})`);
+  process.exit(2);
+}
 const results = new Map();
 for (let attempt = 1; attempt <= ATTEMPTS && pending.size > 0; attempt++) {
   if (attempt > 1) await new Promise((r) => setTimeout(r, DELAY_MS));

@@ -524,7 +524,7 @@ Version bumps are automated. All package versions (web, TypeScript, Python, Go, 
 ./scripts/bump-version.sh 1.4.2
 ```
 
-The `vX.Y.Z` tag runs the publish workflow: npm, GitHub Packages, PyPI, Packagist and pub.dev (GitHub OIDC, no token), and it warms the Go module proxy for `sdks/go/vX.Y.Z`. Details in [docs/RELEASING.md](docs/RELEASING.md#releasing-sdks).
+The `vX.Y.Z` tag runs the publish workflow: npm and pub.dev (both GitHub OIDC trusted publishing, no token; npm adds provenance), GitHub Packages, PyPI and Packagist, and it warms the Go module proxy for `sdks/go/vX.Y.Z`. An existing tag can be published to npm alone with Actions → Publish SDKs → Run workflow. Details in [docs/RELEASING.md](docs/RELEASING.md#releasing-sdks).
 
 ## Contributing
 

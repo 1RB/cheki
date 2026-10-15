@@ -134,7 +134,7 @@ any version line or SDK constant drifts.
 
 | Job | Registry | Auth |
 |-----|----------|------|
-| `publish-npm` | npm `cheki-verify` | `NPM_TOKEN` secret |
+| `publish-npm` | npm `cheki-verify` | npm trusted publishing (GitHub OIDC), no secret |
 | `publish-github-packages` | `@1rb/cheki-verify` | `GITHUB_TOKEN` |
 | `publish-pypi` | PyPI `cheki` | `PYPI_TOKEN` secret |
 | `publish-packagist` | Packagist `cheki/cheki` (reads the tag) | `PACKAGIST_TOKEN` secret |
@@ -156,7 +156,42 @@ any version line or SDK constant drifts.
   the Go proxy `.info` (version and commit) and GitHub Packages. It fails the
   workflow unless every registry serves the release from the tagged commit,
   and writes a table to the job summary. Run it by hand any time:
-  `node scripts/check-registries.mjs 1.5.0` (add `--once` to skip polling).
+  `node scripts/check-registries.mjs 1.5.0` (add `--once` to skip polling,
+  `--only npm` to check one registry).
+
+### npm (trusted publishing)
+
+- `publish-npm` has no token. npmjs.com → `cheki-verify` → Settings →
+  Trusted publishing has a GitHub Actions publisher: organization `1RB`,
+  repository `cheki`, workflow filename `publish.yml`, no environment, and
+  **Allow npm publish** ticked. The job has `id-token: write`, installs npm 11
+  (trusted publishing needs npm >= 11.5.1 and Node >= 22.14.0) and runs
+  `npm publish --access public`; npm swaps the GitHub OIDC token for a
+  short-lived publish token and attaches a provenance attestation on its own.
+- `package.json` `repository.url` must stay `git+https://github.com/1RB/cheki.git`:
+  npm rejects a trusted publish whose repository does not match.
+- The `NPM_TOKEN` repository secret is no longer used. Delete it (Settings →
+  Secrets and variables → Actions) once a trusted publish has worked, and
+  optionally set Publishing access on npmjs.com to "Require two-factor
+  authentication and disallow tokens".
+- A new trusted publisher must complete its first publish within 2 days or it
+  expires (delete it and add it again).
+- Staged publishing is an option: a stage-only publisher plus
+  `npm stage publish` makes each CI publish wait for a maintainer to approve
+  it with 2FA on npmjs.com. This repo publishes directly.
+
+#### Publishing an existing tag to npm (workflow_dispatch)
+
+A tag whose own `publish.yml` could not publish to npm (`v1.5.0` still runs
+the old `NPM_TOKEN` workflow) is published by dispatching the current
+workflow: Actions → **Publish SDKs** → **Run workflow**, branch `main`,
+`tag` = `v1.5.0`. That run uses the workflow file from `main`, checks out the
+tag's code, runs the same checks (tag matches `package.json`, committed build
+matches `src`) and publishes to **npm only**: GitHub Packages, PyPI,
+Packagist, pub.dev and the Go proxy are skipped (pub.dev only accepts tag
+pushes). If npm already has the version, the run skips it with a notice
+instead of failing. `verify-registries` then checks npm only. The provenance
+attestation names the commit the workflow ran from (`main`), not the tag.
 
 ### Retiring a bad version
 
