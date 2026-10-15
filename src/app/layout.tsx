@@ -80,11 +80,8 @@ export const metadata: Metadata = {
       "max-video-preview": -1,
     },
   },
-  icons: {
-    icon: "/favicon.ico",
-    shortcut: "/favicon.ico",
-    apple: "/favicon.ico",
-  },
+  // Icons come from the file conventions in src/app: favicon.ico (16/32/48),
+  // icon.png (512) and apple-icon.png (180), all derived from public/logo.png.
   verification: {
     google: "5PHbiqRW6j2_qQfFDxJObwOBQjKDeHOA8JG2FbzOvWI",
   },
@@ -139,8 +136,6 @@ export default function RootLayout({
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ldWebapp) }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(sourceCodeJsonLd) }} />
-        <link rel="icon" href="/favicon.ico" />
-        <link rel="apple-touch-icon" href="/favicon.ico" />
         <link rel="manifest" href="/manifest.webmanifest" />
         <style>{`
           html { background: var(--bg); }
