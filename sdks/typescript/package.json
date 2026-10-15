@@ -58,7 +58,7 @@
   },
   "author": "1RB",
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   },
   "sideEffects": false,
   "devDependencies": {
