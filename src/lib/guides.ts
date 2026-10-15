@@ -240,16 +240,19 @@ export const articles: Article[] = [
   },
   {
     slug: "payment-fraud-ethiopia",
-    title: "How Payment Fraud Works in Ethiopia (and How to Stop It)",
+    // The H1 and Article headline say what the title promises (the "fake
+    // receipt" search intent): Google shows the H1 in results when they differ.
+    title: "How to Check if a Receipt Is Fake in Ethiopia (CBE, Telebirr)",
     description:
       "How to check if a receipt is fake: edited screenshots, reused receipts, made-up reference numbers, Telebirr SMS spoofing and social engineering, and how to catch every one with automated verification.",
     category: "fraud",
     excerpt:
       "Payment fraud costs Ethiopian businesses millions every year. Here are the specific tactics fraudsters use and exactly how to catch each one.",
     date: "2026-06-18",
-    updated: "2026-10-13",
+    updated: "2026-10-15",
     readTime: "9 min",
     content: [
+      { type: "text", text: "**Short answer:** a receipt is real only if the bank has a record of it. Paste the receipt link, QR code or reference into cheki (or check it in the bank's own app), then match the amount, the receiver and the date with the payment you expected. A screenshot, a PDF or an SMS on its own proves nothing." },
       { type: "text", text: "Payment fraud is one of the biggest challenges for Ethiopian businesses. Unlike countries with card payments and automatic merchant confirmation, most Ethiopian transactions happen through bank transfers and mobile money. Merchants must manually verify each payment before releasing goods. This creates opportunities for fraud." },
 
       { type: "heading", id: "check-fake-receipt", text: "How to check if a receipt is fake" },
