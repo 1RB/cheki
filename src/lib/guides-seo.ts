@@ -5,14 +5,15 @@
 import type { Metadata } from "next";
 import type { Article } from "./guides";
 import { orderedGuides } from "./guides-index";
+import { MAINTAINER_PERSON, PUBLISHER, SITE } from "./site-schema";
 
-export const SITE = "https://cheki.et";
+export { SITE };
+
 /** The site-wide Open Graph image route (src/app/opengraph-image.tsx). */
 export const GUIDE_IMAGE = `${SITE}/opengraph-image`;
 
 export const guideUrl = (slug: string) => `${SITE}/guides/${slug}`;
 
-const ORG = { "@type": "Organization", name: "cheki", url: SITE } as const;
 
 /** ItemList of every guide in index order. */
 export function guidesItemListJsonLd(list: readonly Article[] = orderedGuides()) {
@@ -42,8 +43,10 @@ export function guideArticleJsonLd(a: Article) {
     dateModified: a.updated,
     mainEntityOfPage: { "@type": "WebPage", "@id": guideUrl(a.slug) },
     url: guideUrl(a.slug),
-    author: ORG,
-    publisher: ORG,
+    // The maintainer writes and reviews the guides; dateModified is the
+    // review date shown as "Updated" on the page.
+    author: MAINTAINER_PERSON,
+    publisher: PUBLISHER,
   };
 }
 

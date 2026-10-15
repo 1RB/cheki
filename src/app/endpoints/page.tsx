@@ -12,6 +12,7 @@ import type { ReceiptFormat } from "@/lib/core/types";
 import { getBankHealth, healthStatusFor, statusFile } from "@/lib/status-data";
 import { bankState, STATE_LABEL, type BankState } from "@/lib/status-view";
 import { formatAbsolute, parseTimestamp } from "@/lib/time/relative";
+import { MAINTAINER_PERSON, PUBLISHER } from "@/lib/site-schema";
 import "@/components/reference/reference.css";
 
 const TITLE = "Ethiopian Bank Receipt Endpoints: Reference for Developers";
@@ -306,8 +307,8 @@ export default function EndpointsPage() {
     dateModified: statusFile.generatedAt,
     proficiencyLevel: "Expert",
     inLanguage: "en",
-    author: { "@type": "Organization", name: "cheki", url: "https://cheki.et" },
-    publisher: { "@type": "Organization", name: "cheki", url: "https://cheki.et" },
+    author: MAINTAINER_PERSON,
+    publisher: PUBLISHER,
     about: rows.map((r) => ({ "@type": "Thing", name: r.bank.name })),
   };
 
