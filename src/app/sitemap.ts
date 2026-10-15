@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 import { banks } from "@/lib/banks";
 import { guides } from "@/lib/guides";
 import { latestGuideUpdate } from "@/lib/guides-index";
+import { TRUST_PAGES } from "@/lib/trust-pages";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const base = "https://cheki.et";
@@ -35,7 +36,15 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.85,
   }));
 
+  // /about, /privacy, /contact: dated by their own last content change.
+  const trustPages: MetadataRoute.Sitemap = TRUST_PAGES.map((p) => ({
+    url: `${base}${p.path}`,
+    lastModified: new Date(p.updated),
+    changeFrequency: "yearly" as const,
+    priority: 0.4,
+  }));
+
   // Canonical, indexable URLs only. Nothing that 301s (src/lib/seo-redirects.ts,
   // next.config.ts) belongs here.
-  return [...staticPages, ...bankPages, ...guidePages];
+  return [...staticPages, ...bankPages, ...guidePages, ...trustPages];
 }

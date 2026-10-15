@@ -172,3 +172,12 @@
 /* .prose list defaults (indent, 15px, gaps) don't apply to these lists. */
 .ga-prose .gx-rows, .ga-prose .ga-steps { padding-left: 0; }
 .ga-prose .gx-rows > li, .ga-prose .ga-steps > li { margin: 0; font-size: inherit; color: inherit; line-height: inherit; }
+
+/* /about, /privacy, /contact (src/components/TrustPageView.tsx): one reading column. */
+.trust-article { max-width: 720px; }
+.trust-article .ga-prose section + section { margin-top: 8px; }
+/* Preflight strips list markers; the /privacy lists need them to read as lists. */
+.trust-article .ga-prose ul { list-style: disc; }
+.trust-article .ga-prose li::marker { color: var(--ink-3); }
+.ga-meta a { color: var(--ink-2); text-decoration: underline; text-decoration-color: var(--border-strong); text-underline-offset: 3px; text-decoration-thickness: 1px; }
+@media (hover: hover) { .ga-meta a:hover { color: var(--ink); text-decoration-color: var(--ink); } }

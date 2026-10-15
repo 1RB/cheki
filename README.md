@@ -235,6 +235,7 @@ src/
     developers/page.tsx     # Developer/API page
     compare/page.tsx        # Comparison with check.et/verify.et
     docs/page.tsx           # API documentation
+    about/, privacy/, contact/  # Trust pages (content: src/lib/trust-pages.ts)
     api/
       verify/route.ts       # POST /api/verify
       verify/batch/route.ts # POST /api/verify/batch

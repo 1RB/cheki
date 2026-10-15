@@ -18,8 +18,8 @@
 
 import { detectBankFromUrl, isUrl } from "./adapters/url-detector";
 
-const DEFAULT_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours, one business day
-const DEFAULT_MAX_ENTRIES = 1000;
+export const DEFAULT_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours, one business day
+export const DEFAULT_MAX_ENTRIES = 1000;
 
 interface CacheEntry {
   value: Record<string, unknown>;
