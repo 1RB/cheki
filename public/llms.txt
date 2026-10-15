@@ -48,7 +48,7 @@ GET https://cheki.et/api/health - per-bank reachability, cached up to 5 minutes
 - No signup, no API key, no authentication required
 - cheki.et counts anonymous, cookieless page views with Vercel Web Analytics; page addresses are sent without query strings or fragments, API calls are not counted, and no receipt data is sent
 - Source code: https://github.com/1RB/cheki
-- Maintained by GitHub user 1RB (https://github.com/1RB); about: https://cheki.et/about, privacy: https://cheki.et/privacy, contact: https://cheki.et/contact
+- Maintained by Ray (@1RB on GitHub, https://github.com/1RB); about: https://cheki.et/about, privacy: https://cheki.et/privacy, contact: https://cheki.et/contact
 - Python library: https://github.com/1RB/cheki/tree/main/python
 - The bank receipt endpoints are public and require no user login (ZamZam's expects a fixed credential that ZamZam ships in its own public receipt web app; cheki sends it)
 - check.et charges 499 ETB/month or 4,990 ETB/year for the same data, after 200 free verifications (one-time, not monthly); price as listed on 15 October 2026

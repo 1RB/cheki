@@ -1,6 +1,6 @@
 /**
  * /about, /privacy and /contact (src/lib/trust-pages.ts): every claim is held
- * to the code it describes, and the maintainer is only ever "1RB".
+ * to the code it describes, and the maintainer is only ever "Ray (@1RB)".
  */
 import { describe, it, expect } from "vitest";
 import { readFileSync, readdirSync, statSync } from "node:fs";
@@ -25,9 +25,11 @@ function walk(dir: string): string[] {
 describe("maintainer identity", () => {
   const all = TRUST_PAGES.map(trustPageText).join("\n");
 
-  it("names only the GitHub user 1RB: no real name, no email, no photo", () => {
-    expect(all).toMatch(/GitHub user 1RB|GitHub user, 1RB|GitHub user\s*\n?1RB/);
-    expect(all).not.toMatch(/\bRay\b/);
+  it("names the maintainer as Ray (@1RB) only: no surname, no email, no photo, no location", () => {
+    // Every mention of Ray carries the handle, so no surname can follow it.
+    expect(all).toMatch(/Ray \(@1RB/);
+    expect(all).not.toMatch(/\bRay\b(?! \(@1RB)/);
+    expect(all).not.toMatch(/Addis/);
     expect(all).not.toMatch(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[a-z]{2,}/);
     expect(read("src/components/TrustPageView.tsx")).not.toMatch(/<img|next\/image|"image"/);
     for (const p of TRUST_PAGES) {
@@ -35,7 +37,20 @@ describe("maintainer identity", () => {
     }
   });
 
-  it("about says what cheki is, that it is MIT and open source, and links the repo and 1RB", () => {
+  it("about's maintainer section is Ray in the first person, linked to the GitHub profile", () => {
+    const who = ABOUT.sections.find((s) => s.id === "who-maintains-it")!;
+    const first = who.paragraphs![0];
+    expect(first[0]).toBe("I'm Ray (");
+    expect(first[1]).toEqual({ href: "https://github.com/1RB", text: "@1RB on GitHub" });
+    expect(String(first[2])).toMatch(/^\)\. I build and maintain cheki/);
+  });
+
+  it("contact names Ray (@1RB) as the one who answers", () => {
+    expect(trustPageText(CONTACT)).toMatch(/The maintainer, Ray \(@1RB\), and contributors/);
+    expect(trustPageLinks(CONTACT)).toContainEqual({ href: "https://github.com/1RB", text: "@1RB" });
+  });
+
+  it("about says what cheki is, that it is MIT and open source, and links the repo and the maintainer", () => {
     const t = trustPageText(ABOUT);
     expect(t).toMatch(/MIT licensed/);
     expect(t).toMatch(/open-source/);
@@ -134,8 +149,8 @@ describe("wiring", () => {
     }
   });
 
-  it("guides show the 1RB byline the Article JSON-LD names", () => {
-    expect(read("src/app/guides/[slug]/page.tsx")).toMatch(/<T k="guides\.by" \/> <Link href="\/about" prefetch=\{false\} rel="author">1RB<\/Link>/);
+  it("guides show the Ray (@1RB) byline the Article JSON-LD names", () => {
+    expect(read("src/app/guides/[slug]/page.tsx")).toMatch(/<T k="guides\.by" \/> <Link href="\/about" prefetch=\{false\} rel="author">Ray \(@1RB\)<\/Link>/);
     for (const [loc, tr] of Object.entries(translations)) {
       expect((tr as unknown as { guides: Record<string, unknown> }).guides.by, `${loc}.guides.by`).toBeTruthy();
     }

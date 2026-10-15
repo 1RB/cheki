@@ -56,13 +56,23 @@ describe("Organization", () => {
 });
 
 describe("maintainer byline", () => {
-  it("is the GitHub account 1RB, never a real name or a photo", () => {
-    expect(MAINTAINER_PERSON).toMatchObject({ "@type": "Person", name: "1RB", url: "https://github.com/1RB" });
-    expect(Object.keys(MAINTAINER_PERSON)).not.toContain("image");
-    expect(Object.keys(MAINTAINER_PERSON)).not.toContain("givenName");
+  it("is the Person Ray (alternateName 1RB) on GitHub, with no surname or photo", () => {
+    expect(MAINTAINER_PERSON).toEqual({
+      "@type": "Person",
+      "@id": "https://cheki.et/#maintainer",
+      name: "Ray",
+      alternateName: "1RB",
+      url: "https://github.com/1RB",
+      sameAs: ["https://github.com/1RB"],
+    });
   });
 
-  it("every guide's Article names 1RB as author, cheki.et as publisher, and carries its review date", () => {
+  it("the Organization's founder is that Person, and the code's author too", () => {
+    expect(organizationJsonLd.founder).toBe(MAINTAINER_PERSON);
+    expect(sourceCodeJsonLd.author).toBe(MAINTAINER_PERSON);
+  });
+
+  it("every guide's Article names Ray (1RB) as author, cheki.et as publisher, and carries its review date", () => {
     for (const a of articles) {
       const ld = guideArticleJsonLd(a);
       expect(ld.author, a.slug).toBe(MAINTAINER_PERSON);

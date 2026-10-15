@@ -7,8 +7,8 @@
  * marketplace, a village and several musicians in Google's eyes. sameAs only
  * lists profiles the project actually owns.
  *
- * The maintainer is identified only as the GitHub account 1RB (no real name,
- * no photo: the maintainer's rule).
+ * The maintainer is a Person: Ray, alternateName 1RB, identified by the GitHub
+ * profile. First name and handle only: no surname, no photo (Ray's rule).
  */
 export const SITE = "https://cheki.et";
 export const ORGANIZATION_ID = `${SITE}/#organization`;
@@ -32,7 +32,8 @@ export const SAME_AS = [
 export const MAINTAINER_PERSON = {
   "@type": "Person",
   "@id": MAINTAINER_ID,
-  name: "1RB",
+  name: "Ray",
+  alternateName: "1RB",
   url: "https://github.com/1RB",
   sameAs: ["https://github.com/1RB"],
 } as const;
@@ -53,7 +54,7 @@ export const organizationJsonLd = {
   description: "Free, open-source Ethiopian bank receipt verification service.",
   sameAs: [...SAME_AS],
   foundingDate: "2026",
-  founder: { "@id": MAINTAINER_ID },
+  founder: MAINTAINER_PERSON,
 };
 
 export const websiteJsonLd = {

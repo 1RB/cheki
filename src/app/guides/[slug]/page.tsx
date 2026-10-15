@@ -241,7 +241,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
             <p className="ga-desc">{article.description}</p>
             <p className="ga-meta">
               {/* The visible byline matches the Article author (src/lib/site-schema.ts). */}
-              <span><T k="guides.by" /> <Link href="/about" prefetch={false} rel="author">1RB</Link></span>
+              <span><T k="guides.by" /> <Link href="/about" prefetch={false} rel="author">Ray (@1RB)</Link></span>
               <span><T k="guides.read" vars={{ time: article.readTime }} /></span>
               <span>
                 <time dateTime={article.updated}><T k="guides.updated" vars={{ date: formatGuideDate(article.updated) }} /></time>

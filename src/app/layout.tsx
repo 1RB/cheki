@@ -37,7 +37,7 @@ export const metadata: Metadata = {
   category: "finance",
   creator: "cheki open source",
   publisher: "cheki open source",
-  authors: [{ name: "1RB", url: "https://github.com/1RB" }],
+  authors: [{ name: "Ray (@1RB)", url: "https://github.com/1RB" }],
   keywords: [
     "ethiopian receipt verification",
     "verify CBE transaction",

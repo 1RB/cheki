@@ -6,9 +6,11 @@
  * receipt-cache, the recent-checks limit from verify/history. When one of
  * those changes, the page changes with it.
  *
- * The maintainer is identified only as the GitHub account 1RB. No real name,
- * no photo, no personal email: that is the maintainer's rule, and
- * tests/content/trust-pages.test.ts enforces it.
+ * The maintainer is named as Ray (@1RB on GitHub): first name and GitHub
+ * handle only. No surname, no photo, no personal email, no location: that is
+ * Ray's rule, and tests/content/trust-pages.test.ts enforces it. /about's
+ * maintainer section is written by Ray in the first person; everything else
+ * stays in the product's voice ("cheki does X").
  */
 import { LIVE_BANK_COUNT } from "./bank-counts";
 import { RATE_LIMITS } from "./rate-limit-config";
@@ -16,7 +18,7 @@ import { DEFAULT_TTL_MS } from "./receipt-cache";
 import { HISTORY_LIMIT } from "./verify/history";
 
 export const REPO_URL = "https://github.com/1RB/cheki";
-export const MAINTAINER = { name: "1RB", url: "https://github.com/1RB" } as const;
+export const MAINTAINER = { name: "Ray", handle: "1RB", url: "https://github.com/1RB" } as const;
 export const ISSUES_URL = `${REPO_URL}/issues`;
 export const NEW_ISSUE_URL = `${REPO_URL}/issues/new/choose`;
 /** .github/ISSUE_TEMPLATE/bank-request.yml (labels it bank-wanted). */
@@ -99,12 +101,12 @@ export const ABOUT: TrustPage = {
       heading: "Who maintains it",
       paragraphs: [
         [
-          "cheki.et is maintained by the GitHub user ",
-          { href: MAINTAINER.url, text: "1RB" },
-          ", with fixes and new banks from contributors. It is an independent project: it is not affiliated with, endorsed by or paid by any Ethiopian bank, wallet or payment company.",
+          "I'm Ray (",
+          { href: MAINTAINER.url, text: "@1RB on GitHub" },
+          "). I build and maintain cheki, with fixes and new banks from contributors. It is an independent project: it is not affiliated with, endorsed by or paid by any Ethiopian bank, wallet or payment company.",
         ],
         [
-          "Questions, bug reports and new banks go through ",
+          "Questions, bug reports and new banks reach me through ",
           { href: "/contact", text: "the contact page" },
           ". What cheki does with the data you check is on ",
           { href: "/privacy", text: "the privacy page" },
@@ -257,9 +259,9 @@ export const CONTACT: TrustPage = {
       heading: "Who answers",
       paragraphs: [
         [
-          "The maintainer, GitHub user ",
-          { href: MAINTAINER.url, text: "1RB" },
-          ", and contributors. cheki.et is not a bank and cannot reverse, refund or trace a payment: for that, contact your bank or wallet. How your data is handled is on ",
+          "The maintainer, Ray (",
+          { href: MAINTAINER.url, text: "@1RB" },
+          "), and contributors. cheki.et is not a bank and cannot reverse, refund or trace a payment: for that, contact your bank or wallet. How your data is handled is on ",
           { href: "/privacy", text: "the privacy page" },
           "; what cheki is, on ",
           { href: "/about", text: "the about page" },
