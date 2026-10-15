@@ -5,7 +5,8 @@ Python client for the [cheki](https://cheki.et) receipt verification API: verify
 Website: [cheki.et](https://cheki.et) · API reference: [cheki.et/docs](https://cheki.et/docs) · Integration guide and every SDK: [cheki.et/developers](https://cheki.et/developers) · Supported banks: [cheki.et/banks](https://cheki.et/banks)
 
 ```bash
-pip install cheki
+pip install cheki            # the API client: needs only requests
+pip install 'cheki[direct]'  # only for the deprecated direct mode (adds beautifulsoup4, pdfplumber)
 ```
 
 ## Quick start
@@ -47,13 +48,22 @@ for r in batch.results:
     print(r.index, r.is_verified, r.http_status, r.error)
 ```
 
-More than 20 receipts (or none) raises `ValueError` without a request. Each receipt also counts against the per-IP verify limit (30 per minute).
+More than 20 receipts (or none, or an item without `bank`) raises `ValueError` without a request. Each receipt also counts against the per-IP verify limit (30 per minute), and a batch is never retried after a 5xx or network error, so send long lists in chunks of `RECOMMENDED_BATCH_CHUNK` (15):
+
+```python
+from cheki import RECOMMENDED_BATCH_CHUNK
+
+for i in range(0, len(receipts), RECOMMENDED_BATCH_CHUNK):
+    batch = cheki.verify_batch(receipts[i:i + RECOMMENDED_BATCH_CHUNK])
+```
+
+A failed item has `http_status` and `error`, plus `fallback_url` when the server sends one for a geo-blocked bank. Results carry `order_id` when the receipt has one (CBE Birr).
 
 ### Banks and health
 
 ```python
 for bank in cheki.get_banks():
-    print(bank.id, bank.name, bank.type, bank.status)   # bank.code is an alias of bank.id
+    print(bank.id, bank.name, bank.type, bank.status, bank.beta)   # bank.code is an alias of bank.id; beta: M-Pesa, ZamZam
 
 health = cheki.get_health()   # cached up to 5 minutes server-side
 print(health.status, health.checked_at, health.cached)
@@ -68,7 +78,7 @@ cheki.get_receipt_url("cbe", "fHCxExampleRcpt01")
 # https://cheki.et/api/receipt?bank=cbe&reference=fHCxExampleRcpt01
 ```
 
-Only `cbe`, `zemen`, `dashen` and `zamzam`; anything else raises `ValueError`. CBE, Dashen and ZamZam links redirect to the bank's own receipt page; Zemen (and older CBE receipts) are served as the bank's PDF.
+Only `cbe`, `zemen`, `dashen` and `zamzam`; anything else raises `ValueError`, and so does a ZamZam receipt id that is not digits only. CBE, Dashen and ZamZam links redirect to the bank's own receipt page; Zemen (and older CBE receipts) are served as the bank's PDF.
 
 ### Older receipts
 
@@ -94,9 +104,14 @@ cheki.get_receipt_url("cbe", "FT26140P01YB", account_number="1000560536171")  # 
 ## Timeouts and retries
 
 - **65 s per attempt** (`timeout=`). The server may spend up to 60 s on a slow bank.
-- **No retries on 4xx** (except 429) and **none on timeouts** (the server may still be working on the request).
-- **At most one retry** (`max_retries` is clamped to 0..1) on a network error, 5xx or 429, after `Retry-After` when sent (up to 60 s), otherwise 1-2 s.
-- The server tries each bank at most 2 times, so one call reaches the bank at most **4 times** (a batch: 4 per receipt).
+- **At most one retry** (`max_retries` is clamped to 0..1), and only where it is safe (the same rule in every cheki SDK):
+  - `GET` (banks, health): a network error or a 5xx.
+  - verify: a network error, or a 429/503 whose `Retry-After` is at most 60 s.
+  - batch: only a 429/503 with a short `Retry-After`. Never a network error or a 5xx: a 504 means the batch ran out of server time, and replaying it would hit every bank again and charge every receipt against the rate limit.
+  - Never: timeouts, other 4xx, a geo-blocked bank (502 with `fallbackUrl`), or any error the server marks `retryable: false`. A 500/502/504 on verify is not retried either: the server already ran the check, with its own 2 attempts per bank.
+- The retry waits for `Retry-After`; a network-error retry waits 1-2 s. Timeouts are never retried (the server may still be working on the request).
+- The server tries each bank at most 2 times, so one call reaches the bank at most **4 times**.
+- `ChekiClient(session=...)` reuses your `requests.Session` without changing it: the `User-Agent` and `Authorization` headers go on each request, so your API key is never sent to other hosts that session talks to, and `close()` leaves your session open.
 
 ## CLI
 
@@ -114,10 +129,11 @@ It exits 0 only when the bank confirmed the receipt. `--api` is accepted and ign
 
 ## Direct verification (deprecated)
 
-`from cheki import verify` fetches bank endpoints from your own machine with Python parsers that have drifted from the server's: they lack its host allowlist and ReDoS fixes and do not support eBirr/Siinqee. CBE (Receipt ID first, FT reference + account for older receipts) and Dashen (receipts.dashenbanksc.com) follow the current formats. It is kept only so existing code keeps working:
+`from cheki import verify` needs `pip install 'cheki[direct]'` (without it, it raises `DirectModeUnavailableError`). It fetches bank endpoints from your own machine with Python parsers that have drifted from the server's: they lack its host allowlist and ReDoS fixes and do not support eBirr/Siinqee. CBE (Receipt ID first, FT reference + account for older receipts) and Dashen (receipts.dashenbanksc.com) follow the current formats. It is kept only so existing code keeps working:
 
 - it emits a `DeprecationWarning`;
 - it rejects references that are not plain receipt numbers (no `/ ? # & %`, `..` or spaces);
+- it verifies TLS for every bank (1.5.0 removed the Awash exception, which let anyone on the network path forge an Awash receipt);
 - it applies a fail-closed port of the server's gate (positive amount, the requested reference unless it is an opaque share token such as CBE's Receipt ID, a payer or receiver, no failed/pending status), so a response that does not pass is `FAILED`, not `VERIFIED`;
 - `cheki-verify --direct` uses it (with a warning).
 

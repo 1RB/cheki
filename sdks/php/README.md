@@ -1,6 +1,6 @@
 # cheki PHP SDK
 
-PHP client for the [cheki](https://cheki.et) receipt verification API: verify Ethiopian bank transfer receipts from CBE, Telebirr, BOA, Dashen, M-Pesa (beta: not yet confirmed with a real receipt), Awash, Siinqee, eBirr and ZamZam (beta: one receipt shape confirmed so far) (the live banks; `getBanks()` lists the current set). Needs PHP 8.0+ with `ext-curl` and `ext-json` (the tests run on 8.1 and 8.3).
+PHP client for the [cheki](https://cheki.et) receipt verification API: verify Ethiopian bank transfer receipts from CBE, Telebirr, BOA, Dashen, M-Pesa (beta: not yet confirmed with a real receipt), Awash, Siinqee, eBirr and ZamZam (beta: one receipt shape confirmed so far) (the live banks; `getBanks()` lists the current set). Needs PHP 8.1+ with `ext-curl` and `ext-json` (the tests run on 8.1, 8.3 and 8.4).
 
 Website: [cheki.et](https://cheki.et) · API reference: [cheki.et/docs](https://cheki.et/docs) · Integration guide and every SDK: [cheki.et/developers](https://cheki.et/developers) · Supported banks: [cheki.et/banks](https://cheki.et/banks)
 
@@ -53,7 +53,15 @@ foreach ($batch->results as $r) {
 }
 ```
 
-More than 20 receipts (or none) throws `InvalidArgumentException` without a request. Each receipt also counts against the per-IP verify limit (30 per minute).
+More than 20 receipts (or none) throws `InvalidArgumentException` without a request. Each receipt also counts against the per-IP verify limit (30 per minute), and a batch is never retried after a 5xx or network error, so send long lists in chunks of `ChekiClient::RECOMMENDED_BATCH_CHUNK` (15):
+
+```php
+foreach (array_chunk($receipts, ChekiClient::RECOMMENDED_BATCH_CHUNK) as $chunk) {
+    $batch = $client->verifyBatch($chunk);
+}
+```
+
+A failed item has `httpStatus` and `error`, plus `fallbackUrl` when the server sends one for a geo-blocked bank. Results carry `orderId` when the receipt has one (CBE Birr), and `Bank::$beta` is true for M-Pesa and ZamZam.
 
 ### Banks and health
 
@@ -75,7 +83,7 @@ $url = $client->getReceiptUrl('cbe', 'fHCxExampleRcpt01');
 // https://cheki.et/api/receipt?bank=cbe&reference=fHCxExampleRcpt01
 ```
 
-Only `cbe`, `zemen`, `dashen` and `zamzam`; anything else throws `InvalidArgumentException`. CBE, Dashen and ZamZam links redirect to the bank's own receipt page; Zemen (and older CBE receipts) are served as the bank's PDF.
+Only `cbe`, `zemen`, `dashen` and `zamzam`; anything else throws `InvalidArgumentException`, and so does a ZamZam receipt id that is not digits only. CBE, Dashen and ZamZam links redirect to the bank's own receipt page; Zemen (and older CBE receipts) are served as the bank's PDF.
 
 ### Older receipts
 
@@ -89,9 +97,14 @@ $url = $client->getReceiptUrl('cbe', 'FT26140P01YB', '1000560536171'); // the ba
 ## Timeouts and retries
 
 - **65 s per attempt** (`VerifyOptions::DEFAULT_TIMEOUT`), 10 s to connect. The server may spend up to 60 s.
-- **No retries on 4xx** (except 429) and **none on timeouts**.
-- **At most one retry** on a network error, 5xx or 429, after `Retry-After` when sent (up to 60 s), otherwise 1-2 s. `withMaxRetries(0)` disables it.
-- The server tries each bank at most 2 times, so one call reaches the bank at most **4 times** (a batch: 4 per receipt).
+- **At most one retry** (`withMaxRetries(0)` disables it), and only where it is safe (the same rule in every cheki SDK):
+  - `GET` (banks, health): a network error or a 5xx.
+  - verify: a network error, or a 429/503 whose `Retry-After` is at most 60 s.
+  - batch: only a 429/503 with a short `Retry-After`. Never a network error or a 5xx: a 504 means the batch ran out of server time, and replaying it would hit every bank again and charge every receipt against the rate limit.
+  - Never: timeouts, other 4xx, a geo-blocked bank (502 with `fallbackUrl`), or any error the server marks `retryable: false`. A 500/502/504 on verify is not retried either: the server already ran the check, with its own 2 attempts per bank.
+- The retry waits for `Retry-After`; a network-error retry waits 1-2 s.
+- cURL is limited to HTTP and HTTPS.
+- The server tries each bank at most 2 times, so one call reaches the bank at most **4 times**.
 - Redirects are not followed.
 
 ```php
@@ -102,7 +115,16 @@ $client = new ChekiClient(
 );
 ```
 
-## Breaking changes in this version
+## Changes in 1.5.0
+
+- Requires PHP 8.1+ (8.0 is end-of-life and was never tested).
+- Retries only where safe (see above): a 5xx on `verify()` or `verifyBatch()` and the geo-block 502 are no longer retried.
+- `VerifyResult::$orderId`, `Bank::$beta`, batch items keep `fallbackUrl`; `getReceiptUrl('zamzam', ...)` needs a numeric id.
+- The Packagist package now contains only the SDK (`sdks/php/src`), not the whole repository.
+
+## Breaking changes in 1.4.1 (repo) / 1.5.0 (Packagist)
+
+Packagist's 1.4.1 was built from an older commit, so these reach Packagist users in 1.5.0:
 
 - `Bank::$id` is the bank id (`$code` kept as an alias); `responseType`, `sslVerify`, `notes` removed (the API never sent them).
 - `HealthStatus` has `status`, `checkedAt`, `cached` and `banks` (`BankHealth[]`); `success`, `version`, `timestamp`, `checks` removed.

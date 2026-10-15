@@ -45,7 +45,7 @@ export const docsFaqs: ApiFaq[] = [
 export const developersFaqs: ApiFaq[] = [
   {
     q: "How do I install the cheki TypeScript SDK?",
-    a: 'Run npm install cheki-verify, then import { Cheki } from "cheki-verify". It has no runtime dependencies; it uses the platform\'s fetch (Node.js 18+).',
+    a: 'Run npm install cheki-verify, then import { Cheki } from "cheki-verify". It has no runtime dependencies; it uses the platform\'s fetch (Node.js 20+).',
   },
   {
     q: "Can I use the TypeScript SDK in the browser?",
