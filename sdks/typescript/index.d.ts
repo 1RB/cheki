@@ -3,7 +3,7 @@
  *
  * Verify Ethiopian bank transfer receipts from CBE, Telebirr, BOA, Dashen,
  * M-Pesa, and more. Zero runtime dependencies: uses the global Fetch API
- * (Node.js >= 18). The hosted API does not send CORS headers on the verify,
+ * (Node.js >= 20). The hosted API does not send CORS headers on the verify,
  * batch, banks and health routes, so call it from a server, not a browser.
  *
  * `verified === true` is the ONLY success signal. A 200 response can still
@@ -28,23 +28,36 @@
  */
 export declare const DEFAULT_TIMEOUT_MS = 65000;
 /**
- * SDK retries on top of the first attempt. The server already makes up to 2
- * attempts per bank fetch, so the SDK retries at most once: one SDK call
- * reaches a bank at most 2 x 2 = 4 times.
+ * SDK retries on top of the first attempt, and only where a retry is safe
+ * (see {@link Cheki} "Retries"). The server already makes up to 2 attempts
+ * per bank fetch, so the SDK retries at most once.
  */
 export declare const MAX_RETRIES = 1;
-/** Maximum receipts per batch request, enforced client-side. */
+/**
+ * Maximum receipts per batch request, enforced client-side. Every item costs
+ * one token of the per-IP verify limit (30 per minute), and the whole batch
+ * must finish inside the server's 60 s budget, so send large lists in chunks
+ * of at most {@link RECOMMENDED_BATCH_CHUNK}.
+ */
 export declare const MAX_BATCH_SIZE = 20;
-/** Banks `/api/receipt` can download, and the account digits each needs. */
+/**
+ * Recommended chunk size for long lists. A batch is never retried, so
+ * smaller chunks lose less work to a 504, and 15 leaves room in the per-IP
+ * verify budget (30 per minute) for single checks.
+ */
+export declare const RECOMMENDED_BATCH_CHUNK = 15;
 /**
  * Banks `GET /api/receipt` serves. `legacyReference` and `accountDigits` mark
  * a legacy format that needs the receiving account: CBE's older FT reference.
  * The current CBE format (a Receipt ID from a mbreciept.cbe.com.et link)
- * needs no account.
+ * needs no account. `referencePattern` is a stricter rule the server applies
+ * to that bank's reference (ZamZam receipt ids are digits only).
  */
 export declare const RECEIPT_DOWNLOAD_BANKS: Readonly<Record<string, {
     accountDigits?: number;
     legacyReference?: RegExp;
+    referencePattern?: RegExp;
+    referenceHint?: string;
 }>>;
 /** Optional fields for a single verification, the third argument to {@link Cheki.verify}. */
 export interface VerifyOptions {
@@ -123,6 +136,8 @@ export interface VerifyResult {
     paymentChannel?: string;
     bankAccountNumber?: string;
     bankAccountName?: string;
+    /** Order ID printed on the receipt (CBE Birr). */
+    orderId?: string;
 }
 /** A batch item that verified or decoded (the `index` is added by the SDK). */
 export type BatchItemResult = VerifyResult & {
@@ -133,6 +148,8 @@ export interface BatchItemError {
     success: false;
     error: string;
     status: number;
+    /** For a geo-blocked bank: open this link in a browser in Ethiopia instead (when the server sends it). */
+    fallbackUrl?: string;
     /** Position in the input array (added by the SDK). */
     index: number;
 }
@@ -161,8 +178,8 @@ export interface BankInfo {
     swift?: string;
     type: "bank" | "mobile" | "wallet";
     status: "live" | "in-development";
-    /** Live, but the parser has not yet been confirmed with a real receipt (M-Pesa as of 2.0). Absent when false. */
-    beta?: boolean;
+    /** Live, but the parser has not yet been confirmed with enough real receipts (M-Pesa and ZamZam today). Always set by the SDK (false when the server omits it). */
+    beta: boolean;
     requiresAccount: boolean;
     /** How many trailing account digits the bank needs, when it needs an account. */
     accountDigits?: number;
@@ -273,8 +290,7 @@ export interface ChekiConfig {
     /** Per-attempt timeout in ms. @default 65000 */
     timeoutMs?: number;
     /**
-     * Retries for network errors, 5xx and 429 (honouring Retry-After). 4xx
-     * other than 429 and timeouts are never retried. Capped at 1.
+     * Retries where a retry is safe (see {@link Cheki} "Retries"). Capped at 1.
      * @default 1
      */
     maxRetries?: number;
@@ -295,6 +311,18 @@ export interface RequestOptions {
 }
 /** Parse a Retry-After header (delta-seconds or HTTP-date) into seconds. */
 export declare function parseRetryAfter(value: string | null | undefined, now?: number): number | undefined;
+/**
+ * cheki API client.
+ *
+ * Retries (at most one, the same in every cheki SDK):
+ * - `GET` (banks, health): network errors and 5xx.
+ * - `POST /api/verify`: network errors only, plus 429/503 with a short Retry-After.
+ * - `POST /api/verify/batch`: only 429/503 with a short Retry-After. Never on a
+ *   network error or 5xx (a 504 means the batch ran out of time; replaying it
+ *   would hit every bank again and cost every receipt against the limit).
+ * - Never: timeouts, other 4xx, and any answer with `retryable: false` or a
+ *   `fallbackUrl` (geo-blocked bank).
+ */
 export declare class Cheki {
     private readonly config;
     constructor(config?: string | ChekiConfig);
@@ -310,7 +338,9 @@ export declare class Cheki {
     verify(bank: string, reference: string, options?: VerifyOptions, requestOptions?: RequestOptions): Promise<VerifyResult>;
     /**
      * Verify up to {@link MAX_BATCH_SIZE} receipts in one request. Each item
-     * also counts against the per-IP verify limit (30/min).
+     * also counts against the per-IP verify limit (30/min). A batch is never
+     * replayed on a 5xx or network error; split long lists into chunks of
+     * {@link RECOMMENDED_BATCH_CHUNK} or fewer.
      *
      * @throws {ChekiValidationError} For an empty batch or more than 20 receipts (no request is made).
      */
@@ -323,8 +353,8 @@ export declare class Cheki {
      * URL of `GET /api/receipt`, which opens the bank's own copy of a receipt.
      * Supported: CBE, Dashen, Zemen and ZamZam. Lead with the current format: a
      * CBE Receipt ID (from the mbreciept.cbe.com.et link), a Dashen FT Ref or a
-     * ZamZam receipt id (the number at the end of its receipt link), which the
-     * server answers with a redirect to the bank's own receipt page. An
+     * ZamZam receipt id (digits only: the number at the end of its receipt
+     * link), which the server answers with a redirect to the bank's own receipt page. An
      * older CBE FT reference (legacy) also needs the receiving account (at least
      * its last 8 digits) and comes back as the bank's PDF. Pure helper, no
      * request is made.
@@ -337,10 +367,9 @@ export declare class Cheki {
     /** Delay before the retry: Retry-After when sent, otherwise 1-2 s. */
     private retryDelayMs;
     /**
-     * One request with at most one retry.
-     *
-     * Retried: network errors, 5xx, and 429 when Retry-After is at most 60 s.
-     * Never retried: other 4xx, timeouts, caller aborts.
+     * One request with at most one retry, only where it is safe (see the
+     * class docs and {@link shouldRetryStatus}). Never retried: timeouts and
+     * caller aborts.
      */
     private request;
 }

@@ -419,8 +419,8 @@ def test_timeout_error_is_network_subclass():
 
 @responses.activate
 def test_retry_on_429_then_success():
-    """A 429 is retried and the eventual 200 is returned."""
-    responses.add(responses.POST, f"{API}/api/verify", json={"error": "rate"}, status=429)
+    """A 429 with a short Retry-After is retried and the eventual 200 is returned."""
+    responses.add(responses.POST, f"{API}/api/verify", json={"error": "rate"}, status=429, headers={"Retry-After": "0"})
     responses.add(
         responses.POST, f"{API}/api/verify",
         json={"success": True, "verified": True, "bank": "CBE", "reference": "FT1"},

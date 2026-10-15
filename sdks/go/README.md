@@ -8,7 +8,7 @@ Website: [cheki.et](https://cheki.et) · API reference: [cheki.et/docs](https://
 go get github.com/1RB/cheki/sdks/go
 ```
 
-Releases are tagged `sdks/go/vX.Y.Z` (the Go convention for a module in a subdirectory), so `go get` resolves the newest tagged version; pin one with `go get github.com/1RB/cheki/sdks/go@v1.4.1`. Docs: [pkg.go.dev](https://pkg.go.dev/github.com/1RB/cheki/sdks/go).
+Releases are tagged `sdks/go/vX.Y.Z` (the Go convention for a module in a subdirectory), so `go get` resolves the newest tagged version; pin one with `go get github.com/1RB/cheki/sdks/go@v1.5.0`. Docs: [pkg.go.dev](https://pkg.go.dev/github.com/1RB/cheki/sdks/go).
 
 ## Quick start
 
@@ -70,7 +70,7 @@ for _, item := range batch.Results {
 }
 ```
 
-More than 20 receipts returns `ErrBatchTooLarge` without a request. Each receipt also counts against the per-IP verify limit (30 per minute).
+More than 20 receipts returns `ErrBatchTooLarge` without a request. Each receipt also counts against the per-IP verify limit (30 per minute), and a batch is never retried after a 5xx or network error, so send long lists in chunks of `cheki.RecommendedBatchChunk` (15). A failed item has `Status` and `Error`, plus `FallbackURL` when the server sends one for a geo-blocked bank. Results carry `OrderID` when the receipt has one (CBE Birr), and `BankInfo.Beta` is true for M-Pesa and ZamZam.
 
 ### Banks and health
 
@@ -93,7 +93,7 @@ u, err := client.GetReceiptURL("cbe", "fHCxExampleRcpt01", "")
 // https://cheki.et/api/receipt?bank=cbe&reference=fHCxExampleRcpt01
 ```
 
-Only `cbe`, `zemen`, `dashen` and `zamzam`; anything else returns `ErrInvalidInput`. CBE, Dashen and ZamZam links redirect to the bank's own receipt page; Zemen (and older CBE receipts) are served as the bank's PDF.
+Only `cbe`, `zemen`, `dashen` and `zamzam`; anything else returns `ErrInvalidInput`, and so does a ZamZam receipt id that is not digits only. CBE, Dashen and ZamZam links redirect to the bank's own receipt page; Zemen (and older CBE receipts) are served as the bank's PDF.
 
 ### Older receipts
 
@@ -113,9 +113,13 @@ Status codes: 400 bad input, 404 unsupported bank, 413 too large, 422 receipt no
 ## Timeouts and retries
 
 - `DefaultTimeout` is **65 s per attempt** (the server may spend up to 60 s). `WithTimeout` works with or without `WithHTTPClient`, in any order.
-- **No retries on 4xx** (except 429) and **none on timeouts** or a cancelled context.
-- **At most one retry** (`MaxRetries = 1`, `WithMaxRetries(0)` disables it) on a network error, 5xx or 429, after `Retry-After` when sent (up to 60 s), otherwise 1-2 s.
-- The server tries each bank at most 2 times, so one call reaches the bank at most **4 times** (a batch: 4 per receipt).
+- **At most one retry** (`MaxRetries = 1`, `WithMaxRetries(0)` disables it), and only where it is safe (the same rule in every cheki SDK):
+  - `GET` (banks, health): a network error or a 5xx.
+  - verify: a network error, or a 429/503 whose `Retry-After` is at most 60 s.
+  - batch: only a 429/503 with a short `Retry-After`. Never a network error or a 5xx: a 504 means the batch ran out of server time, and replaying it would hit every bank again and charge every receipt against the rate limit.
+  - Never: timeouts, other 4xx, a geo-blocked bank (502 with `fallbackUrl`), or any error the server marks `retryable: false`. A 500/502/504 on verify is not retried either: the server already ran the check, with its own 2 attempts per bank.
+- The retry waits for `Retry-After`; a network-error retry waits 1-2 s. A cancelled context is never retried.
+- The server tries each bank at most 2 times, so one call reaches the bank at most **4 times**.
 
 ## Tests
 

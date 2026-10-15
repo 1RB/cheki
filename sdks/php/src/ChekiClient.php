@@ -16,17 +16,39 @@ namespace Cheki;
  * isVerified() is the only success signal. verify() and verifyBatch() never
  * throw for API answers; getBanks() and getHealth() throw ChekiException.
  *
- * Retries: at most one, on network errors, 5xx and 429 (waiting out a
- * Retry-After of up to 60 s). Other 4xx and timeouts are never retried.
+ * Retries (at most one, the same in every cheki SDK):
+ * - GET (getBanks, getHealth): network errors and 5xx.
+ * - POST /api/verify: network errors, and 429/503 with a Retry-After of at
+ *   most 60 s. Never 500/502/504: the server already ran the check (a
+ *   geo-blocked bank answers 502 every time).
+ * - POST /api/verify/batch: only 429/503 with a short Retry-After. A 504
+ *   means the batch ran out of time; replaying it would hit every bank again
+ *   and charge every receipt against the rate limit.
+ * - Never: timeouts, other 4xx, and any answer with "retryable": false or a
+ *   fallbackUrl.
  */
 class ChekiClient
 {
     /** Maximum receipts per batch, enforced client-side. */
     public const MAX_BATCH_SIZE = 20;
 
-    /** Banks /api/receipt can download => account digits needed (0 = none). */
+    /**
+     * Recommended chunk size for long lists. A batch is never retried, so
+     * smaller chunks lose less work to a 504, and 15 leaves room in the
+     * per-IP verify budget (30 per minute) for single checks.
+     */
+    public const RECOMMENDED_BATCH_CHUNK = 15;
+
     /** Banks GET /api/receipt serves, with the account digits their legacy format needs (0 when none). */
     public const RECEIPT_DOWNLOAD_BANKS = ['cbe' => 8, 'zemen' => 0, 'dashen' => 0, 'zamzam' => 0];
+
+    /** Stricter reference rules the server applies per bank: a ZamZam receipt id is digits only. */
+    public const RECEIPT_REFERENCE_RULES = [
+        'zamzam' => ['/^[0-9]+$/', 'A ZamZam receipt id is digits only (the number at the end of the receipt link).'],
+    ];
+
+    private const BATCH_PATH = '/api/verify/batch';
+
     /** An older CBE FT reference (legacy format, needs the account). A Receipt ID does not. */
     public const LEGACY_CBE_REFERENCE = '/^FT[A-Za-z0-9]{8,12}$/i';
 
@@ -68,7 +90,7 @@ class ChekiClient
      * @param string      $reference     Reference or receipt link. '' with $qrData for QR-only.
      * @param string|null $accountNumber BOA: last 5 digits of the account on the receipt (a full slip link can carry them). Older CBE FT receipts: the receiving account.
      * @param string|null $phoneNumber   Payer phone (CBE Birr).
-     * @param string|null $qrData        Raw QR payload (BOA QR codes).
+     * @param string|null $qrData        Raw QR payload (a BOA QR code, or the Payment QR Code on a Telebirr receipt).
      */
     public function verify(
         string $bank,
@@ -94,7 +116,9 @@ class ChekiClient
 
     /**
      * Verify up to 20 receipts. Each item also counts against the per-IP
-     * verify limit (30 per minute).
+     * verify limit (30 per minute). A batch is never replayed on a 5xx or
+     * network error; split long lists into chunks of RECOMMENDED_BATCH_CHUNK
+     * or fewer.
      *
      * @param array<int, array{bank: string, reference?: string, accountNumber?: string, phoneNumber?: string, qrData?: string}> $receipts
      * @throws \InvalidArgumentException For an empty batch or more than 20 receipts (no request is made).
@@ -124,7 +148,7 @@ class ChekiClient
             ]);
         }
 
-        $response = $this->request('POST', '/api/verify/batch', ['receipts' => $clean]);
+        $response = $this->request('POST', self::BATCH_PATH, ['receipts' => $clean]);
         if ($response['data'] === null || ($response['status'] ?? 0) >= 400) {
             return BatchResult::error(
                 $response['error'] ?? (string) ($response['data']['error'] ?? 'Request failed'),
@@ -167,7 +191,7 @@ class ChekiClient
      * URL of GET /api/receipt, which opens the bank's own copy of a receipt.
      * Supported: CBE, Dashen, Zemen and ZamZam. Lead with the current format:
      * a CBE Receipt ID (from the mbreciept.cbe.com.et link), a Dashen FT Ref
-     * or a ZamZam receipt id, which the server answers with a redirect to the
+     * or a ZamZam receipt id (digits only), which the server answers with a redirect to the
      * bank's own page. An
      * older CBE FT reference (legacy) also needs the receiving account (at
      * least its last 8 digits) and comes back as the bank's PDF. No request
@@ -184,6 +208,9 @@ class ChekiClient
         $ref = trim($reference);
         if (!preg_match('/^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$/', $ref) || str_contains($ref, '..')) {
             throw new \InvalidArgumentException('reference must be 1-64 letters, digits, dots, dashes or underscores.');
+        }
+        if (isset(self::RECEIPT_REFERENCE_RULES[$id]) && preg_match(self::RECEIPT_REFERENCE_RULES[$id][0], $ref) !== 1) {
+            throw new \InvalidArgumentException(self::RECEIPT_REFERENCE_RULES[$id][1]);
         }
         $params = ['bank' => $id, 'reference' => $ref];
         $digits = self::RECEIPT_DOWNLOAD_BANKS[$id];
@@ -228,7 +255,8 @@ class ChekiClient
     }
 
     /**
-     * One request with at most one retry.
+     * One request with at most one retry, only where it is safe (see the
+     * class docs and shouldRetry()).
      *
      * @param array<string, mixed>|null $payload
      * @return array{data: ?array<string, mixed>, error: ?string, status: ?int, retryAfter: ?int}
@@ -259,7 +287,9 @@ class ChekiClient
             try {
                 $resp = ($this->transport)($method, $url, $headers, $body, $this->options);
             } catch (TransportException $e) {
-                if ($canRetry && !$e->timedOut) {
+                // A batch may have reached the server before the connection
+                // broke; replaying it would run (and charge) every receipt again.
+                if ($canRetry && !$e->timedOut && $path !== self::BATCH_PATH) {
                     usleep(random_int(1000, 2000) * 1000);
                     continue;
                 }
@@ -269,17 +299,40 @@ class ChekiClient
             $status     = (int) $resp['status'];
             $retryAfter = self::parseRetryAfter($resp['headers']['retry-after'] ?? null);
 
-            if (($status === 429 || $status >= 500) && $canRetry && ($retryAfter === null || $retryAfter <= self::MAX_RETRY_AFTER)) {
+            $decoded = json_decode($resp['body'], true);
+
+            if ($canRetry && self::shouldRetry($method, $status, $retryAfter, is_array($decoded) ? $decoded : null)) {
                 usleep(($retryAfter !== null ? $retryAfter * 1000 : random_int(1000, 2000)) * 1000);
                 continue;
             }
 
-            $decoded = json_decode($resp['body'], true);
             if (!is_array($decoded)) {
                 return ['data' => null, 'error' => "Invalid JSON response (HTTP {$status})", 'status' => $status, 'retryAfter' => $retryAfter];
             }
             return ['data' => $decoded, 'error' => null, 'status' => $status, 'retryAfter' => $retryAfter];
         }
+    }
+
+    /**
+     * The retry rule shared by every cheki SDK (retryCases in
+     * sdks/fixtures/api-contract.json): never when the body says
+     * "retryable": false or carries a fallbackUrl; 429 and 503 only with a
+     * Retry-After of at most 60 s; any other 5xx only for GET.
+     *
+     * @param array<string, mixed>|null $body
+     */
+    public static function shouldRetry(string $method, int $status, ?int $retryAfter, ?array $body): bool
+    {
+        if ($status !== 429 && $status < 500) {
+            return false;
+        }
+        if ($body !== null && (($body['retryable'] ?? null) === false || is_string($body['fallbackUrl'] ?? null))) {
+            return false;
+        }
+        if ($status === 429 || $status === 503) {
+            return $retryAfter !== null && $retryAfter <= self::MAX_RETRY_AFTER;
+        }
+        return $method === 'GET' && ($retryAfter === null || $retryAfter <= self::MAX_RETRY_AFTER);
     }
 
     /** Seconds from a Retry-After header (delta-seconds or HTTP-date), or null. */
@@ -318,6 +371,9 @@ class ChekiClient
             CURLOPT_TIMEOUT        => $o->timeout,
             CURLOPT_CONNECTTIMEOUT => $o->connectTimeout,
             CURLOPT_FOLLOWLOCATION => false,
+            // HTTP(S) only, whatever the base URL says.
+            CURLOPT_PROTOCOLS      => CURLPROTO_HTTP | CURLPROTO_HTTPS,
+            CURLOPT_REDIR_PROTOCOLS => CURLPROTO_HTTP | CURLPROTO_HTTPS,
             CURLOPT_SSL_VERIFYPEER => true,
             CURLOPT_SSL_VERIFYHOST => 2,
             CURLOPT_HTTPHEADER     => $headers,
@@ -338,11 +394,11 @@ class ChekiClient
         if ($result === false) {
             $errno = curl_errno($ch);
             $error = curl_error($ch);
-            curl_close($ch);
+            // No curl_close(): a no-op since PHP 8.0 and deprecated in 8.5;
+            // the handle is freed when it goes out of scope.
             throw new TransportException("cURL error ({$errno}): {$error}", $errno === CURLE_OPERATION_TIMEDOUT);
         }
         $status = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
         return ['status' => $status, 'headers' => $responseHeaders, 'body' => (string) $result];
     }
 }

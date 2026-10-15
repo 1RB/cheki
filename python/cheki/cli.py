@@ -187,7 +187,12 @@ def main(argv: list[str] | None = None) -> int:
                         suffix = "  (requires phone)"
                     print(f"{b.id:<12} {b.name:<30} [{status}]{suffix}")
         else:
-            for code, name in supported_banks().items():
+            try:
+                names = supported_banks()
+            except ImportError as exc:  # cheki[direct] not installed
+                print(str(exc), file=sys.stderr)
+                return 1
+            for code, name in names.items():
                 print(f"{code}: {name}")
         return 0
 

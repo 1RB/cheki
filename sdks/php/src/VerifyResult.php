@@ -55,9 +55,11 @@ class VerifyResult
     public ?string $paymentChannel = null;
     public ?string $bankAccountNumber = null;
     public ?string $bankAccountName = null;
+    /** Order ID printed on the receipt (CBE Birr). */
+    public ?string $orderId = null;
     /** Server (or transport) error message. */
     public ?string $error;
-    /** For geo-blocked banks: open this link in a browser in Ethiopia instead. */
+    /** For geo-blocked banks: open this link in a browser in Ethiopia instead (single verify, and batch items when the server sends it). */
     public ?string $fallbackUrl = null;
     /** HTTP status of the response (batch items: the status a single verify would have returned). */
     public ?int $httpStatus;
@@ -72,7 +74,7 @@ class VerifyResult
         'source', 'label', 'bank', 'bankCode', 'reference', 'sourceUrl', 'senderName', 'senderAccount',
         'receiverName', 'receiverAccount', 'currency', 'date', 'branch', 'reason', 'transactionType',
         'invoiceNumber', 'transactionStatus', 'amountInWords', 'paymentMode', 'paymentChannel',
-        'bankAccountNumber', 'bankAccountName', 'fallbackUrl',
+        'bankAccountNumber', 'bankAccountName', 'orderId', 'fallbackUrl',
     ];
 
     private const FLOAT_FIELDS = [

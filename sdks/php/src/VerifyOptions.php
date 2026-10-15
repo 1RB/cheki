@@ -10,7 +10,7 @@ namespace Cheki;
 class VerifyOptions
 {
     /** SDK version, sent in the User-Agent header. */
-    public const VERSION = '1.4.1';
+    public const VERSION = '1.5.0';
 
     /**
      * Default per-attempt timeout in seconds. The server gives a verification
@@ -34,7 +34,7 @@ class VerifyOptions
     /** Connect timeout in seconds. */
     public int $connectTimeout;
 
-    /** Retries on network errors, 5xx and 429 (0 or 1). */
+    /** Retries where a retry is safe (0 or 1; see ChekiClient). */
     public int $maxRetries;
 
     /** Optional Bearer token. The public API does not need one. */

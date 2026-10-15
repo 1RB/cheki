@@ -68,7 +68,7 @@ for (final r in batch.results) {
 }
 ```
 
-More than 20 receipts (or none) throws `ChekiValidationException` without a request. Each receipt also counts against the per-IP verify limit (30 per minute).
+More than 20 receipts (or none) throws `ChekiValidationException` without a request. Each receipt also counts against the per-IP verify limit (30 per minute), and a batch is never retried after a 5xx or network error, so send long lists in chunks of `ChekiClient.recommendedBatchChunk` (15). A failed item has `status` and `error`, plus `fallbackUrl` when the server sends one for a geo-blocked bank. Results carry `orderId` when the receipt has one (CBE Birr), and `BankInfo.beta` is true for M-Pesa and ZamZam.
 
 ### Banks and health
 
@@ -89,7 +89,7 @@ client.getReceiptUrl('cbe', 'fHCxExampleRcpt01');
 // https://cheki.et/api/receipt?bank=cbe&reference=fHCxExampleRcpt01
 ```
 
-Only `cbe`, `zemen`, `dashen` and `zamzam`; anything else throws `ChekiValidationException`. CBE, Dashen and ZamZam links redirect to the bank's own receipt page; Zemen (and older CBE receipts) are served as the bank's PDF.
+Only `cbe`, `zemen`, `dashen` and `zamzam`; anything else throws `ChekiValidationException`, and so does a ZamZam receipt id that is not digits only. CBE, Dashen and ZamZam links redirect to the bank's own receipt page; Zemen (and older CBE receipts) are served as the bank's PDF.
 
 ### Older receipts
 
@@ -107,9 +107,14 @@ client.getReceiptUrl('cbe', 'FT26140P01YB', '1000560536171'); // the bank's PDF
 ## Timeouts and retries
 
 - **65 s per attempt** (`ChekiClient.defaultTimeout`). The server may spend up to 60 s.
-- **No retries on 4xx** (except 429) and **none on timeouts**.
-- **At most one retry** on a network error, 5xx or 429, after `Retry-After` when sent (up to 60 s), otherwise 1-2 s. `ChekiClient(maxRetries: 0)` disables it.
-- The server tries each bank at most 2 times, so one call reaches the bank at most **4 times** (a batch: 4 per receipt).
+- **At most one retry** (`ChekiClient(maxRetries: 0)` disables it), and only where it is safe (the same rule in every cheki SDK):
+  - `GET` (banks, health): a network error or a 5xx.
+  - verify: a network error, or a 429/503 whose `Retry-After` is at most 60 s.
+  - batch: only a 429/503 with a short `Retry-After`. Never a network error or a 5xx: a 504 means the batch ran out of server time, and replaying it would hit every bank again and charge every receipt against the rate limit.
+  - Never: timeouts, other 4xx, a geo-blocked bank (502 with `fallbackUrl`), or any error the server marks `retryable: false`. A 500/502/504 on verify is not retried either: the server already ran the check, with its own 2 attempts per bank.
+- The retry waits for `Retry-After`; a network-error retry waits 1-2 s.
+- The server tries each bank at most 2 times, so one call reaches the bank at most **4 times**.
+- Responses are decoded as UTF-8 whatever the `content-type` says (needs `http` 1.4.0+, which the pubspec requires), so Amharic names and messages arrive intact.
 
 ## Tests
 

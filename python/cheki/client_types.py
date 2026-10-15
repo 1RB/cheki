@@ -172,8 +172,12 @@ class ClientVerifyResult:
     payment_channel: str | None = None
     bank_account_number: str | None = None
     bank_account_name: str | None = None
+    #: Order ID printed on the receipt (CBE Birr).
+    order_id: str | None = None
     # Error reporting
     error: str | None = None
+    #: For a geo-blocked bank: open this link in a browser in Ethiopia instead
+    #: (single verify, and batch items when the server sends it).
     fallback_url: str | None = None
     #: HTTP status of the response. Failed batch items carry the status a
     #: single verify would have returned (the API's ``status`` field).
@@ -280,11 +284,13 @@ class ClientBatchResult:
         """Build a :class:`ClientBatchResult` from a decoded JSON object."""
         raw_results = data.get("results") or []
         results: list[ClientVerifyResult] = []
-        if isinstance(raw_results, Sequence):
-            for entry in raw_results:
+        if isinstance(raw_results, Sequence) and not isinstance(raw_results, (str, bytes)):
+            for position, entry in enumerate(raw_results):
                 if isinstance(entry, Mapping):
                     item = ClientVerifyResult.from_dict(entry)
-                    item.index = len(results)
+                    # The position in the response (= the input order), even
+                    # if a malformed entry before it was skipped.
+                    item.index = position
                     results.append(item)
 
         total = _coerce_int(data.get("total"))
@@ -381,6 +387,8 @@ class ClientBankInfo:
     swift: str | None = None
     type: str | None = None
     status: str | None = None
+    #: Live, but not yet confirmed with enough real receipts (M-Pesa and ZamZam today).
+    beta: bool = False
     requires_account: bool = False
     account_digits: int | None = None
     requires_phone: bool = False
@@ -411,6 +419,7 @@ class ClientBankInfo:
             swift=data.get("swift"),
             type=data.get("type"),
             status=data.get("status"),
+            beta=data.get("beta") is True,
             requires_account=bool(_coerce_bool(data.get("requiresAccount")) or False),
             account_digits=_coerce_int(data.get("accountDigits")),
             requires_phone=bool(_coerce_bool(data.get("requiresPhone")) or False),
@@ -434,6 +443,7 @@ class ClientBankInfo:
             "swift": self.swift,
             "type": self.type,
             "status": self.status,
+            "beta": self.beta,
             "requiresAccount": self.requires_account,
             "accountDigits": self.account_digits,
             "requiresPhone": self.requires_phone,
