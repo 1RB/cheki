@@ -1,65 +1,112 @@
 #!/bin/bash
-# Bump version across all packages, commit, tag, and push
-# Usage: ./scripts/bump-version.sh <new_version>
-# Example: ./scripts/bump-version.sh 1.4.1
+# Bump the version in every package and SDK constant, commit, tag and push.
+# Usage: ./scripts/bump-version.sh <new_version>      (run from main, clean tree)
+# Example: ./scripts/bump-version.sh 1.4.2
+#
+# Pushes two tags on the release commit, atomically with main:
+#   vX.Y.Z           triggers .github/workflows/publish.yml (npm, GitHub Packages,
+#                    PyPI, Packagist, pub.dev, Go proxy warm-up)
+#   sdks/go/vX.Y.Z   the Go module version (a module in a subdirectory is tagged
+#                    with its path prefix); it triggers nothing on its own
+# See docs/RELEASING.md.
 
-set -e
+set -euo pipefail
 
 NEW_VERSION="${1:-}"
 if [ -z "$NEW_VERSION" ]; then
   echo "Usage: $0 <new_version>"
-  echo "Example: $0 1.4.1"
+  echo "Example: $0 1.4.2"
+  exit 1
+fi
+if ! [[ "$NEW_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+  echo "Version must be X.Y.Z (got '$NEW_VERSION')."
   exit 1
 fi
 
-# Confirm
-read -p "Bump to v$NEW_VERSION? All packages + tag + push? [y/N] " confirm
+cd "$(git rev-parse --show-toplevel)"
+
+if [ "$(git rev-parse --abbrev-ref HEAD)" != "main" ]; then
+  echo "Run this on main."
+  exit 1
+fi
+if [ -n "$(git status --porcelain)" ]; then
+  echo "Working tree is not clean."
+  exit 1
+fi
+for TAG in "v$NEW_VERSION" "sdks/go/v$NEW_VERSION"; do
+  if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null || git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
+    echo "Tag $TAG already exists. Pick a new version."
+    exit 1
+  fi
+done
+
+if ! grep -q "^## $NEW_VERSION\$" sdks/dart/CHANGELOG.md; then
+  echo "sdks/dart/CHANGELOG.md has no '## $NEW_VERSION' entry (pub.dev shows it). Add it on main first."
+  exit 1
+fi
+
+read -r -p "Bump to v$NEW_VERSION, commit, tag v$NEW_VERSION + sdks/go/v$NEW_VERSION and push? [y/N] " confirm
 if [ "$confirm" != "y" ] && [ "$confirm" != "Y" ]; then
   echo "Aborted."
   exit 1
 fi
 
 echo "== Bumping to v$NEW_VERSION =="
+export NEW_VERSION
 
-# Web app
-node -e "const p=require('./package.json'); p.version='$NEW_VERSION'; require('fs').writeFileSync('package.json', JSON.stringify(p, null, 2)+'\n');" 2>/dev/null
-# Also update package-lock.json if it exists
-if [ -f package-lock.json ]; then
-  sed -i 's/"version": "'"$OLD_VERSION"'"/"version": "'"$NEW_VERSION"'"/' package-lock.json 2>/dev/null || true
-fi
-echo "  ✅ package.json (+ package-lock.json if exists)"
+# JSON manifests. composer.json has no "version" on purpose: Packagist takes
+# the version from the git tag.
+node - <<'EOF'
+const fs = require("fs");
+const v = process.env.NEW_VERSION;
+const edit = (file, fn) => {
+  const data = JSON.parse(fs.readFileSync(file, "utf8"));
+  fn(data);
+  fs.writeFileSync(file, JSON.stringify(data, null, 2) + "\n");
+  console.log(`  ✅ ${file}`);
+};
+edit("package.json", (p) => { p.version = v; });
+edit("package-lock.json", (p) => { p.version = v; if (p.packages && p.packages[""]) p.packages[""].version = v; });
+edit("sdks/typescript/package.json", (p) => { p.version = v; });
+EOF
 
-# TypeScript SDK
-node -e "const p=require('./sdks/typescript/package.json'); p.version='$NEW_VERSION'; require('fs').writeFileSync('sdks/typescript/package.json', JSON.stringify(p, null, 2)+'\n');" 2>/dev/null
-echo "  ✅ sdks/typescript/package.json"
+# Version lines and the constants each SDK sends in its User-Agent.
+replace() { # file, sed expression
+  sed -i -E "$2" "$1"
+  echo "  ✅ $1"
+}
+replace python/pyproject.toml          's/^version = ".*"/version = "'"$NEW_VERSION"'"/'
+replace python/cheki/_version.py       's/^__version__ = ".*"/__version__ = "'"$NEW_VERSION"'"/'
+replace sdks/typescript/src/index.ts   's/^const VERSION = ".*";/const VERSION = "'"$NEW_VERSION"'";/'
+replace sdks/typescript/index.js       's/^const VERSION = ".*";/const VERSION = "'"$NEW_VERSION"'";/'
+replace sdks/php/src/VerifyOptions.php "s/public const VERSION = '.*';/public const VERSION = '$NEW_VERSION';/"
+replace sdks/dart/pubspec.yaml         's/^version: .*/version: '"$NEW_VERSION"'/'
+replace sdks/dart/lib/src/cheki_client.dart "s/^const String chekiSdkVersion = '.*';/const String chekiSdkVersion = '$NEW_VERSION';/"
+replace sdks/go/cheki.go               's/^const Version = ".*"/const Version = "'"$NEW_VERSION"'"/'
 
-# Python SDK
-sed -i 's/^version = ".*"/version = "'"$NEW_VERSION"'"/' python/pyproject.toml 2>/dev/null
-echo "  ✅ python/pyproject.toml"
-
-# PHP SDK
-if command -v php &> /dev/null; then
-  php -r "\$f='sdks/php/composer.json'; \$d=json_decode(file_get_contents(\$f)); \$d->version='$NEW_VERSION'; file_put_contents(\$f, json_encode(\$d, JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES).\"\n\");" 2>/dev/null
-  echo "  ✅ sdks/php/composer.json"
-else
-  echo "  ⚠️ php not installed, skip sdks/php/composer.json"
-fi
-
-# Dart SDK
-sed -i "s/^version: .*/version: $NEW_VERSION/" sdks/dart/pubspec.yaml 2>/dev/null
-echo "  ✅ sdks/dart/pubspec.yaml"
+# Every file above must now carry the new version (catches a pattern that no
+# longer matches after a refactor).
+for f in package.json package-lock.json sdks/typescript/package.json \
+         python/pyproject.toml python/cheki/_version.py sdks/typescript/src/index.ts \
+         sdks/typescript/index.js sdks/php/src/VerifyOptions.php sdks/dart/pubspec.yaml \
+         sdks/dart/lib/src/cheki_client.dart sdks/go/cheki.go; do
+  if ! grep -qF "$NEW_VERSION" "$f"; then
+    echo "❌ $f does not contain $NEW_VERSION; fix the pattern and retry (git checkout -- . to undo)."
+    exit 1
+  fi
+done
 
 echo ""
 echo "== Committing =="
 git add -A
-git commit -m "chore: release v$NEW_VERSION" || echo "  ✅ already committed"
+git commit -m "chore: release v$NEW_VERSION"
 
 echo "== Tagging =="
-git tag -f "v$NEW_VERSION"
+git tag -a "v$NEW_VERSION" -m "v$NEW_VERSION"
+git tag -a "sdks/go/v$NEW_VERSION" -m "Go SDK v$NEW_VERSION"
 
 echo "== Pushing =="
-git push origin main
-git push origin "v$NEW_VERSION"
+git push --atomic origin main "refs/tags/v$NEW_VERSION" "refs/tags/sdks/go/v$NEW_VERSION"
 
 echo ""
-echo "✅ v$NEW_VERSION released. CI/CD will publish to npm, PyPI, GitHub Packages, and Packagist."
+echo "✅ v$NEW_VERSION pushed. publish.yml now publishes to npm, GitHub Packages, PyPI, Packagist and pub.dev, and warms proxy.golang.org for sdks/go/v$NEW_VERSION."

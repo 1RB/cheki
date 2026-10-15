@@ -1,7 +1,9 @@
 name: Publish SDKs
 
-# Runs only when a release tag is pushed. Every step fails loudly: a failed
-# build, test or upload fails the job instead of being skipped.
+# Runs only when a release tag vX.Y.Z is pushed (scripts/bump-version.sh pushes
+# it together with the Go module tag sdks/go/vX.Y.Z on the same commit; that
+# tag alone does not match 'v*' and triggers nothing). Every step fails loudly:
+# a failed build, test or upload fails the job instead of being skipped.
 on:
   push:
     tags:
@@ -103,3 +105,32 @@ jobs:
             -d '{"repository":"https://github.com/1RB/cheki"}'
         env:
           PACKAGIST_TOKEN: ${{ secrets.PACKAGIST_TOKEN }}
+
+  # pub.dev automated publishing: no stored secret. pub.dev trusts the GitHub
+  # OIDC token of a tag push from 1RB/cheki whose tag matches v{{version}}
+  # (set on https://pub.dev/packages/cheki/admin), so the tag must equal the
+  # pubspec version. The reusable workflow runs pub get, a dry run, then
+  # `dart pub publish -f` in sdks/dart.
+  publish-pub-dev:
+    name: Publish to pub.dev
+    permissions:
+      contents: read
+      id-token: write
+    uses: dart-lang/setup-dart/.github/workflows/publish.yml@v1
+    with:
+      working-directory: sdks/dart
+
+  # Go has no upload: the module proxy serves any semver tag of the form
+  # sdks/go/vX.Y.Z. Asking the proxy for it makes pkg.go.dev list it now
+  # instead of on the first `go get`. Fails if the Go tag was not pushed.
+  warm-go-proxy:
+    name: Go module proxy (sdks/go)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Go tag exists for this release
+        run: git ls-remote --exit-code --tags "https://github.com/${GITHUB_REPOSITORY}.git" "refs/tags/sdks/go/${GITHUB_REF_NAME}"
+      - name: Request the version from proxy.golang.org
+        run: |
+          # Module path github.com/1RB/cheki/sdks/go, case-encoded (upper → !lower).
+          curl --fail-with-body -sS --retry 5 --retry-delay 20 --retry-all-errors \
+            "https://proxy.golang.org/github.com/1%21r%21b/cheki/sdks/go/@v/${GITHUB_REF_NAME}.info"
