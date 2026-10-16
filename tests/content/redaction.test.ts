@@ -17,6 +17,8 @@ import { createHash } from "node:crypto";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { SAMPLE, SAMPLE_VERIFY_RESPONSE } from "@/lib/sample-receipt";
+import { getArticle } from "@/lib/guides";
+import { DEFAULT_TTL_MS } from "@/lib/receipt-cache";
 
 const ROOT = join(__dirname, "..", "..");
 
@@ -85,6 +87,22 @@ describe("public examples use the synthetic sample receipt", () => {
     for (const p of ["src/app/docs/page.tsx", "src/app/developers/page.tsx"]) {
       expect(readFileSync(join(ROOT, p), "utf8"), p).toMatch(/from "@\/lib\/sample-receipt"/);
     }
+  });
+});
+
+describe("the redaction how-to", () => {
+  for (const slug of ["payment-fraud-ethiopia", "contribute-new-bank"]) {
+    it(`is in the ${slug} guide`, () => {
+      const blocks = getArticle(slug)!.content;
+      expect(blocks.some((b) => b.type === "heading" && b.id === "redact-before-sharing")).toBe(true);
+    });
+  }
+
+  it("says what cheki keeps the way the cache and the privacy page do", () => {
+    const text = JSON.stringify(getArticle("payment-fraud-ethiopia")!.content);
+    expect(text).toContain(`up to ${Math.round(DEFAULT_TTL_MS / 3_600_000)} hours`);
+    expect(text).toContain("no database");
+    expect(text).toMatch(/Account numbers.*Phone numbers.*Full names.*The reference, Receipt ID/);
   });
 });
 

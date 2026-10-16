@@ -1,6 +1,7 @@
 import { internalPageLink, type InternalPageLink } from "./internal-links";
 import { IN_DEVELOPMENT_BANK_COUNT, LIVE_BANK_COUNT, TOTAL_BANK_COUNT, liveBankList } from "./bank-counts";
 import { COMPETITORS_CHECKED, RATE_LIMIT_SENTENCE } from "./guides-facts";
+import { DEFAULT_TTL_MS } from "./receipt-cache";
 // Block-based content system for guides and blog posts
 // Supports rich formatting: text, lists, code, callouts, tables, quotes, steps
 
@@ -52,6 +53,30 @@ export interface Article {
    */
   relatedPages?: string[];
 }
+
+/** How long a bank-confirmed result stays in the server's memory (receipt-cache). */
+const CACHE_HOURS = Math.round(DEFAULT_TTL_MS / 3_600_000);
+
+/**
+ * How to redact a receipt before posting it, shared by the fraud guide and
+ * the contribution guide. What cheki keeps follows src/lib/receipt-cache.ts
+ * and the privacy page (src/lib/trust-pages.ts).
+ */
+export const REDACT_BEFORE_SHARING: ContentBlock[] = [
+  { type: "heading", id: "redact-before-sharing", text: "Redact a receipt before you share it publicly" },
+  { type: "text", text: "Receipts get posted to Telegram groups, Facebook and GitHub issues, often to warn others about a scam. A receipt shows more than the payment, so cover these fields first:" },
+  {
+    type: "list",
+    items: [
+      "Account numbers. Keep at most the last 4 digits, the way cheki shows them (1****6171).",
+      "Phone numbers, including the payer's telebirr or M-Pesa number.",
+      "Full names of the payer and the receiver. Initials are enough to tell the story.",
+      "The reference, Receipt ID, receipt link and QR code when the post is public. Anyone who has them can open the full receipt at the bank.",
+    ],
+  },
+  { type: "text", text: "Cover each field with a solid box. A light blur or pixel filter can sometimes be reversed. Crop out the status bar and anything else on the screen too." },
+  { type: "text", text: `You do not need to share a receipt with anyone to check it. cheki has no accounts and no database. It fetches the receipt from the bank and shows you the result. A receipt the bank confirmed stays in the server's memory for up to ${CACHE_HOURS} hours, so checking it again is instant, and is then dropped. Details: https://cheki.et/privacy` },
+];
 
 export const articles: Article[] = [
   {
@@ -248,8 +273,8 @@ export const articles: Article[] = [
     excerpt:
       "Payment fraud costs Ethiopian businesses millions every year. Here are the specific tactics fraudsters use and exactly how to catch each one.",
     date: "2026-06-18",
-    updated: "2026-10-15",
-    readTime: "9 min",
+    updated: "2026-10-16",
+    readTime: "10 min",
     content: [
       { type: "text", text: "**Short answer:** a receipt is real only if the bank has a record of it. Paste the receipt link, QR code or reference into cheki (or check it in the bank's own app), then match the amount, the receiver and the date with the payment you expected. A screenshot, a PDF or an SMS on its own proves nothing." },
       { type: "text", text: "Payment fraud is one of the biggest challenges for Ethiopian businesses. Unlike countries with card payments and automatic merchant confirmation, most Ethiopian transactions happen through bank transfers and mobile money. Merchants must manually verify each payment before releasing goods. This creates opportunities for fraud." },
@@ -311,6 +336,8 @@ export const articles: Article[] = [
       { type: "text", text: "A text arrives that looks exactly like Telebirr's payment notification, apparently from Telebirr's own short code, with a made-up transaction number and amount. No money moved." },
       { type: "callout", variant: "danger", title: "Why it works", text: "SMS sender names are not authenticated on most networks. SMS gateways and SIM boxes can send under any sender ID, so the fake lands in the same thread as real Telebirr messages." },
       { type: "text", text: "Detection: Never release goods on an SMS alone. Check the transaction number with cheki, or in the Telebirr app under Accounts, then Verify Payment. If Telebirr has no record of it, the SMS was fake. Train delivery staff and cashiers to check during busy hours too, when skipping it is most tempting." },
+
+      ...REDACT_BEFORE_SHARING,
 
       { type: "heading", text: "Building a fraud prevention checklist" },
       {
@@ -1120,7 +1147,7 @@ export const articles: Article[] = [
     excerpt:
       `${IN_DEVELOPMENT_BANK_COUNT} Ethiopian banks and wallets still need confirmed receipt endpoints. You can help by sharing a receipt, writing a parser, or reporting broken endpoints. Here's the complete community contribution guide.`,
     date: "2026-06-19",
-    updated: "2026-10-12",
+    updated: "2026-10-16",
     readTime: "5 min",
     content: [
       { type: "text", text: `cheki lists ${TOTAL_BANK_COUNT} Ethiopian banks and wallets, but only ${LIVE_BANK_COUNT} are live. The remaining ${IN_DEVELOPMENT_BANK_COUNT} are listed as 'in development' because we haven't confirmed their public receipt endpoints yet. This is where the community comes in.` },
@@ -1139,7 +1166,8 @@ export const articles: Article[] = [
         ],
       },
       { type: "text", text: "Send the link through the private 'Help us add' box on the bank's page on cheki.et. It goes only to the maintainers, is used only to build the parser, and is deleted afterwards. Do not paste receipt links in public GitHub issues; for those, use the bank request form with a redacted pattern. Every endpoint we know is documented on the endpoints reference page (cheki.et/endpoints)." },
-      { type: "callout", variant: "warning", title: "Privacy", text: "Redact or blur sensitive information like full account numbers before sharing. We only need the receipt structure, the reference number, and the QR code payload, not your full account details." },
+      { type: "callout", variant: "warning", title: "Privacy", text: "For the private form, cover full account numbers, phone numbers and names with a solid box. Leave the reference and the QR code visible: that is what the parser is built from. For a public GitHub issue, cover those too (see below)." },
+      ...REDACT_BEFORE_SHARING,
 
       { type: "heading", text: "Option 2: Write a parser (for developers)" },
       { type: "text", text: "If you can code, you can add a bank yourself. cheki's architecture is hexagonal. Each bank is a self-contained parser module. Here's the process:" },
@@ -1187,7 +1215,7 @@ export const articles: Article[] = [
     ],
     faq: [
       { q: "Do I need to know how to code to contribute?", a: "No. The most valuable contribution is a receipt from a bank we don't support yet. Send us a screenshot or URL and we'll handle the technical work." },
-      { q: "Is it safe to share my receipt?", a: "Redact or blur your full account number before sharing. We only need the receipt structure, reference number, and QR code payload. Never share your PIN, password, or OTP." },
+      { q: "Is it safe to share my receipt?", a: "Through the private form, yes, once you cover your full account number, phone number and names with a solid box. We only need the receipt structure, the reference and the QR code. Never share your PIN, password, or OTP." },
       { q: "How long does it take to add a new bank?", a: "If we have a receipt to reverse-engineer, usually within a day. If a developer submits a complete parser with tests, we merge it the same day." },
       { q: "Can I add a bank that no verification service supports?", a: `Yes. That's the whole point. If you find the receipt endpoint, we'll add it. cheki lists ${TOTAL_BANK_COUNT} banks and wallets, including the ones no paid service covers yet, not just the profitable ones.` },
       { q: "What if a bank doesn't have a public receipt endpoint?", a: "Some banks may not have receipt sharing yet. In that case, we list them as 'researching' and wait until they launch a digital receipt system. We don't fake it." },
