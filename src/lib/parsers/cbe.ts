@@ -143,7 +143,7 @@ export class CBEParser extends BaseParser {
 
   /**
    * Legacy CBE (FT reference + account). apps.cbe.com.et:100 is often
-   * unreachable (links.et reports it down since July 2026), so a failure
+   * unreachable (another verifier reports it down since July 2026), so a failure
    * points the user at the current format: the receipt link or Receipt ID.
    */
   async fetchReceipt(
@@ -195,7 +195,7 @@ export class CBENewParser extends BaseParser {
   private static readonly API_URL = "https://mb.cbe.com.et/api/v1/transactions/public/transaction-detail";
   /**
    * The CBE web app's headers, from the manifest (the current CBE format).
-   * Without X-App-ID / X-App-Version the API answers 400; links.et also sends
+   * Without X-App-ID / X-App-Version the API answers 400; another verifier also sends
    * Origin and Referer, so cheki does too.
    */
   private static readonly HEADERS: Record<string, string> = {

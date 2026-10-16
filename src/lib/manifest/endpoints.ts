@@ -408,7 +408,7 @@ export const endpointDocs: EndpointDoc[] = [
         name: "{REFERENCE}",
         what: "The token in a Zemen share link, share.zemenbank.com/rt/{token}/pdf.",
         whereToFind: "Use the share button on the Zemen receipt and paste the whole link. cheki reads the token from the path.",
-        format: "Unconfirmed. links.et docs describe a 24 character token (an 8 character prefix plus the 16 character reference). Another open-source app builds the URL from the bare reference. Neither is proven.",
+        format: "Unconfirmed. Another verifier's docs describe a 24 character token (an 8 character prefix plus the 16 character reference). Another open-source app builds the URL from the bare reference. Neither is proven.",
         traps: "A bare reference may not work. Paste the full share link until a real receipt settles the format.",
         confirmed: false,
       },
@@ -571,6 +571,13 @@ export const endpointDocs: EndpointDoc[] = [
 
 export const REPO_URL = "https://github.com/1RB/cheki";
 export const REPORT_CHANGE_URL = `${REPO_URL}/issues/new?template=bank-request.yml`;
+/**
+ * The one place cheki credits the third-party provider list that most
+ * "inferred" formats come from: a single line in the /endpoints intro.
+ * Evidence strings say "another verifier" instead of repeating the name
+ * (tests/content/credits.test.ts).
+ */
+export const THIRD_PARTY_PROVIDER_LIST = "https://links.et/docs/providers";
 
 export interface EndpointRow {
   bank: BankManifestEntry;

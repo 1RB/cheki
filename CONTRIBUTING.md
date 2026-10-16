@@ -165,7 +165,7 @@ A bank that has more than one way to look a receipt up also lists them in `forma
 
 A receipt QR that only names the reference (Telebirr's Payment QR Code) is an **input-only** format: no `parser`, no `endpoint`, `"inputs": [{ "name": "qr", ... }]` and `"via": "<the format it is checked through>"`. It is never fetched and never proof of payment: the decoder reads the reference out of it (on the device for uploads and the camera, from `qrData` in the API) and the check runs exactly as if the reference had been typed. Keep such decoders in `src/lib/qr/` with hard size caps, no backtracking regexes, an integrity check where the format has one, and synthetic test fixtures only (see `src/lib/qr/telebirr.ts` and [docs/telebirr-qr.md](docs/telebirr-qr.md)). Never use the amount or names a QR claims.
 
-`confidence` is `verified` only for what cheki itself observed (a real receipt, or a probe). Anything taken from another site (links.et, another app's source code) is `inferred`, says so in `evidence`, and is never described as live in copy.
+`confidence` is `verified` only for what cheki itself observed (a real receipt, or a probe). Anything taken from another site (another verifier's provider list, another app's source code) is `inferred`, says so in `evidence`, and is never described as live in copy.
 
 Keep `status` as `in-development` until the parser has passed against a real receipt. In-development banks are noindexed, and their page shows the private submission box instead of the checker.
 

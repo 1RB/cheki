@@ -109,7 +109,7 @@
         "receiptPage": "redirect",
         "since": "2026-06",
         "confidence": "verified",
-        "evidence": "mb.cbe.com.et answered an unknown token with HTTP 500 application/problem+json 'Invalid or tampered legacy token' (cheki, 2026-10-11). verify.et calls this the Receipt ID and says it replaces the FT reference on new CBE receipts; links.et routes plain mbreciept tokens to the same JSON API.",
+        "evidence": "mb.cbe.com.et answered an unknown token with HTTP 500 application/problem+json 'Invalid or tampered legacy token' (cheki, 2026-10-11). verify.et calls this the Receipt ID and says it replaces the FT reference on new CBE receipts; another verifier routes plain mbreciept tokens to the same JSON API.",
         "notes": "Shared from the CBE app as a link or QR code. Tokens look like fHCx... (v1) or v2-... (v2). No account number is needed. The API needs the CBE web app's X-App-ID/X-App-Version headers."
       },
       {
@@ -142,8 +142,8 @@
         "receiptPage": "pdf",
         "replacedBy": "cbe-receipt-id",
         "confidence": "inferred",
-        "evidence": "Status inferred: links.et reports apps.cbe.com.et unreachable since July 2026; cheki's egress could not connect on 2026-10-11 (CONNECT 502), while a repo probe on 2026-10-10 got the 404 'You Are Not Allowed to See This Data' page. Not proven shut down, so cheki still tries it.",
-        "notes": "Older receipts and SMS that only show an FT reference. Also reached from dashed mbreciept links (mbreciept.cbe.com.et/FT...-12345678), which carry the FT reference and the 8-digit suffix (link shape inferred from links.et).",
+        "evidence": "Status inferred: another verifier reports apps.cbe.com.et unreachable since July 2026; cheki's egress could not connect on 2026-10-11 (CONNECT 502), while a repo probe on 2026-10-10 got the 404 'You Are Not Allowed to See This Data' page. Not proven shut down, so cheki still tries it.",
+        "notes": "Older receipts and SMS that only show an FT reference. Also reached from dashed mbreciept links (mbreciept.cbe.com.et/FT...-12345678), which carry the FT reference and the 8-digit suffix (link shape inferred from another verifier).",
         "missingHint": "This looks like an older CBE FT reference. Paste the receipt link or Receipt ID from the CBE app, or add the last 8 digits of the receiving account."
       }
     ],
@@ -157,7 +157,7 @@
       {
         "date": "2026-07",
         "formatId": "cbe-ft-pdf",
-        "change": "links.et reports the apps.cbe.com.et:100 PDF host unreachable since July 2026 and resolves CBE receipts through the JSON host.",
+        "change": "Another verifier reports the apps.cbe.com.et:100 PDF host unreachable since July 2026 and resolves CBE receipts through the JSON host.",
         "source": "https://links.et/docs/providers"
       },
       {
@@ -415,7 +415,7 @@
         ],
         "responseType": "json",
         "confidence": "verified",
-        "evidence": "Unknown reference answers HTTP 200 JSON 'Invalid reference number' (cheki, 2026-10-10). links.et reads the same endpoint. Slip links (cs.bankofabyssinia.com/slip/?trx=) carry the same id, {reference}{5 digits}. On a fee receipt with no receiver, the 5 digits were the source account's (cheki, 2026-10-12), so they are not always the receiving account.",
+        "evidence": "Unknown reference answers HTTP 200 JSON 'Invalid reference number' (cheki, 2026-10-10). Another verifier reads the same endpoint. Slip links (cs.bankofabyssinia.com/slip/?trx=) carry the same id, {reference}{5 digits}. On a fee receipt with no receiver, the 5 digits were the source account's (cheki, 2026-10-12), so they are not always the receiving account.",
         "notes": "Inter-bank transfers are checked from the receipt QR code, which names the reference and account.",
         "missingHint": "This BOA receipt needs the last 5 digits of the account on the receipt. A full BOA slip link that ends with them also works."
       }
@@ -507,7 +507,7 @@
         ],
         "responseType": "pdf-in-json",
         "confidence": "inferred",
-        "evidence": "Geo-blocked, not probed by cheki. Five independent open-source verifiers read the answer as a JSON envelope {responseCode, responseDescription, base64Data} with responseCode \"0\" on success and base64Data a PDF: Vixen878/verifier-api (src/services/verifyMpesa.ts), nahom-d54/tx-verify (src/providers/mpesa.ts), nahom-d54/veri-py, kira-coding/kira-verify-opensource (MpesaVerifier.php), matthias22m/transaction-verify; links.et tags it mpesa-pdf (PDF parsed). PDF labels (TRANSACTION ID, SENDER/PAYER NAME, RECEIPT NO / PAYMENT DATE / SETTLED AMOUNT, TOTAL, ...) come from tx-verify and verifier-api. No source reads flat JSON fields.",
+        "evidence": "Geo-blocked, not probed by cheki. Five independent open-source verifiers read the answer as a JSON envelope {responseCode, responseDescription, base64Data} with responseCode \"0\" on success and base64Data a PDF: Vixen878/verifier-api (src/services/verifyMpesa.ts), nahom-d54/tx-verify (src/providers/mpesa.ts), nahom-d54/veri-py, kira-coding/kira-verify-opensource (MpesaVerifier.php), matthias22m/transaction-verify; another verifier tags it mpesa-pdf (PDF parsed). PDF labels (TRANSACTION ID, SENDER/PAYER NAME, RECEIPT NO / PAYMENT DATE / SETTLED AMOUNT, TOTAL, ...) come from tx-verify and verifier-api. No source reads flat JSON fields.",
         "headers": {
           "Accept": "application/json, text/plain, */*",
           "Referer": "https://m-pesabusiness.safaricom.et/"
@@ -745,7 +745,7 @@
         ],
         "responseType": "html",
         "confidence": "verified",
-        "evidence": "Unknown token answers HTTP 200 HTML 'Receipt not found' (cheki, 2026-10-10). links.et reads the same host."
+        "evidence": "Unknown token answers HTTP 200 HTML 'Receipt not found' (cheki, 2026-10-10). Another verifier reads the same host."
       }
     ]
   },
@@ -764,7 +764,7 @@
     "sslVerify": true,
     "color": "#1B75BB",
     "initials": "ZB",
-    "notes": "Unknown refs return HTTP 404 JSON {\"messages\":\"Transaction not found.\"} (checked 2026-10-10). links.et docs describe the share token as 24 characters (an 8-character prefix plus the 16-character reference); another open-source app builds the URL from the bare reference. Neither is proven yet, so paste the full share link.",
+    "notes": "Unknown refs return HTTP 404 JSON {\"messages\":\"Transaction not found.\"} (checked 2026-10-10). Another verifier's docs describe the share token as 24 characters (an 8-character prefix plus the 16-character reference); another open-source app builds the URL from the bare reference. Neither is proven yet, so paste the full share link.",
     "description": "Zemen Bank is an Ethiopian commercial bank. Zemen receipts are published as PDF documents accessible via a public URL containing the transaction reference.",
     "referenceFormat": "Full Zemen share link (share.zemenbank.com/rt/{token}/pdf) is preferred. The token may be 24 characters (8-character prefix plus the 16-character reference); a bare reference is unconfirmed.",
     "referenceExample": "ZM12345678",
@@ -815,7 +815,7 @@
         "responseType": "pdf",
         "receiptPage": "pdf",
         "confidence": "inferred",
-        "evidence": "Unknown token answers HTTP 404 JSON (cheki, 2026-10-10). links.et describes a 24-character token and a PDF; not confirmed with a real receipt."
+        "evidence": "Unknown token answers HTTP 404 JSON (cheki, 2026-10-10). Another verifier describes a 24-character token and a PDF; not confirmed with a real receipt."
       }
     ]
   },
@@ -893,7 +893,7 @@
         ],
         "responseType": "pdf",
         "confidence": "inferred",
-        "evidence": "A miss returns an empty Telerik ReportViewer HTML shell (cheki, 2026-10-10); the endpoint timed out from cheki's egress on 2026-10-11. Real receipts are read as a PDF by Vixen878/verifier-api and links.et (cbebirr-pdf). Same URL either way, so this is not a host move; cheki's parser accepts PDF or HTML."
+        "evidence": "A miss returns an empty Telerik ReportViewer HTML shell (cheki, 2026-10-10); the endpoint timed out from cheki's egress on 2026-10-11. Real receipts are read as a PDF by Vixen878/verifier-api and another verifier (cbebirr-pdf). Same URL either way, so this is not a host move; cheki's parser accepts PDF or HTML."
       }
     ],
     "endpointHistory": [
@@ -926,7 +926,7 @@
     "sslVerify": true,
     "color": "#006A4E",
     "initials": "SQ",
-    "notes": "Supported through the eBirr route (receipt.ebirr.com/siinqee/{token}), which answered 404 on 2026-10-10. links.et reports Siinqee Bank receipts on receipts.siinqeebank.com:871 (PDF, inferred, not supported yet).",
+    "notes": "Supported through the eBirr route (receipt.ebirr.com/siinqee/{token}), which answered 404 on 2026-10-10. Another verifier reports Siinqee Bank receipts on receipts.siinqeebank.com:871 (PDF, inferred, not supported yet).",
     "description": "Siinqee Bank is an Ethiopian microfinance institution turned bank. Siinqee receipts are available via a public endpoint.",
     "referenceFormat": "Alphanumeric transaction reference",
     "referenceExample": "SQ12345678",
@@ -970,7 +970,7 @@
         ],
         "responseType": "pdf",
         "confidence": "inferred",
-        "evidence": "links.et lists receipts.siinqeebank.com:871 (PDF) for Siinqee Bank and says each receipt allows about five views in total; it showed Siinqee unavailable on 2026-10-11. Not tested by cheki and not supported yet.",
+        "evidence": "Another verifier lists receipts.siinqeebank.com:871 (PDF) for Siinqee Bank and says each receipt allows about five views in total; it showed Siinqee unavailable on 2026-10-11. Not tested by cheki and not supported yet.",
         "notes": "Not fetched. Needs a real receipt link and a parser that respects the view limit."
       },
       {
@@ -991,7 +991,7 @@
         ],
         "responseType": "html",
         "confidence": "inferred",
-        "evidence": "The siinqee route answered HTTP 404 'Cannot GET' on 2026-10-10, unlike other eBirr tenants. links.et reads Siinqee's wallet (COOPay) receipts at receipt.ebirr.com/coopay/."
+        "evidence": "The siinqee route answered HTTP 404 'Cannot GET' on 2026-10-10, unlike other eBirr tenants. Another verifier reads Siinqee's wallet (COOPay) receipts at receipt.ebirr.com/coopay/."
       }
     ],
     "endpointHistory": [
@@ -1004,7 +1004,7 @@
       {
         "date": "2026-10-11",
         "formatId": "siinqee-bank-pdf",
-        "change": "links.et lists Siinqee Bank receipts on receipts.siinqeebank.com:871 (PDF). Recorded as inferred, not supported.",
+        "change": "Another verifier lists Siinqee Bank receipts on receipts.siinqeebank.com:871 (PDF). Recorded as inferred, not supported.",
         "source": "https://links.et/docs/providers"
       }
     ]
@@ -1091,7 +1091,7 @@
         ],
         "responseType": "html",
         "confidence": "verified",
-        "evidence": "Unknown tokens answer HTTP 200 'Not Found Page' (cheki, 2026-10-10). links.et reads the same host for COOPay and Kaafi."
+        "evidence": "Unknown tokens answer HTTP 200 'Not Found Page' (cheki, 2026-10-10). Another verifier reads the same host for COOPay and Kaafi."
       }
     ]
   },
@@ -1298,7 +1298,7 @@
         ],
         "responseType": "pdf",
         "confidence": "inferred",
-        "evidence": "links.et lists receipt.ahadubank.com (PDF). Not tested by cheki and not supported yet."
+        "evidence": "Another verifier lists receipt.ahadubank.com (PDF). Not tested by cheki and not supported yet."
       }
     ]
   },
@@ -1420,7 +1420,7 @@
         ],
         "responseType": "html",
         "confidence": "inferred",
-        "evidence": "links.et lists abaymobile.com.et (HTML). Not tested by cheki and not supported yet."
+        "evidence": "Another verifier lists abaymobile.com.et (HTML). Not tested by cheki and not supported yet."
       }
     ]
   },
@@ -1517,7 +1517,7 @@
         ],
         "responseType": "json",
         "confidence": "inferred",
-        "evidence": "links.et lists receipt.amharabank.com.et, transaction.amharabank.com.et (JSON). Not tested by cheki and not supported yet."
+        "evidence": "Another verifier lists receipt.amharabank.com.et, transaction.amharabank.com.et (JSON). Not tested by cheki and not supported yet."
       }
     ]
   },
@@ -1574,7 +1574,7 @@
         ],
         "responseType": "pdf",
         "confidence": "inferred",
-        "evidence": "links.et lists transactioninfo.berhanonline.et (PDF). Not tested by cheki and not supported yet."
+        "evidence": "Another verifier lists transactioninfo.berhanonline.et (PDF). Not tested by cheki and not supported yet."
       }
     ]
   },
@@ -1788,7 +1788,7 @@
         ],
         "responseType": "pdf",
         "confidence": "inferred",
-        "evidence": "links.et lists obinfo.oromiabank.com (PDF). Not tested by cheki and not supported yet."
+        "evidence": "Another verifier lists obinfo.oromiabank.com (PDF). Not tested by cheki and not supported yet."
       }
     ]
   },
@@ -1919,7 +1919,7 @@
         "responseType": "json",
         "receiptPage": "redirect",
         "confidence": "verified",
-        "evidence": "cheki, 2026-10-12: the receipt page's web app (receipt.zamzambank.com.et/assets/index-*.js) fetches receipt-backend.zamzambank.com.et/api/v1/invoice/{id} with a hardcoded HTTP Basic credential. Without it the endpoint answers 401; an unknown id answers HTTP 200 with the body null; a real receipt answered a JSON object (name, reference, id, amount, vat, dt, acc_NUM, drcr, other_NAME, trn_DESCRIPTION, currency, code) in about 2 seconds. links.et also lists receipt.zamzambank.com.et (JSON).",
+        "evidence": "cheki, 2026-10-12: the receipt page's web app (receipt.zamzambank.com.et/assets/index-*.js) fetches receipt-backend.zamzambank.com.et/api/v1/invoice/{id} with a hardcoded HTTP Basic credential. Without it the endpoint answers 401; an unknown id answers HTTP 200 with the body null; a real receipt answered a JSON object (name, reference, id, amount, vat, dt, acc_NUM, drcr, other_NAME, trn_DESCRIPTION, currency, code) in about 2 seconds. Another verifier also lists receipt.zamzambank.com.et (JSON).",
         "notes": "Party sides are inferred from drcr (D: the account holder paid; C: received). One receipt shape checked so far."
       }
     ],

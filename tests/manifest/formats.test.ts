@@ -51,10 +51,10 @@ describe("format data in banks.json", () => {
     }
   });
 
-  it("never marks a format verified when its evidence comes only from links.et", () => {
+  it("never marks a format verified when its evidence comes only from another verifier", () => {
     for (const bank of getAllBanks()) {
       for (const f of formatsOf(bank)) {
-        if (/links\.et/.test(f.evidence) && !/cheki/.test(f.evidence)) expect(f.confidence, `${bank.id}/${f.id}`).toBe("inferred");
+        if (/another verifier/i.test(f.evidence) && !/cheki/.test(f.evidence)) expect(f.confidence, `${bank.id}/${f.id}`).toBe("inferred");
       }
     }
     for (const id of ["cbebirr", "siinqee", "mpesa"]) {
