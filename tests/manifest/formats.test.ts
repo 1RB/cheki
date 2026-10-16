@@ -57,9 +57,19 @@ describe("format data in banks.json", () => {
         if (/links\.et/.test(f.evidence) && !/cheki/.test(f.evidence)) expect(f.confidence, `${bank.id}/${f.id}`).toBe("inferred");
       }
     }
-    for (const id of ["cbebirr", "siinqee", "mpesa"]) {
+    for (const id of ["siinqee", "mpesa"]) {
       for (const f of formatsOf(getBank(id))) expect(f.confidence, `${id}/${f.id}`).toBe("inferred");
     }
+  });
+
+  it("CBE Birr is verified with dated evidence from real receipts, and labelled beta", () => {
+    const bank = getBank("cbebirr");
+    expect(bank?.status).toBe("live");
+    expect(bank?.beta).toBe(true);
+    const [f] = formatsOf(bank);
+    expect(f.confidence).toBe("verified");
+    expect(f.evidence).toMatch(/^Verified 2026-10-16 against 2 real receipts/);
+    expect(bank?.endpointHistory?.at(-1)?.date).toBe("2026-10-16");
   });
 });
 

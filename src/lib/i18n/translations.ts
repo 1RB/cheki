@@ -163,7 +163,7 @@ export const translations = {
         offline: { title: "You're offline", subtitle: "Nothing was checked. Reconnect and try again." },
         unavailable: { title: "Couldn't check right now", subtitle: "The checker or the bank did not answer. This says nothing about the receipt." },
         geoBlocked: { title: "{bank} didn't answer cheki's server", subtitle: "{bank} only answers Ethiopian networks. Open the receipt from your browser instead." },
-        openAtBank: { title: "{bank} didn't show cheki the receipt", subtitle: "{bank} sent cheki's server an empty page. This says nothing about the receipt. Open it on {bank}'s own site from your browser." },
+        openAtBank: { title: "{bank} didn't show cheki the receipt", subtitle: "{bank} sent back an empty page, which usually means the receipt number and payer phone don't match. Check both, or open the receipt on {bank}'s own site." },
         invalidInput: { title: "Check what you entered", subtitle: "That doesn't look like a receipt reference for this bank." },
       },
       card: {

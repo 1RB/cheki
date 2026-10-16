@@ -64,7 +64,7 @@ function publicFields(parsed: ParsedReceipt): Omit<ParsedReceipt, "raw" | "verif
  * of a fake: a real receipt fetched from outside Ethiopia looked the same.
  */
 export const CBEBIRR_EMPTY_SHELL_MESSAGE =
-  "CBE Birr sent cheki's server an empty receipt page, so this could not be confirmed either way. Open the receipt on CBE Birr's own site instead.";
+  "CBE Birr sent back an empty receipt page, so this could not be confirmed. The receipt number and payer phone number may not match: check both, or open the receipt on CBE Birr's own site.";
 
 export class Verifier {
   /**
@@ -365,11 +365,12 @@ export class Verifier {
       }
     }
 
-    // CBE Birr: a real receipt may come back as a PDF or as HTML (the body is
-    // read as bytes, under the PDF size cap). An unknown TID/PH is an empty
-    // Telerik shell, but so was a real receipt fetched from outside Ethiopia
-    // (2026-10-16), so the shell is "could not confirm", never "not found":
-    // the user gets CBE Birr's own receipt link to open instead. A parsed
+    // CBE Birr: a real receipt is a PDF (confirmed 2026-10-16); the body is
+    // read as bytes, under the PDF size cap, and HTML is still parsed in case
+    // the bank changes format. A TID/PH pair that does not match is an empty
+    // Telerik shell. A typo in the phone gives the same page as a fake
+    // receipt, so the shell is "could not confirm" (with a hint to check the
+    // pair and CBE Birr's own receipt link), never "not found". A parsed
     // receipt still goes through the gate.
     if (id === "cbebirr") {
       const buf = Buffer.isBuffer(data) ? data : Buffer.from(data);

@@ -124,7 +124,8 @@ describe("live bank counts match the manifest", () => {
 
   it("the root meta description only names live banks", () => {
     const desc = String(rootMetadata.description);
-    expect(desc).not.toMatch(/Zemen|CBE Birr/);
+    expect(desc).not.toMatch(/Zemen/);
     expect(desc).toContain("Dashen");
+    expect(desc).toContain("CBE Birr");
   });
 });

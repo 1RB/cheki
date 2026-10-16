@@ -4,11 +4,16 @@ Every cheki SDK ships the same version: npm `cheki-verify` (and `@1rb/cheki-veri
 
 ## Unreleased
 
-**CBE Birr (still in development)**
-- A real contributed receipt came back from `cbepay1.cbe.com.et` as the same empty "Auto Receipt" page an unknown receipt number gets, when fetched from outside Ethiopia. When CBE Birr goes live, that page is reported as "could not confirm" (502 with `fallbackUrl`, the receipt link), never as not found.
+**CBE Birr is live (beta)**
+- Verified on 2026-10-16 against two real receipts (a wallet transfer and a transfer to a bank account). A matching receipt number and payer phone return the receipt as a one-page PDF, also from outside Ethiopia, so CBE Birr is not geo-blocked. Live banks: 9 → 10; `beta` is true for M-Pesa, ZamZam and CBE Birr.
+- Fields read: payer name and wallet number, receiver name and account, amount, service charge, VAT, total paid, date (Addis Ababa time, no offset), status, receipt number, order ID, amount in words, payment reason and payment channel. The PDF prints both phone numbers in full; cheki masks them (`09****1234`).
+- The empty "Auto Receipt" page means the receipt number and phone don't match (the earlier contributed receipt was such a pair). It stays "could not confirm" (502 with `fallbackUrl`, the receipt link), never not found, and now says to check both.
+- Fix: the real PDF draws its values in a different order from their labels, so flowed text read the payment reason and channel wrongly. The PDF is now read as positioned rows. Real rows also put spaces between the receipt number, date and amount, wrapped long names onto a second row, and print "VAT Registration No" above the VAT amount; all three are handled.
 - Phone numbers are sent as `251XXXXXXXXX` (the form CBE Birr's own links use); `09…`, `07…` and `+251…` are accepted. Receipt numbers are 10 or 11 letters and digits.
 - Fix: an 11-character receipt number lost its first character in the PDF layout, so the gate would have rejected a real receipt.
-- Python direct mode: CBE Birr no longer reports any HTTP 200 as verified (an empty page passed), no longer crashes with a duplicate `timeout` argument, URL-encodes the receipt number and phone, and no longer keeps the response body in `raw`.
+- Python direct mode: reads the CBE Birr receipt PDF (phones masked) and runs it through the gate; an empty page is never verified. It no longer crashes with a duplicate `timeout` argument and URL-encodes the receipt number and phone.
+- CLI: `cheki verify cbebirr <receipt number> -p <payer phone>` is in the help, and `cheki info` marks beta banks and the phone requirement.
+- Tests use a synthetic PDF with the real layout (`tests/fixtures/cbebirr/synthetic-receipt.ts`); no real receipt data is committed.
 
 ## 1.5.0
 

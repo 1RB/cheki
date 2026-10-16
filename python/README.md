@@ -1,6 +1,6 @@
 # cheki Python SDK
 
-Python client for the [cheki](https://cheki.et) receipt verification API: verify Ethiopian bank and wallet receipts (live: CBE, Telebirr, BOA, M-Pesa (beta), Dashen, Awash, Siinqee, eBirr, ZamZam (beta); `get_banks()` lists the current set). Python 3.10+.
+Python client for the [cheki](https://cheki.et) receipt verification API: verify Ethiopian bank and wallet receipts (live: CBE, Telebirr, BOA, M-Pesa (beta), Dashen, Awash, Siinqee, eBirr, ZamZam (beta), CBE Birr (beta); `get_banks()` lists the current set). Python 3.10+.
 
 Website: [cheki.et](https://cheki.et) · API reference: [cheki.et/docs](https://cheki.et/docs) · Integration guide and every SDK: [cheki.et/developers](https://cheki.et/developers) · Supported banks: [cheki.et/banks](https://cheki.et/banks)
 

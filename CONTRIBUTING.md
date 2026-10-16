@@ -103,7 +103,7 @@ A receipt link is a bearer token: anyone who opens it sees the payment, the name
 npm run probe -- "https://receipts.dashenbanksc.com/receipt/B22WDTI2619100WH"
 npm run probe -- dashen B22WDTI2619100WH
 npm run probe -- cbe FT26140P01YB 60536171          # third argument: account or phone
-npm run probe -- cbebirr CHK0000001 --phone 2519XXXXXXXX
+npm run probe -- cbebirr DTS41AB2C90 --phone 09XXXXXXXX
 npm run probe -- <link> --raw                       # also print the first 2,000 characters of the body
 npm run probe -- <link> --redact                    # mask names, accounts and phones before you share output
 ```
@@ -232,7 +232,7 @@ Save the real response once, locally, with `npm run probe -- <link> --raw`. Then
 - Keep the labels, layout, whitespace and markup exactly as they are. That is what the parser depends on.
 - Change the amount and date to other plausible values.
 
-Put HTML or JSON fixtures in `tests/fixtures/<bank>/`. For PDFs, commit the extracted text as a string in the test rather than the PDF itself (see `tests/parsers/cbebirr.test.ts`). Then test the parse:
+Put HTML or JSON fixtures in `tests/fixtures/<bank>/`. For PDFs, never commit a real receipt: build a synthetic PDF with the same layout from invented values (see `tests/fixtures/cbebirr/synthetic-receipt.ts` or `tests/fixtures/mpesa/synthetic-receipt.ts`), or commit the extracted text as a string in the test. Then test the parse:
 
 ```typescript
 import { describe, it, expect } from "vitest";
