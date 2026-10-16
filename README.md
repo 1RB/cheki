@@ -75,7 +75,7 @@ Confirmed results are cached in memory for 6 hours, so checking the same receipt
 | Siinqee Bank | `siinqee` | eBirr receipt link (`receipt.ebirr.com/siinqee/…`) | Newer `receipts.siinqeebank.com` links are not supported yet |
 | eBirr | `ebirr` | Receipt link (`receipt.ebirr.com/{tenant}/{token}`) | Also reads eBirr links issued for Nib, Wegagen, Ahadu and KAAFI |
 | ZamZam Bank | `zamzam` | Receipt link (`receipt.zamzambank.com.et/receipt/…`) or its numeric id | Beta |
-| CBE Birr | `cbebirr` | Receipt number (TID, e.g. `DTS41AB2C90`) + the payer's phone number | Beta. An empty page back usually means the number and phone don't match |
+| CBE Birr | `cbebirr` | Receipt number (TID, e.g. `DTS41AB2C90`) + the payer's phone number, or the receipt QR (it carries both) | Beta. An empty page back usually means the number and phone don't match |
 
 Beta means the bank is live but not yet confirmed with enough real receipts. [cheki.et/endpoints](https://cheki.et/endpoints) shows every format with a dated changelog, and [cheki.et/status](https://cheki.et/status) shows the daily endpoint health check.
 
@@ -178,7 +178,7 @@ The TypeScript SDK is also on GitHub Packages as [`@1rb/cheki-verify`](https://g
 <summary>What every SDK does the same way</summary>
 
 - **`verified` is the only success signal.** Each SDK has a helper: `isVerified()`, `is_verified`, `IsVerified()`.
-- **QR codes go in `qrData`:** a BOA inter-bank receipt QR (bank `boa`) or the Payment QR code on a Telebirr receipt (bank `telebirr`). The server reads the reference out of the QR and checks it with the bank; a QR on its own never verifies.
+- **QR codes go in `qrData`:** a BOA inter-bank receipt QR (bank `boa`), the Payment QR code on a Telebirr receipt (bank `telebirr`), or the QR on a CBE Birr receipt (bank `cbebirr`: a receipt link carrying the receipt number and payer phone, so no phone number is needed). The server reads the reference out of the QR and checks it with the bank; a QR on its own never verifies.
 - **Banks are identified by `id`** (`code` is kept as a deprecated alias). `beta` is true for M-Pesa, ZamZam and CBE Birr today. Results carry `orderId` when the receipt has one (CBE Birr).
 - **Batch: at most 20 receipts**, checked before sending. Send long lists in chunks of 15 or fewer (`RECOMMENDED_BATCH_CHUNK`): every receipt also counts toward the verify limit, the whole batch has 60 s on the server, and a batch is never retried.
 - **Typed errors** for 429 (with the `Retry-After` seconds) and 413, and the server's `error` text and `fallbackUrl` (geo-blocked banks) on every API error.

@@ -36,7 +36,7 @@ if ($result->isVerified()) {
 
 `success` only means the request was processed. A BOA QR code that BOA could not confirm comes back with `success` true, `verified` false and `decodedOnly` true. A QR code can be forged.
 
-Signature: `verify(string $bank, string $reference, ?string $accountNumber = null, ?string $phoneNumber = null, ?string $qrData = null)`. QR-only: `$client->verify('boa', '', null, null, $qrPayload)`.
+Signature: `verify(string $bank, string $reference, ?string $accountNumber = null, ?string $phoneNumber = null, ?string $qrData = null)`. QR-only: `$client->verify('boa', '', null, null, $qrPayload)`. A CBE Birr receipt QR carries the receipt number and payer phone: `$client->verify('cbebirr', '', null, null, $scannedText)`.
 
 ### Batch (max 20)
 

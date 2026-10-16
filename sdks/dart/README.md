@@ -53,7 +53,7 @@ try {
 
 `verify` returns for HTTP 200, and a 200 can be unverified: a BOA QR code BOA could not confirm comes back with `success: true, verified: false, decodedOnly: true`. A QR code can be forged.
 
-QR-only (BOA): `client.verify(bank: 'boa', qrData: '3cHRaxVjn/pySp...')`.
+QR-only (BOA): `client.verify(bank: 'boa', qrData: '3cHRaxVjn/pySp...')`. A CBE Birr receipt QR is its receipt link, carrying the receipt number and payer phone: `client.verify(bank: 'cbebirr', qrData: scannedText)`.
 
 ### Batch (max 20)
 

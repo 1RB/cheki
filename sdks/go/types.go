@@ -5,7 +5,10 @@ package cheki
 // Bank is required, plus Reference or QRData. Lead with the bank's current
 // format (a CBE receipt link or Receipt ID needs no account). AccountNumber is
 // needed by BOA and by an older CBE receipt that shows only an FT reference
-// (legacy format), PhoneNumber by CBE Birr (see BankInfo.Formats).
+// (legacy format), PhoneNumber by CBE Birr (see BankInfo.Formats). QRData is a
+// raw QR payload: a BOA QR code, a Telebirr receipt QR, or a receipt link from a
+// QR (a CBE Birr receipt QR carries the receipt number and payer phone, so
+// PhoneNumber is not needed).
 type VerifyOptions struct {
 	Bank          string `json:"bank"`
 	Reference     string `json:"reference,omitempty"`

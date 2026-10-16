@@ -43,10 +43,12 @@ A `200` response does not always mean the payment is confirmed:
 
 Use `isVerified(result)` rather than `result.success`.
 
-### BOA QR codes
+### QR codes (BOA, CBE Birr)
 
 ```ts
 const r = await cheki.verify("boa", "", { qrData: "3cHRaxVjn/pySp..." });
+// A CBE Birr receipt QR is its receipt link (receipt number + payer phone):
+// await cheki.verify("cbebirr", "", { qrData: scannedText });
 ```
 
 ### Batch (max 20)

@@ -97,7 +97,7 @@ export interface VerifyOptions {
   accountNumber?: string;
   /** Payer phone number (required by CBE Birr). */
   phoneNumber?: string;
-  /** Raw QR code payload (BOA QR codes, a Telebirr receipt QR, or a receipt link from a QR). */
+  /** Raw QR code payload (BOA QR codes, a Telebirr receipt QR, or a receipt link from a QR, e.g. a CBE Birr receipt QR, which carries the receipt number and payer phone). */
   qrData?: string;
 }
 
