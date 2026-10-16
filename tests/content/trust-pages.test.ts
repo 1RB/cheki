@@ -140,6 +140,13 @@ describe("contact", () => {
     expect(read("src/app/banks/page.tsx")).toContain("https://t.me/raysterminalbot");
     expect(trustPageText(CONTACT)).not.toMatch(/@[a-z0-9-]+\.[a-z]{2,}/i);
   });
+
+  it("/banks opens the same bank-request form, not a label the repo does not have", () => {
+    const page = read("src/app/banks/page.tsx");
+    expect(page).toContain("href={NEW_BANK_ISSUE_URL}");
+    expect(page).not.toMatch(/issues\/new\?labels=/);
+    expect(read(".github/ISSUE_TEMPLATE/bank-request.yml")).toMatch(/^labels: \["bank-wanted"\]$/m);
+  });
 });
 
 describe("wiring", () => {
