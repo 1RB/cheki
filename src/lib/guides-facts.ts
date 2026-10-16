@@ -9,7 +9,7 @@
 import { RATE_LIMITS } from "./rate-limit-config";
 
 /** When competitor prices and bank lists were last re-checked on their public sites. */
-export const COMPETITORS_CHECKED = "12 October 2026";
+export const COMPETITORS_CHECKED = "15 October 2026";
 
 /** Banks and wallets each service listed on its own site on COMPETITORS_CHECKED. */
 export const COMPETITOR_BANKS_LISTED = {
@@ -24,6 +24,17 @@ export type Competitor = keyof typeof COMPETITOR_BANKS_LISTED;
 
 /** Everything else said about the other services was last checked then. */
 export const COMPETITOR_FACTS_AS_OF = "June 2026";
+
+// Re-checked on COMPETITORS_CHECKED, so no longer "as of June 2026":
+// - robots.txt of all five: every one allows AI crawlers. verify.et's used to
+//   block GPTBot, ClaudeBot, CCBot and Google-Extended (June 2026); its file
+//   now says "Search engines and AI crawlers are welcome" and allows each by
+//   name (https://verify.et/robots.txt).
+// - verify.et SDKs: "Official SDK packages are not published yet"
+//   (https://verify.et/docs/sdk). Its REST API is the integration surface.
+// - verify.et app plans: Hobby free (200/cycle), Team 699 ETB/month, Verify Pro
+//   4,000 ETB/year; API plans 500 and 3,000 ETB/month (https://verify.et/pricing.md).
+// The /compare footnotes name these as re-checked.
 
 export interface CompetitorPricing {
   /** Paid plans, short enough for a table cell. */
@@ -43,10 +54,10 @@ export const COMPETITOR_PRICING: Record<Competitor, CompetitorPricing> = {
     sentence: "check.et charges 499 ETB/month or 4,990 ETB/year after 200 free verifications (one-time, not monthly).",
   },
   "verify.et": {
-    price: "500-3,000 ETB/mo (API), 4,000 ETB/yr (app)",
+    price: "500-3,000 ETB/mo (API); 699/mo or 4,000/yr (app)",
     freeTier: "200/mo",
     perVerification: "~0.10 ETB (API)",
-    sentence: "verify.et has a free tier of 200 verifications a month, then API plans from 500 to 3,000 ETB/month or a 4,000 ETB/year app plan.",
+    sentence: "verify.et has a free tier of 200 verifications a month, then API plans from 500 to 3,000 ETB/month, or app plans of 699 ETB/month (team) or 4,000 ETB/year.",
   },
   qbirr: {
     price: "500-8,000 ETB/mo",
@@ -75,7 +86,7 @@ export const CHEKI_PRICING = {
   perVerification: "0 ETB",
 } as const;
 
-/** "check.et charges .... verify.et has .... Prices as listed on each service's site on 12 October 2026." */
+/** "check.et charges .... verify.et has .... Prices as listed on each service's site on 15 October 2026." */
 export function competitorPrices(services: Competitor[]): string {
   return `${services.map((c) => COMPETITOR_PRICING[c].sentence).join(" ")} Prices as listed on each service's site on ${COMPETITORS_CHECKED}.`;
 }

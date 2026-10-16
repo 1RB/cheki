@@ -252,12 +252,13 @@ export default async function BankPage({ params }: { params: Promise<{ code: str
                 <h2 id={sec.id}>{sec.heading}</h2>
                 {sec.body && <p>{sec.body}</p>}
                 {sec.steps && (
-                  <ol style={{ paddingLeft: "20px" }}>
+                  // Preflight strips list markers: steps are numbered, bullets get discs.
+                  <ol style={{ paddingLeft: "20px", listStyle: "decimal" }}>
                     {sec.steps.map((step, j) => <li key={j}>{step}</li>)}
                   </ol>
                 )}
                 {sec.bullets && (
-                  <ul>
+                  <ul style={{ listStyle: "disc" }}>
                     {sec.bullets.map((b, j) => <li key={j}>{b}</li>)}
                   </ul>
                 )}

@@ -74,7 +74,7 @@ export const compareFaqs: CompareFaq[] = [
     a: `If your cashiers need a mobile app at a physical counter, tinaverify is a good fit, with published iOS and Android apps. If you need a free API, a web check or self-hosting, cheki fits better. ${COMPETITOR_PRICING.tinaverify.sentence} Prices as listed on ${COMPETITORS_CHECKED}.`,
   },
   {
-    q: "Why does verify.et block AI crawlers?",
-    a: `As of ${COMPETITOR_FACTS_AS_OF}, verify.et's robots.txt blocked GPTBot, ClaudeBot, CCBot, Google-Extended and other AI crawlers, citing EU copyright rules. The practical effect is that AI assistants cannot read its content. cheki's robots.txt allows them.`,
+    q: "Can AI assistants read cheki and the other verifiers?",
+    a: `Yes. On ${COMPETITORS_CHECKED} the robots.txt of cheki, check.et, verify.et, qbirr, tinaverify and tally all allowed AI crawlers such as GPTBot, ClaudeBot and CCBot. verify.et used to block them (as of ${COMPETITOR_FACTS_AS_OF}) and now welcomes them by name. cheki also publishes an llms.txt with its key facts.`,
   },
 ];

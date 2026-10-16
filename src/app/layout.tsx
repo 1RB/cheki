@@ -7,6 +7,7 @@ import { THEME_INIT_SCRIPT } from "@/lib/theme";
 import { LOCALE_INIT_SCRIPT } from "@/lib/i18n/locale-store";
 import { SiteAnalytics } from "@/components/SiteAnalytics";
 import { analyticsPaths } from "@/lib/analytics/paths";
+import { ORGANIZATION_ID, organizationJsonLd, sourceCodeJsonLd, websiteJsonLd } from "@/lib/site-schema";
 
 const SITE_URL = "https://cheki.et";
 
@@ -36,7 +37,7 @@ export const metadata: Metadata = {
   category: "finance",
   creator: "cheki open source",
   publisher: "cheki open source",
-  authors: [{ name: "cheki open source", url: "https://github.com/1RB/cheki" }],
+  authors: [{ name: "Ray (@1RB)", url: "https://github.com/1RB" }],
   keywords: [
     "ethiopian receipt verification",
     "verify CBE transaction",
@@ -79,11 +80,8 @@ export const metadata: Metadata = {
       "max-video-preview": -1,
     },
   },
-  icons: {
-    icon: "/favicon.ico",
-    shortcut: "/favicon.ico",
-    apple: "/favicon.ico",
-  },
+  // Icons come from the file conventions in src/app: favicon.ico (16/32/48),
+  // icon.png (512) and apple-icon.png (180), all derived from public/logo.png.
   verification: {
     google: "5PHbiqRW6j2_qQfFDxJObwOBQjKDeHOA8JG2FbzOvWI",
   },
@@ -91,36 +89,14 @@ export const metadata: Metadata = {
 
 // Structured data. Rendered as real <script type="application/ld+json"> tags
 // in <head>: the previous `metadata.other` entries were emitted as <meta>
-// tags, which Google does not read as structured data.
-const ldOrganization = {
-  "@context": "https://schema.org",
-  "@type": "Organization",
-  name: "cheki",
-  url: SITE_URL,
-  logo: `${SITE_URL}/favicon.ico`,
-  description:
-    "Free, open-source Ethiopian bank receipt verification service.",
-  sameAs: [
-    "https://github.com/1RB/cheki",
-    "https://www.npmjs.com/package/cheki-verify",
-    "https://pypi.org/project/cheki/",
-  ],
-  foundingDate: "2026",
-};
-
-const ldWebsite = {
-  "@context": "https://schema.org",
-  "@type": "WebSite",
-  name: "cheki",
-  alternateName: ["cheki.et", "Cheki"],
-  url: `${SITE_URL}/`,
-};
-
+// tags, which Google does not read as structured data. The Organization,
+// WebSite and source-code nodes live in src/lib/site-schema.ts.
 const ldWebapp = {
   "@context": "https://schema.org",
   "@type": "WebApplication",
-  name: "cheki",
+  name: "cheki.et",
   url: SITE_URL,
+  publisher: { "@id": ORGANIZATION_ID },
   applicationCategory: "FinanceApplication",
   operatingSystem: "Web",
   offers: {
@@ -156,11 +132,10 @@ export default function RootLayout({
   return (
     <html lang="en" className={inter.variable} suppressHydrationWarning>
       <head>
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ldOrganization) }} />
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ldWebsite) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ldWebapp) }} />
-        <link rel="icon" href="/favicon.ico" />
-        <link rel="apple-touch-icon" href="/favicon.ico" />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(sourceCodeJsonLd) }} />
         <link rel="manifest" href="/manifest.webmanifest" />
         <style>{`
           html { background: var(--bg); }

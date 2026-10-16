@@ -124,9 +124,10 @@ export default function ComparePage() {
     { feature: "Open source", cheki: check, checket: dash, verifyet: dash, qbirr: dash, tinaverify: dash, tally: dash },
     { feature: "Self-hosting", cheki: check, checket: dash, verifyet: dash, qbirr: dash, tinaverify: dash, tally: dash },
     { feature: "Source URL shown", cheki: check, checket: dash, verifyet: dash, qbirr: dash, tinaverify: dash, tally: dash },
-    { feature: "AI crawler access", cheki: check, checket: check, verifyet: dash, qbirr: check, tinaverify: check, tally: check },
+    // Every robots.txt re-checked on COMPETITORS_CHECKED: all five allow AI crawlers now.
+    { feature: "AI crawler access", cheki: check, checket: check, verifyet: check, qbirr: check, tinaverify: check, tally: check },
     { feature: "Python library", cheki: check, checket: dash, verifyet: dash, qbirr: "Own git server", tinaverify: dash, tally: dash },
-    { feature: "TypeScript SDK", cheki: check, checket: dash, verifyet: check, qbirr: "Own git server", tinaverify: dash, tally: dash },
+    { feature: "TypeScript SDK", cheki: check, checket: dash, verifyet: "Planned", qbirr: "Own git server", tinaverify: dash, tally: dash },
     { feature: "Dart / Flutter SDK", cheki: check, checket: dash, verifyet: dash, qbirr: dash, tinaverify: dash, tally: dash },
     { feature: "PHP SDK", cheki: check, checket: dash, verifyet: dash, qbirr: "Own git server", tinaverify: dash, tally: dash },
     { feature: "Go SDK", cheki: check, checket: dash, verifyet: dash, qbirr: "Own git server", tinaverify: dash, tally: dash },
@@ -153,8 +154,8 @@ export default function ComparePage() {
       url: "https://verify.et",
       banks: banksListed("verify.et"),
       pricing: COMPETITOR_PRICING["verify.et"].sentence,
-      strengths: ["Android app on Play Store", "Free receipt check with no account", "Blog content, status pages per bank", "TypeScript SDK published"],
-      limitations: ["Accounts need Telegram sign-in", "Blocks AI crawlers (GPTBot, ClaudeBot, CCBot)", "No open source, no self-hosting", "No batch verification, no Python library"],
+      strengths: ["Android app on Play Store", "Free receipt check with no account", "Blog content, status pages per bank", "REST API with webhooks and status streams", "Welcomes AI crawlers, publishes llms.txt"],
+      limitations: ["Accounts need Telegram sign-in", "No published SDKs yet (REST only)", "No open source, no self-hosting", "No batch verification"],
       stack: "React, Cloudflare",
     },
     {
@@ -284,7 +285,7 @@ export default function ComparePage() {
         <h2 style={{ fontSize: "20px", fontWeight: 800, marginBottom: "16px" }}>{t("compare.transparency")}</h2>
         <Table rows={openData} noted />
         <p style={noteStyle}>
-          As of {COMPETITOR_FACTS_AS_OF}, except qbirr&apos;s SDKs, re-checked on {COMPETITORS_CHECKED}.
+          As of {COMPETITOR_FACTS_AS_OF}, except qbirr&apos;s and verify.et&apos;s SDKs and every service&apos;s robots.txt (AI crawler access), re-checked on {COMPETITORS_CHECKED}.
         </p>
 
         {/* The story */}
@@ -306,7 +307,7 @@ export default function ComparePage() {
         {/* Competitor profiles */}
         <h2 id="profiles" style={{ fontSize: "22px", fontWeight: 800, marginBottom: "8px" }}>cheki vs the competition, service by service</h2>
         <p style={{ fontSize: "13px", color: "var(--ink-3)", lineHeight: 1.5, marginBottom: "20px", maxWidth: "720px" }}>
-          Prices and bank counts as listed on {COMPETITORS_CHECKED}. Strengths, limitations and stacks are as of {COMPETITOR_FACTS_AS_OF}, except mobile apps, qbirr&apos;s SDKs and tally&apos;s site, re-checked on {COMPETITORS_CHECKED}.
+          Prices and bank counts as listed on {COMPETITORS_CHECKED}. Strengths, limitations and stacks are as of {COMPETITOR_FACTS_AS_OF}, except mobile apps, SDKs, AI crawler access and tally&apos;s site, re-checked on {COMPETITORS_CHECKED}.
         </p>
         <div className="grid-2" style={{ gap: "16px", marginBottom: "40px" }}>
           {competitors.map((c) => (

@@ -269,10 +269,11 @@ export function Footer() {
         </div>
         <div style={{ marginTop: "28px", paddingTop: "20px", borderTop: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
           <p className="footer-legal-link">{t("footer.legal")}</p>
+          {/* The trust pages. API docs, GitHub and Python are already in the Resources column. */}
           <div className="footer-legal-links">
-            <a href="/docs" className="footer-legal-link">{t("footer.apiDocs")}</a>
-            <a href="https://github.com/1RB/cheki" target="_blank" rel="noopener" className="footer-legal-link">{t("footer.github")}</a>
-            <a href="https://github.com/1RB/cheki/tree/main/python" target="_blank" rel="noopener" className="footer-legal-link">{t("footer.python")}</a>
+            <Link href="/about" prefetch={false} className="footer-legal-link">{t("footer.about")}</Link>
+            <Link href="/privacy" prefetch={false} className="footer-legal-link">{t("footer.privacy")}</Link>
+            <Link href="/contact" prefetch={false} className="footer-legal-link">{t("footer.contact")}</Link>
           </div>
         </div>
       </div>

@@ -13,11 +13,9 @@ export default function manifest(): MetadataRoute.Manifest {
     orientation: "portrait-primary",
     categories: ["finance", "business", "utilities", "productivity"],
     icons: [
-      {
-        src: "/favicon.ico",
-        sizes: "any",
-        type: "image/x-icon",
-      },
+      { src: "/favicon.ico", sizes: "16x16 32x32 48x48", type: "image/x-icon" },
+      { src: "/apple-icon.png", sizes: "180x180", type: "image/png" },
+      { src: "/icon.png", sizes: "512x512", type: "image/png" },
     ],
   };
 }

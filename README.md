@@ -20,7 +20,7 @@ cheki verifies Ethiopian bank and mobile money receipts by fetching public bank 
 
 ## Why?
 
-check.et charges 499 ETB/month or 4,990 ETB/year after 200 one-time free verifications, and verify.et's API plans run 500-3,000 ETB/month (prices as listed on each site on 12 October 2026). Both verify receipts by hitting the same public bank URLs cheki uses for free. cheki exposes this and provides the same service for free: no signup and no API key, with per-IP rate limits on the hosted API (verify 30/min, batch 5/min); self-host for more.
+check.et charges 499 ETB/month or 4,990 ETB/year after 200 one-time free verifications, and verify.et's API plans run 500-3,000 ETB/month (prices as listed on each site on 15 October 2026). Both verify receipts by hitting the same public bank URLs cheki uses for free. cheki exposes this and provides the same service for free: no signup and no API key, with per-IP rate limits on the hosted API (verify 30/min, batch 5/min); self-host for more.
 
 ## Supported banks
 
@@ -236,6 +236,7 @@ src/
     developers/page.tsx     # Developer/API page
     compare/page.tsx        # Comparison with check.et/verify.et
     docs/page.tsx           # API documentation
+    about/, privacy/, contact/  # Trust pages (content: src/lib/trust-pages.ts)
     api/
       verify/route.ts       # POST /api/verify
       verify/batch/route.ts # POST /api/verify/batch

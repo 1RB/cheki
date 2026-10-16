@@ -85,6 +85,7 @@ const checks: Check[] = [
   page("/banks/cbe", /CBE|Commercial Bank of Ethiopia/i),
   page("/status", /status/i),
   page("/endpoints", /endpoint/i),
+  page("/about", /Ray \(/),
   {
     name: "GET /api/health → 200 JSON",
     run: async (base) => {
