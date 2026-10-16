@@ -13,7 +13,7 @@ vi.mock("next/link", () => ({ default: ({ href, children, prefetch: _p, ...rest 
 // Lazy panels (camera, batch, browser fallback) are not under test here.
 vi.mock("next/dynamic", () => ({ default: () => () => null }));
 
-const CBE = "https://mbreciept.cbe.com.et/fHCxyV4mg5pRIwEkJO";
+const CBE = "https://mbreciept.cbe.com.et/fHCxExampleRcpt01";
 const json = (body: unknown, status = 200, headers: Record<string, string> = {}) =>
   new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json", ...headers } });
 
@@ -106,14 +106,14 @@ describe("VerifyPanel", () => {
 
   it("a legacy FT reference opens the account field and waits for it", async () => {
     const input = setup();
-    await submit(input, "FT26140P01YB");
+    await submit(input, "FT26SAMPLE01");
     expect(fetchMock).not.toHaveBeenCalled();
     const extra = screen.getByLabelText("Receiving account, last 8 digits") as HTMLInputElement;
     expect(document.activeElement).toBe(extra);
     fetchMock.mockResolvedValue(json({ success: true, verified: true, bankCode: "cbe", amount: 1, senderName: "A" }));
-    fireEvent.change(extra, { target: { value: "60536171" } });
+    fireEvent.change(extra, { target: { value: "00006171" } });
     await act(async () => { fireEvent.submit(input.closest("form")!); });
-    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ bank: "cbe", reference: "FT26140P01YB", accountNumber: "60536171" });
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ bank: "cbe", reference: "FT26SAMPLE01", accountNumber: "00006171" });
   });
 
   it("a BOA slip link with the 5-digit suffix is sent as is, with no account field", async () => {

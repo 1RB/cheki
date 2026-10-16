@@ -41,8 +41,8 @@ describe("/api/receipt", () => {
     for (const q of [
       "bank=zemen&reference=" + encodeURIComponent("../../admin"),
       "bank=zemen&reference=" + encodeURIComponent("http://127.0.0.1/x"),
-      "bank=cbe&reference=FT26140P01YB",
-      "bank=cbe&reference=FT26140P01YB&account=" + encodeURIComponent("12#34"),
+      "bank=cbe&reference=FT26SAMPLE01",
+      "bank=cbe&reference=FT26SAMPLE01&account=" + encodeURIComponent("12#34"),
     ]) {
       const r = await receiptGET(new NextRequest("https://cheki.et/api/receipt?" + q, { headers: freshIp() }));
       expect(r.status, q).toBe(400);
@@ -95,10 +95,10 @@ describe("/api/receipt", () => {
   it("still serves a legacy CBE FT reference + account as the bank's PDF", async () => {
     const fetchSpy = vi.fn(async () => new Response("%PDF-1.4 cbe", { status: 200 }));
     vi.stubGlobal("fetch", fetchSpy);
-    const r = await receiptGET(new NextRequest("https://cheki.et/api/receipt?bank=cbe&reference=FT26140P01YB&account=1000560536171", { headers: freshIp() }));
+    const r = await receiptGET(new NextRequest("https://cheki.et/api/receipt?bank=cbe&reference=FT26SAMPLE01&account=1000000006171", { headers: freshIp() }));
     expect(r.status).toBe(200);
     expect(r.headers.get("content-type")).toBe("application/pdf");
-    expect(String((fetchSpy.mock.calls[0] as unknown[])[0])).toContain("apps.cbe.com.et:100/?id=FT26140P01YB60536171");
+    expect(String((fetchSpy.mock.calls[0] as unknown[])[0])).toContain("apps.cbe.com.et:100/?id=FT26SAMPLE0100006171");
   });
 });
 

@@ -102,7 +102,7 @@ A receipt link is a bearer token: anyone who opens it sees the payment, the name
 ```bash
 npm run probe -- "https://receipts.dashenbanksc.com/receipt/B22WDTI2619100WH"
 npm run probe -- dashen B22WDTI2619100WH
-npm run probe -- cbe FT26140P01YB 60536171          # third argument: account or phone
+npm run probe -- cbe FT26SAMPLE01 00006171          # third argument: account or phone
 npm run probe -- cbebirr CHK0000001 --phone 2519XXXXXXXX
 npm run probe -- <link> --raw                       # also print the first 2,000 characters of the body
 npm run probe -- <link> --redact                    # mask names, accounts and phones before you share output
@@ -294,7 +294,7 @@ Guides live in `src/lib/guides.ts` as content blocks (text, steps, callouts, tab
 ```bash
 npm run cli -- info
 npm run cli -- verify cbe https://mbreciept.cbe.com.et/fHCxExampleRcpt01
-npm run cli -- verify cbe FT26140P01YB -a 1000560536171   # older FT receipt (legacy)
+npm run cli -- verify cbe FT26SAMPLE01 -a 1000000006171   # older FT receipt (legacy)
 npm run cli -- verify telebirr CHQ0FJ403O
 npm run cli -- health
 ```

@@ -69,13 +69,13 @@ final class ChekiClientTest extends TestCase
 
     public function testVerifyVerified(): void
     {
-        $r = $this->client(self::fx('verify_verified'))->verify('cbe', 'FT26140P01YB', '1000560536171');
+        $r = $this->client(self::fx('verify_verified'))->verify('cbe', 'FT26SAMPLE01', '1000000006171');
         self::assertTrue($r->isVerified());
         self::assertSame(1250.5, $r->amount);
         self::assertFalse($r->cached);
         self::assertSame(200, $r->httpStatus);
         self::assertSame('https://api.test/api/verify', $this->calls[0]['url']);
-        self::assertSame(['bank' => 'cbe', 'reference' => 'FT26140P01YB', 'accountNumber' => '1000560536171'], json_decode((string) $this->calls[0]['body'], true));
+        self::assertSame(['bank' => 'cbe', 'reference' => 'FT26SAMPLE01', 'accountNumber' => '1000000006171'], json_decode((string) $this->calls[0]['body'], true));
     }
 
     public function testDecodedOnlyIsNotVerified(): void
@@ -90,7 +90,7 @@ final class ChekiClientTest extends TestCase
     public function testBatch(): void
     {
         $b = $this->client(self::fx('batch_mixed'))->verifyBatch([
-            ['bank' => 'cbe', 'reference' => 'A1', 'accountNumber' => '1000560536171'],
+            ['bank' => 'cbe', 'reference' => 'A1', 'accountNumber' => '1000000006171'],
             ['bank' => 'boa', 'qrData' => 'q'],
             ['bank' => 'telebirr', 'reference' => 'B2'],
         ]);

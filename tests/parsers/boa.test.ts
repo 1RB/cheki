@@ -60,18 +60,18 @@ describe("BOAParser", () => {
 
   describe("decryptQr", () => {
     it("decrypts a valid BOA QR payload but never marks it verified", () => {
-      const qr = "3cHRaxVjn/pySpNXEHQE61JOQ2poZRMwnDHwMiX7YO9UVtJZT/ndmwHEzWkJoloEf4dIQIzJf5zmvbBo5qHTdm/23nc6NRzTSfxEjIHa7Ju4Ti+xydrVn8qF+9/OPAF5LIfMEvxFqZ6wlKMvSN/jrQ==";
+      const qr = "KPHO0k4YlK/5s61BrKNnjG8dcbVjm5WqkNeCv93+8UYEinGOPAL1+Wpq6cy8McTYhpdXUgKvK4qFFcGhM0Yi+ZgrqD8G3UKsoUNwSiKqWXilJTG+1yIE+KEEK7IuoZl7";
       const result = parser.decryptQr(qr);
       // The key is public, so a decrypted QR proves nothing until BOA confirms it.
       expect(result.verified).toBe(false);
-      expect(result.senderName).toBe("HABIB DAOUD OMAR");
-      expect(result.senderAccount).toBe("2****3957");
-      expect(result.receiverName).toBe("ABADIR MESGID");
-      expect(result.receiverAccount).toBe("1000005842674");
-      expect(result.amount).toBe(30124.2);
+      expect(result.senderName).toBe("ABEBE KEBEDE");
+      expect(result.senderAccount).toBe("1****4321");
+      expect(result.receiverName).toBe("TIGIST ALEMU");
+      expect(result.receiverAccount).toBe("1000000006171");
+      expect(result.amount).toBe(1250.5);
       expect(result.currency).toBe("ETB");
-      expect(result.reference).toBe("FT26167ZVPCJ");
-      expect(result.date).toBe("16/06/2026  20:29:42");
+      expect(result.reference).toBe("FT26SAMPLE07");
+      expect(result.date).toBe("01/10/2026  14:05:00");
     });
 
     it("returns verified=false for malformed QR data", () => {

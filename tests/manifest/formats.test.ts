@@ -90,14 +90,14 @@ describe("current format selected first", () => {
   it("CBE: a Receipt ID is the current format, FT + account the legacy one, FT alone asks for the account", () => {
     const cbe = getBank("cbe");
     expect(primaryFormat(cbe)?.id).toBe("cbe-receipt-id");
-    for (const token of ["fHCxyV4mg5pRIwEkJO", "v2-hfHCxExample0001"]) {
+    for (const token of ["fHCxExampleRcpt01", "v2-hfHCxExample0001"]) {
       const sel = selectFormat(cbe, { reference: token });
       expect(sel.ok && sel.format?.id, token).toBe("cbe-receipt-id");
     }
-    const legacy = selectFormat(cbe, { reference: "FT26140P01YB", accountNumber: "1000560536171" });
+    const legacy = selectFormat(cbe, { reference: "FT26SAMPLE01", accountNumber: "1000000006171" });
     expect(legacy.ok && legacy.format?.id).toBe("cbe-ft-pdf");
     expect(legacy.ok && legacy.format?.status).toBe("legacy");
-    const missing = selectFormat(cbe, { reference: "FT26140P01YB" });
+    const missing = selectFormat(cbe, { reference: "FT26SAMPLE01" });
     expect(missing.ok).toBe(false);
     if (!missing.ok) {
       expect(missing.field).toBe("accountNumber");
@@ -123,17 +123,17 @@ describe("gate: CBE Receipt ID is an opaque token", () => {
   };
 
   it("passes a cbe-new receipt whose returned reference is the FT id, not the Receipt ID", () => {
-    expect(verificationGate({ ...receipt, reference: "FT26140P01YB" }, { bankId: "cbe-new", requestedReference: "fHCxyV4mg5pRIwEkJO" })).toEqual({ ok: true });
+    expect(verificationGate({ ...receipt, reference: "FT26SAMPLE01" }, { bankId: "cbe-new", requestedReference: "fHCxExampleRcpt01" })).toEqual({ ok: true });
   });
 
   it("still fails a mismatched reference for a non-opaque bank (legacy CBE FT, Dashen)", () => {
-    expect(verificationGate({ ...receipt, reference: "FT00000XXXXX" }, { bankId: "cbe", requestedReference: "FT26140P01YB" })).toMatchObject({ ok: false, reason: "reference" });
+    expect(verificationGate({ ...receipt, reference: "FT00000XXXXX" }, { bankId: "cbe", requestedReference: "FT26SAMPLE01" })).toMatchObject({ ok: false, reason: "reference" });
     expect(verificationGate({ ...receipt, reference: "B22WDTI0000000XX" }, { bankId: "dashen", requestedReference: "B22WDTI2619100WH" })).toMatchObject({ ok: false, reason: "reference" });
   });
 
   it("the opaque-token exemption does not relax the other checks for cbe-new", () => {
-    expect(verificationGate({ ...receipt, amount: 0, reference: "FT26140P01YB" }, { bankId: "cbe-new", requestedReference: "tok123456789" })).toMatchObject({ ok: false, reason: "amount" });
-    expect(verificationGate({ verified: true, amount: 5, reference: "FT26140P01YB" }, { bankId: "cbe-new", requestedReference: "tok123456789" })).toMatchObject({ ok: false, reason: "party" });
+    expect(verificationGate({ ...receipt, amount: 0, reference: "FT26SAMPLE01" }, { bankId: "cbe-new", requestedReference: "tok123456789" })).toMatchObject({ ok: false, reason: "amount" });
+    expect(verificationGate({ verified: true, amount: 5, reference: "FT26SAMPLE01" }, { bankId: "cbe-new", requestedReference: "tok123456789" })).toMatchObject({ ok: false, reason: "party" });
   });
 
   it("end to end: bank=cbe with a Receipt ID verifies when CBE returns the FT id", async () => {
@@ -141,7 +141,7 @@ describe("gate: CBE Receipt ID is an opaque token", () => {
     const fetchMock = vi.fn<(url: string | URL) => Promise<Response>>(async () =>
       new Response(
         JSON.stringify({
-          id: "FT26140P01YB",
+          id: "FT26SAMPLE01",
           debitAccountHolder: "Test Payer",
           creditAccountHolder: "Test Receiver",
           debitAccountNo: "1****1685",
@@ -174,7 +174,7 @@ Receiver TEST RECEIVER
 Account 1****6171
 Transferred Amount 20,000.00 ETB
 Payment Date & Time 5/20/2026, 7:29:00 PM
-Reference No. (VAT Invoice No) FT26140P01YB
+Reference No. (VAT Invoice No) FT26SAMPLE01
 Reason / Type of service screen done via Mobile`;
 
   it("fetches the legacy PDF host once and verifies the stubbed PDF fixture", async () => {
@@ -183,28 +183,28 @@ Reason / Type of service screen done via Mobile`;
     );
     vi.stubGlobal("fetch", fetchMock);
     vi.spyOn(CBEParser, "extractPdfText").mockResolvedValue(PDF_TEXT);
-    const r = await new Verifier().verify({ bank: "cbe", reference: "FT26140P01YB", accountNumber: "1000560536171" });
+    const r = await new Verifier().verify({ bank: "cbe", reference: "FT26SAMPLE01", accountNumber: "1000000006171" });
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(String(fetchMock.mock.calls[0][0])).toBe("https://apps.cbe.com.et:100/?id=FT26140P01YB60536171");
+    expect(String(fetchMock.mock.calls[0][0])).toBe("https://apps.cbe.com.et:100/?id=FT26SAMPLE0100006171");
     expect(r.ok).toBe(true);
     if (r.ok) {
       expect(r.value.verified).toBe(true);
       expect(r.value.amount).toBe(20000);
-      expect(r.value.reference).toBe("FT26140P01YB");
+      expect(r.value.reference).toBe("FT26SAMPLE01");
     }
   });
 
   it("the legacy path still runs the gate: a PDF for another FT reference is rejected", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response("%PDF-1.4 x", { status: 200 })));
-    vi.spyOn(CBEParser, "extractPdfText").mockResolvedValue(PDF_TEXT.replace("FT26140P01YB", "FT26999ZZZZZ"));
-    const r = await new Verifier().verify({ bank: "cbe", reference: "FT26140P01YC", accountNumber: "1000560536171" });
+    vi.spyOn(CBEParser, "extractPdfText").mockResolvedValue(PDF_TEXT.replace("FT26SAMPLE01", "FT26999ZZZZZ"));
+    const r = await new Verifier().verify({ bank: "cbe", reference: "FT26SAMPLE02", accountNumber: "1000000006171" });
     expect(r.ok && r.value.verified).toBeFalsy();
   });
 
   it("asks for the account (no bank request) when an FT reference comes alone", async () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
-    const r = await new Verifier().verify({ bank: "cbe", reference: "FT26140P01YD" });
+    const r = await new Verifier().verify({ bank: "cbe", reference: "FT26SAMPLE03" });
     expect(r.ok).toBe(false);
     expect(fetchMock).not.toHaveBeenCalled();
   });
@@ -223,7 +223,7 @@ describe("allowlist derived from the formats", () => {
     expect(hosts.has("apps.cbe.com.et:100")).toBe(true); // CBE legacy, still tried
     expect(hosts.has("receipt.ebirr.com")).toBe(true); // eBirr tenants
     expect(isAllowedUrl("https://mb.cbe.com.et/api/v1/transactions/public/transaction-detail/x")).toBe(true);
-    expect(isAllowedUrl("https://apps.cbe.com.et:100/?id=FT26140P01YB60536171")).toBe(true);
+    expect(isAllowedUrl("https://apps.cbe.com.et:100/?id=FT26SAMPLE0100006171")).toBe(true);
   });
 
   it("excludes deprecated and parser-less format hosts, and look-alikes", () => {
@@ -250,7 +250,7 @@ describe("GET /api/receipt", () => {
     const fetchSpy = vi.fn();
     vi.stubGlobal("fetch", fetchSpy);
     for (const [bank, ref, host] of [
-      ["cbe", "fHCxyV4mg5pRIwEkJO", "mbreciept.cbe.com.et"],
+      ["cbe", "fHCxExampleRcpt01", "mbreciept.cbe.com.et"],
       ["dashen", "B22WDTI2619100WH", "receipts.dashenbanksc.com"],
     ] as const) {
       const r = await receiptGET(new NextRequest(`https://cheki.et/api/receipt?bank=${bank}&reference=${ref}`, { headers: freshIp() }));
@@ -290,7 +290,7 @@ describe("GET /api/receipt", () => {
 
   it("answers 502 (never the body) when a PDF format returns something that is not a PDF", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response("<html><script>alert(1)</script></html>", { status: 200, headers: { "content-type": "application/pdf" } })));
-    const r = await receiptGET(new NextRequest("https://cheki.et/api/receipt?bank=cbe&reference=FT26140P01YB&account=1000560536171", { headers: freshIp() }));
+    const r = await receiptGET(new NextRequest("https://cheki.et/api/receipt?bank=cbe&reference=FT26SAMPLE01&account=1000000006171", { headers: freshIp() }));
     expect(r.status).toBe(502);
     expect(r.headers.get("content-type")).toMatch(/application\/json/);
     expect(await r.text()).not.toContain("<script>");
@@ -298,7 +298,7 @@ describe("GET /api/receipt", () => {
 
   it("serves a real PDF as an inert attachment", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response("%PDF-1.4 legacy", { status: 200, headers: { "content-type": "text/html" } })));
-    const r = await receiptGET(new NextRequest("https://cheki.et/api/receipt?bank=cbe&reference=FT26140P01YB&account=1000560536171", { headers: freshIp() }));
+    const r = await receiptGET(new NextRequest("https://cheki.et/api/receipt?bank=cbe&reference=FT26SAMPLE01&account=1000000006171", { headers: freshIp() }));
     expect(r.status).toBe(200);
     expect(r.headers.get("content-type")).toBe("application/pdf");
     expect(r.headers.get("content-disposition")).toBe('attachment; filename="cbe-receipt.pdf"');
@@ -310,7 +310,7 @@ describe("GET /api/receipt", () => {
   it("refuses an FT reference without the account (400, no bank request)", async () => {
     const fetchSpy = vi.fn();
     vi.stubGlobal("fetch", fetchSpy);
-    const r = await receiptGET(new NextRequest("https://cheki.et/api/receipt?bank=cbe&reference=FT26140P01YB", { headers: freshIp() }));
+    const r = await receiptGET(new NextRequest("https://cheki.et/api/receipt?bank=cbe&reference=FT26SAMPLE01", { headers: freshIp() }));
     expect(r.status).toBe(400);
     expect(fetchSpy).not.toHaveBeenCalled();
   });

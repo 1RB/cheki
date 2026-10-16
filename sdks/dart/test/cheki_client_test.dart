@@ -50,12 +50,12 @@ void main() {
   group('models decode the fixtures', () {
     test('verified', () async {
       final (c, calls) = clientFor([() => respond('verify_verified')]);
-      final r = await c.verify(bank: 'cbe', reference: 'FT26140P01YB', accountNumber: '1000560536171');
+      final r = await c.verify(bank: 'cbe', reference: 'FT26SAMPLE01', accountNumber: '1000000006171');
       expect(r.isVerified, isTrue);
       expect(r.amount, 1250.5);
       expect(r.cached, isFalse);
       expect(jsonDecode(calls.single.body),
-          {'bank': 'cbe', 'reference': 'FT26140P01YB', 'accountNumber': '1000560536171'});
+          {'bank': 'cbe', 'reference': 'FT26SAMPLE01', 'accountNumber': '1000000006171'});
     });
 
     test('decodedOnly is success but not verified; QR-only sends no reference', () async {
@@ -76,7 +76,7 @@ void main() {
     test('batch', () async {
       final (c, _) = clientFor([() => respond('batch_mixed')]);
       final b = await c.verifyBatch(const [
-        BatchReceipt(bank: 'cbe', reference: 'A1', accountNumber: '1000560536171'),
+        BatchReceipt(bank: 'cbe', reference: 'A1', accountNumber: '1000000006171'),
         BatchReceipt(bank: 'boa', qrData: 'q'),
         BatchReceipt(bank: 'telebirr', reference: 'B2'),
       ]);

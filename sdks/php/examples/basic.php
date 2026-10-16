@@ -39,7 +39,7 @@ try {
 
 // --- One receipt. Only isVerified() means the bank confirmed it.
 // CBE: the receipt link or Receipt ID. Older FT-only receipts (legacy) also need
-// the account: verify(bank: 'cbe', reference: 'FT26140P01YB', accountNumber: '1000560536171').
+// the account: verify(bank: 'cbe', reference: 'FT26SAMPLE01', accountNumber: '1000000006171').
 $result = $client->verify(bank: 'cbe', reference: 'https://mbreciept.cbe.com.et/fHCxExampleRcpt01');
 
 if ($result->isVerified()) {

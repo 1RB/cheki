@@ -46,7 +46,7 @@ Use `isVerified(result)` rather than `result.success`.
 ### BOA QR codes
 
 ```ts
-const r = await cheki.verify("boa", "", { qrData: "3cHRaxVjn/pySp..." });
+const r = await cheki.verify("boa", "", { qrData: "KPHO0k4YlK/5s6..." });
 ```
 
 ### Batch (max 20)
@@ -108,8 +108,8 @@ Only `cbe`, `zemen`, `dashen` and `zamzam` are supported; anything else throws `
 Older CBE receipts that only show an FT reference still work as a legacy format: pass the receiving account (at least the last 8 digits). CBE's older receipt service is often unreachable, so prefer the receipt link when you have it.
 
 ```ts
-await cheki.verify("cbe", "FT26140P01YB", { accountNumber: "1000560536171" });
-cheki.getReceiptUrl("cbe", "FT26140P01YB", "1000560536171"); // the bank's PDF
+await cheki.verify("cbe", "FT26SAMPLE01", { accountNumber: "1000000006171" });
+cheki.getReceiptUrl("cbe", "FT26SAMPLE01", "1000000006171"); // the bank's PDF
 ```
 
 ## Errors

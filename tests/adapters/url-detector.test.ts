@@ -14,7 +14,7 @@ describe("isUrl", () => {
   });
 
   it("rejects plain references", () => {
-    expect(isUrl("FT26140P01YB")).toBe(false);
+    expect(isUrl("FT26SAMPLE01")).toBe(false);
   });
 
   it("rejects empty strings", () => {
@@ -25,32 +25,32 @@ describe("isUrl", () => {
 describe("detectBankFromUrl", () => {
   it("detects CBE share links as CBE (current Receipt ID format)", () => {
     // The bank is "cbe"; the verifier picks the Receipt ID format from the token's shape.
-    const result = detectBankFromUrl("https://mbreciept.cbe.com.et/fHCxyV4mg5p");
+    const result = detectBankFromUrl("https://mbreciept.cbe.com.et/fHCxExample");
     expect(result).not.toBeNull();
     expect(result!.bank).toBe("cbe");
-    expect(result!.reference).toBe("fHCxyV4mg5p");
+    expect(result!.reference).toBe("fHCxExample");
     expect(result!.accountNumber).toBeUndefined();
     expect(detectBankFromUrl("https://mbreciept.cbe.com.et/v2-hfHCxExample0001")).toEqual({ bank: "cbe", reference: "v2-hfHCxExample0001" });
   });
 
   it("reads a dashed mbreciept link as the legacy FT reference + 8-digit account", () => {
-    expect(detectBankFromUrl("https://mbreciept.cbe.com.et/ft26140p01yb-60536171")).toEqual({
+    expect(detectBankFromUrl("https://mbreciept.cbe.com.et/ft26sample01-00006171")).toEqual({
       bank: "cbe",
-      reference: "FT26140P01YB",
-      accountNumber: "60536171",
+      reference: "FT26SAMPLE01",
+      accountNumber: "00006171",
     });
   });
 
   it("does not treat a look-alike CBE host as CBE", () => {
-    expect(detectBankFromUrl("https://mbreciept.cbe.com.et.evil.example/fHCxyV4mg5p")?.bank).not.toBe("cbe");
+    expect(detectBankFromUrl("https://mbreciept.cbe.com.et.evil.example/fHCxExample")?.bank).not.toBe("cbe");
   });
 
   it("detects CBE legacy URLs with account suffix", () => {
-    const result = detectBankFromUrl("https://apps.cbe.com.et:100/?id=FT26140P01YB60536171");
+    const result = detectBankFromUrl("https://apps.cbe.com.et:100/?id=FT26SAMPLE0100006171");
     expect(result).not.toBeNull();
     expect(result!.bank).toBe("cbe");
-    expect(result!.reference).toBe("FT26140P01YB");
-    expect(result!.accountNumber).toBe("60536171");
+    expect(result!.reference).toBe("FT26SAMPLE01");
+    expect(result!.accountNumber).toBe("00006171");
   });
 
   it("detects Telebirr receipt URLs", () => {
@@ -90,10 +90,10 @@ describe("detectBankFromUrl", () => {
   });
 
   it("detects Dashen PDF receipt URLs", () => {
-    const result = detectBankFromUrl("https://api.dashensuperapp.com/receipts/Within-Dashen-Transfer-B22WDTI261620001.pdf");
+    const result = detectBankFromUrl("https://api.dashensuperapp.com/receipts/Within-Dashen-Transfer-B22WDTI000000001.pdf");
     expect(result).not.toBeNull();
     expect(result!.bank).toBe("dashen");
-    expect(result!.reference).toBe("B22WDTI261620001");
+    expect(result!.reference).toBe("B22WDTI000000001");
   });
 
   it("detects Awash receipt URLs", () => {

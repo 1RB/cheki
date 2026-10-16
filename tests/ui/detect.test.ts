@@ -12,7 +12,7 @@ describe("detectInput", () => {
   });
 
   it("a current CBE link is CBE, current format, no extra field", () => {
-    const d = detectInput("https://mbreciept.cbe.com.et/fHCxyV4mg5pRIwEkJO");
+    const d = detectInput("https://mbreciept.cbe.com.et/fHCxExampleRcpt01");
     expect(d.kind).toBe("url");
     expect(d.bank?.code).toBe("cbe");
     expect(d.olderFormat).toBe(false);
@@ -20,7 +20,7 @@ describe("detectInput", () => {
   });
 
   it("a legacy CBE FT reference opens the account field", () => {
-    const d = detectInput("FT26140P01YB");
+    const d = detectInput("FT26SAMPLE01");
     expect(d.kind).toBe("reference");
     expect(d.bank?.code).toBe("cbe");
     expect(d.olderFormat).toBe(true);
@@ -29,7 +29,7 @@ describe("detectInput", () => {
   });
 
   it("a legacy CBE link carries its account, so no extra field", () => {
-    const d = detectInput("https://apps.cbe.com.et:100/?id=FT26140P01YB60536171");
+    const d = detectInput("https://apps.cbe.com.et:100/?id=FT26SAMPLE0100006171");
     expect(d.bank?.code).toBe("cbe");
     expect(d.needsAccount).toBe(false);
   });
@@ -59,7 +59,7 @@ describe("detectInput", () => {
   });
 
   it("the bank override wins over detection for a reference, never for a link", () => {
-    expect(detectInput("FT26140P01YB", { overrideBank: "dashen" }).bank?.code).toBe("dashen");
+    expect(detectInput("FT26SAMPLE01", { overrideBank: "dashen" }).bank?.code).toBe("dashen");
     expect(detectInput("https://mbreciept.cbe.com.et/abcdefghijk", { overrideBank: "dashen" }).bank?.code).toBe("cbe");
   });
 
@@ -72,9 +72,9 @@ describe("detectInput", () => {
   });
 
   it("extraFieldProblem asks for what the format needs", () => {
-    const d = detectInput("FT26140P01YB");
+    const d = detectInput("FT26SAMPLE01");
     expect(extraFieldProblem(d, "123")).toBe("account");
-    expect(extraFieldProblem(d, "60536171")).toBeNull();
+    expect(extraFieldProblem(d, "00006171")).toBeNull();
   });
 
   it("only live banks are detected", () => {

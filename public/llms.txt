@@ -23,7 +23,7 @@ cheki verifies Ethiopian bank and mobile money receipts by fetching public bank 
 POST https://cheki.et/api/verify
 Body: { "bank": "cbe", "reference": "https://mbreciept.cbe.com.et/fHCxExampleRcpt01" }
 Older CBE receipt with only an FT reference (legacy format):
-Body: { "bank": "cbe", "reference": "FT26140P01YB", "accountNumber": "1000560536171" }
+Body: { "bank": "cbe", "reference": "FT26SAMPLE01", "accountNumber": "1000000006171" }
 Lead with each bank's current format: GET /api/banks lists every bank's "formats",
 current first, with the inputs each one needs.
 No authentication required. Free. Per-IP rate limits: verify 30 per
@@ -71,7 +71,7 @@ cheki fetches these URLs, parses the response, and returns structured JSON. That
 
 ## Reference number formats
 
-- CBE: Receipt ID from the receipt link or QR code (fHCx... or v2-...). Older receipts: "FT" followed by 10 alphanumeric characters (e.g., FT26140P01YB), which also needs the account
+- CBE: Receipt ID from the receipt link or QR code (fHCx... or v2-...). Older receipts: "FT" followed by 10 alphanumeric characters (e.g., FT26SAMPLE01), which also needs the account
 - Dashen: FT Ref, 16 letters and digits (e.g., B22WDTI2619100WH), not the longer Transaction Ref
 - Telebirr: Starts with 2-3 letter prefix (DET, CHQ, DAB, DEL, ADQ) followed by 6-8 alphanumeric characters
 - BOA: Alphanumeric reference starting with 2 letters

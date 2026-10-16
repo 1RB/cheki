@@ -66,19 +66,19 @@ export class CBEParser extends BaseParser {
     let branch: string | undefined;
     let reason: string | undefined;
 
-    // Payer: "PayerMr Mohammed..." or "Payer\nMr Mohammed..." or "Payer Mr Mohammed..."
+    // Payer: "PayerMr Abebe..." or "Payer\nMr Abebe..." or "Payer Mr Abebe..."
     const payerMatch = text.match(/Payer\s*(?:\n+|\s+)?(Mr\s+|Mrs\s+|Ms\s+)?(.+?)(?:\n|$|Account|Receiver)/);
     if (payerMatch) {
       senderName = ((payerMatch[1] || "") + (payerMatch[2] || "")).trim();
     }
 
-    // Receiver: "ReceiverSAMI ADIL ZEKARIA" or "Receiver\nSAMI..."
+    // Receiver: "ReceiverTIGIST ALEMU" or "Receiver\nTIGIST..."
     const receiverMatch = text.match(/Receiver\s*(?:\n+|\s+)?(.+?)(?:\n|$|Account|Payment)/);
     if (receiverMatch) {
       receiverName = receiverMatch[1].trim();
     }
 
-    // Accounts: "Account1****1685" - find all
+    // Accounts: "Account1****4321" - find all
     const accountMatches = text.matchAll(/Account\s*([0-9*]+)/g);
     const accounts = Array.from(accountMatches).map((m) => m[1]);
     if (accounts.length >= 1) senderAccount = accounts[0];
@@ -99,7 +99,7 @@ export class CBEParser extends BaseParser {
       if (dateMatch[3]) date += ` ${dateMatch[3]}`;
     }
 
-    // Reference: "Reference No. (VAT Invoice No)FT26140P01YB" or with space
+    // Reference: "Reference No. (VAT Invoice No)FT26SAMPLE01" or with space
     const refMatch = text.match(/Reference No\.?\s*\(VAT Invoice No\)?\s*(\S+)/);
     if (refMatch) reference = refMatch[1];
 

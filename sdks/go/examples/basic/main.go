@@ -50,7 +50,7 @@ func main() {
 	result, err := client.Verify(ctx, cheki.VerifyOptions{
 		Bank:      "cbe",
 		Reference: "https://mbreciept.cbe.com.et/fHCxExampleRcpt01",
-		// Older FT-only CBE receipt (legacy): Reference: "FT26140P01YB", AccountNumber: "1000560536171".
+		// Older FT-only CBE receipt (legacy): Reference: "FT26SAMPLE01", AccountNumber: "1000000006171".
 	})
 	var apiErr *cheki.APIError
 	switch {

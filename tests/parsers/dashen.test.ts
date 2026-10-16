@@ -9,9 +9,9 @@ describe("DashenParser", () => {
 
   describe("buildUrl", () => {
     it("builds URL with FT/B22 reference", () => {
-      const url = parser.buildUrl("B22WDTI261620001");
+      const url = parser.buildUrl("B22WDTI000000001");
       expect(url).toBe(
-        "https://receipts.dashenbanksc.com/receipt/B22WDTI261620001",
+        "https://receipts.dashenbanksc.com/receipt/B22WDTI000000001",
       );
     });
   });
@@ -20,30 +20,30 @@ describe("DashenParser", () => {
     it("parses a valid Dashen receipt text", () => {
       const sampleText =
         "Dashen Bank Super App Electronic Value Added Tax Receipt " +
-        "Sender Name: Akrem Yusuf Ali " +
+        "Sender Name: Nahom Bekele Abera " +
         "Sender Account Number: 2912******911 " +
         "Transaction Channel: Dashen Bank Super App " +
         "Service Type:Within Dashen Transfer " +
         "Narrative: transfer to dashen " +
-        "Receiver Name: Arkan Intrernational Plc (hilcoe) " +
-        "Receiver Account Number: 7938725387911 " +
+        "Receiver Name: Sample Trading Plc (main) " +
+        "Receiver Account Number: 7900000007911 " +
         "Instituton Name: Dashen Bank Sc " +
-        "Transaction Reference: B22WDTI261620001 " +
-        "Transfer Reference: WDTI5921680061225851717 " +
+        "Transaction Reference: B22WDTI000000001 " +
+        "Transfer Reference: WDTI0000000000000000001 " +
         "Transaction Date: Jun 11, 2026, 08:45:50 am " +
         "Transaction Details Transaction Amount ETB 20,475.00 " +
         "Service Charge ETB 0.00 Total ETB 20,475.00";
 
       const result = DashenParser.parsePdfText(sampleText);
       expect(result.verified).toBe(true);
-      expect(result.senderName).toBe("Akrem Yusuf Ali");
+      expect(result.senderName).toBe("Nahom Bekele Abera");
       expect(result.senderAccount).toBe("2912******911");
-      expect(result.receiverName).toBe("Arkan Intrernational Plc (hilcoe)");
-      expect(result.receiverAccount).toBe("7938725387911");
+      expect(result.receiverName).toBe("Sample Trading Plc (main)");
+      expect(result.receiverAccount).toBe("7900000007911");
       expect(result.amount).toBe(20475);
       expect(result.currency).toBe("ETB");
       expect(result.date).toBe("Jun 11, 2026, 08:45:50 am");
-      expect(result.reference).toBe("B22WDTI261620001");
+      expect(result.reference).toBe("B22WDTI000000001");
       expect(result.reason).toBe("transfer to dashen");
     });
 
@@ -79,7 +79,7 @@ describe("DashenParser", () => {
       <div><span>Service Type:</span><span>Transfer to Dashen Bank</span></div>
       <div><span>Transaction Channel:</span><span>Dashen Bank Super App</span></div>
       <div><span>Narrative:</span><span>Course fee</span></div>
-      <div><span>Receiver Name:</span><span>Arkan Intrernational Plc (hilcoe) &amp; Co</span></div>
+      <div><span>Receiver Name:</span><span>Sample Trading Plc (main) &amp; Co</span></div>
       <div><span>Beneficiary Bank Name:</span><span>Dashen Bank Sc</span></div>
       <div><span>Institution Name:</span><span>Dashen Bank sc</span></div>
       <div><span>Receiver Account Number:</span><span>7938******911</span></div>
@@ -95,7 +95,7 @@ describe("DashenParser", () => {
       const result = parser.parse(html, "text/html");
       expect(result.verified).toBe(true);
       expect(result.senderName).toBe("Test Sender");
-      expect(result.receiverName).toBe("Arkan Intrernational Plc (hilcoe) & Co");
+      expect(result.receiverName).toBe("Sample Trading Plc (main) & Co");
       expect(result.receiverAccount).toBe("7938******911");
       expect(result.amount).toBe(12600);
       expect(result.reference).toBe("B22WDTI2619100WH");

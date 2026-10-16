@@ -79,7 +79,7 @@ describe("detectInput", () => {
     expect(detectInput(boaSized).kind).toBe("telebirrQr");
     expect(detectInput(Buffer.alloc(96, 7).toString("base64")).kind).toBe("boaQr");
     expect(detectInput(RECEIPT_URL("DET8FJGUJ4")).kind).toBe("url");
-    expect(detectInput("https://mbreciept.cbe.com.et/fHCxyV4mg5pRIwEkJO").kind).toBe("url");
+    expect(detectInput("https://mbreciept.cbe.com.et/fHCxExampleRcpt01").kind).toBe("url");
   });
 
   it("a malformed Telebirr QR is not treated as one", () => {

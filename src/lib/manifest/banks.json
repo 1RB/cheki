@@ -27,8 +27,8 @@
       "FT (older receipts)"
     ],
     "description": "Commercial Bank of Ethiopia (CBE) is the largest bank in Ethiopia and the most common settlement rail for Ethiopian businesses. New CBE receipts carry a Receipt ID, shared from the CBE app as a mbreciept.cbe.com.et link or QR code, which cheki checks against CBE's own record without an account number. Older receipts that only show an FT reference still work with the last 8 digits of the receiving account.",
-    "referenceFormat": "Receipt ID from the mbreciept.cbe.com.et link or QR code (e.g. fHCxyV4mg5pRIwEkJO, or v2-... on newer receipts). Older receipts: FT followed by 10 letters and digits (e.g. FT26140P01YB) plus the last 8 digits of the receiving account.",
-    "referenceExample": "https://mbreciept.cbe.com.et/fHCxyV4mg5pRIwEkJO",
+    "referenceFormat": "Receipt ID from the mbreciept.cbe.com.et link or QR code (e.g. fHCxExampleRcpt01, or v2-... on newer receipts). Older receipts: FT followed by 10 letters and digits (e.g. FT26SAMPLE01) plus the last 8 digits of the receiving account.",
+    "referenceExample": "https://mbreciept.cbe.com.et/fHCxExampleRcpt01",
     "howToVerify": [
       "Ask for the receipt link or QR code from the CBE app (mbreciept.cbe.com.et/...), or copy its Receipt ID",
       "Paste the link or Receipt ID into cheki. No account number is needed",
@@ -44,7 +44,7 @@
     "faq": [
       {
         "q": "What is a CBE Receipt ID?",
-        "a": "New CBE receipts are shared from the CBE app as a link like https://mbreciept.cbe.com.et/fHCxyV4mg5pRIwEkJO, also printed as a QR code. The last part of the link is the Receipt ID. cheki checks it against CBE's own record."
+        "a": "New CBE receipts are shared from the CBE app as a link like https://mbreciept.cbe.com.et/fHCxExampleRcpt01, also printed as a QR code. The last part of the link is the Receipt ID. cheki checks it against CBE's own record."
       },
       {
         "q": "Do I need an account number to verify a CBE receipt?",
@@ -52,7 +52,7 @@
       },
       {
         "q": "Can I still verify an older CBE FT reference?",
-        "a": "cheki still tries it: enter the FT reference (e.g. FT26140P01YB) and the last 8 digits of the receiving account. CBE's older receipt host is often unreachable, so if that check fails, ask the sender for the receipt link from the CBE app."
+        "a": "cheki still tries it: enter the FT reference (e.g. FT26SAMPLE01) and the last 8 digits of the receiving account. CBE's older receipt host is often unreachable, so if that check fails, ask the sender for the receipt link from the CBE app."
       },
       {
         "q": "Does CBE charge for receipt verification?",
@@ -92,7 +92,7 @@
           {
             "name": "receiptId",
             "label": "Receipt ID or receipt link",
-            "example": "https://mbreciept.cbe.com.et/fHCxyV4mg5pRIwEkJO"
+            "example": "https://mbreciept.cbe.com.et/fHCxExampleRcpt01"
           }
         ],
         "refPattern": {
@@ -126,7 +126,7 @@
           {
             "name": "reference",
             "label": "FT reference",
-            "example": "FT26140P01YB"
+            "example": "FT26SAMPLE01"
           },
           {
             "name": "account",
@@ -331,7 +331,7 @@
       "Various"
     ],
     "description": "Bank of Abyssinia (BOA) is one of Ethiopia's largest private banks. BOA publishes receipt data as JSON via a public API endpoint that requires the transaction reference and the last 5 digits of the account on the receipt. A full BOA slip link (cs.bankofabyssinia.com/slip/?trx=...) can carry both: cheki splits the reference and the 5 digits out of it. For inter-bank transfers (BOA to CBE, Dashen, etc.), the receipt QR code is AES-256-CBC encrypted: cheki decrypts it to read the reference and receiving account, then confirms the receipt with BOA. If BOA cannot be reached, the result is marked as decoded from the QR and not confirmed. No Selenium or headless browser required.",
-    "referenceFormat": "Alphanumeric reference starting with 2 letters (varies by transaction type). Inter-bank transfers use FT references (e.g., FT252003JZPP).",
+    "referenceFormat": "Alphanumeric reference starting with 2 letters (varies by transaction type). Inter-bank transfers use FT references (e.g., FT25SAMPLE06).",
     "referenceExample": "AB12345678",
     "howToVerify": [
       "For BOA-to-BOA receipts: paste the BOA slip link, or enter the transaction reference and the last 5 digits of the account on the receipt",
@@ -405,7 +405,7 @@
           {
             "name": "reference",
             "label": "Reference",
-            "example": "FT252003JZPP"
+            "example": "FT25SAMPLE06"
           },
           {
             "name": "account",
@@ -673,8 +673,8 @@
     "initials": "AB",
     "notes": "URL fully reverse engineered with 18 samples (Apr 2025-Jun 2026). URL format: -{base36(txID)}-{base36(counter)}. txID has YYMMDDHHMM+5-digit-seq structure (2026+). Counter is monotonically increasing with accelerating rate (4.4/sec in 2025 to 7.5/sec in Jun 2026). Share link sent via SMS automatically. 2 successful brute-force proofs (May 14, Apr 1). Backend: MoonlightMBanking (Java) behind F5 BIG-IP WAF. Need more samples from underrepresented periods.",
     "description": "Awash Bank publishes transaction receipts as public HTML pages on awashpay.awashbank.com. The share link has a two-part token: the first part is the numeric Transaction ID encoded in base-36, and the second part is a server-side counter that increases with transaction time. The link is sent automatically via SMS after every transaction. You can also share it from the Awash app.",
-    "referenceFormat": "Awash share link from SMS (e.g. https://awashpay.awashbank.com:8225/-2KDL95Z0NR-4U61O6). The first segment is base-36 of the Transaction ID; the second segment is a server counter.",
-    "referenceExample": "2KDL95Z0NR-4U61O6",
+    "referenceFormat": "Awash share link from SMS (e.g. https://awashpay.awashbank.com:8225/-2KDL95XE81-4U0000). The first segment is base-36 of the Transaction ID; the second segment is a server counter.",
+    "referenceExample": "2KDL95XE81-4U0000",
     "howToVerify": [
       "Find the receipt link in your Awash SMS message (sent automatically after every transaction)",
       "Or open the Awash app and share the receipt as a link",
@@ -689,7 +689,7 @@
     "faq": [
       {
         "q": "Why doesn't the visible Transaction ID work?",
-        "a": "Awash receipt URLs require a two-part share token. The first part is the numeric Transaction ID encoded in base-36 (e.g. 260607112275735 becomes 2KDL95Z0NR). The second part is a server-side counter that validates the share. Use the share link generated by the Awash app."
+        "a": "Awash receipt URLs require a two-part share token. The first part is the numeric Transaction ID encoded in base-36 (e.g. 260607112200001 becomes 2KDL95XE81). The second part is a server-side counter that validates the share. Use the share link generated by the Awash app."
       },
       {
         "q": "Where is the share link in the Awash app?",
@@ -705,7 +705,7 @@
       },
       {
         "q": "What is the Transaction ID structure?",
-        "a": "Since 2026, the Transaction ID has a fixed format: YYMMDDHHMM followed by a 5-digit per-minute sequence number. For example, 260607112275735 means 2026-06-07 at 11:22, sequence 75735 within that minute. Transactions before 2026 use a different hex-like format. The transaction date and time are encoded directly in the Transaction ID."
+        "a": "Since 2026, the Transaction ID has a fixed format: YYMMDDHHMM followed by a 5-digit per-minute sequence number. For example, 260607112200001 means 2026-06-07 at 11:22, sequence 00001 within that minute. Transactions before 2026 use a different hex-like format. The transaction date and time are encoded directly in the Transaction ID."
       },
       {
         "q": "Where do I find the share link?",
@@ -740,7 +740,7 @@
           {
             "name": "link",
             "label": "Share link",
-            "example": "https://awashpay.awashbank.com:8225/-2KDL95Z0NR-4U61O6"
+            "example": "https://awashpay.awashbank.com:8225/-2KDL95XE81-4U0000"
           }
         ],
         "responseType": "html",

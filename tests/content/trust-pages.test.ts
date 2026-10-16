@@ -107,7 +107,7 @@ describe("privacy matches the code", () => {
     const known = new Set(["/", "/banks/cbe"]);
     expect(analyticsUrl("https://cheki.et/banks/cbe?ref=FT123#x", known)).toBe("https://cheki.et/banks/cbe");
     expect(analyticsUrl("https://cheki.et/api/verify", known)).toBeNull();
-    expect(analyticsUrl("https://cheki.et/FT26140P01YB", known)).toBeNull();
+    expect(analyticsUrl("https://cheki.et/FT26SAMPLE01", known)).toBeNull();
     expect(t).toMatch(/no cookies/);
   });
 

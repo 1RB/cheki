@@ -67,13 +67,13 @@ export const articles: Article[] = [
     updated: "2026-10-12",
     readTime: "4 min",
     content: [
-      { type: "text", text: "Commercial Bank of Ethiopia recently launched a new receipt sharing system. When you complete a transfer in the CBE mobile app, you can now share a short link like https://mbreciept.cbe.com.et/fHCxyV4mg5pRIwEkJO. The recipient opens this link and sees the full receipt in their browser, no app required." },
+      { type: "text", text: "Commercial Bank of Ethiopia recently launched a new receipt sharing system. When you complete a transfer in the CBE mobile app, you can now share a short link like https://mbreciept.cbe.com.et/fHCxExampleRcpt01. The recipient opens this link and sees the full receipt in their browser, no app required." },
       { type: "text", text: "This is a significant upgrade from the old system, which required the FT reference number and the last 8 digits of the receiving account to construct a receipt URL. The new system uses a single short ID and returns clean JSON data instead of a PDF." },
 
       { type: "heading", text: "What the QR code contains" },
       { type: "text", text: "The QR code on a CBE receipt encodes a URL in this format:" },
       { type: "code", code: "https://mbreciept.cbe.com.et/{SHORT_ID}" },
-      { type: "text", text: "The short ID is a random string like fHCxyV4mg5pRIwEkJO. It maps to a single transaction on CBE's backend. When you scan the QR code, you get this URL, which you can paste into cheki's URL input mode to verify instantly." },
+      { type: "text", text: "The short ID is a random string like fHCxExampleRcpt01. It maps to a single transaction on CBE's backend. When you scan the QR code, you get this URL, which you can paste into cheki's URL input mode to verify instantly." },
 
       { type: "callout", variant: "tip", title: "Try it now", text: "Open cheki.et and paste any mbreciept.cbe.com.et link into the receipt field. cheki calls CBE's JSON API and returns the full transaction data in under 2 seconds." },
 
@@ -81,7 +81,7 @@ export const articles: Article[] = [
       { type: "text", text: "The mbreciept.cbe.com.et page is a Nuxt.js single-page app. When it loads, it calls a JSON API at a different domain:" },
       { type: "code", lang: "http", code: "GET https://Mb.cbe.com.et/api/v1/transactions/public/transaction-detail/{SHORT_ID}\n\nHeaders:\n  X-App-ID: d1292e42-7400-49de-a2d3-9731caa4c819\n  X-App-Version: 0a01980b-9859-1369-8198-59f403820000" },
       { type: "text", text: "The response is structured JSON with all the transaction details:" },
-      { type: "code", lang: "json", code: '{\n  "id": "FT2614977L8S",\n  "transactionType": "ACNX",\n  "debitAccountNo": "1********8348",\n  "creditAccountNo": "1********6171",\n  "amountCredited": "1300.00",\n  "creditCurrency": "ETB",\n  "dateTimes": ["2026-05-29T08:30:00Z"],\n  "debitAccountHolder": "Raeed Ansar Yusuf",\n  "creditAccountHolder": "Sami Adil Zekaria",\n  "paymentDetails": ["football 1mo and extratime"]\n}' },
+      { type: "code", lang: "json", code: '{\n  "id": "FT26SAMPLE01",\n  "transactionType": "ACNX",\n  "debitAccountNo": "1********4321",\n  "creditAccountNo": "1********6171",\n  "amountCredited": "1250.50",\n  "creditCurrency": "ETB",\n  "dateTimes": ["Thu 2026-10-01  EAT (UTC+03:00)"],\n  "debitAccountHolder": "ABEBE KEBEDE",\n  "creditAccountHolder": "TIGIST ALEMU",\n  "paymentDetails": ["Invoice 42"]\n}' },
       { type: "text", text: "cheki uses this API directly. When you paste a mbreciept link, cheki extracts the short ID, calls the JSON API, and returns the parsed result. No PDF parsing needed, which makes it faster and more reliable than the old endpoint." },
 
       { type: "heading", text: "Old vs new CBE receipt system" },
@@ -118,10 +118,10 @@ export const articles: Article[] = [
       { type: "callout", variant: "warning", title: "X-App-ID headers", text: "The new CBE API requires hardcoded X-App-ID and X-App-Version headers. These are embedded in the mbreciept.cbe.com.et JavaScript bundle. If CBE rotates these headers, cheki will need to update them. The old PDF endpoint has no such requirement." },
 
       { type: "heading", text: "Inside the short ID: what we found" },
-      { type: "text", text: "We reverse-engineered the token format. The short ID in a v1 mbreciept URL (like fHCxyV4mg5pRIwEkJO) is standard base64url encoding of 13 bytes. The first 3 bytes are a fixed header (7c70b1, which is why all v1 tokens start with \"fHCx\"). The remaining 10 bytes are an encrypted payload containing the transaction's FT reference." },
+      { type: "text", text: "We reverse-engineered the token format. The short ID in a v1 mbreciept URL (like fHCxExampleRcpt01) is standard base64url encoding of 13 bytes. The first 3 bytes are a fixed header (7c70b1, which is why all v1 tokens start with \"fHCx\"). The remaining 10 bytes are an encrypted payload containing the transaction's FT reference." },
       { type: "text", text: "The encryption uses a keyed cipher with per-token seeding. We verified this by comparing multiple tokens: the same plaintext byte at the same position produces different ciphertext bytes across receipts. This rules out simple encoding schemes (XOR, base-N packing, substitution) and confirms the payload is cryptographically protected." },
       { type: "text", text: "CBE's server validates tokens cryptographically. If you submit an old FT reference to the new API, it rejects it with \"Security Alert: Invalid or tampered legacy token!\" This is intentional. The new system prevents receipt enumeration. With the old system, anyone could guess FT references and pull receipts. With tokens, you can only verify receipts that were explicitly shared with you." },
-      { type: "text", text: "CBE has already shipped a v2 token format. Newer receipts use URLs like https://mbreciept.cbe.com.et/v2-hfHCxFU3NsED8vFiF7hS, which carry the v2- prefix. The v2 payload is 15 bytes (vs v1's 13) and uses a different layout. Both v1 and v2 tokens work on the same API endpoint. cheki passes the full token through unchanged, so both formats work automatically." },
+      { type: "text", text: "CBE has already shipped a v2 token format. Newer receipts use URLs like https://mbreciept.cbe.com.et/v2-hfHCxExample0001, which carry the v2- prefix. The v2 payload is 15 bytes (vs v1's 13) and uses a different layout. Both v1 and v2 tokens work on the same API endpoint. cheki passes the full token through unchanged, so both formats work automatically." },
       { type: "callout", variant: "info", title: "Can you generate a token from an FT reference?", text: "No. The payload is encrypted with a server-side secret. There is no public endpoint to convert FT references to tokens, and the CBE mobile app generates tokens server-side at share-time. If you only have an FT reference, you cannot construct a valid mbreciept URL." },
       { type: "callout", variant: "warning", title: "Legacy endpoint status", text: "The old CBE receipt endpoint (apps.cbe.com.et:100) is a legacy format. links.et reports apps.cbe.com.et unreachable since July 2026, and it often does not answer cheki either, though it has answered at times (October 2026). cheki still tries an old FT reference and account suffix, and tells you plainly when CBE does not answer. The reliable fix is to ask the sender for the mbreciept.cbe.com.et link." },
     ],
@@ -209,7 +209,7 @@ export const articles: Article[] = [
         "GET /api/receipt: open the bank's own copy of a receipt",
       ]},
       { type: "text", text: "Compare this to check.et, which requires a business account, an API key generation step, and Authorization headers:" },
-      { type: "code", lang: "bash", code: '# check.et requires all this:\nexport CHECK_ET_API_KEY=chk_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\ncurl -X POST https://api.check.et/api/v1/verify \\\n  -H "Authorization: Bearer $CHECK_ET_API_KEY" \\\n  -H "Content-Type: application/json" \\\n  -d \'{"bank":"cbe","transaction_number":"FT26140P01YB","account_number":"1000560536171"}\'' },
+      { type: "code", lang: "bash", code: '# check.et requires all this:\nexport CHECK_ET_API_KEY=chk_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\ncurl -X POST https://api.check.et/api/v1/verify \\\n  -H "Authorization: Bearer $CHECK_ET_API_KEY" \\\n  -H "Content-Type: application/json" \\\n  -d \'{"bank":"cbe","transaction_number":"FT26SAMPLE01","account_number":"1000000006171"}\'' },
 
       { type: "callout", variant: "success", title: "Migrating from check.et", text: "If you're currently using check.et's API, migrating to cheki is simple. Change the URL from api.check.et to cheki.et, remove the Authorization header, and rename transaction_number to reference and account_number to accountNumber. The response structure is similar." },
 
@@ -296,7 +296,7 @@ export const articles: Article[] = [
       { type: "text", text: "Detection: Verify the transaction reference. If the reference doesn't exist on the bank's system, the receipt is fake. The bank endpoint will return a 404 or error." },
       { type: "text", text: "Reference numbers follow patterns, so a made-up one can look right:" },
       { type: "list", items: [
-        "CBE: new receipts carry a Receipt ID in the mbreciept.cbe.com.et link or QR code; older ones show FT plus 10 letters and digits (e.g. FT26140P01YB)",
+        "CBE: new receipts carry a Receipt ID in the mbreciept.cbe.com.et link or QR code; older ones show FT plus 10 letters and digits (e.g. FT26SAMPLE01)",
         "Telebirr: 10 letters and digits starting with a 2-3 letter prefix (e.g. DET8FJGUJ4)",
         "BOA: the transaction reference plus the last 5 digits of the account on the receipt",
         "Dashen: a 16-character FT Ref (e.g. B22WDTI2619100WH)",
@@ -411,8 +411,8 @@ export const articles: Article[] = [
           ["Geo-blocked", "No"],
         ],
       },
-      { type: "text", text: "Reference format: FT followed by 10 alphanumeric characters. Example: FT26140P01YB" },
-      { type: "code", code: "# Old CBE URL construction\nFT_REFERENCE = 'FT26140P01YB'\nACCOUNT = '1000560536171'\nLAST_8 = ACCOUNT[-8:]  # '60536171'\nURL = f'https://apps.cbe.com.et:100/?id={FT_REFERENCE}{LAST_8}'\n# https://apps.cbe.com.et:100/?id=FT26140P01YB60536171" },
+      { type: "text", text: "Reference format: FT followed by 10 alphanumeric characters. Example: FT26SAMPLE01" },
+      { type: "code", code: "# Old CBE URL construction\nFT_REFERENCE = 'FT26SAMPLE01'\nACCOUNT = '1000000006171'\nLAST_8 = ACCOUNT[-8:]  # '00006171'\nURL = f'https://apps.cbe.com.et:100/?id={FT_REFERENCE}{LAST_8}'\n# https://apps.cbe.com.et:100/?id=FT26SAMPLE0100006171" },
 
       { type: "heading", text: "Telebirr (Ethio Telecom)" },
       {
@@ -454,7 +454,7 @@ export const articles: Article[] = [
           ["Geo-blocked", "No"],
         ],
       },
-      { type: "text", text: "Reference format: Alphanumeric, typically starts with 2 letters. Example: AB12345678 or FT26167ZVPCJ" },
+      { type: "text", text: "Reference format: Alphanumeric, typically starts with 2 letters. Example: AB12345678 or FT26SAMPLE07" },
       { type: "callout", variant: "tip", title: "QR verification works for inter-bank transfers", text: "BOA's online slip API does not recognize inter-bank transfer references (e.g., FT... sent to CBE). However, the QR code on the receipt is an AES-256-CBC encrypted payload that carries the reference and the full receiving account. cheki decrypts it server-side with the key exposed in BOA's receipt web app and asks BOA with those values. Anyone can build such a QR, so a decrypted QR alone is never shown as verified: if BOA cannot be reached, the result is marked as decoded only. See our BOA QR code breakdown for encryption parameters and security analysis." },
       { type: "callout", variant: "tip", title: "No Selenium needed", text: "Unlike the ethiobank_receipts library which requires Chrome WebDriver for BOA, cheki uses BOA's JSON API directly. This works in serverless environments without browser dependencies." },
 
@@ -505,7 +505,7 @@ export const articles: Article[] = [
         ],
       },
       { type: "heading", text: "Transaction ID structure" },
-      { type: "text", text: "The numeric Transaction ID is not random. Since 2026, it has a fixed structure: YYMMDDHHMM followed by a 5-digit per-minute sequence number. For example, Transaction ID 260607112275735 breaks down as:" },
+      { type: "text", text: "The numeric Transaction ID is not random. Since 2026, it has a fixed structure: YYMMDDHHMM followed by a 5-digit per-minute sequence number. For example, Transaction ID 260607112200001 breaks down as:" },
       {
         type: "table",
         headers: ["Component", "Digits", "Value", "Meaning"],
@@ -515,19 +515,19 @@ export const articles: Article[] = [
           ["DD", "2", "07", "Day (7th)"],
           ["HH", "2", "11", "Hour (11)"],
           ["MI", "2", "22", "Minute (22)"],
-          ["SEQ", "5", "75735", "Per-minute sequence number"],
+          ["SEQ", "5", "00001", "Per-minute sequence number"],
         ],
       },
       { type: "text", text: "This means the Transaction ID itself encodes the transaction date and time down to the minute. The 5-digit sequence resets each minute and is not globally monotonic. We verified this against all 13 new-format samples. Transactions before 2026 use a different hex-like format (e.g. E3BF28E4B8C1) that does not follow this structure." },
 
       { type: "heading", text: "URL structure breakdown" },
-      { type: "text", text: "Example share link: https://awashpay.awashbank.com:8225/-2KDL95Z0NR-4U61O6" },
+      { type: "text", text: "Example share link (synthetic values, not a real receipt): https://awashpay.awashbank.com:8225/-2KDL95XE81-4U0000" },
       {
         type: "table",
         headers: ["Segment", "Base-36 value", "Decimal value", "Meaning"],
         rows: [
-          ["Part 1", "2KDL95Z0NR", "260607112275735", "Transaction ID (YYMMDDHHMM + 5-digit seq)"],
-          ["Part 2", "4U61O6", "292535286", "Server counter (increases with time)"],
+          ["Part 1", "2KDL95XE81", "260607112200001", "Transaction ID (YYMMDDHHMM + 5-digit seq)"],
+          ["Part 2", "4U0000", "292253184", "Server counter (increases with time)"],
         ],
       },
       { type: "text", text: "We verified this with 18 real Awash receipts spanning April 2025 to June 2026, covering transaction types including Send To Bank, IPS Bank Transfer, Send to Wallet, Telebirr Transfer, Merchant Payment, and Other Bank Transfer. In every case, converting part 1 from base-36 to decimal produced the exact Transaction ID. The URL is case-insensitive (lowercase works)." },
@@ -581,8 +581,8 @@ export const articles: Article[] = [
         type: "table",
         headers: ["Target date", "Transaction ID", "Predicted P2", "Actual P2", "Offset", "URLs scanned", "Time"],
         rows: [
-          ["2026-05-14", "260514120752793", "277,659,280", "277,776,101", "+116,821", "116,820", "18.3 min"],
-          ["2026-04-01", "260401182242481", "251,236,520", "251,165,242", "-71,278", "65,243", "16.5 min"],
+          ["2026-05-14", "2605141207xxxxx", "277,659,280", "277,776,101", "+116,821", "116,820", "18.3 min"],
+          ["2026-04-01", "2604011822xxxxx", "251,236,520", "251,165,242", "-71,278", "65,243", "16.5 min"],
         ],
       },
       { type: "text", text: "Both scans ran at 66-106 req/sec with zero WAF blocks and less than 0.01% error rate. The server did not rate-limit or block the probing. The April 1 scan was especially efficient because we had a nearby sample from April 2 (just 1 day away) to anchor the prediction." },
@@ -596,8 +596,8 @@ export const articles: Article[] = [
         "Can the counter prediction be improved with more samples from underrepresented time periods?",
       ]},
 
-      { type: "callout", variant: "tip", title: "Help us improve the counter model", text: "We have 18 samples but need more from underrepresented periods (especially March 2026, September-December 2025, and pre-July 2025). If you have Awash SMS messages with receipt links, please share the two-part token (e.g. 2KDL95Z0NR-4U61O6) and the transaction date/time on GitHub. Each sample narrows the prediction window and reduces brute-force time." },
-      { type: "callout", variant: "info", title: "Privacy note", text: "If you share Awash links, the receipts already contain the transaction details. If you want to help without exposing real data, paste just the two-part token (e.g. 2KDL95Z0NR-4U61O6) and the transaction date/time from the SMS. Do not include the full URL if you are not comfortable sharing it." },
+      { type: "callout", variant: "tip", title: "Help us improve the counter model", text: "We have 18 samples but need more from underrepresented periods (especially March 2026, September-December 2025, and pre-July 2025). If you have Awash SMS messages with receipt links, please share the two-part token (e.g. 2KDL95XE81-4U0000) and the transaction date/time on GitHub. Each sample narrows the prediction window and reduces brute-force time." },
+      { type: "callout", variant: "info", title: "Privacy note", text: "If you share Awash links, the receipts already contain the transaction details. If you want to help without exposing real data, paste just the two-part token (e.g. 2KDL95XE81-4U0000) and the transaction date/time from the SMS. Do not include the full URL if you are not comfortable sharing it." },
 
       { type: "heading", text: "How to verify Awash with cheki" },
       { type: "text", text: "Paste the full share link from your Awash SMS or app into cheki. The parser will extract the Transaction ID, receiver, amount, date, and other fields from the official HTML receipt. cheki handles all receipt variants (Transfer successful, Transaction successful, Transaction Details, Telebirr Transfer) including IPS bank transfers, merchant payments, send-to-wallet, and other-bank transfers." },
@@ -840,23 +840,23 @@ export const articles: Article[] = [
 
       { type: "heading", text: "Single verification" },
       { type: "text", text: "The most common use case: verify one receipt at a time." },
-      { type: "code", lang: "bash", code: 'curl -X POST https://cheki.et/api/verify \\\n  -H "Content-Type: application/json" \\\n  -d \'{\n    "bank": "cbe",\n    "reference": "FT26140P01YB",\n    "accountNumber": "1000560536171"\n  }\'' },
+      { type: "code", lang: "bash", code: 'curl -X POST https://cheki.et/api/verify \\\n  -H "Content-Type: application/json" \\\n  -d \'{\n    "bank": "cbe",\n    "reference": "FT26SAMPLE01",\n    "accountNumber": "1000000006171"\n  }\'' },
       { type: "text", text: "Response:" },
-      { type: "code", lang: "json", code: '{\n  "success": true,\n  "verified": true,\n  "bank": "Commercial Bank of Ethiopia",\n  "reference": "FT26140P01YB",\n  "amount": 20000,\n  "currency": "ETB",\n  "senderName": "Mr Mohammed Abdulwasi Reshid",\n  "senderAccount": "1****1685",\n  "receiverName": "SAMI ADIL ZEKARIA",\n  "receiverAccount": "1000560536171",\n  "date": "5/20/2026 7:29:00 PM",\n  "sourceUrl": "https://mbreciept.cbe.com.et/fHCxExampleRcpt01"\n}' },
+      { type: "code", lang: "json", code: '{\n  "success": true,\n  "verified": true,\n  "bank": "Commercial Bank of Ethiopia",\n  "reference": "FT26SAMPLE01",\n  "amount": 1250.5,\n  "currency": "ETB",\n  "senderName": "ABEBE KEBEDE",\n  "senderAccount": "1****4321",\n  "receiverName": "TIGIST ALEMU",\n  "receiverAccount": "1****6171",\n  "date": "2026-10-01",\n  "sourceUrl": "https://apps.cbe.com.et:100/?id=FT26SAMPLE0100006171"\n}' },
 
       { type: "heading", text: "URL-based verification" },
       { type: "text", text: "If you have a receipt URL (e.g. from a QR code or shared link), you can skip the bank field. cheki auto-detects the bank from the URL:" },
-      { type: "code", lang: "bash", code: 'curl -X POST https://cheki.et/api/verify \\\n  -H "Content-Type: application/json" \\\n  -d \'{\n    "reference": "https://mbreciept.cbe.com.et/fHCxyV4mg5pRIwEkJO"\n  }\'' },
+      { type: "code", lang: "bash", code: 'curl -X POST https://cheki.et/api/verify \\\n  -H "Content-Type: application/json" \\\n  -d \'{\n    "reference": "https://mbreciept.cbe.com.et/fHCxExampleRcpt01"\n  }\'' },
 
       { type: "heading", text: "Batch verification" },
       { type: "text", text: "For end-of-day reconciliation, verify up to 20 receipts in a single request (5 are checked at a time, and each one counts against the per-IP verify limit):" },
       { type: "code", lang: "bash", code: 'curl -X POST https://cheki.et/api/verify/batch \\\n  -H "Content-Type: application/json" \\\n  -d \'{\n    "receipts": [\n      {"bank": "cbe", "reference": "https://mbreciept.cbe.com.et/fHCxExampleRcpt01"},\n      {"bank": "telebirr", "reference": "DET8FJGUJ4"},\n      {"bank": "boa", "reference": "AB12345678", "accountNumber": "12345"}\n    ]\n  }\'' },
 
       { type: "heading", text: "JavaScript integration" },
-      { type: "code", lang: "javascript", code: "class ChekiAPI {\n  constructor(baseUrl = 'https://cheki.et') {\n    this.baseUrl = baseUrl;\n  }\n\n  async verify(bank, reference, accountNumber) {\n    const res = await fetch(`${this.baseUrl}/api/verify`, {\n      method: 'POST',\n      headers: { 'Content-Type': 'application/json' },\n      body: JSON.stringify({ bank, reference, accountNumber })\n    });\n    return res.json();\n  }\n\n  async verifyUrl(url) {\n    const res = await fetch(`${this.baseUrl}/api/verify`, {\n      method: 'POST',\n      headers: { 'Content-Type': 'application/json' },\n      body: JSON.stringify({ reference: url })\n    });\n    return res.json();\n  }\n\n  async batchVerify(receipts) {\n    const res = await fetch(`${this.baseUrl}/api/verify/batch`, {\n      method: 'POST',\n      headers: { 'Content-Type': 'application/json' },\n      body: JSON.stringify({ receipts })\n    });\n    return res.json();\n  }\n}\n\n// Usage\nconst cheki = new ChekiAPI();\nconst result = await cheki.verify('cbe', 'FT26140P01YB', '1000560536171');\nif (result.verified && result.amount === expectedAmount) {\n  console.log('Payment confirmed:', result.amount, result.currency);\n}" },
+      { type: "code", lang: "javascript", code: "class ChekiAPI {\n  constructor(baseUrl = 'https://cheki.et') {\n    this.baseUrl = baseUrl;\n  }\n\n  async verify(bank, reference, accountNumber) {\n    const res = await fetch(`${this.baseUrl}/api/verify`, {\n      method: 'POST',\n      headers: { 'Content-Type': 'application/json' },\n      body: JSON.stringify({ bank, reference, accountNumber })\n    });\n    return res.json();\n  }\n\n  async verifyUrl(url) {\n    const res = await fetch(`${this.baseUrl}/api/verify`, {\n      method: 'POST',\n      headers: { 'Content-Type': 'application/json' },\n      body: JSON.stringify({ reference: url })\n    });\n    return res.json();\n  }\n\n  async batchVerify(receipts) {\n    const res = await fetch(`${this.baseUrl}/api/verify/batch`, {\n      method: 'POST',\n      headers: { 'Content-Type': 'application/json' },\n      body: JSON.stringify({ receipts })\n    });\n    return res.json();\n  }\n}\n\n// Usage\nconst cheki = new ChekiAPI();\nconst result = await cheki.verify('cbe', 'FT26SAMPLE01', '1000000006171');\nif (result.verified && result.amount === expectedAmount) {\n  console.log('Payment confirmed:', result.amount, result.currency);\n}" },
 
       { type: "heading", text: "Python integration" },
-      { type: "code", lang: "python", code: "import requests\n\nclass ChekiAPI:\n    def __init__(self, base_url='https://cheki.et'):\n        self.base_url = base_url\n\n    def verify(self, bank, reference, account_number=None):\n        payload = {'bank': bank, 'reference': reference}\n        if account_number:\n            payload['accountNumber'] = account_number\n        r = requests.post(f'{self.base_url}/api/verify', json=payload)\n        return r.json()\n\n    def verify_url(self, url):\n        r = requests.post(f'{self.base_url}/api/verify',\n                         json={'reference': url})\n        return r.json()\n\n# Usage\ncheki = ChekiAPI()\nresult = cheki.verify('cbe', 'FT26140P01YB', '1000560536171')\nif result.get('verified') and result.get('amount') == expected_amount:\n    print(f'Payment confirmed: {result[\"amount\"]} {result[\"currency\"]}')" },
+      { type: "code", lang: "python", code: "import requests\n\nclass ChekiAPI:\n    def __init__(self, base_url='https://cheki.et'):\n        self.base_url = base_url\n\n    def verify(self, bank, reference, account_number=None):\n        payload = {'bank': bank, 'reference': reference}\n        if account_number:\n            payload['accountNumber'] = account_number\n        r = requests.post(f'{self.base_url}/api/verify', json=payload)\n        return r.json()\n\n    def verify_url(self, url):\n        r = requests.post(f'{self.base_url}/api/verify',\n                         json={'reference': url})\n        return r.json()\n\n# Usage\ncheki = ChekiAPI()\nresult = cheki.verify('cbe', 'FT26SAMPLE01', '1000000006171')\nif result.get('verified') and result.get('amount') == expected_amount:\n    print(f'Payment confirmed: {result[\"amount\"]} {result[\"currency\"]}')" },
 
       { type: "heading", text: "Error handling" },
       { type: "text", text: "The API returns structured errors. Handle these cases:" },
@@ -1006,11 +1006,11 @@ export const articles: Article[] = [
 
       { type: "heading", text: "What the QR code contains" },
       { type: "text", text: "When you scan a BOA receipt QR code with a standard QR reader, you get a base64-encoded string like this:" },
-      { type: "code", code: "3cHRaxVjn/pySpNXEHQE61JOQ2poZRMwnDHwMiX7YO9UVtJZT/ndmwHEzWkJoloEf4dIQIzJf5zmvbBo5qHTdm/23nc6NRzTSfxEjIHa7Ju4Ti+xydrVn8qF+9/OPAF5LIfMEvxFqZ6wlKMvSN/jrQ==" },
+      { type: "code", code: "KPHO0k4YlK/5s61BrKNnjG8dcbVjm5WqkNeCv93+8UYEinGOPAL1+Wpq6cy8McTYhpdXUgKvK4qFFcGhM0Yi+ZgrqD8G3UKsoUNwSiKqWXilJTG+1yIE+KEEK7IuoZl7" },
       { type: "text", text: "This is not a URL. It's a base64-encoded ciphertext. When decoded and decrypted, it reveals a comma-separated string with 7 fields:" },
       { type: "code", code: "senderAccount,senderName,amount,reference,date,receiverAccount,receiverName" },
-      { type: "text", text: "For example, a real decrypted payload looks like:" },
-      { type: "code", code: "1000370251685,EYOUEL ARAGAW HAILE,1107.59,FT252003JZPP,19/07/2025,1000370251685,MOHAMMED ABDULWASI RESHID" },
+      { type: "text", text: "For example, the QR above decrypts to:" },
+      { type: "code", code: "1****4321,ABEBE KEBEDE,1250.5,FT26SAMPLE07,01/10/2026  14:05:00,1000000006171,TIGIST ALEMU" },
 
       { type: "heading", text: "How the encryption works" },
       { type: "text", text: "BOA uses the CryptoJS library for encryption. CryptoJS is a popular JavaScript encryption library. The encryption parameters are hardcoded in BOA's receipt web app, which is served from cs.bankofabyssinia.com/slip/assets/index-*.js. Here are the exact parameters:" },
@@ -1053,7 +1053,7 @@ export const articles: Article[] = [
           ["BOA to CBE/Dashen/other (inter-bank)", "Fails ('Invalid reference number')", "Works", "QR decryption (only option)"],
         ],
       },
-      { type: "text", text: "When a customer sends money from BOA to CBE, the transaction reference starts with 'FT' (e.g., FT252003JZPP). BOA's online slip API at cs.bankofabyssinia.com does not recognize these references because the transfer left BOA's system. The QR code, however, was generated at the time of transfer and contains all the details." },
+      { type: "text", text: "When a customer sends money from BOA to CBE, the transaction reference starts with 'FT' (e.g., FT25SAMPLE06). BOA's online slip API at cs.bankofabyssinia.com does not recognize these references because the transfer left BOA's system. The QR code, however, was generated at the time of transfer and contains all the details." },
 
       { type: "heading", text: "How cheki handles BOA QR codes" },
       { type: "text", text: "cheki's unified scanner auto-detects BOA QR payloads. When you scan a QR code or upload a receipt image, cheki checks whether the decoded string matches BOA's encrypted format (base64 string with correct AES block alignment). If it does, cheki decrypts it server-side via the /api/verify endpoint and returns the parsed transaction data." },
@@ -1087,9 +1087,9 @@ export const articles: Article[] = [
 
       { type: "heading", text: "Verifying BOA QR codes via API" },
       { type: "text", text: "Send the QR payload in the qrData field. No reference or account number is needed:" },
-      { type: "code", lang: "bash", code: 'curl -X POST https://cheki.et/api/verify \\\n  -H "Content-Type: application/json" \\\n  -d \'{"bank":"boa","qrData":"3cHRaxVjn/pySpNXEHQE61JOQ2poZRMwnDHwMiX7YO9UVtJZT/ndmwHEzWkJoloEf4dIQIzJf5zmvbBo5qHTdm/23nc6NRzTSfxEjIHa7Ju4Ti+xydrVn8qF+9/OPAF5LIfMEvxFqZ6wlKMvSN/jrQ=="}\'' },
+      { type: "code", lang: "bash", code: 'curl -X POST https://cheki.et/api/verify \\\n  -H "Content-Type: application/json" \\\n  -d \'{"bank":"boa","qrData":"KPHO0k4YlK/5s61BrKNnjG8dcbVjm5WqkNeCv93+8UYEinGOPAL1+Wpq6cy8McTYhpdXUgKvK4qFFcGhM0Yi+ZgrqD8G3UKsoUNwSiKqWXilJTG+1yIE+KEEK7IuoZl7"}\'' },
       { type: "text", text: "Response:" },
-      { type: "code", lang: "json", code: '{\n  "verified": true,\n  "bank": "Bank of Abyssinia",\n  "senderName": "EYOUEL ARAGAW HAILE",\n  "senderAccount": "1000370251685",\n  "receiverName": "MOHAMMED ABDULWASI RESHID",\n  "receiverAccount": "1000370251685",\n  "amount": 1107.59,\n  "currency": "ETB",\n  "date": "19/07/2025",\n  "reference": "FT252003JZPP"\n}' },
+      { type: "code", lang: "json", code: '{\n  "verified": true,\n  "bank": "Bank of Abyssinia",\n  "senderName": "ABEBE KEBEDE",\n  "senderAccount": "1****4321",\n  "receiverName": "TIGIST ALEMU",\n  "receiverAccount": "1000000006171",\n  "amount": 1250.5,\n  "currency": "ETB",\n  "date": "01/10/2026  14:05:00",\n  "reference": "FT26SAMPLE07"\n}' },
 
       { type: "heading", text: "Extracting the key from BOA's web app" },
       { type: "text", text: "The decryption key and parameters are in BOA's receipt viewer JavaScript bundle. Here's where to find them:" },

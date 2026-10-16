@@ -32,7 +32,7 @@ A screenshot of a receipt is only pixels. cheki takes the link, reference, QR co
       </picture>
     </td>
     <td width="64%" valign="top">
-      <a href="https://cheki.et/developers"><img src="docs/assets/developers-api.png" width="100%" alt="The cheki.et developers page: a cURL request to POST /api/verify and its JSON response."></a>
+      <a href="https://cheki.et/developers"><img src="docs/assets/developers-api.png" width="100%" alt="The cheki.et developers page: a cURL request to POST /api/verify."></a>
     </td>
   </tr>
   <tr>
@@ -129,13 +129,13 @@ curl -X POST https://cheki.et/api/verify \
   "verified": true,
   "bank": "Commercial Bank of Ethiopia",
   "bankCode": "cbe",
-  "reference": "FT26140P01YB",
+  "reference": "FT26SAMPLE01",
   "amount": 1250.5,
   "currency": "ETB",
   "senderName": "ABEBE KEBEDE",
-  "senderAccount": "1****6171",
+  "senderAccount": "1****4321",
   "receiverName": "TIGIST ALEMU",
-  "receiverAccount": "1****4321",
+  "receiverAccount": "1****6171",
   "date": "2026-10-01",
   "cached": false
 }
@@ -192,7 +192,7 @@ from cheki import ChekiClient
 
 cheki = ChekiClient()
 result = cheki.verify("cbe", "https://mbreciept.cbe.com.et/fHCxExampleRcpt01")
-# Older receipt, FT reference only: cheki.verify("cbe", "FT26140P01YB", account_number="1000560536171")
+# Older receipt, FT reference only: cheki.verify("cbe", "FT26SAMPLE01", account_number="1000000006171")
 print(result.is_verified, result.amount, result.sender_name)
 ```
 

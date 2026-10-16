@@ -28,8 +28,8 @@ describe("receipt-cache", () => {
 
   describe("cacheKeyFor", () => {
     it("is stable across whitespace and bank casing", () => {
-      const a = cacheKeyFor({ bank: "CBE", reference: " FT26140P01YB " });
-      const b = cacheKeyFor({ bank: "cbe", reference: "FT26140P01YB" });
+      const a = cacheKeyFor({ bank: "CBE", reference: " FT26SAMPLE01 " });
+      const b = cacheKeyFor({ bank: "cbe", reference: "FT26SAMPLE01" });
       expect(a).toBe(b);
     });
 
@@ -71,19 +71,19 @@ describe("receipt-cache", () => {
     });
 
     it("harvests the account suffix from a CBE receipt URL", () => {
-      const url = "https://apps.cbe.com.et:100/?id=FT26140P01YB60536171";
+      const url = "https://apps.cbe.com.et:100/?id=FT26SAMPLE0100006171";
       const fromUrl = verificationCacheKey({ bank: "cbe", reference: url });
       const fromParts = verificationCacheKey({
         bank: "cbe",
-        reference: "FT26140P01YB",
-        accountNumber: "60536171",
+        reference: "FT26SAMPLE01",
+        accountNumber: "00006171",
       });
       expect(fromUrl).toBe(fromParts);
     });
 
     it("leaves a plain reference untouched", () => {
-      expect(verificationCacheKey({ bank: "cbe", reference: "FT26140P01YB" })).toBe(
-        cacheKeyFor({ bank: "cbe", reference: "FT26140P01YB" })
+      expect(verificationCacheKey({ bank: "cbe", reference: "FT26SAMPLE01" })).toBe(
+        cacheKeyFor({ bank: "cbe", reference: "FT26SAMPLE01" })
       );
     });
 

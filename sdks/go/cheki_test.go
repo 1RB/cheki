@@ -109,7 +109,7 @@ func TestDefaults(t *testing.T) {
 func TestVerifyVerified(t *testing.T) {
 	c := loadContract(t)
 	client, _ := serve(t, c.Cases["verify_verified"])
-	r, err := client.Verify(context.Background(), VerifyOptions{Bank: "cbe", Reference: "FT26140P01YB", AccountNumber: "1000560536171"})
+	r, err := client.Verify(context.Background(), VerifyOptions{Bank: "cbe", Reference: "FT26SAMPLE01", AccountNumber: "1000000006171"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -145,7 +145,7 @@ func TestVerifyBatch(t *testing.T) {
 	c := loadContract(t)
 	client, _ := serve(t, c.Cases["batch_mixed"])
 	b, err := client.VerifyBatch(context.Background(), []VerifyOptions{
-		{Bank: "cbe", Reference: "A1", AccountNumber: "1000560536171"},
+		{Bank: "cbe", Reference: "A1", AccountNumber: "1000000006171"},
 		{Bank: "boa", QRData: "q"},
 		{Bank: "telebirr", Reference: "B2"},
 	})

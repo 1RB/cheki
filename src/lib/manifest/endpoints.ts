@@ -172,7 +172,7 @@ export const endpointDocs: EndpointDoc[] = [
             name: "{REFERENCE}",
             what: "The CBE FT transaction reference.",
             whereToFind: 'On older receipts as "Reference No. (VAT Invoice No)", and in the CBE SMS.',
-            format: '12 characters: "FT" plus 10 letters and digits, e.g. FT26140P01YB.',
+            format: '12 characters: "FT" plus 10 letters and digits, e.g. FT26SAMPLE01.',
           },
           {
             name: "{LAST_8_DIGITS_OF_ACCOUNT}",
@@ -182,7 +182,7 @@ export const endpointDocs: EndpointDoc[] = [
             traps: "The payer's account does not work. Only the receiving account matches.",
           },
         ],
-        redactedExample: "https://apps.cbe.com.et:100/?id=FT26140P01YBXXXXXXXX",
+        redactedExample: "https://apps.cbe.com.et:100/?id=FT26SAMPLE01XXXXXXXX",
         unknownRef: 'HTTP 404 text/html, "You Are Not Allowed to See This Data, Please Check your Link" (seen 2026-10-10; the host is often unreachable).',
         probe: {
           parser: "cbe",
@@ -262,23 +262,23 @@ export const endpointDocs: EndpointDoc[] = [
       {
         name: "{REFERENCE}",
         what: "The Bank of Abyssinia transaction reference.",
-        whereToFind: "On the BOA receipt, or at the start of the slip link's trx value (cs.bankofabyssinia.com/slip/?trx=FT252003JZPP12345 → FT252003JZPP).",
-        format: "Letters and digits, starting with 2 letters, e.g. FT252003JZPP.",
+        whereToFind: "On the BOA receipt, or at the start of the slip link's trx value (cs.bankofabyssinia.com/slip/?trx=FT25SAMPLE0612345 → FT25SAMPLE06).",
+        format: "Letters and digits, starting with 2 letters, e.g. FT25SAMPLE06.",
       },
       {
         name: "{LAST_5_DIGITS}",
         what: "The last 5 digits of an account on the receipt, which BOA looks the receipt up by. Not always the receiver's: a fee receipt with no receiver uses the source account.",
-        whereToFind: "The last 5 characters of the slip link's trx value (FT252003JZPP12345 → 12345), or the account on the receipt.",
+        whereToFind: "The last 5 characters of the slip link's trx value (FT25SAMPLE0612345 → 12345), or the account on the receipt.",
         format: "5 digits, appended directly after the reference.",
       },
     ],
-    redactedExample: "https://cs.bankofabyssinia.com/api/onlineSlip/getDetails/?id=FT252003JZPPXXXXX",
+    redactedExample: "https://cs.bankofabyssinia.com/api/onlineSlip/getDetails/?id=FT25SAMPLE06XXXXX",
     fieldsParsed: ["senderName", "senderAccount", "receiverName", "receiverAccount", "amount", "currency", "date", "reference", "transactionType", "amountInWords", "serviceFee", "totalPaid", "reason"],
     unknownRef: 'HTTP 200 application/json with body[0]["Payer\'s Name"] = "Invalid reference number".',
     gotchas: [
       "A miss still returns HTTP 200, so the parser must read the body.",
       "Fee and charge receipts (e.g. Transaction Type \"Account Transfer MB Maintenance\") have no Receiver's Name or Receiver's Account; receiver fields stay empty.",
-      "Slip links put the 5 account digits straight after the reference (trx=FT252003JZPP12345); cheki splits them off.",
+      "Slip links put the 5 account digits straight after the reference (trx=FT25SAMPLE0612345); cheki splits them off.",
       "\"VAT (15%)\" is not mapped: on the fee receipt observed it was 15% of the Transferred Amount, not of the Service Charge, so it does not fit serviceFeeVat. totalPaid includes it.",
     ],
     changelog: [

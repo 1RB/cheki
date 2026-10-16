@@ -72,7 +72,7 @@ def test_defaults_match_contract():
 @responses.activate
 def test_verified():
     add("verify_verified")
-    r = client().verify("cbe", "FT26140P01YB", account_number="1000560536171")
+    r = client().verify("cbe", "FT26SAMPLE01", account_number="1000000006171")
     assert r.is_verified and r.amount == 1250.5 and r.cached is False and r.http_status == 200
 
 
@@ -93,7 +93,7 @@ def test_parsed_is_never_verified():
 def test_batch():
     add("batch_mixed")
     b = client().verify_batch([
-        {"bank": "cbe", "reference": "A1", "accountNumber": "1000560536171"},
+        {"bank": "cbe", "reference": "A1", "accountNumber": "1000000006171"},
         {"bank": "boa", "qr_data": "q"},
         {"bank": "telebirr", "reference": "B2"},
     ])

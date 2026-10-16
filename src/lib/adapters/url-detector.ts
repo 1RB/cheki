@@ -79,7 +79,7 @@ export function detectBankFromUrl(input: string): DetectedReceipt | null {
 
     // CBE share links: https://mbreciept.cbe.com.et/{receiptId} (current,
     // read through the mb.cbe.com.et JSON API). A dashed id such as
-    // FT26140P01YB-60536171 carries an older FT reference and the receiving
+    // FT26SAMPLE01-00006171 carries an older FT reference and the receiving
     // account's last 8 digits, so it is the legacy format. The bank stays
     // "cbe"; the verifier picks the format from the reference's shape.
     if (hostIs(host, "mbreciept.cbe.com.et", "mb.cbe.com.et")) {
@@ -92,7 +92,7 @@ export function detectBankFromUrl(input: string): DetectedReceipt | null {
       }
     }
 
-    // CBE legacy: https://apps.cbe.com.et:100/?id=FT26140P01YB60536171
+    // CBE legacy: https://apps.cbe.com.et:100/?id=FT26SAMPLE0100006171
     if (hostIs(host, "apps.cbe.com.et")) {
       const id = url.searchParams.get("id");
       if (id && id.startsWith("FT")) {

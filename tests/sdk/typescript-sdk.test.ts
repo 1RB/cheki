@@ -58,12 +58,12 @@ afterEach(() => {
 describe("TS SDK: models decode the contract fixtures", () => {
   it("verify: verified result", async () => {
     const calls = serve(fx("verify_verified"));
-    const r = await client().verify("cbe", "FT26140P01YB", { accountNumber: "1000560536171" });
+    const r = await client().verify("cbe", "FT26SAMPLE01", { accountNumber: "1000000006171" });
     expect(isVerified(r)).toBe(true);
     expect(r.amount).toBe(1250.5);
     expect(r.cached).toBe(false);
     expect(calls[0].url).toBe("https://api.test/api/verify");
-    expect(JSON.parse(String(calls[0].init.body))).toEqual({ bank: "cbe", reference: "FT26140P01YB", accountNumber: "1000560536171" });
+    expect(JSON.parse(String(calls[0].init.body))).toEqual({ bank: "cbe", reference: "FT26SAMPLE01", accountNumber: "1000000006171" });
   });
 
   it("verify: decodedOnly is success:true but NOT verified", async () => {
@@ -87,7 +87,7 @@ describe("TS SDK: models decode the contract fixtures", () => {
   it("batch: results with index, verified/failed/cached counts, error items", async () => {
     serve(fx("batch_mixed"));
     const b = await client().verifyBatch([
-      { bank: "cbe", reference: "A1", accountNumber: "1000560536171" },
+      { bank: "cbe", reference: "A1", accountNumber: "1000000006171" },
       { bank: "boa", qrData: "q" },
       { bank: "telebirr", reference: "B2" },
     ]);
@@ -312,6 +312,6 @@ describe("TS SDK: getReceiptUrl matches /api/receipt validation", () => {
 
   it("leads with the current format: a CBE Receipt ID needs no account", () => {
     expect(client().getReceiptUrl("cbe", "fHCxExampleRcpt01")).toBe("https://api.test/api/receipt?bank=cbe&reference=fHCxExampleRcpt01");
-    expect(() => client().getReceiptUrl("cbe", "FT26140P01YB")).toThrow(/older cbe FT reference/);
+    expect(() => client().getReceiptUrl("cbe", "FT26SAMPLE01")).toThrow(/older cbe FT reference/);
   });
 });
