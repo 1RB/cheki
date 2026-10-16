@@ -218,7 +218,7 @@ export function VerifyInput({
             autoComplete="off"
             value={extra}
             onChange={(e) => onExtraChange(e.target.value)}
-            placeholder={d.needsPhone ? "2519XXXXXXXX" : t("verify.extra.accountPlaceholder", { digits: d.accountDigits ?? d.bank?.accountDigits ?? 8 })}
+            placeholder={d.needsPhone ? "09XXXXXXXX" : t("verify.extra.accountPlaceholder", { digits: d.accountDigits ?? d.bank?.accountDigits ?? 8 })}
             aria-invalid={extraError ? true : undefined}
             aria-describedby={`${id}-extra-hint`}
           />

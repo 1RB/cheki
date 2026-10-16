@@ -263,8 +263,8 @@ final class ChekiClientTest extends TestCase
 
     public function testOrderIdBetaAndBatchFallbackUrl(): void
     {
-        $r = $this->client(self::fx('verify_order_id'))->verify('cbebirr', 'CB2610ABCD', null, '251911000000');
-        self::assertSame('ORD123456789', $r->orderId);
+        $r = $this->client(self::fx('verify_order_id'))->verify('cbebirr', 'DTS41AB2C90', null, '0911004321');
+        self::assertSame('FT26SAMPLE01', $r->orderId);
 
         $byId = [];
         foreach ($this->client(self::fx('banks'))->getBanks() as $bank) {

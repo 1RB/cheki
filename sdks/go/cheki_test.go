@@ -384,8 +384,8 @@ func TestMaxRetriesClamped(t *testing.T) {
 func TestOrderIDBetaAndBatchFallback(t *testing.T) {
 	c := loadContract(t)
 	client, _ := serve(t, c.Cases["verify_order_id"])
-	r, err := client.Verify(context.Background(), VerifyOptions{Bank: "cbebirr", Reference: "CB2610ABCD", PhoneNumber: "251911000000"})
-	if err != nil || r.OrderID != "ORD123456789" {
+	r, err := client.Verify(context.Background(), VerifyOptions{Bank: "cbebirr", Reference: "DTS41AB2C90", PhoneNumber: "0911004321"})
+	if err != nil || r.OrderID != "FT26SAMPLE01" {
 		t.Fatalf("orderId: %v %+v", err, r)
 	}
 	client, _ = serve(t, c.Cases["banks"])

@@ -2,6 +2,21 @@
 
 Every cheki SDK ships the same version: npm `cheki-verify` (and `@1rb/cheki-verify` on GitHub Packages), PyPI `cheki`, Packagist `cheki/cheki`, pub.dev `cheki` and the Go module `github.com/1RB/cheki/sdks/go` (tag `sdks/go/vX.Y.Z`). The Dart package keeps its own copy in `sdks/dart/CHANGELOG.md` for pub.dev.
 
+## Unreleased
+
+**CBE Birr is live (beta)**
+- Verified on 2026-10-16 against two real receipts (a wallet transfer and a transfer to a bank account). A matching receipt number and payer phone return the receipt as a one-page PDF, also from outside Ethiopia, so CBE Birr is not geo-blocked. Live banks: 9 → 10; `beta` is true for M-Pesa, ZamZam and CBE Birr.
+- Fields read: payer name and wallet number, receiver name and account, amount, service charge, VAT, total paid, date (Addis Ababa time, no offset), status, receipt number, order ID, amount in words, payment reason and payment channel. The PDF prints both phone numbers in full; cheki masks them (`09****1234`).
+- The empty "Auto Receipt" page means the receipt number and phone don't match (the earlier contributed receipt was such a pair). It stays "could not confirm" (502 with `fallbackUrl`, the receipt link), never not found, and now says to check both.
+- Fix: the real PDF draws its values in a different order from their labels, so flowed text read the payment reason and channel wrongly. The PDF is now read as positioned rows. Real rows also put spaces between the receipt number, date and amount, wrapped long names onto a second row, and print "VAT Registration No" above the VAT amount; all three are handled.
+- Phone numbers are sent as `251XXXXXXXXX` (the form CBE Birr's own links use); `09…`, `07…` and `+251…` are accepted. Receipt numbers are 10 or 11 letters and digits.
+- Fix: an 11-character receipt number lost its first character in the PDF layout, so the gate would have rejected a real receipt.
+- Python direct mode: reads the CBE Birr receipt PDF (phones masked) and runs it through the gate; an empty page is never verified. It no longer crashes with a duplicate `timeout` argument and URL-encodes the receipt number and phone.
+- CBE Birr receipt QR: the QR at the bottom right of the receipt is the receipt's own link (`cbepay1.cbe.com.et/aureceipt?TID=…&PH=…`), so a scan or upload fills both the receipt number and the payer phone. It works in the web scanner and photo upload, in `/api/ocr` (which now also returns `phoneNumber`), as `qrData` in `/api/verify` with bank `cbebirr` or no bank, and in `cheki verify-qr <qr-data>`. The pair in the QR wins over a typed phone, and a CBE Birr QR sent with another bank is reported, not re-routed. Like every QR it is only an input.
+- Verify panel: a CBE Birr link without a phone opens the phone field, and `07…` (Safaricom) numbers are accepted there as on the server.
+- CLI: `cheki verify cbebirr <receipt number> -p <payer phone>` is in the help, `cheki verify-qr` takes the bank as optional, and `cheki info` marks beta banks and the phone requirement.
+- Tests use a synthetic PDF with the real layout (`tests/fixtures/cbebirr/synthetic-receipt.ts`); no real receipt data is committed.
+
 ## 1.5.0
 
 The first registry release of the SDK rework: npm, PyPI and Packagist 1.4.1 were built from June 2026 code, so everything listed under 1.4.1 below reaches those registries now.

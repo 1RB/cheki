@@ -101,17 +101,19 @@
       "body": {
         "success": true,
         "senderName": "ABEBE KEBEDE",
-        "receiverName": "HANA SHOP",
-        "amount": 320,
+        "senderAccount": "09****4321",
+        "receiverName": "TIGIST ALEMU",
+        "receiverAccount": "1000****6171",
+        "amount": 1250.5,
         "currency": "ETB",
-        "date": "2026-10-02 14:11:05",
-        "reference": "CB2610ABCD",
-        "orderId": "ORD123456789",
+        "date": "2026-10-01 09:15",
+        "reference": "DTS41AB2C90",
+        "orderId": "FT26SAMPLE01",
         "transactionStatus": "Completed",
         "verified": true,
         "bank": "CBE Birr",
         "bankCode": "cbebirr",
-        "sourceUrl": "https://cbepay1.cbe.com.et/aureceipt?TID=CB2610ABCD&PH=251911000000",
+        "sourceUrl": "https://cbepay1.cbe.com.et/aureceipt?TID=DTS41AB2C90&PH=251911004321",
         "durationMs": 2100,
         "cached": false
       }
@@ -253,13 +255,14 @@
             "name": "CBE Birr",
             "type": "wallet",
             "status": "live",
+            "beta": true,
             "requiresAccount": false,
             "requiresPhone": true,
             "endpoint": "https://cbepay1.cbe.com.et/aureceipt?TID={ref}&PH={phone}",
             "color": "#502878",
             "initials": "CB",
             "formats": [
-              { "id": "cbebirr-aureceipt", "status": "current", "label": "Receipt number + payer phone", "inputs": ["reference", "phone"], "responseType": "pdf", "supported": true, "confidence": "inferred" }
+              { "id": "cbebirr-aureceipt", "status": "current", "label": "Receipt number + payer phone", "inputs": ["reference", "phone"], "responseType": "pdf", "supported": true, "confidence": "verified" }
             ]
           },
           {

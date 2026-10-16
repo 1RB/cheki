@@ -89,8 +89,8 @@ void main() {
 
     test('orderId, beta and batch fallbackUrl', () async {
       var (c, _) = clientFor([() => respond('verify_order_id')]);
-      expect((await c.verify(bank: 'cbebirr', reference: 'CB2610ABCD', phoneNumber: '251911000000')).orderId,
-          'ORD123456789');
+      expect((await c.verify(bank: 'cbebirr', reference: 'DTS41AB2C90', phoneNumber: '0911004321')).orderId,
+          'FT26SAMPLE01');
       (c, _) = clientFor([() => respond('banks')]);
       final beta = {for (final b in await c.getBanks()) b.id: b.beta};
       expect([beta['zamzam'], beta['mpesa'], beta['cbe']], [true, true, false]);

@@ -122,7 +122,7 @@ def test_banks():
     assert [f.status for f in banks[0].formats] == ["current", "legacy"]
     assert banks[0].formats[0].inputs == ["receiptId"]
     assert banks[0].formats[1].account_digits == 8
-    # beta: true for M-Pesa and ZamZam, False when the server omits it.
+    # beta: true for M-Pesa, ZamZam and CBE Birr, False when the server omits it.
     by_id = {b.id: b for b in banks}
     assert by_id["zamzam"].beta is True and by_id["mpesa"].beta is True and banks[0].beta is False
     assert by_id["zamzam"].to_dict()["beta"] is True
@@ -275,8 +275,8 @@ def test_recommended_chunk_within_limit():
 @responses.activate
 def test_order_id_and_batch_fallback_url():
     add("verify_order_id")
-    r = client().verify("cbebirr", "CB2610ABCD", phone_number="251911000000")
-    assert r.order_id == "ORD123456789"
+    r = client().verify("cbebirr", "DTS41AB2C90", phone_number="0911004321")
+    assert r.order_id == "FT26SAMPLE01"
     responses.add(
         responses.POST,
         f"{API}/api/verify/batch",

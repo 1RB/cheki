@@ -431,7 +431,7 @@ export function ContributeBox({
                   onChange={(e) => setSecond(e.target.value)}
                   inputMode="numeric"
                   autoComplete="off"
-                  placeholder={requiresPhone ? "2519XXXXXXXX" : ""}
+                  placeholder={requiresPhone ? "09XXXXXXXX" : ""}
                 />
               </div>
             </div>

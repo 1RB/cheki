@@ -13,7 +13,7 @@ cheki verifies Ethiopian bank and mobile money receipts by fetching public bank 
 - Dashen Bank - FT Ref (16 characters) → HTML receipt at receipts.dashenbanksc.com. Old receipt.dashensuperapp.com links are deprecated (502) but still read for their FT Ref
 - Awash Bank - awashpay.awashbank.com:8225
 - Zemen Bank (in development) - share.zemenbank.com
-- CBE Birr (in development) - receipt number + payer phone at cbepay1.cbe.com.et
+- CBE Birr (beta) - receipt number (TID) + payer phone (09XXXXXXXX or 251XXXXXXXXX) → PDF from cbepay1.cbe.com.et; phone numbers masked. The receipt QR is that same link (send it as qrData; no phone needed). An empty "Auto Receipt" page means could not confirm (usually the number and phone don't match)
 - Siinqee Bank - eBirr receipt link (receipt.ebirr.com/siinqee/...)
 - eBirr - receipt.ebirr.com, also serves Nib, Wegagen, Ahadu and KAAFI
 - ZamZam Bank (beta) - receipt link (receipt.zamzambank.com.et/receipt/{id}) or its numeric id → JSON from receipt-backend.zamzambank.com.et; cheki confirms the record exists and shows the amount, date and account holder (account number masked)

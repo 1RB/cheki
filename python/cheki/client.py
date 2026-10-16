@@ -198,9 +198,11 @@ class ChekiClient:
                 slip link can carry them). Older cbe FT receipts: the
                 receiving account.
             phone_number: Payer phone number. Required for cbebirr.
-            qr_data: Raw QR payload: a boa inter-bank receipt QR, or the
+            qr_data: Raw QR payload: a boa inter-bank receipt QR, the
                 Payment QR Code on a telebirr receipt (the server reads the
-                transaction number and checks it like a typed one). A QR
+                transaction number and checks it like a typed one), or the
+                QR on a cbebirr receipt (a receipt link carrying the receipt
+                number and payer phone, so phone_number is not needed). A QR
                 alone never verifies.
 
         Returns:

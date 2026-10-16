@@ -88,6 +88,7 @@ const DEMO_REFS: Record<string, string> = {
   siinqee: "SQDEMO1250",
   ebirr: "DEMO-1250-EB",
   zamzam: "DEMO1250",
+  cbebirr: "DTSDEMO1250",
 };
 
 export function demoReference(code: string): string {
