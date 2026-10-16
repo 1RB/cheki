@@ -3,7 +3,15 @@
     "id": "cbe",
     "name": "Commercial Bank of Ethiopia",
     "shortName": "CBE",
-    "swift": "CBETETAA",
+    "swift": {
+      "bic": "CBETETAA",
+      "sources": [
+        "https://combanketh.et/products-services",
+        "https://www.swiftref.com/en/bicsearch"
+      ],
+      "checkedAt": "2026-10-16",
+      "registry": "confirmed"
+    },
     "type": "bank",
     "status": "live",
     "parser": "cbe",
@@ -310,7 +318,15 @@
     "id": "boa",
     "name": "Bank of Abyssinia",
     "shortName": "BOA",
-    "swift": "ABYSETAA",
+    "swift": {
+      "bic": "ABYSETAA",
+      "sources": [
+        "https://www.bankofabyssinia.com/money-transfer/",
+        "https://www.swiftref.com/en/bicsearch"
+      ],
+      "checkedAt": "2026-10-16",
+      "registry": "confirmed"
+    },
     "type": "bank",
     "status": "live",
     "parser": "boa",
@@ -538,7 +554,15 @@
     "id": "dashen",
     "name": "Dashen Bank",
     "shortName": "Dashen",
-    "swift": "DASHETAA",
+    "swift": {
+      "bic": "DASHETAA",
+      "sources": [
+        "https://dashenbanksc.com/contact-dashen-bank/",
+        "https://www.swiftref.com/en/bicsearch"
+      ],
+      "checkedAt": "2026-10-16",
+      "registry": "confirmed"
+    },
     "type": "bank",
     "status": "live",
     "parser": "dashen",
@@ -660,7 +684,15 @@
     "id": "awash",
     "name": "Awash Bank",
     "shortName": "Awash",
-    "swift": "AWINETAA",
+    "swift": {
+      "bic": "AWINETAA",
+      "sources": [
+        "https://awashbank.com/contact-us/",
+        "https://www.swiftref.com/en/bicsearch"
+      ],
+      "checkedAt": "2026-10-16",
+      "registry": "confirmed"
+    },
     "type": "bank",
     "status": "live",
     "parser": "awash",
@@ -753,7 +785,15 @@
     "id": "zemen",
     "name": "Zemen Bank",
     "shortName": "Zemen",
-    "swift": "ZEMEETAA",
+    "swift": {
+      "bic": "ZEMEETAA",
+      "sources": [
+        "https://zemenbank.com/about/contact-us/",
+        "https://www.swiftref.com/en/bicsearch"
+      ],
+      "checkedAt": "2026-10-16",
+      "registry": "confirmed"
+    },
     "type": "bank",
     "status": "in-development",
     "parser": "zemen",
@@ -915,7 +955,15 @@
     "id": "siinqee",
     "name": "Siinqee Bank",
     "shortName": "Siinqee",
-    "swift": "SINQETAA",
+    "swift": {
+      "bic": "SINQETAA",
+      "sources": [
+        "https://siinqeebank.com/international-banking/",
+        "https://www.swiftref.com/en/bicsearch"
+      ],
+      "checkedAt": "2026-10-16",
+      "registry": "confirmed"
+    },
     "type": "bank",
     "status": "live",
     "parser": "siinqee",
@@ -1099,6 +1147,15 @@
     "id": "nib",
     "name": "Nib International Bank",
     "shortName": "Nib Bank",
+    "swift": {
+      "bic": "NIBIETAA",
+      "sources": [
+        "https://www.nibbanksc.com/money-transfers/",
+        "https://www.swiftref.com/en/bicsearch"
+      ],
+      "checkedAt": "2026-10-16",
+      "registry": "confirmed"
+    },
     "type": "bank",
     "status": "in-development",
     "parser": "nib",
@@ -1163,6 +1220,15 @@
     "id": "wegagen",
     "name": "Wegagen Bank",
     "shortName": "Wegagen",
+    "swift": {
+      "bic": "WEGAETAA",
+      "sources": [
+        "https://www.wegagen.com/investor-relations",
+        "https://nbe.gov.et/financial-institutions/banks/5/"
+      ],
+      "checkedAt": "2026-10-16",
+      "registry": "not-checked"
+    },
     "type": "bank",
     "status": "in-development",
     "parser": "wegagen",
@@ -1226,6 +1292,15 @@
     "id": "ahadu",
     "name": "Ahadu Bank",
     "shortName": "Ahadu",
+    "swift": {
+      "bic": "AHUUETAA",
+      "sources": [
+        "https://ahadubank.com/inernational/",
+        "https://nbe.gov.et/financial-institutions/banks/2/"
+      ],
+      "checkedAt": "2026-10-16",
+      "registry": "not-checked"
+    },
     "type": "bank",
     "status": "in-development",
     "parser": "ahadu",
@@ -1370,6 +1445,15 @@
     "id": "abay",
     "name": "Abay Bank",
     "shortName": "Abay",
+    "swift": {
+      "bic": "ABAYETAA",
+      "sources": [
+        "https://abaybank.com.et/online-banking/",
+        "https://nbe.gov.et/financial-institutions/banks/3/"
+      ],
+      "checkedAt": "2026-10-16",
+      "registry": "not-checked"
+    },
     "type": "bank",
     "status": "in-development",
     "parser": "abay",
@@ -1428,6 +1512,15 @@
     "id": "addis",
     "name": "Addis International Bank",
     "shortName": "Addis Bank",
+    "swift": {
+      "bic": "ABSCETAA",
+      "sources": [
+        "https://addisbanksc.com/customer-services/contact-us",
+        "https://nbe.gov.et/financial-institutions/banks/3/"
+      ],
+      "checkedAt": "2026-10-16",
+      "registry": "not-checked"
+    },
     "type": "bank",
     "status": "in-development",
     "parser": "addis",
@@ -1467,6 +1560,15 @@
     "id": "amhara",
     "name": "Amhara Bank",
     "shortName": "Amhara",
+    "swift": {
+      "bic": "AMHRETAA",
+      "sources": [
+        "https://www.amharabank.com.et/international-banking/",
+        "https://nbe.gov.et/financial-institutions/banks/"
+      ],
+      "checkedAt": "2026-10-16",
+      "registry": "not-checked"
+    },
     "type": "bank",
     "status": "in-development",
     "parser": "amhara",
@@ -1525,6 +1627,15 @@
     "id": "berhan",
     "name": "Berhan International Bank",
     "shortName": "Berhan",
+    "swift": {
+      "bic": "BERHETAA",
+      "sources": [
+        "https://berhanbanksc.com/contact-us/",
+        "https://nbe.gov.et/financial-institutions/banks/4/"
+      ],
+      "checkedAt": "2026-10-16",
+      "registry": "not-checked"
+    },
     "type": "bank",
     "status": "in-development",
     "parser": "berhan",
@@ -1582,6 +1693,15 @@
     "id": "bunna",
     "name": "Bunna International Bank",
     "shortName": "Bunna",
+    "swift": {
+      "bic": "BUNAETAA",
+      "sources": [
+        "https://bunnabanksc.com/correspondence-banking/",
+        "https://nbe.gov.et/financial-institutions/banks/4/"
+      ],
+      "checkedAt": "2026-10-16",
+      "registry": "not-checked"
+    },
     "type": "bank",
     "status": "in-development",
     "parser": "bunna",
@@ -1621,6 +1741,15 @@
     "id": "enat",
     "name": "Enat Bank",
     "shortName": "Enat",
+    "swift": {
+      "bic": "ENATETAA",
+      "sources": [
+        "https://www.enatbanksc.com/",
+        "https://nbe.gov.et/financial-institutions/banks/3/"
+      ],
+      "checkedAt": "2026-10-16",
+      "registry": "not-checked"
+    },
     "type": "bank",
     "status": "in-development",
     "parser": "enat",
@@ -1660,6 +1789,15 @@
     "id": "global",
     "name": "Global Bank Ethiopia",
     "shortName": "Global Bank",
+    "swift": {
+      "bic": "DEGAETAA",
+      "sources": [
+        "https://www.globalbankethiopia.com/contact-us/",
+        "https://nbe.gov.et/financial-institutions/banks/3/"
+      ],
+      "checkedAt": "2026-10-16",
+      "registry": "not-checked"
+    },
     "type": "bank",
     "status": "in-development",
     "parser": "global",
@@ -1699,6 +1837,15 @@
     "id": "lion",
     "name": "Lion International Bank",
     "shortName": "Lion Bank",
+    "swift": {
+      "bic": "LIBSETAA",
+      "sources": [
+        "https://anbesabank.com/faqs/",
+        "https://nbe.gov.et/financial-institutions/banks/4/"
+      ],
+      "checkedAt": "2026-10-16",
+      "registry": "not-checked"
+    },
     "type": "bank",
     "status": "in-development",
     "parser": "lion",
@@ -1739,6 +1886,15 @@
     "id": "oromia",
     "name": "Oromia International Bank",
     "shortName": "Oromia Bank",
+    "swift": {
+      "bic": "ORIRETAA",
+      "sources": [
+        "https://oromiabank.com/conventional/",
+        "https://nbe.gov.et/financial-institutions/banks/4/"
+      ],
+      "checkedAt": "2026-10-16",
+      "registry": "not-checked"
+    },
     "type": "bank",
     "status": "in-development",
     "parser": "oromia",
@@ -1796,6 +1952,15 @@
     "id": "hibret",
     "name": "Hibret Bank",
     "shortName": "Hibret",
+    "swift": {
+      "bic": "UNTDETAA",
+      "sources": [
+        "https://www.hibretbank.com.et/contact-us/",
+        "https://nbe.gov.et/financial-institutions/banks/5/"
+      ],
+      "checkedAt": "2026-10-16",
+      "registry": "not-checked"
+    },
     "type": "bank",
     "status": "in-development",
     "parser": "hibret",
@@ -1836,6 +2001,15 @@
     "id": "zamzam",
     "name": "ZamZam Bank",
     "shortName": "ZamZam",
+    "swift": {
+      "bic": "ZAMZETAA",
+      "sources": [
+        "https://zamzambank.com/international-banking/",
+        "https://nbe.gov.et/financial-institutions/banks/3/"
+      ],
+      "checkedAt": "2026-10-16",
+      "registry": "not-checked"
+    },
     "type": "bank",
     "status": "live",
     "beta": true,
@@ -1936,6 +2110,15 @@
     "id": "hijra",
     "name": "Hijra Bank",
     "shortName": "Hijra",
+    "swift": {
+      "bic": "HIJRETAA",
+      "sources": [
+        "https://nbe.gov.et/financial-institutions/banks/2/",
+        "https://wise.com/us/swift-codes/HIJRETAAXXX"
+      ],
+      "checkedAt": "2026-10-16",
+      "registry": "not-checked"
+    },
     "type": "bank",
     "status": "in-development",
     "parser": "hijra",
@@ -1976,6 +2159,15 @@
     "id": "shabelle",
     "name": "Shabelle Bank",
     "shortName": "Shabelle",
+    "swift": {
+      "bic": "SBEEETAA",
+      "sources": [
+        "https://nbe.gov.et/financial-institutions/banks/3/",
+        "https://wise.com/us/swift-codes/SBEEETAAXXX"
+      ],
+      "checkedAt": "2026-10-16",
+      "registry": "not-checked"
+    },
     "type": "bank",
     "status": "in-development",
     "parser": "shabelle",
@@ -2015,6 +2207,15 @@
     "id": "goh",
     "name": "Goh Betoch Bank",
     "shortName": "Goh Betoch",
+    "swift": {
+      "bic": "GOBTETAA",
+      "sources": [
+        "https://www.gohbetbank.com/international-banking-services",
+        "https://nbe.gov.et/financial-institutions/banks/2/"
+      ],
+      "checkedAt": "2026-10-16",
+      "registry": "not-checked"
+    },
     "type": "bank",
     "status": "in-development",
     "parser": "goh",
@@ -2054,6 +2255,15 @@
     "id": "tsedey",
     "name": "Tsedey Bank",
     "shortName": "Tsedey",
+    "swift": {
+      "bic": "TSDYETAA",
+      "sources": [
+        "https://www.tsedeybank.com.et/",
+        "https://nbe.gov.et/financial-institutions/banks/2/"
+      ],
+      "checkedAt": "2026-10-16",
+      "registry": "not-checked"
+    },
     "type": "bank",
     "status": "in-development",
     "parser": "tsedey",
@@ -2093,6 +2303,15 @@
     "id": "gadaa",
     "name": "Gadaa Bank",
     "shortName": "Gadaa",
+    "swift": {
+      "bic": "GDAAETAA",
+      "sources": [
+        "https://gadaabank.com.et/services/money-transfer",
+        "https://nbe.gov.et/financial-institutions/banks/"
+      ],
+      "checkedAt": "2026-10-16",
+      "registry": "not-checked"
+    },
     "type": "bank",
     "status": "in-development",
     "parser": "gadaa",
@@ -2132,6 +2351,15 @@
     "id": "rammis",
     "name": "Rammis Bank",
     "shortName": "Rammis",
+    "swift": {
+      "bic": "RMSIETAA",
+      "sources": [
+        "https://rammisbank.et/products-and-services/guarantee-services",
+        "https://nbe.gov.et/financial-institutions/banks/"
+      ],
+      "checkedAt": "2026-10-16",
+      "registry": "not-checked"
+    },
     "type": "bank",
     "status": "in-development",
     "parser": "rammis",
@@ -2170,7 +2398,15 @@
   {
     "id": "cbe-new",
     "name": "Commercial Bank of Ethiopia",
-    "swift": "CBETETAA",
+    "swift": {
+      "bic": "CBETETAA",
+      "sources": [
+        "https://combanketh.et/products-services",
+        "https://www.swiftref.com/en/bicsearch"
+      ],
+      "checkedAt": "2026-10-16",
+      "registry": "confirmed"
+    },
     "type": "bank",
     "status": "live",
     "parser": "cbe-new",

@@ -17,7 +17,9 @@ export async function GET() {
   const banks = getAllBanks().map((b) => ({
     id: b.id,
     name: b.name,
-    swift: b.swift,
+    // The public contract keeps `swift` as the plain BIC string; sources and
+    // the check date stay in the manifest and on the bank page.
+    swift: b.swift?.bic,
     type: b.type,
     status: b.status,
     ...(b.beta ? { beta: true } : {}),
