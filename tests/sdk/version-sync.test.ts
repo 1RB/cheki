@@ -19,6 +19,7 @@ const sources: Array<[file: string, pattern: RegExp]> = [
   ["sdks/dart/pubspec.yaml", /^version: (\S+)/m],
   ["sdks/dart/lib/src/cheki_client.dart", /^const String chekiSdkVersion = '([^']+)';/m],
   ["sdks/go/cheki.go", /^const Version = "([^"]+)"/m],
+  ["sdks/go/README.md", /github\.com\/1RB\/cheki\/sdks\/go@v(\d+\.\d+\.\d+)/],
 ];
 
 describe("package and SDK versions", () => {
@@ -26,11 +27,29 @@ describe("package and SDK versions", () => {
     expect(read(file).match(pattern)?.[1]).toBe(version);
   });
 
-  it("the Dart changelog has an entry for this version (pub.dev shows it)", () => {
-    expect(read("sdks/dart/CHANGELOG.md")).toMatch(new RegExp(`^## ${version.replace(/\./g, "\\.")}$`, "m"));
+  it.each(["CHANGELOG.md", "sdks/dart/CHANGELOG.md"])("%s has an entry for this version", (file) => {
+    expect(read(file)).toMatch(new RegExp(`^## ${version.replace(/\./g, "\\.")}$`, "m"));
+  });
+
+  it("scripts/bump-version.sh rewrites every file this test checks", () => {
+    const script = read("scripts/bump-version.sh");
+    for (const [file] of sources) expect(script, file).toContain(file);
   });
 
   it("sdks/php/composer.json has no version (Packagist reads the tag)", () => {
     expect(JSON.parse(read("sdks/php/composer.json")).version).toBeUndefined();
+  });
+
+  // Packagist publishes the ROOT composer.json; sdks/php/composer.json is the
+  // one PHP developers work with. Everything but the paths must agree.
+  it("root composer.json matches sdks/php/composer.json (Packagist reads the root one)", () => {
+    const root = JSON.parse(read("composer.json"));
+    const sdk = JSON.parse(read("sdks/php/composer.json"));
+    const pathKeys = new Set(["autoload", "autoload-dev", "require-dev", "scripts"]);
+    const strip = (c: Record<string, unknown>) => Object.fromEntries(Object.entries(c).filter(([k]) => !pathKeys.has(k)));
+    expect(strip(root)).toEqual(strip(sdk));
+    expect(root.version).toBeUndefined();
+    expect(root.autoload).toEqual({ "psr-4": { "Cheki\\": "sdks/php/src/" } });
+    expect(sdk.autoload).toEqual({ "psr-4": { "Cheki\\": "src/" } });
   });
 });

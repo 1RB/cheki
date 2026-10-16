@@ -2,7 +2,7 @@
 
 > TypeScript SDK for the [cheki](https://cheki.et) receipt verification API.
 
-Verify Ethiopian bank transfer receipts from CBE, Telebirr, BOA, Dashen, M-Pesa (beta: not yet confirmed with a real receipt), Awash, Siinqee, eBirr and ZamZam (beta: one receipt shape confirmed so far) (the live banks; `getBanks()` lists the current set). Zero runtime dependencies (uses the global `fetch`, Node.js ≥ 18).
+Verify Ethiopian bank transfer receipts from CBE, Telebirr, BOA, Dashen, M-Pesa (beta: not yet confirmed with a real receipt), Awash, Siinqee, eBirr and ZamZam (beta: one receipt shape confirmed so far) (the live banks; `getBanks()` lists the current set). Zero runtime dependencies (uses the global `fetch`, Node.js ≥ 20).
 
 Website: [cheki.et](https://cheki.et) · API reference: [cheki.et/docs](https://cheki.et/docs) · Integration guide and every SDK: [cheki.et/developers](https://cheki.et/developers) · Supported banks: [cheki.et/banks](https://cheki.et/banks)
 
@@ -64,13 +64,25 @@ for (const item of batch.results) {
 }
 ```
 
-More than 20 receipts (or none) throws `ChekiValidationError` before any request. Each receipt also counts against the per-IP verify limit (30 per minute).
+More than 20 receipts (or none) throws `ChekiValidationError` before any request. Each receipt also counts against the per-IP verify limit (30 per minute), and a batch is never retried after a 5xx or network error, so send long lists in chunks of `RECOMMENDED_BATCH_CHUNK` (15):
+
+```ts
+import { RECOMMENDED_BATCH_CHUNK } from "cheki-verify";
+
+for (let i = 0; i < receipts.length; i += RECOMMENDED_BATCH_CHUNK) {
+  const batch = await cheki.verifyBatch(receipts.slice(i, i + RECOMMENDED_BATCH_CHUNK));
+  // ...
+}
+```
+
+A failed item has `success: false`, `status` and `error`, plus `fallbackUrl` when the server sends one for a geo-blocked bank.
 
 ### Banks and health
 
 ```ts
 const { banks } = await cheki.getBanks();
-for (const b of banks) console.log(b.id, b.name, b.type, b.status, b.requiresAccount, b.accountDigits);
+for (const b of banks) console.log(b.id, b.name, b.type, b.status, b.beta, b.requiresAccount, b.accountDigits);
+// b.beta: live, but not yet confirmed with enough real receipts (M-Pesa, ZamZam)
 // b.code is a deprecated alias of b.id
 // b.formats: the bank's receipt formats, current first (status "current" | "legacy" | "deprecated")
 console.log(banks.find((b) => b.id === "cbe")?.formats.find((f) => f.supported)?.label); // "Receipt ID or mbreciept.cbe.com.et link"
@@ -89,7 +101,7 @@ cheki.getReceiptUrl("dashen", "B22WDTI2619100WH");
 // https://cheki.et/api/receipt?bank=dashen&reference=B22WDTI2619100WH (redirects to Dashen's own receipt page)
 ```
 
-Only `cbe`, `zemen`, `dashen` and `zamzam` are supported; anything else throws `ChekiValidationError`. CBE, Dashen and ZamZam links redirect to the bank's own page; Zemen (and older CBE receipts) are served as the bank's PDF.
+Only `cbe`, `zemen`, `dashen` and `zamzam` are supported; anything else throws `ChekiValidationError`, and so does a ZamZam receipt id that is not digits only. CBE, Dashen and ZamZam links redirect to the bank's own page; Zemen (and older CBE receipts) are served as the bank's PDF.
 
 ### Older receipts
 
@@ -116,9 +128,13 @@ Status codes: 400 bad input, 404 unsupported bank, 413 too large, 422 receipt no
 ## Timeouts and retries
 
 - Each attempt waits up to **65 s** (`DEFAULT_TIMEOUT_MS`). The server may spend up to 60 s on a slow bank (older CBE PDFs).
-- **No retries on 4xx** (except 429) and **none on timeouts** (the server may still be working on the request).
-- **At most one retry** (`MAX_RETRIES = 1`) on a network error, 5xx or 429. The retry waits for `Retry-After` when the server sends one (up to 60 s; a longer wait is thrown as `ChekiRateLimitError` instead), otherwise 1-2 s.
-- The server tries each bank at most 2 times, so one `verify()` reaches the bank at most **4 times** (a batch: 4 per receipt). Worst-case wall time is about 2 × 65 s plus the retry wait.
+- **At most one retry** (`MAX_RETRIES = 1`), and only where it is safe (the same rule in every cheki SDK):
+  - `GET` (banks, health): a network error or a 5xx.
+  - verify: a network error, or a 429/503 whose `Retry-After` is at most 60 s.
+  - batch: only a 429/503 with a short `Retry-After`. Never a network error or a 5xx: a 504 means the batch ran out of server time, and replaying it would hit every bank again and charge every receipt against the rate limit.
+  - Never: timeouts, other 4xx, a geo-blocked bank (502 with `fallbackUrl`), or any error the server marks `retryable: false`. A 500/502/504 on verify is not retried either: the server already ran the check, with its own 2 attempts per bank.
+- The retry waits for `Retry-After` (a longer wait than 60 s is thrown as `ChekiRateLimitError` instead); a network-error retry waits 1-2 s. Timeouts are never retried because the server may still be working on the request.
+- The server tries each bank at most 2 times, so one `verify()` reaches the bank at most **4 times**.
 
 ```ts
 const cheki = new Cheki({

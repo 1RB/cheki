@@ -23,10 +23,19 @@ bank/wallet receipts:
 result has ``success=True`` but ``verified=False``.
 
 Retries and timeouts: each attempt waits up to 65 s (the server may take up
-to 60 s). The client retries at most once, on network errors, 5xx and 429
-(honouring a Retry-After of up to 60 s). Other 4xx and timeouts are never
-retried. The server makes up to 2 attempts per bank fetch, so one call
-reaches a bank at most 2 x 2 = 4 times.
+to 60 s). The client retries at most once, and only where that is safe (the
+same rule in every cheki SDK):
+
+* ``GET`` (banks, health): network errors and 5xx.
+* ``POST /api/verify``: network errors, and 429/503 with a Retry-After of at
+  most 60 s. Never a 500/502/504: the server already ran the check (and hit
+  the bank), and a geo-blocked bank answers 502 every time.
+* ``POST /api/verify/batch``: only 429/503 with a short Retry-After. A 504
+  means the batch ran out of time; replaying it would hit every bank again
+  and charge every receipt against the rate limit. Send long lists in chunks
+  of at most :data:`RECOMMENDED_BATCH_CHUNK`.
+* Never: timeouts, other 4xx, or an answer with ``retryable: false`` or a
+  ``fallbackUrl``.
 
 Example::
 
@@ -65,7 +74,14 @@ from cheki.client_types import (
     ClientVerifyResult,
 )
 
-__all__ = ["ChekiClient", "DEFAULT_BASE_URL", "MAX_BATCH_SIZE", "MAX_RETRIES", "DEFAULT_TIMEOUT"]
+__all__ = [
+    "ChekiClient",
+    "DEFAULT_BASE_URL",
+    "MAX_BATCH_SIZE",
+    "RECOMMENDED_BATCH_CHUNK",
+    "MAX_RETRIES",
+    "DEFAULT_TIMEOUT",
+]
 
 logger = logging.getLogger("cheki.client")
 
@@ -83,6 +99,13 @@ MAX_RETRIES = 1
 #: Most receipts per batch request.
 MAX_BATCH_SIZE = 20
 
+#: Recommended chunk size for long lists: a batch is never retried, so smaller
+#: chunks lose less work to a 504, and 15 leaves room in the per-IP verify
+#: budget (30 per minute) for single checks.
+RECOMMENDED_BATCH_CHUNK = 15
+
+_BATCH_PATH = "/api/verify/batch"
+
 #: A Retry-After longer than this (seconds) is not waited out.
 _MAX_RETRY_AFTER = 60.0
 
@@ -93,6 +116,15 @@ _RETRY_BASE_DELAY = 1.0
 #: (0 = none). For CBE only an older FT reference needs the account; the
 #: current format, a Receipt ID from a mbreciept.cbe.com.et link, needs none.
 RECEIPT_DOWNLOAD_BANKS: dict[str, int] = {"cbe": 8, "zemen": 0, "dashen": 0, "zamzam": 0}
+
+#: Stricter reference rules the server applies per bank: a ZamZam receipt id
+#: is digits only.
+_RECEIPT_REFERENCE_RULES: dict[str, tuple[re.Pattern[str], str]] = {
+    "zamzam": (
+        re.compile(r"[0-9]+"),
+        "A ZamZam receipt id is digits only (the number at the end of the receipt link).",
+    ),
+}
 
 #: An older CBE FT reference (legacy format, needs the account).
 _LEGACY_CBE_REFERENCE = re.compile(r"FT[A-Za-z0-9]{8,12}", re.IGNORECASE)
@@ -110,10 +142,14 @@ class ChekiClient:
             public cheki API does not require a key, but self-hosted or
             rate-limited deployments may use one.
         timeout: Per-attempt timeout in seconds (default 65).
-        max_retries: Retries on network errors, 5xx and 429. Clamped to
-            0..1 (default 1), so there are at most 2 attempts.
+        max_retries: Retries where a retry is safe (see the module docs).
+            Clamped to 0..1 (default 1), so there are at most 2 attempts.
         session: Optional pre-configured :class:`requests.Session` to
-            reuse connections. One is created if omitted.
+            reuse connections. One is created if omitted. The client never
+            changes a session you pass: the ``User-Agent`` and
+            ``Authorization`` headers go on each request, so the API key is
+            never sent to other hosts the session talks to. :meth:`close`
+            only closes a session the client created.
         user_agent: Value for the ``User-Agent`` header.
     """
 
@@ -130,15 +166,17 @@ class ChekiClient:
         self.api_key = api_key
         self.timeout = timeout
         self.max_retries = max(0, min(MAX_RETRIES, int(max_retries)))
-        self.session = session or requests.Session()
+        self._owns_session = session is None
+        self.session = session if session is not None else requests.Session()
 
-        ua = user_agent or f"cheki-python-sdk/{_VERSION}"
-        self.session.headers.update({
+        # Per-request headers: a caller's session is never mutated, so the
+        # key cannot leak to other hosts it is used for.
+        self._headers: dict[str, str] = {
             "Accept": "application/json",
-            "User-Agent": ua,
-        })
+            "User-Agent": user_agent or f"cheki-python-sdk/{_VERSION}",
+        }
         if api_key:
-            self.session.headers["Authorization"] = f"Bearer {api_key}"
+            self._headers["Authorization"] = f"Bearer {api_key}"
 
     # ─── Public API ──────────────────────────────────────────────────
 
@@ -195,7 +233,10 @@ class ChekiClient:
     ) -> ClientBatchResult:
         """Verify up to 20 receipts in a single request.
 
-        Each item also counts against the per-IP verify limit (30/min).
+        Each item also counts against the per-IP verify limit (30/min). The
+        batch is never replayed on a 5xx or network error (only on 429/503
+        with a short Retry-After); split long lists into chunks of at most
+        :data:`RECOMMENDED_BATCH_CHUNK`.
 
         Args:
             receipts: Receipt dicts, each with ``bank`` plus ``reference``
@@ -203,8 +244,8 @@ class ChekiClient:
                 ``phoneNumber`` (snake_case keys are accepted too).
 
         Raises:
-            ValueError: For an empty batch or more than 20 receipts (no
-                request is made).
+            ValueError: For an empty batch, more than 20 receipts, or an
+                item without ``bank`` (no request is made).
 
         Returns:
             A :class:`ClientBatchResult` with per-receipt ``results`` in
@@ -221,8 +262,11 @@ class ChekiClient:
 
         # Normalise optional fields so empty/None values are not sent.
         cleaned: list[dict[str, Any]] = []
-        for receipt in receipts:
-            item: dict[str, Any] = {"bank": receipt["bank"]}
+        for position, receipt in enumerate(receipts):
+            bank = receipt.get("bank") if isinstance(receipt, Mapping) else None
+            if not isinstance(bank, str) or not bank.strip():
+                raise ValueError(f"verify_batch: receipt {position} has no 'bank'.")
+            item: dict[str, Any] = {"bank": bank}
             for src, dst in (
                 ("reference", "reference"),
                 ("accountNumber", "accountNumber"),
@@ -238,7 +282,7 @@ class ChekiClient:
             cleaned.append(item)
 
         data, status, retry_after = self._request(
-            "POST", "/api/verify/batch",
+            "POST", _BATCH_PATH,
             json={"receipts": cleaned}, raise_on_error=False,
         )
         return ClientBatchResult.from_dict(data, http_status=status, retry_after=retry_after)
@@ -270,7 +314,7 @@ class ChekiClient:
 
         Supported: CBE, Dashen, Zemen and ZamZam. Lead with the current
         format: a CBE Receipt ID (from the mbreciept.cbe.com.et link), a Dashen
-        FT Ref or a ZamZam receipt id, which the server answers with a redirect
+        FT Ref or a ZamZam receipt id (digits only), which the server answers with a redirect
         to the bank's own receipt page. An older CBE FT reference (legacy) also needs the receiving
         account (at least its last 8 digits) and comes back as the bank's
         PDF. No request is made.
@@ -285,6 +329,9 @@ class ChekiClient:
         ref = reference.strip()
         if not _SAFE_REFERENCE.fullmatch(ref) or ".." in ref:
             raise ValueError("reference must be 1-64 letters, digits, dots, dashes or underscores.")
+        rule = _RECEIPT_REFERENCE_RULES.get(bank_id)
+        if rule is not None and not rule[0].fullmatch(ref):
+            raise ValueError(rule[1])
         params: dict[str, str] = {"bank": bank_id, "reference": ref}
         digits = RECEIPT_DOWNLOAD_BANKS[bank_id]
         if digits and (bank_id != "cbe" or _LEGACY_CBE_REFERENCE.fullmatch(ref)):
@@ -300,8 +347,9 @@ class ChekiClient:
     # Convenience: use the client as a context manager. ───────────────
 
     def close(self) -> None:
-        """Close the underlying HTTP session."""
-        self.session.close()
+        """Close the HTTP session if the client created it (a session you passed in stays open)."""
+        if self._owns_session:
+            self.session.close()
 
     def __enter__(self) -> "ChekiClient":
         return self
@@ -319,10 +367,10 @@ class ChekiClient:
         json: dict[str, Any] | None = None,
         raise_on_error: bool = True,
     ) -> tuple[dict[str, Any], int, float | None]:
-        """Perform an HTTP request with at most one retry.
+        """Perform an HTTP request with at most one retry, only where safe.
 
-        Retried: network errors, 5xx, and 429 when Retry-After is at most
-        60 s. Never retried: other 4xx and timeouts.
+        See the module docs and :meth:`_should_retry`. Timeouts are never
+        retried; a network error is retried except for the batch endpoint.
 
         Returns:
             ``(decoded_json, http_status, retry_after_seconds)``.
@@ -340,21 +388,22 @@ class ChekiClient:
             can_retry = attempt < self.max_retries
             attempt += 1
             try:
-                response = self.session.request(method, url, json=json, timeout=self.timeout)
+                response = self.session.request(method, url, json=json, headers=self._headers, timeout=self.timeout)
             except requests.Timeout as exc:
                 # The server may still be working on it (and talking to the bank).
                 raise ChekiTimeoutError(f"Request to {url} timed out after {self.timeout}s.") from exc
             except requests.RequestException as exc:
                 logger.debug("cheki: network error (attempt %d): %s", attempt, exc)
-                if can_retry:
+                # A batch may have reached the server before the connection
+                # broke; replaying it would run (and charge) every receipt again.
+                if can_retry and path != _BATCH_PATH:
                     self._sleep(None)
                     continue
                 raise ChekiNetworkError(f"Network error calling {url}: {exc}") from exc
 
             status = response.status_code
             retry_after = self._retry_after(response)
-            retryable = status == 429 or status >= 500
-            if retryable and can_retry and (retry_after is None or retry_after <= _MAX_RETRY_AFTER):
+            if can_retry and self._should_retry(method, status, retry_after, response):
                 logger.debug("cheki: retrying after status %d (Retry-After=%s)", status, retry_after)
                 self._sleep(retry_after)
                 continue
@@ -397,6 +446,28 @@ class ChekiClient:
         if status == 413:
             return ChekiPayloadTooLargeError(message, status_code=status, body=body)
         return ChekiAPIError(message, status_code=status, body=body)
+
+    @staticmethod
+    def _should_retry(method: str, status: int, retry_after: float | None, response: requests.Response) -> bool:
+        """The shared retry rule (``retryCases`` in sdks/fixtures/api-contract.json).
+
+        Never when the body says ``retryable: false`` or has a ``fallbackUrl``
+        (a geo-blocked bank answers the same way every time). 429 and 503 only
+        with a Retry-After of at most 60 s. Any other 5xx only for GET.
+        """
+        if status != 429 and status < 500:
+            return False
+        try:
+            body = response.json()
+        except ValueError:
+            body = None
+        if isinstance(body, Mapping) and (body.get("retryable") is False or isinstance(body.get("fallbackUrl"), str)):
+            return False
+        if status in (429, 503):
+            return retry_after is not None and retry_after <= _MAX_RETRY_AFTER
+        if status >= 500 and method == "GET":
+            return retry_after is None or retry_after <= _MAX_RETRY_AFTER
+        return False
 
     @staticmethod
     def _extract_error_message(payload: Any, text: str) -> str:

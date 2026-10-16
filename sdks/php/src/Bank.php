@@ -19,6 +19,8 @@ class Bank
     public ?string $type;
     /** 'live' or 'in-development'. */
     public ?string $status;
+    /** Live, but not yet confirmed with enough real receipts (M-Pesa and ZamZam today). */
+    public bool $beta;
     public bool $requiresAccount;
     /** Trailing account digits the bank needs, when it needs an account. */
     public ?int $accountDigits;
@@ -49,7 +51,8 @@ class Bank
         ?string $initials = null,
         ?string $swift = null,
         ?array $raw = null,
-        array $formats = []
+        array $formats = [],
+        bool $beta = false
     ) {
         $this->id              = $id;
         $this->code            = $id;
@@ -65,6 +68,7 @@ class Bank
         $this->swift           = $swift;
         $this->raw             = $raw;
         $this->formats         = $formats;
+        $this->beta            = $beta;
     }
 
     /** @param array<string, mixed> $data */
@@ -87,7 +91,8 @@ class Bank
             formats:         array_values(array_map(
                 static fn ($f): ReceiptFormat => ReceiptFormat::fromArray(is_array($f) ? $f : []),
                 is_array($data['formats'] ?? null) ? $data['formats'] : []
-            ))
+            )),
+            beta:            ($data['beta'] ?? false) === true
         );
     }
 

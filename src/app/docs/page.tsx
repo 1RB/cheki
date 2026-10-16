@@ -1063,9 +1063,14 @@ docker-compose up -d
                 verified, decodedOnly and parsed fields, batch counts, typed 429 (with
                 Retry-After) and 413 errors, and a client-side limit of 20 receipts per
                 batch. Each attempt waits up to 65 seconds (the server may take up to 60).
-                They never retry a 4xx or a timeout, and retry at most once on a
-                network error, 5xx or 429 (after Retry-After). The server makes at most
-                2 attempts per bank fetch, so one SDK call reaches a bank at most 4 times.
+                They retry at most once, and only where it is safe: GET requests on a
+                network error or 5xx, a verify on a network error or a 429/503 with a
+                Retry-After of up to 60 s, and a batch only on a 429/503 with a short
+                Retry-After. A timeout, another 4xx, a geo-blocked bank (502 with
+                fallbackUrl) and a 5xx on a verify or batch POST are never retried, so a
+                batch is never replayed: send long lists in chunks of 15 or fewer. The
+                server makes at most 2 attempts per bank fetch, so one SDK call reaches a
+                bank at most 4 times.
               </p>
               <DocsTabs tabs={sdkTabs} />
 

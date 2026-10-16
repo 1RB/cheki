@@ -40,7 +40,7 @@ import (
 )
 
 // Version is the SDK version sent in the User-Agent header.
-const Version = "1.4.1"
+const Version = "1.5.0"
 
 // DefaultBaseURL is the default cheki API endpoint.
 const DefaultBaseURL = "https://cheki.et"
@@ -50,12 +50,19 @@ const DefaultBaseURL = "https://cheki.et"
 const DefaultTimeout = 65 * time.Second
 
 // MaxRetries is the most retries the client makes on top of the first
-// attempt. The server already tries each bank fetch up to 2 times, so one
-// SDK call reaches a bank at most 2 x 2 = 4 times.
+// attempt, and only where a retry is safe (see Client). The server already
+// tries each bank fetch up to 2 times.
 const MaxRetries = 1
 
 // MaxBatchSize is the most receipts VerifyBatch accepts.
 const MaxBatchSize = 20
+
+// RecommendedBatchChunk is the chunk size to use for long lists. A batch is
+// never retried, so smaller chunks lose less work to a 504, and 15 leaves
+// room in the per-IP verify budget (30 per minute) for single checks.
+const RecommendedBatchChunk = 15
+
+const batchPath = "/api/verify/batch"
 
 const (
 	maxRetryAfter  = 60 * time.Second
@@ -67,6 +74,15 @@ const (
 // only an older FT reference (legacyCBEReference) needs the account; the
 // current format, a Receipt ID from a mbreciept.cbe.com.et link, needs none.
 var ReceiptDownloadBanks = map[string]int{"cbe": 8, "zemen": 0, "dashen": 0, "zamzam": 0}
+
+// receiptReferenceRules are stricter per-bank reference rules the server
+// applies: a ZamZam receipt id is digits only.
+var receiptReferenceRules = map[string]struct {
+	pattern *regexp.Regexp
+	hint    string
+}{
+	"zamzam": {regexp.MustCompile(`^[0-9]+$`), "a ZamZam receipt id is digits only (the number at the end of the receipt link)"},
+}
 
 // legacyCBEReference matches an older CBE FT reference (legacy format).
 var legacyCBEReference = regexp.MustCompile(`(?i)^FT[A-Za-z0-9]{8,12}$`)
@@ -86,6 +102,17 @@ var (
 )
 
 // Client is the cheki API client.
+//
+// Retries (at most one, the same in every cheki SDK):
+//   - GET (GetBanks, GetHealth): network errors and 5xx.
+//   - POST /api/verify: network errors, and 429/503 with a Retry-After of at
+//     most 60 s. Never 500/502/504: the server already ran the check (a
+//     geo-blocked bank answers 502 every time).
+//   - POST /api/verify/batch: only 429/503 with a short Retry-After. A 504
+//     means the batch ran out of time; replaying it would hit every bank
+//     again and charge every receipt against the rate limit.
+//   - Never: timeouts, a cancelled context, other 4xx, and any answer with
+//     "retryable": false or a fallbackUrl.
 type Client struct {
 	baseURL    string
 	httpClient *http.Client
@@ -123,8 +150,8 @@ func WithTimeout(d time.Duration) Option {
 	return func(c *Client) { c.timeout = d }
 }
 
-// WithMaxRetries sets the retries on network errors, 5xx and 429. Values
-// are clamped to 0..MaxRetries.
+// WithMaxRetries sets the retries (only where safe, see Client). Values are
+// clamped to 0..MaxRetries.
 func WithMaxRetries(n int) Option {
 	return func(c *Client) {
 		if n < 0 {
@@ -185,7 +212,9 @@ func (c *Client) Verify(ctx context.Context, opts VerifyOptions) (*VerifyResult,
 }
 
 // VerifyBatch verifies up to MaxBatchSize receipts in one request. Every
-// item also counts against the per-IP verify limit (30 per minute).
+// item also counts against the per-IP verify limit (30 per minute). A batch
+// is never replayed on a 5xx or network error; split long lists into chunks
+// of RecommendedBatchChunk or fewer.
 func (c *Client) VerifyBatch(ctx context.Context, receipts []VerifyOptions) (*BatchResult, error) {
 	if len(receipts) == 0 {
 		return nil, fmt.Errorf("%w: at least one receipt is required", ErrInvalidInput)
@@ -200,7 +229,7 @@ func (c *Client) VerifyBatch(ctx context.Context, receipts []VerifyOptions) (*Ba
 		return nil, fmt.Errorf("cheki: failed to marshal request: %w", err)
 	}
 	var result BatchResult
-	if err := c.do(ctx, http.MethodPost, "/api/verify/batch", body, &result); err != nil {
+	if err := c.do(ctx, http.MethodPost, batchPath, body, &result); err != nil {
 		return nil, err
 	}
 	for i := range result.Results {
@@ -235,7 +264,7 @@ func (c *Client) GetHealth(ctx context.Context) (*HealthStatus, error) {
 // GetReceiptURL returns the URL of GET /api/receipt, which opens the bank's
 // own copy of a receipt. Supported: CBE, Dashen, Zemen and ZamZam. Lead with
 // the current format: a CBE Receipt ID, a Dashen FT Ref or a ZamZam receipt
-// id, which the server answers with a redirect to the bank's own receipt page. An older CBE FT
+// id (digits only), which the server answers with a redirect to the bank's own receipt page. An older CBE FT
 // reference (legacy) also needs the receiving account (at least its last 8
 // digits) and comes back as the bank's PDF. No request is made.
 func (c *Client) GetReceiptURL(bank, reference, accountNumber string) (string, error) {
@@ -247,6 +276,9 @@ func (c *Client) GetReceiptURL(bank, reference, accountNumber string) (string, e
 	ref := strings.TrimSpace(reference)
 	if !safeReference.MatchString(ref) || strings.Contains(ref, "..") {
 		return "", fmt.Errorf("%w: reference must be 1-64 letters, digits, dots, dashes or underscores", ErrInvalidInput)
+	}
+	if rule, ok := receiptReferenceRules[id]; ok && !rule.pattern.MatchString(ref) {
+		return "", fmt.Errorf("%w: %s", ErrInvalidInput, rule.hint)
 	}
 	q := url.Values{}
 	q.Set("bank", id)
@@ -261,17 +293,17 @@ func (c *Client) GetReceiptURL(bank, reference, accountNumber string) (string, e
 	return c.baseURL + "/api/receipt?" + q.Encode(), nil
 }
 
-// do performs the request with at most one retry.
-//
-// Retried: network errors, 5xx, and 429 when Retry-After is at most 60 s.
-// Never retried: other 4xx, timeouts, a cancelled context.
+// do performs the request with at most one retry, only where it is safe
+// (see Client and shouldRetry).
 func (c *Client) do(ctx context.Context, method, path string, body []byte, target any) error {
 	for attempt := 0; ; attempt++ {
 		canRetry := attempt < c.maxRetries
 		status, raw, header, err := c.attempt(ctx, method, path, body)
 		if err != nil {
 			var te *timeoutError
-			if errors.As(err, &te) || ctx.Err() != nil || !canRetry {
+			// A batch may have reached the server before the connection
+			// broke; replaying it would run (and charge) every receipt again.
+			if errors.As(err, &te) || ctx.Err() != nil || !canRetry || path == batchPath {
 				return err
 			}
 			if werr := sleep(ctx, retryDelay(-1)); werr != nil {
@@ -288,8 +320,7 @@ func (c *Client) do(ctx context.Context, method, path string, body []byte, targe
 		}
 
 		apiErr := newAPIError(method, path, status, raw, header)
-		retryable := status == http.StatusTooManyRequests || status >= 500
-		if retryable && canRetry && (apiErr.RetryAfter < 0 || apiErr.RetryAfter <= maxRetryAfter) {
+		if canRetry && shouldRetry(method, apiErr) {
 			if werr := sleep(ctx, retryDelay(apiErr.RetryAfter)); werr != nil {
 				return werr
 			}
@@ -297,6 +328,23 @@ func (c *Client) do(ctx context.Context, method, path string, body []byte, targe
 		}
 		return apiErr
 	}
+}
+
+// shouldRetry is the retry rule shared by every cheki SDK (retryCases in
+// sdks/fixtures/api-contract.json): never when the body says
+// "retryable": false or carries a fallbackUrl; 429 and 503 only with a
+// Retry-After of at most 60 s; any other 5xx only for GET.
+func shouldRetry(method string, e *APIError) bool {
+	if e.notRetryable || e.FallbackURL != "" {
+		return false
+	}
+	switch {
+	case e.StatusCode == http.StatusTooManyRequests || e.StatusCode == http.StatusServiceUnavailable:
+		return e.RetryAfter >= 0 && e.RetryAfter <= maxRetryAfter
+	case e.StatusCode >= 500 && method == http.MethodGet:
+		return e.RetryAfter < 0 || e.RetryAfter <= maxRetryAfter
+	}
+	return false
 }
 
 type timeoutError struct {
@@ -410,6 +458,9 @@ type APIError struct {
 	RetryAfter time.Duration
 	// Body is the raw response body.
 	Body string
+
+	// notRetryable is set when the body says "retryable": false.
+	notRetryable bool
 }
 
 func newAPIError(method, path string, status int, raw []byte, header http.Header) *APIError {
@@ -423,10 +474,12 @@ func newAPIError(method, path string, status int, raw []byte, header http.Header
 	var envelope struct {
 		Error       string `json:"error"`
 		FallbackURL string `json:"fallbackUrl"`
+		Retryable   *bool  `json:"retryable"`
 	}
 	if json.Unmarshal(raw, &envelope) == nil {
 		e.Message = envelope.Error
 		e.FallbackURL = envelope.FallbackURL
+		e.notRetryable = envelope.Retryable != nil && !*envelope.Retryable
 	}
 	return e
 }

@@ -69,8 +69,15 @@ class VerifyResult {
   final String? bankAccountNumber;
   final String? bankAccountName;
 
+  /// Order ID printed on the receipt (CBE Birr).
+  final String? orderId;
+
   /// Error text (failed batch items).
   final String? error;
+
+  /// A failed batch item for a geo-blocked bank, when the server sends it:
+  /// open this link in a browser in Ethiopia instead.
+  final String? fallbackUrl;
 
   /// Failed batch items: the HTTP status a single verify would have returned.
   final int? status;
@@ -115,7 +122,9 @@ class VerifyResult {
     this.paymentChannel,
     this.bankAccountNumber,
     this.bankAccountName,
+    this.orderId,
     this.error,
+    this.fallbackUrl,
     this.status,
     this.index,
   });
@@ -162,7 +171,9 @@ class VerifyResult {
       paymentChannel: _toStr(json['paymentChannel']),
       bankAccountNumber: _toStr(json['bankAccountNumber']),
       bankAccountName: _toStr(json['bankAccountName']),
+      orderId: _toStr(json['orderId']),
       error: _toStr(json['error']),
+      fallbackUrl: _toStr(json['fallbackUrl']),
       status: _toInt(json['status']),
       index: index,
     );
@@ -206,7 +217,9 @@ class VerifyResult {
       'paymentChannel': paymentChannel,
       'bankAccountNumber': bankAccountNumber,
       'bankAccountName': bankAccountName,
+      'orderId': orderId,
       'error': error,
+      'fallbackUrl': fallbackUrl,
       'status': status,
     };
     m.removeWhere((_, v) => v == null);
@@ -240,6 +253,10 @@ class BankInfo {
 
   /// `live` or `in-development`.
   final String status;
+
+  /// Live, but not yet confirmed with enough real receipts (M-Pesa and
+  /// ZamZam today).
+  final bool beta;
   final bool requiresAccount;
 
   /// Trailing account digits the bank needs, when it needs an account.
@@ -264,6 +281,7 @@ class BankInfo {
     required this.status,
     this.swift,
     this.type,
+    this.beta = false,
     this.requiresAccount = false,
     this.accountDigits,
     this.requiresPhone = false,
@@ -285,6 +303,7 @@ class BankInfo {
       status: _toStr(json['status']) ?? 'unknown',
       swift: _toStr(json['swift']),
       type: _toStr(json['type']),
+      beta: json['beta'] == true,
       requiresAccount: json['requiresAccount'] == true,
       accountDigits: _toInt(json['accountDigits']),
       requiresPhone: json['requiresPhone'] == true,
@@ -305,6 +324,7 @@ class BankInfo {
       'swift': swift,
       'type': type,
       'status': status,
+      if (beta) 'beta': true,
       'requiresAccount': requiresAccount,
       'accountDigits': accountDigits,
       'requiresPhone': requiresPhone,

@@ -23,6 +23,7 @@ from cheki import (
     ChekiTimeoutError,
     ClientVerifyResult,
     MAX_BATCH_SIZE,
+    RECOMMENDED_BATCH_CHUNK,
     VerificationResult,
     VerificationStatus,
 )
@@ -121,6 +122,10 @@ def test_banks():
     assert [f.status for f in banks[0].formats] == ["current", "legacy"]
     assert banks[0].formats[0].inputs == ["receiptId"]
     assert banks[0].formats[1].account_digits == 8
+    # beta: true for M-Pesa and ZamZam, False when the server omits it.
+    by_id = {b.id: b for b in banks}
+    assert by_id["zamzam"].beta is True and by_id["mpesa"].beta is True and banks[0].beta is False
+    assert by_id["zamzam"].to_dict()["beta"] is True
 
 
 @pytest.mark.parametrize("case", CONTRACT["receiptUrlCases"], ids=lambda c: c["name"])
@@ -203,11 +208,103 @@ def test_get_banks_raises_payload_too_large():
 
 
 @responses.activate
-def test_502_retried_once_with_fallback():
-    add("error_502_geo_blocked")
+def test_502_geo_blocked_not_retried_with_fallback():
+    add("error_502_geo_blocked", extra_headers={"Retry-After": "0"})
     r = client().verify("telebirr", "CHQ0FJ403O")
     assert r.fallback_url.startswith("https://transactioninfo")
+    assert r.http_status == 502
+    assert len(responses.calls) == 1
+
+
+def _call_for(path: str, c: ChekiClient):
+    if path == "/api/verify":
+        return lambda: c.verify("telebirr", "CHQ0FJ403O")
+    if path == "/api/verify/batch":
+        return lambda: c.verify_batch([{"bank": "telebirr", "reference": "CHQ0FJ403O"}])
+    if path == "/api/banks":
+        return c.get_banks
+    return c.get_health
+
+
+@responses.activate
+@pytest.mark.parametrize("case", CONTRACT["retryCases"], ids=lambda c: c["name"])
+def test_shared_retry_cases(case):
+    """The same retry rule as every other cheki SDK (retryCases in the fixture)."""
+    kwargs: dict = {"status": case["status"], "headers": dict(case["headers"])}
+    if "rawBody" in case:
+        kwargs["body"] = case["rawBody"]
+    else:
+        kwargs["json"] = case["body"]
+    responses.add(getattr(responses, case["method"]), f"{API}{case['path']}", **kwargs)
+    try:
+        out = _call_for(case["path"], client())()
+    except ChekiAPIError as exc:
+        assert exc.status_code == case["status"]
+    else:
+        # verify()/verify_batch() put JSON API errors on the result.
+        assert getattr(out, "http_status", None) == case["status"]
+    assert responses.calls[0].request.method == case["method"]
+    assert len(responses.calls) == (2 if case["retried"] else 1)
+
+
+@responses.activate
+def test_batch_not_replayed_after_network_error():
+    responses.add(responses.POST, f"{API}/api/verify/batch", body=requests.ConnectionError("reset"))
+    with pytest.raises(ChekiNetworkError):
+        client().verify_batch([{"bank": "cbe", "reference": "X1"}])
+    assert len(responses.calls) == 1
+
+
+@responses.activate
+def test_verify_retried_once_after_network_error():
+    responses.add(responses.POST, f"{API}/api/verify", body=requests.ConnectionError("refused"))
+    with pytest.raises(ChekiNetworkError):
+        client().verify("cbe", "X1")
     assert len(responses.calls) == 2
+
+
+def test_batch_item_without_bank_rejected_without_request():
+    with pytest.raises(ValueError, match="no 'bank'"):
+        client().verify_batch([{"reference": "X1"}])
+
+
+def test_recommended_chunk_within_limit():
+    assert RECOMMENDED_BATCH_CHUNK <= MAX_BATCH_SIZE
+
+
+@responses.activate
+def test_order_id_and_batch_fallback_url():
+    add("verify_order_id")
+    r = client().verify("cbebirr", "CB2610ABCD", phone_number="251911000000")
+    assert r.order_id == "ORD123456789"
+    responses.add(
+        responses.POST,
+        f"{API}/api/verify/batch",
+        json={
+            "success": True,
+            "results": ["junk", {"success": False, "error": "geo", "status": 502, "fallbackUrl": "https://x.test/r"}],
+            "total": 2, "verified": 0, "failed": 2, "cached": 0,
+        },
+    )
+    b = client().verify_batch([{"bank": "telebirr", "reference": "A1"}, {"bank": "telebirr", "reference": "B2"}])
+    assert b.results[0].fallback_url == "https://x.test/r"
+    assert b.results[0].index == 1  # position in the response, not shifted by the skipped item
+
+
+@responses.activate
+def test_caller_session_is_not_mutated_and_key_is_per_request():
+    session = requests.Session()
+    before = dict(session.headers)
+    add("health")
+    c = ChekiClient(base_url=API, api_key="sekret", session=session)
+    c.get_health()
+    assert dict(session.headers) == before
+    assert "Authorization" not in session.headers
+    assert responses.calls[0].request.headers["Authorization"] == "Bearer sekret"
+    assert responses.calls[0].request.headers["User-Agent"].startswith("cheki-python-sdk/")
+    c.close()
+    # A session the caller passed in stays usable after close().
+    assert session.adapters
 
 
 @responses.activate

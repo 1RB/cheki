@@ -16,6 +16,13 @@ class AwashVerifier(BankVerifier):
     2KDL95Z0NR-4U61O6). The visible numeric Transaction ID on the mobile
     receipt is NOT the same token and cannot be used directly. Users must
     provide the share URL or the token extracted from it.
+
+    TLS is verified like every other bank (requests' default CA bundle).
+    The host serves a complete, publicly trusted chain (*.awashbank.com,
+    DigiCert Global G2 TLS RSA SHA256 2020 CA1, DigiCert Global Root G2;
+    checked 2026-10-15), the same chain the cheki server verifies. Versions
+    before 1.5.0 turned verification off here, which let anyone on the
+    network path forge a "verified" Awash receipt.
     """
 
     BANK_CODE = "awash"
@@ -30,7 +37,7 @@ class AwashVerifier(BankVerifier):
         url = f"https://awashpay.awashbank.com:8225/-{token}"
 
         try:
-            resp = self._get(url, verify=False)
+            resp = self._get(url)
         except requests.RequestException as exc:
             raise UpstreamError(f"Awash receipt endpoint could not be reached: {exc}")
 

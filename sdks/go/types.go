@@ -60,8 +60,13 @@ type VerifyResult struct {
 	PaymentChannel    string  `json:"paymentChannel,omitempty"`
 	BankAccountNumber string  `json:"bankAccountNumber,omitempty"`
 	BankAccountName   string  `json:"bankAccountName,omitempty"`
+	// OrderID is the order ID printed on the receipt (CBE Birr).
+	OrderID string `json:"orderId,omitempty"`
 	// Error is set on failed batch items.
 	Error string `json:"error,omitempty"`
+	// FallbackURL is set on a failed batch item for a geo-blocked bank, when
+	// the server sends it: open it in a browser in Ethiopia instead.
+	FallbackURL string `json:"fallbackUrl,omitempty"`
 }
 
 // IsVerified reports whether the bank confirmed the receipt. Success,
@@ -98,14 +103,17 @@ type BankInfo struct {
 	// Code is a deprecated alias of ID, filled in by GetBanks.
 	//
 	// Deprecated: use ID.
-	Code            string `json:"-"`
-	Name            string `json:"name"`
-	Swift           string `json:"swift,omitempty"`
-	Type            string `json:"type"`   // "bank" | "mobile" | "wallet"
-	Status          string `json:"status"` // "live" | "in-development"
-	RequiresAccount bool   `json:"requiresAccount"`
-	AccountDigits   int    `json:"accountDigits,omitempty"`
-	RequiresPhone   bool   `json:"requiresPhone,omitempty"`
+	Code   string `json:"-"`
+	Name   string `json:"name"`
+	Swift  string `json:"swift,omitempty"`
+	Type   string `json:"type"`   // "bank" | "mobile" | "wallet"
+	Status string `json:"status"` // "live" | "in-development"
+	// Beta is true for a live bank not yet confirmed with enough real
+	// receipts (M-Pesa and ZamZam today).
+	Beta            bool `json:"beta,omitempty"`
+	RequiresAccount bool `json:"requiresAccount"`
+	AccountDigits   int  `json:"accountDigits,omitempty"`
+	RequiresPhone   bool `json:"requiresPhone,omitempty"`
 	// Endpoint is the URL template of the bank's current format (informational).
 	Endpoint string `json:"endpoint,omitempty"`
 	Color    string `json:"color,omitempty"`

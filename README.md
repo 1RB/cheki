@@ -55,10 +55,11 @@ What every SDK does the same way:
 - **`verified` is the only success signal.** A 200 response can still be unverified: a BOA QR code the bank could not confirm comes back as `success: true, verified: false, decodedOnly: true`. Each SDK has a helper (`isVerified()`, `is_verified`, `IsVerified()`).
 - **QR codes go in `qrData`:** a BOA inter-bank receipt QR (bank `boa`) or the Payment QR Code on a Telebirr receipt (bank `telebirr`). The server reads the reference out of the QR and checks it with the bank; a QR on its own never verifies.
 - **Banks are identified by `id`** (`code` is kept as a deprecated alias).
-- **Batch: at most 20 receipts**, checked before sending. The response has `results`, `total`, `verified`, `failed` and `cached`; `failed` includes decoded-only QR results.
+- **Batch: at most 20 receipts**, checked before sending. The response has `results`, `total`, `verified`, `failed` and `cached`; `failed` includes decoded-only QR results. Send long lists in chunks of **15 or fewer** (`RECOMMENDED_BATCH_CHUNK`): every receipt costs one of the 30 verify requests per minute, the whole batch has 60 s on the server, and a batch is never retried.
+- **Bank `beta`** is true for live banks not yet confirmed with enough real receipts (M-Pesa and ZamZam today), and results carry `orderId` when the receipt has one (CBE Birr).
 - **Typed errors** for 429 (with the `Retry-After` seconds) and 413, and the server's `error` text and `fallbackUrl` (geo-blocked banks) on every API error.
-- **Timeouts and retries:** each attempt waits up to 65 s (the server may take up to 60 s). A 4xx (other than 429) or a timeout is never retried. A network error, 5xx or 429 is retried at most once, after `Retry-After` when the server sends one (up to 60 s). The server itself makes at most 2 attempts per bank fetch, so one SDK call reaches a bank at most **4** times (a batch: 4 per receipt).
-- **`getReceiptUrl`** builds `/api/receipt` links for CBE, Dashen, Zemen and ZamZam only, and rejects anything else. A CBE Receipt ID needs no account; an older CBE FT reference (legacy) needs the receiving account. `/api/receipt` redirects to the bank's own page for HTML receipts (CBE Receipt ID, Dashen) and returns the PDF for PDF ones.
+- **Timeouts and retries:** each attempt waits up to 65 s (the server may take up to 60 s). At most one retry, and only where it is safe: `GET` requests on a network error or 5xx; verify on a network error or a 429/503 with a `Retry-After` of at most 60 s; a batch only on a 429/503 with a short `Retry-After`. Timeouts, other 4xx, geo-blocked banks (502 with `fallbackUrl`), errors marked `retryable: false` and any 5xx on a verify or batch `POST` are never retried. The server itself makes at most 2 attempts per bank fetch, so one SDK call reaches a bank at most **4** times.
+- **`getReceiptUrl`** builds `/api/receipt` links for CBE, Dashen, Zemen and ZamZam only, and rejects anything else (a ZamZam receipt id must be digits only). A CBE Receipt ID needs no account; an older CBE FT reference (legacy) needs the receiving account. `/api/receipt` redirects to the bank's own page for HTML receipts (CBE Receipt ID, Dashen) and returns the PDF for PDF ones.
 
 | Language | Install | Package | Registry |
 |----------|---------|---------|----------|
@@ -524,7 +525,7 @@ Version bumps are automated. All package versions (web, TypeScript, Python, Go, 
 ./scripts/bump-version.sh 1.4.2
 ```
 
-The `vX.Y.Z` tag runs the publish workflow: npm, GitHub Packages, PyPI, Packagist and pub.dev (GitHub OIDC, no token), and it warms the Go module proxy for `sdks/go/vX.Y.Z`. Details in [docs/RELEASING.md](docs/RELEASING.md#releasing-sdks).
+The `vX.Y.Z` tag runs the publish workflow: npm and pub.dev (both GitHub OIDC trusted publishing, no token; npm adds provenance), GitHub Packages, PyPI and Packagist, and it warms the Go module proxy for `sdks/go/vX.Y.Z`. An existing tag can be published to npm alone with Actions → Publish SDKs → Run workflow. Details in [docs/RELEASING.md](docs/RELEASING.md#releasing-sdks).
 
 ## Contributing
 

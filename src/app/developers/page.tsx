@@ -190,7 +190,7 @@ export default function DevelopersPage() {
         <div style={{ marginBottom: "40px" }}>
           <h3 id="typescript-sdk" style={h3Style}>TypeScript SDK for receipt verification</h3>
           <p style={proseStyle}>
-            npm install cheki-verify. A typed client for the REST API with verify, verifyBatch (up to 20 receipts), getBanks, getHealth and getReceiptUrl. It has no runtime dependencies (native fetch, Node.js 18+), waits up to 65 seconds per attempt and retries a network error, 5xx or 429 at most once. Treat a receipt as paid only when isVerified(result) is true: a 200 can still be unverified, such as a BOA QR code BOA could not confirm.
+            npm install cheki-verify. A typed client for the REST API with verify, verifyBatch (up to 20 receipts), getBanks, getHealth and getReceiptUrl. It has no runtime dependencies (native fetch, Node.js 20+), waits up to 65 seconds per attempt and retries at most once, only where it is safe (never a verify or batch the server answered with a 5xx). Treat a receipt as paid only when isVerified(result) is true: a 200 can still be unverified, such as a BOA QR code BOA could not confirm.
           </p>
           <h3 id="python-library" style={{ ...h3Style, marginTop: "24px" }}>Python library for receipt verification</h3>
           <p style={proseStyle}>

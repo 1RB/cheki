@@ -13,13 +13,15 @@ Use :class:`ChekiClient`, which wraps the hosted cheki REST API
 :func:`verify` (direct verification from your own machine) is deprecated:
 its parsers lack the server's verification gate, host allowlist and parser
 fixes. It now emits a :class:`DeprecationWarning`, runs a fail-closed
-verification gate, and will be removed in the next major version.
+verification gate, and will be removed in the next major version. Since
+1.5.0 it needs ``pip install 'cheki[direct]'`` (beautifulsoup4, pdfplumber);
+the API client needs only ``requests``.
 """
 
 from cheki._version import __version__
 from cheki.result import VerificationResult, VerificationStatus
-from cheki.registry import verify, supported_banks
-from cheki.client import ChekiClient, DEFAULT_BASE_URL, MAX_BATCH_SIZE
+from cheki.registry import verify, supported_banks, DirectModeUnavailableError
+from cheki.client import ChekiClient, DEFAULT_BASE_URL, MAX_BATCH_SIZE, RECOMMENDED_BATCH_CHUNK
 from cheki.client_types import (
     ChekiClientError,
     ChekiAPIError,
@@ -41,6 +43,7 @@ __all__ = [
     "ChekiClient",
     "DEFAULT_BASE_URL",
     "MAX_BATCH_SIZE",
+    "RECOMMENDED_BATCH_CHUNK",
     "ChekiClientError",
     "ChekiAPIError",
     "ChekiRateLimitError",
@@ -58,4 +61,5 @@ __all__ = [
     "VerificationStatus",
     "verify",
     "supported_banks",
+    "DirectModeUnavailableError",
 ]

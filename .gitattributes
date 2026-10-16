@@ -1,0 +1,40 @@
+# Packagist (cheki/cheki) installs the GitHub archive of a tag, which honours
+# export-ignore. Keep that archive to the PHP SDK: the root composer.json
+# (autoload Cheki\ => sdks/php/src/), LICENSE, sdks/php/src and
+# sdks/php/README.md. Everything else is ignored here.
+#
+# A new top-level file or folder must be added below, or the "PHP SDK" CI job
+# fails (it lists `git archive HEAD` and allows only the paths above).
+# Side effect: GitHub's "Source code" downloads on releases are SDK-only too.
+# git clone, Vercel and Docker builds are unaffected (they use the checkout).
+/.gitattributes export-ignore
+/.github export-ignore
+/.gitignore export-ignore
+/CHANGELOG.md export-ignore
+/CONTRIBUTING.md export-ignore
+/Dockerfile export-ignore
+/README.md export-ignore
+/assets export-ignore
+/docker-compose.yml export-ignore
+/docs export-ignore
+/eslint.config.mjs export-ignore
+/next.config.ts export-ignore
+/package-lock.json export-ignore
+/package.json export-ignore
+/postcss.config.mjs export-ignore
+/public export-ignore
+/python export-ignore
+/scripts export-ignore
+/src export-ignore
+/tests export-ignore
+/tsconfig.json export-ignore
+/vercel.json export-ignore
+/vitest.config.ts export-ignore
+/sdks/dart export-ignore
+/sdks/fixtures export-ignore
+/sdks/go export-ignore
+/sdks/typescript export-ignore
+/sdks/php/composer.json export-ignore
+/sdks/php/examples export-ignore
+/sdks/php/phpunit.xml.dist export-ignore
+/sdks/php/tests export-ignore

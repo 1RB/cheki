@@ -87,6 +87,32 @@ void main() {
       expect(b.results[2].status, 422);
     });
 
+    test('orderId, beta and batch fallbackUrl', () async {
+      var (c, _) = clientFor([() => respond('verify_order_id')]);
+      expect((await c.verify(bank: 'cbebirr', reference: 'CB2610ABCD', phoneNumber: '251911000000')).orderId,
+          'ORD123456789');
+      (c, _) = clientFor([() => respond('banks')]);
+      final beta = {for (final b in await c.getBanks()) b.id: b.beta};
+      expect([beta['zamzam'], beta['mpesa'], beta['cbe']], [true, true, false]);
+      (c, _) = clientFor([
+        () => http.Response(
+            jsonEncode({
+              'success': true,
+              'results': [
+                {'success': false, 'error': 'geo', 'status': 502, 'fallbackUrl': 'https://x.test/r'}
+              ],
+              'total': 1,
+              'verified': 0,
+              'failed': 1,
+              'cached': 0,
+            }),
+            200)
+      ]);
+      final b = await c.verifyBatch(const [BatchReceipt(bank: 'telebirr', reference: 'A1')]);
+      expect(b.results.single.fallbackUrl, 'https://x.test/r');
+      expect(ChekiClient.recommendedBatchChunk, lessThanOrEqualTo(ChekiClient.maxBatchSize));
+    });
+
     test('banks: id, deprecated code alias, requiresPhone default', () async {
       final (c, _) = clientFor([() => respond('banks')]);
       final banks = await c.getBanks();
@@ -165,7 +191,7 @@ void main() {
       expect(calls, hasLength(1));
     });
 
-    test('502 retried once, fallbackUrl kept', () async {
+    test('502 geo-blocked is not retried, fallbackUrl kept', () async {
       final (c, calls) = clientFor([
         () => respond('error_502_geo_blocked', {'retry-after': '0'})
       ]);
@@ -174,13 +200,63 @@ void main() {
         throwsA(
             isA<ChekiException>().having((e) => e.fallbackUrl, 'fallbackUrl', startsWith('https://transactioninfo'))),
       );
-      expect(calls, hasLength(2));
+      expect(calls, hasLength(1));
     });
 
-    test('network errors retried once', () async {
-      final (c, calls) = clientFor([() => http.ClientException('connection refused')]);
+    group('shared retryCases fixture (the same rule in every SDK)', () {
+      final raw = jsonDecode(File('../fixtures/api-contract.json').readAsStringSync()) as Map<String, dynamic>;
+      for (final rc in (raw['retryCases'] as List).cast<Map<String, dynamic>>()) {
+        test('${rc['name']}: ${rc['retried'] == true ? 'retried once' : 'not retried'}', () async {
+          final headers = <String, String>{'content-type': 'application/json'};
+          (rc['headers'] as Map<String, dynamic>).forEach((k, v) => headers[k.toLowerCase()] = v as String);
+          final body = rc.containsKey('rawBody') ? rc['rawBody'] as String : jsonEncode(rc['body']);
+          final (c, calls) = clientFor([() => http.Response(body, rc['status'] as int, headers: headers)]);
+          final Future<Object?> run = switch (rc['path']) {
+            '/api/verify' => c.verify(bank: 'telebirr', reference: 'CHQ0FJ403O'),
+            '/api/verify/batch' => c.verifyBatch(const [BatchReceipt(bank: 'telebirr', reference: 'CHQ0FJ403O')]),
+            '/api/banks' => c.getBanks(),
+            _ => c.getHealth(),
+          };
+          await expectLater(run, throwsA(isA<ChekiException>().having((e) => e.statusCode, 'status', rc['status'])));
+          expect(calls.first.method, rc['method']);
+          expect(calls, hasLength(rc['retried'] == true ? 2 : 1));
+        });
+      }
+    });
+
+    test('network errors retried once for GET and verify, never for a batch', () async {
+      var (c, calls) = clientFor([() => http.ClientException('connection refused')]);
       await expectLater(c.getBanks(), throwsA(isA<ChekiException>()));
       expect(calls, hasLength(2));
+      (c, calls) = clientFor([() => http.ClientException('connection refused')]);
+      await expectLater(c.verify(bank: 'cbe', reference: 'X1'), throwsA(isA<ChekiException>()));
+      expect(calls, hasLength(2));
+      (c, calls) = clientFor([() => http.ClientException('connection reset')]);
+      await expectLater(
+          c.verifyBatch(const [BatchReceipt(bank: 'cbe', reference: 'X1')]), throwsA(isA<ChekiException>()));
+      expect(calls, hasLength(1));
+    });
+
+    test('bodies are decoded as UTF-8 whatever the charset says', () async {
+      final ok = utf8.encode(jsonEncode({
+        'success': true,
+        'verified': true,
+        'senderName': 'አበበ ከበደ',
+        'bank': 'Telebirr',
+        'bankCode': 'telebirr',
+        'reference': 'X1',
+        'sourceUrl': 'https://x.test',
+      }));
+      var (c, _) = clientFor([
+        () => http.Response.bytes(ok, 200, headers: {'content-type': 'text/plain'})
+      ]);
+      expect((await c.verify(bank: 'telebirr', reference: 'X1')).senderName, 'አበበ ከበደ');
+      final err = utf8.encode(jsonEncode({'success': false, 'error': 'ደረሰኝ አልተገኘም'}));
+      (c, _) = clientFor([
+        () => http.Response.bytes(err, 422, headers: {'content-type': 'text/plain'})
+      ]);
+      await expectLater(c.verify(bank: 'telebirr', reference: 'X1'),
+          throwsA(isA<ChekiException>().having((e) => e.message, 'message', 'ደረሰኝ አልተገኘም')));
     });
 
     test('timeouts are not retried', () async {

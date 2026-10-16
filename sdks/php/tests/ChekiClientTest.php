@@ -8,6 +8,7 @@ use Cheki\ChekiClient;
 use Cheki\ChekiException;
 use Cheki\TransportException;
 use Cheki\VerifyOptions;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -195,12 +196,91 @@ final class ChekiClientTest extends TestCase
         self::assertCount(1, $this->calls);
     }
 
-    public function testServerErrorRetriedOnceWithFallback(): void
+    public function testGeoBlocked502NotRetried(): void
     {
         $r = $this->client(self::fx('error_502_geo_blocked', ['retry-after' => '0']))->verify('telebirr', 'CHQ0FJ403O');
         self::assertSame(502, $r->httpStatus);
         self::assertStringStartsWith('https://transactioninfo', (string) $r->fallbackUrl);
-        self::assertCount(2, $this->calls);
+        self::assertCount(1, $this->calls);
+    }
+
+    /** @return iterable<string, array{0: array<string, mixed>}> */
+    public static function retryCases(): iterable
+    {
+        $contract = json_decode((string) file_get_contents(__DIR__ . '/../../fixtures/api-contract.json'), true, 512, JSON_THROW_ON_ERROR);
+        foreach ($contract['retryCases'] as $case) {
+            yield $case['name'] => [$case];
+        }
+    }
+
+    /**
+     * The retry rule every cheki SDK shares (retryCases in the fixture).
+     *
+     * @param array<string, mixed> $case
+     */
+    #[DataProvider('retryCases')]
+    public function testSharedRetryCases(array $case): void
+    {
+        $headers = [];
+        foreach ($case['headers'] as $k => $v) {
+            $headers[strtolower($k)] = $v;
+        }
+        $answer = [
+            'status'  => $case['status'],
+            'headers' => $headers,
+            'body'    => array_key_exists('rawBody', $case) ? $case['rawBody'] : json_encode($case['body']),
+        ];
+        $c = $this->client($answer);
+        $status = null;
+        try {
+            switch ($case['path']) {
+                case '/api/verify':
+                    $status = $c->verify('telebirr', 'CHQ0FJ403O')->httpStatus;
+                    break;
+                case '/api/verify/batch':
+                    $status = $c->verifyBatch([['bank' => 'telebirr', 'reference' => 'CHQ0FJ403O']])->httpStatus;
+                    break;
+                case '/api/banks':
+                    $c->getBanks();
+                    break;
+                default:
+                    $c->getHealth();
+            }
+        } catch (ChekiException $e) {
+            $status = $e->httpStatus;
+        }
+        self::assertSame($case['status'], $status);
+        self::assertSame($case['method'], $this->calls[0]['method']);
+        self::assertCount($case['retried'] ? 2 : 1, $this->calls);
+    }
+
+    public function testBatchNotReplayedAfterNetworkError(): void
+    {
+        $b = $this->client(['throw' => new TransportException('connection reset')])->verifyBatch([['bank' => 'cbe', 'reference' => 'X1']]);
+        self::assertFalse($b->success);
+        self::assertCount(1, $this->calls);
+    }
+
+    public function testOrderIdBetaAndBatchFallbackUrl(): void
+    {
+        $r = $this->client(self::fx('verify_order_id'))->verify('cbebirr', 'CB2610ABCD', null, '251911000000');
+        self::assertSame('ORD123456789', $r->orderId);
+
+        $byId = [];
+        foreach ($this->client(self::fx('banks'))->getBanks() as $bank) {
+            $byId[$bank->id] = $bank->beta;
+        }
+        self::assertTrue($byId['zamzam']);
+        self::assertTrue($byId['mpesa']);
+        self::assertFalse($byId['cbe']);
+
+        $b = $this->client(['status' => 200, 'headers' => [], 'body' => json_encode([
+            'success' => true,
+            'results' => [['success' => false, 'error' => 'geo', 'status' => 502, 'fallbackUrl' => 'https://x.test/r']],
+            'total' => 1, 'verified' => 0, 'failed' => 1, 'cached' => 0,
+        ])])->verifyBatch([['bank' => 'telebirr', 'reference' => 'A1']]);
+        self::assertSame('https://x.test/r', $b->results[0]->fallbackUrl);
+        self::assertLessThanOrEqual(ChekiClient::MAX_BATCH_SIZE, ChekiClient::RECOMMENDED_BATCH_CHUNK);
     }
 
     public function testTimeoutNotRetried(): void

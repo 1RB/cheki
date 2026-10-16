@@ -1,13 +1,35 @@
 name: Publish SDKs
 
-# Runs only when a release tag vX.Y.Z is pushed (scripts/bump-version.sh pushes
+# Runs when a release tag vX.Y.Z is pushed (scripts/bump-version.sh pushes
 # it together with the Go module tag sdks/go/vX.Y.Z on the same commit; that
 # tag alone does not match 'v*' and triggers nothing). Every step fails loudly:
 # a failed build, test or upload fails the job instead of being skipped.
+#
+# Versions are immutable on every registry. When a registry already has this
+# version, the job FAILS on the first run of the workflow (the version was
+# published from other code: bump it, never move a tag). Only a re-run
+# (run_attempt > 1, after a partial failure) skips a registry that already has
+# it. The last job polls every registry and fails unless all serve the tag.
+#
+# npm uses trusted publishing (GitHub OIDC, no NPM_TOKEN): npmjs.com trusts
+# this file (1RB/cheki, workflow publish.yml) for cheki-verify, and npm adds
+# provenance automatically.
+#
+# workflow_dispatch (Actions -> Publish SDKs -> Run workflow, from main) is for
+# an EXISTING tag whose own publish.yml could not publish to npm (v1.5.0 still
+# carries the NPM_TOKEN workflow). It runs THIS workflow file, checks out the
+# tag's code and publishes to npm only; every other registry job is skipped,
+# and a version npm already has is skipped with a notice.
 on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing release tag to publish to npm only (e.g. v1.5.0)
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -16,32 +38,81 @@ jobs:
   publish-npm:
     name: Publish to npm
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write  # npm trusted publishing (OIDC) and provenance
+    env:
+      # The release tag: the pushed tag, or the dispatch input.
+      RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
     defaults:
       run:
         working-directory: sdks/typescript
     steps:
+      - name: Dispatch input is a release tag and the run is from main
+        if: github.event_name == 'workflow_dispatch'
+        working-directory: .
+        run: |
+          if ! [[ "${RELEASE_TAG}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::tag must look like v1.5.0, got '${RELEASE_TAG}'."
+            exit 1
+          fi
+          if [ "${GITHUB_REF}" != "refs/heads/main" ]; then
+            echo "::error::Run this workflow from main (it was started from ${GITHUB_REF})."
+            exit 1
+          fi
       - uses: actions/checkout@v4
+        with:
+          # On a tag push this is the pushed tag; on dispatch, the given tag.
+          ref: refs/tags/${{ env.RELEASE_TAG }}
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
+          # Writes an .npmrc for registry.npmjs.org; npm tries OIDC first, so
+          # this is harmless (npm's own trusted-publishing example sets it).
           registry-url: https://registry.npmjs.org
+      - name: npm 11.5.1+ for trusted publishing
+        run: |
+          # npm 12 needs Node ^22.22.2, so stay on npm 11 (trusted publishing
+          # needs npm >= 11.5.1 and Node >= 22.14.0).
+          npm install -g npm@11
+          NODE_V="$(node -p process.versions.node)"
+          NPM_V="$(npm -v)"
+          echo "node ${NODE_V}, npm ${NPM_V}"
+          # sort -V -C succeeds only if the minimum sorts first (or equal).
+          if ! printf '%s\n' 22.14.0 "${NODE_V}" | sort -V -C \
+            || ! printf '%s\n' 11.5.1 "${NPM_V}" | sort -V -C; then
+            echo "::error::trusted publishing needs Node >= 22.14.0 and npm >= 11.5.1"
+            exit 1
+          fi
+      - name: Tag matches package.json
+        run: test "v$(node -p 'require("./package.json").version')" = "${RELEASE_TAG}"
       - run: npm install --no-audit --no-fund
       - run: npm run build
       - name: Committed build output matches src
         run: git diff --exit-code -- index.js index.d.ts
-      - name: Publish (skipped only when this exact version is already on npm)
+      - name: Publish via OIDC (fails if this version is already on npm, except on a re-run or dispatch)
         run: |
           VERSION="$(node -p 'require("./package.json").version')"
           if npm view "cheki-verify@${VERSION}" version >/dev/null 2>&1; then
-            echo "cheki-verify@${VERSION} is already published, skipping."
-            exit 0
+            GIT_HEAD="$(npm view "cheki-verify@${VERSION}" gitHead 2>/dev/null || true)"
+            if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ] || [ "${GITHUB_RUN_ATTEMPT}" -gt 1 ]; then
+              echo "::notice::cheki-verify@${VERSION} is already on npm (gitHead ${GIT_HEAD:-unknown}), skipping."
+              if [ -n "${GIT_HEAD}" ] && [ "${GIT_HEAD}" != "$(git rev-parse HEAD)" ]; then
+                echo "::warning::npm's cheki-verify@${VERSION} was built from ${GIT_HEAD}, not ${RELEASE_TAG} ($(git rev-parse HEAD))."
+              fi
+              exit 0
+            fi
+            echo "::error::cheki-verify@${VERSION} is already on npm (gitHead ${GIT_HEAD:-unknown})." \
+              "npm versions are immutable: bump the version."
+            exit 1
           fi
+          # No token: npm exchanges the GitHub OIDC token for a short-lived
+          # publish token and attaches provenance on its own.
           npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   publish-github-packages:
     name: Publish to GitHub Packages
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -53,19 +124,23 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           registry-url: https://npm.pkg.github.com
           scope: '@1rb'
       - run: npm install --no-audit --no-fund
       - run: npm run build
-      - name: Publish (skipped only when this exact version already exists)
+      - name: Publish (fails if this version already exists, except on a re-run)
         run: |
           # GitHub Packages needs a scoped name, and npm scopes are lowercase.
           node -e "const p=require('./package.json'); p.name='@1rb/cheki-verify'; require('fs').writeFileSync('package.json', JSON.stringify(p,null,2)+'\n');"
           VERSION="$(node -p 'require("./package.json").version')"
           if npm view "@1rb/cheki-verify@${VERSION}" version --registry=https://npm.pkg.github.com >/dev/null 2>&1; then
-            echo "@1rb/cheki-verify@${VERSION} already exists, skipping."
-            exit 0
+            if [ "${GITHUB_RUN_ATTEMPT}" -gt 1 ]; then
+              echo "::notice::@1rb/cheki-verify@${VERSION} already exists (re-run ${GITHUB_RUN_ATTEMPT}), skipping."
+              exit 0
+            fi
+            echo "::error::@1rb/cheki-verify@${VERSION} already exists. Versions are immutable: bump the version."
+            exit 1
           fi
           npm publish --registry=https://npm.pkg.github.com
         env:
@@ -73,6 +148,7 @@ jobs:
 
   publish-pypi:
     name: Publish to PyPI
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -82,19 +158,53 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Tag matches pyproject.toml
+        run: test "v$(grep -m1 '^version = ' pyproject.toml | sed 's/version = "\(.*\)"/\1/')" = "${GITHUB_REF_NAME}"
       - run: pip install -e ".[dev]" build twine
       - run: pytest -q
       - run: python -m build
-      - run: twine check dist/*
-      - run: twine upload --skip-existing dist/*
+      - run: twine check --strict dist/*
+      - name: The wheel ships LICENSE and needs only requests (+ urllib3) at runtime
+        run: |
+          python - <<'PY'
+          import glob, zipfile
+          whl = zipfile.ZipFile(glob.glob("dist/*.whl")[0])
+          names = whl.namelist()
+          assert any(n.endswith("licenses/LICENSE") for n in names), names
+          meta = whl.read(next(n for n in names if n.endswith("METADATA"))).decode()
+          runtime = [l for l in meta.splitlines() if l.startswith("Requires-Dist:") and "extra ==" not in l]
+          assert all(("requests" in l or "urllib3" in l) for l in runtime), runtime
+          print("wheel OK:", runtime)
+          PY
+      - name: Upload (fails if this version is already on PyPI, except on a re-run)
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          if curl -fsS -o /dev/null "https://pypi.org/pypi/cheki/${VERSION}/json"; then
+            if [ "${GITHUB_RUN_ATTEMPT}" -gt 1 ]; then
+              echo "::notice::cheki ${VERSION} is already on PyPI (re-run ${GITHUB_RUN_ATTEMPT}), skipping."
+              exit 0
+            fi
+            echo "::error::cheki ${VERSION} is already on PyPI. PyPI versions are immutable: bump the version."
+            exit 1
+          fi
+          twine upload dist/*
         env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
 
   publish-packagist:
     name: Publish to Packagist
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          tools: composer
+          coverage: none
+      - name: The dist (git archive, honouring export-ignore) is the PHP SDK and autoloads
+        run: ./scripts/check-php-dist.sh
       - name: Update Packagist
         run: |
           # Token in a header, not the query string; --fail-with-body makes an
@@ -107,12 +217,13 @@ jobs:
           PACKAGIST_TOKEN: ${{ secrets.PACKAGIST_TOKEN }}
 
   # pub.dev automated publishing: no stored secret. pub.dev trusts the GitHub
-  # OIDC token of a tag push from 1RB/cheki whose tag matches v{{version}}
-  # (set on https://pub.dev/packages/cheki/admin), so the tag must equal the
-  # pubspec version. The reusable workflow runs pub get, a dry run, then
-  # `dart pub publish -f` in sdks/dart.
+  # OIDC token of a tag push (not a workflow_dispatch) from 1RB/cheki whose
+  # tag matches v{{version}} (set on https://pub.dev/packages/cheki/admin), so
+  # the tag must equal the pubspec version. The reusable workflow runs pub get,
+  # a dry run, then `dart pub publish -f` in sdks/dart.
   publish-pub-dev:
     name: Publish to pub.dev
+    if: github.event_name == 'push'
     permissions:
       contents: read
       id-token: write
@@ -125,6 +236,7 @@ jobs:
   # instead of on the first `go get`. Fails if the Go tag was not pushed.
   warm-go-proxy:
     name: Go module proxy (sdks/go)
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
       - name: Go tag exists for this release
@@ -134,3 +246,39 @@ jobs:
           # Module path github.com/1RB/cheki/sdks/go, case-encoded (upper → !lower).
           curl --fail-with-body -sS --retry 5 --retry-delay 20 --retry-all-errors \
             "https://proxy.golang.org/github.com/1%21r%21b/cheki/sdks/go/@v/${GITHUB_REF_NAME}.info"
+
+  # The release is done only when every registry serves this version from
+  # this commit. Runs even if a publish job failed, so the summary shows
+  # which registries have it; fails the workflow unless all of them do.
+  # On dispatch it checks npm only (the only registry that run publishes to).
+  # It checks out the ref the workflow runs from (the tag on a push, main on
+  # a dispatch) so the dispatch run has the --only option.
+  verify-registries:
+    name: Every registry serves this version
+    needs: [publish-npm, publish-github-packages, publish-pypi, publish-packagist, publish-pub-dev, warm-go-proxy]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Poll npm, GitHub Packages, PyPI, Packagist, pub.dev and the Go proxy (up to 10 minutes)
+        if: github.event_name == 'push'
+        run: node scripts/check-registries.mjs "${GITHUB_REF_NAME#v}"
+        env:
+          EXPECT_SHA: ${{ github.sha }}
+          GH_PACKAGES_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Poll npm only (dispatch for an existing tag, up to 10 minutes)
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          if ! [[ "${RELEASE_TAG}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::tag must look like v1.5.0, got '${RELEASE_TAG}'."
+            exit 1
+          fi
+          node scripts/check-registries.mjs "${RELEASE_TAG#v}" --only npm
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
