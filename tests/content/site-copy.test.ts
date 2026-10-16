@@ -192,8 +192,10 @@ describe("site copy: cheki's bank counts are derived", () => {
       for (const m of src.matchAll(/\b(\d+) live banks?\b/gi)) expect(Number(m[1]), `${f}: ${m[0]}`).toBe(LIVE_BANK_COUNT);
       for (const m of src.matchAll(/\b(\d+) in research\b/gi)) expect(Number(m[1]), `${f}: ${m[0]}`).toBe(IN_DEVELOPMENT_BANK_COUNT);
     }
-    const badge = read("README.md").match(/banks-(\d+)%20live%20%E2%80%A2%20(\d+)%20researching/);
-    expect(badge?.slice(1).map(Number)).toEqual([LIVE_BANK_COUNT, IN_DEVELOPMENT_BANK_COUNT]);
+    // The README states both counts in its Supported banks section.
+    const readme = read("README.md");
+    expect(readme).toMatch(new RegExp(`\\*\\*${LIVE_BANK_COUNT} live banks\\*\\*`));
+    expect(readme).toMatch(new RegExp(`\\b${IN_DEVELOPMENT_BANK_COUNT} in research\\b`));
   });
 
   it("TS copy outside the guides types no bank count for cheki", () => {
