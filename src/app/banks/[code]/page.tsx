@@ -183,7 +183,7 @@ export default async function BankPage({ params }: { params: Promise<{ code: str
                   <li><strong>{bank.accountLabel || "Account number"}</strong> (required), last {bank.accountDigits} digits minimum</li>
                 )}
                 {bank.requiresPhone && (
-                  <li><strong>Payer phone number</strong> (required), format: 2519XXXXXXXXX</li>
+                  <li><strong>Payer phone number</strong> (required), e.g. 09XXXXXXXX or 2519XXXXXXXX</li>
                 )}
               </ul>
             )}

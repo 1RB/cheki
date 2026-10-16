@@ -58,6 +58,14 @@ function publicFields(parsed: ParsedReceipt): Omit<ParsedReceipt, "raw" | "verif
   return rest as Omit<ParsedReceipt, "raw" | "verified">;
 }
 
+
+/**
+ * CBE Birr sent an empty receipt page. From cheki's servers that is not proof
+ * of a fake: a real receipt fetched from outside Ethiopia looked the same.
+ */
+export const CBEBIRR_EMPTY_SHELL_MESSAGE =
+  "CBE Birr sent cheki's server an empty receipt page, so this could not be confirmed either way. Open the receipt on CBE Birr's own site instead.";
+
 export class Verifier {
   /**
    * Verify a single receipt. Never throws: unexpected failures become
@@ -258,7 +266,10 @@ export class Verifier {
       }
       const checked = checkPhone(input.phoneNumber);
       if (!checked.ok) return err({ kind: "MISSING_INPUT", field: "phoneNumber", message: checked.message });
-      phone = checked.value;
+      // A bank may need one canonical form (CBE Birr: 251XXXXXXXXX, as in its own links).
+      const canonical = parser.normalizePhone ? parser.normalizePhone(checked.value) : checked;
+      if (!canonical.ok) return err({ kind: "MISSING_INPUT", field: "phoneNumber", message: canonical.message });
+      phone = canonical.value;
     }
 
     // Reference: strict charset, no path or query characters.
@@ -283,7 +294,7 @@ export class Verifier {
     if (!fetchResult.ok) return fetchResult;
 
     const { data, contentType } = fetchResult.value;
-    const parsedResult = await this.parseResponse(manifestEntry, parser, data, contentType, ref);
+    const parsedResult = await this.parseResponse(manifestEntry, parser, data, contentType, ref, fallbackUrl);
     if (!parsedResult.ok) return parsedResult;
     const parsed = parsedResult.value;
 
@@ -312,7 +323,8 @@ export class Verifier {
     parser: RegisteredParser,
     data: string | Buffer,
     contentType: string,
-    requestedReference: string
+    requestedReference: string,
+    receiptUrl?: string
   ): Promise<Result<ParsedReceipt, ChekiError>> {
     // Keyed by the parser, not the bank: one bank can have a PDF format
     // (CBE legacy) and a JSON one (CBE current).
@@ -354,21 +366,29 @@ export class Verifier {
     }
 
     // CBE Birr: a real receipt may come back as a PDF or as HTML (the body is
-    // read as bytes, under the PDF size cap); an unknown TID/PH is an empty
-    // Telerik shell. Either way the result still goes through the gate.
+    // read as bytes, under the PDF size cap). An unknown TID/PH is an empty
+    // Telerik shell, but so was a real receipt fetched from outside Ethiopia
+    // (2026-10-16), so the shell is "could not confirm", never "not found":
+    // the user gets CBE Birr's own receipt link to open instead. A parsed
+    // receipt still goes through the gate.
     if (id === "cbebirr") {
       const buf = Buffer.isBuffer(data) ? data : Buffer.from(data);
       const isPdf = CBEBirrParser.isPdf(buf);
       const html = isPdf ? "" : buf.toString("utf8");
       const parsed = CBEBirrParser.parseText(isPdf ? await CBEBirrParser.extractPdfText(buf) : CBEBirrParser.htmlToText(html));
       if (!parsed.verified) {
+        if (html && CBEBirrParser.isEmptyShell(html)) {
+          return err({
+            kind: "ENDPOINT_ERROR",
+            bank: manifestEntry.name,
+            message: CBEBIRR_EMPTY_SHELL_MESSAGE,
+            ...(receiptUrl ? { fallbackUrl: receiptUrl } : {}),
+          });
+        }
         return err({
           kind: "EXTRACTION_ERROR",
           bank: manifestEntry.name,
-          message:
-            html && CBEBirrParser.isEmptyShell(html)
-              ? "CBE Birr returned an empty receipt. Check the receipt number and the payer phone number."
-              : "Could not read the CBE Birr receipt. Check the receipt number and the payer phone number.",
+          message: "Could not read the CBE Birr receipt. Check the receipt number and the payer phone number.",
         });
       }
       return ok(parsed);

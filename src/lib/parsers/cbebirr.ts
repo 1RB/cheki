@@ -7,6 +7,14 @@
  * Response type is not yet confirmed with a real receipt in this repo:
  *   - An unknown TID/PH returns HTTP 200 with an empty Telerik ReportViewer
  *     shell (ASP.NET page titled "Auto Receipt", no transaction data).
+ *   - On 2026-10-16 a real, contributed receipt also came back as that same
+ *     empty shell from cheki's egress (outside Ethiopia), with every phone
+ *     format and after a form postback. So from abroad an empty shell does
+ *     not prove the receipt is fake: CBE Birr may only serve receipts to
+ *     Ethiopian networks, or the TID/PH pair may be wrong. The verifier
+ *     treats it as "could not confirm" and hands back the receipt link.
+ *   - Receipt numbers (TID) seen in real receipt links are 10 or 11
+ *     letters and digits; the PH parameter is the payer's 251XXXXXXXXX.
  *   - Another open-source verifier (Vixen878/verifier-api,
  *     src/services/verifyCBEBirr.ts) reads a real receipt as a PDF and uses
  *     these labels: Debit Account, Credit Account, Receiver Name, Order ID,
@@ -21,6 +29,7 @@ import { BaseParser } from "./base";
 import type { ParsedReceipt } from "../core/types";
 import { removeScriptsAndStyles, TAG_RE } from "../core/html";
 import { parseMoney } from "../core/money";
+import { checkReference, type Checked } from "../security/reference";
 
 /**
  * A real receipt is a few KB of text. Everything below is linear time, and the
@@ -45,6 +54,27 @@ export const CBEBIRR_LABELS = [
   "Payment Reason",
   "Payment Channel",
 ] as const;
+
+/** TID: letters and digits only. Real ones are 10 or 11 characters. */
+const TID_RE = /^[A-Za-z0-9]{8,16}$/;
+
+/**
+ * The payer's wallet number as CBE Birr's receipt links carry it: 251 then 9
+ * digits starting with 9 (Ethio telecom) or 7 (Safaricom). Accepts +251,
+ * 251, 0 and bare 9-digit forms.
+ */
+export function normalizeCbeBirrPhone(input: string): Checked<string> {
+  const digits = input.replace(/[\s()+-]/g, "");
+  if (!/^\d+$/.test(digits)) return { ok: false, message: "Enter the payer's phone number using digits only." };
+  let local: string | undefined;
+  if (digits.length === 12 && digits.startsWith("251")) local = digits.slice(3);
+  else if (digits.length === 10 && digits.startsWith("0")) local = digits.slice(1);
+  else if (digits.length === 9) local = digits;
+  if (!local || !/^[79]\d{8}$/.test(local)) {
+    return { ok: false, message: "Enter the payer's CBE Birr phone number, e.g. 09XXXXXXXX or 2519XXXXXXXX." };
+  }
+  return { ok: true, value: `251${local}` };
+}
 
 function toNumber(raw: string | undefined): number | undefined {
   return parseMoney(raw);
@@ -90,8 +120,24 @@ export class CBEBirrParser extends BaseParser {
   /** Read the body as bytes: a real receipt may be a PDF, a miss is HTML. */
   readonly binaryResponse = true;
 
+  normalizeReference(ref: string): Checked<string> {
+    const checked = checkReference(ref);
+    if (!checked.ok) return checked;
+    if (!TID_RE.test(checked.value)) {
+      return { ok: false, message: "A CBE Birr receipt number is 10 or 11 letters and digits, as in the SMS." };
+    }
+    return checked;
+  }
+
+  normalizePhone(phone: string): Checked<string> {
+    return normalizeCbeBirrPhone(phone);
+  }
+
   buildUrl(ref: string, _account?: string, phone?: string): string {
-    const ph = phone || "";
+    // Normalised here too, so every caller (probe, /api/receipt) sends the
+    // same 251XXXXXXXXX form the bank's own links use.
+    const n = phone ? normalizeCbeBirrPhone(phone) : undefined;
+    const ph = n?.ok ? n.value : phone || "";
     return `https://cbepay1.cbe.com.et/aureceipt?TID=${encodeURIComponent(ref)}&PH=${encodeURIComponent(ph)}`;
   }
 
@@ -194,7 +240,13 @@ export class CBEBirrParser extends BaseParser {
 
     // PDF row: receipt number, date and amount run together, e.g.
     // "CHK0000001" "2026-10-01 14:05" "1500.00" => "CHK00000012026-10-01 14:051500.00"
-    const row = text.match(/([A-Z0-9]{10})(\d{4}-\d{2}-\d{2}[ \t]{1,4}\d{2}:\d{2})([\d.,]{1,20})/);
+    // Receipt numbers are 10 or 11 characters. Anchored at the start of a
+    // line or a non-alphanumeric, the date's fixed "dddd-" shape decides the
+    // split; a fixed {10} would drop the first character of an 11-character
+    // number and the gate would then reject the real receipt.
+    const row =
+      text.match(/(?:^|[^A-Za-z0-9])([A-Z0-9]{10,12})(\d{4}-\d{2}-\d{2}[ \t]{1,4}\d{2}:\d{2})([\d.,]{1,20})/m) ??
+      text.match(/([A-Z0-9]{10})(\d{4}-\d{2}-\d{2}[ \t]{1,4}\d{2}:\d{2})([\d.,]{1,20})/);
     const receiptNumber = get("Receipt Number") ?? (row ? row[1] : undefined);
     const date = get("Transaction Date") ?? (row ? row[2] : undefined);
     const rowAmount = row ? toNumber(row[3]) : undefined;

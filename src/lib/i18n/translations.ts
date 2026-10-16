@@ -89,7 +89,7 @@ export const translations = {
         accountOnReceiptMissing: "Enter at least the last {digits} digits of the account on the receipt, or paste the full receipt link.",
         phone: "Payer phone number",
         phoneHint: "{bank} matches the receipt on the payer's number. Nothing is stored.",
-        phoneMissing: "Enter the payer's phone number (2519XXXXXXXX).",
+        phoneMissing: "Enter the payer's phone number (09XXXXXXXX or 2519XXXXXXXX).",
       },
       older: {
         summary: "Older receipt?",
@@ -163,6 +163,7 @@ export const translations = {
         offline: { title: "You're offline", subtitle: "Nothing was checked. Reconnect and try again." },
         unavailable: { title: "Couldn't check right now", subtitle: "The checker or the bank did not answer. This says nothing about the receipt." },
         geoBlocked: { title: "{bank} didn't answer cheki's server", subtitle: "{bank} only answers Ethiopian networks. Open the receipt from your browser instead." },
+        openAtBank: { title: "{bank} didn't show cheki the receipt", subtitle: "{bank} sent cheki's server an empty page. This says nothing about the receipt. Open it on {bank}'s own site from your browser." },
         invalidInput: { title: "Check what you entered", subtitle: "That doesn't look like a receipt reference for this bank." },
       },
       card: {

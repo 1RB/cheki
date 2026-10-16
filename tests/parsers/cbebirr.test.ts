@@ -3,7 +3,53 @@
  * numbers and references laid out like the real PDF and HTML receipts.
  */
 import { describe, it, expect } from "vitest";
-import { CBEBirrParser, CBEBIRR_LABELS } from "@/lib/parsers/cbebirr";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { CBEBirrParser, CBEBIRR_LABELS, normalizeCbeBirrPhone } from "@/lib/parsers/cbebirr";
+
+// Synthetic copy of the empty "Auto Receipt" page cbepay1 returns (2026-10-16):
+// the real page's structure with every identifier and token invented.
+const EMPTY_SHELL = readFileSync(join(__dirname, "../fixtures/cbebirr/empty-shell.html"), "utf8");
+
+// Same PDF layout with an 11-character receipt number (the length seen in real
+// receipt links) and the shared sample receipt's invented values.
+const SYNTHETIC_PDF_TEXT_11 = `Commercial Bank of Ethiopia
+CBE Birr Receipt
+Customer Information
+Region: Addis Ababa
+Sub city:
+ABEBE KEBEDE
+Wereda/kebele:
+01
+Debit Account
+2519XXXX4321
+Credit Account
+2519XXXX6171
+Receiver Name
+TIGIST ALEMU
+Order ID
+ORD0000042
+Transaction Status
+Completed
+Reference
+DTS41AB2C90
+Transaction Details
+Receipt Number Transaction Date Amount
+DTS41AB2C902026-10-01 09:151250.50
+1250.50
+0.00
+0.00
+1250.50
+Paid amount
+Service charge
+VAT
+Total Paid Amount
+Amount in words
+Payment Reason
+Payment Channel
+One Thousand Two Hundred Fifty Birr and Fifty Cents
+Invoice 42
+App`;
 
 // Layout as pdf-parse extracts it from a real receipt (per Vixen878/verifier-api):
 // account block label-then-value, the receipt row run together, financial
@@ -136,6 +182,59 @@ describe("CBEBirrParser", () => {
   it("knows every label the real receipts use", () => {
     for (const l of ["Debit Account", "Credit Account", "Receiver Name", "Order ID", "Transaction Status", "Reference", "Receipt Number", "Paid amount", "Service charge", "VAT", "Total Paid Amount", "Payment Reason", "Payment Channel"]) {
       expect(CBEBIRR_LABELS).toContain(l);
+    }
+  });
+
+  it("reads an 11-character receipt number whole, not its last 10 characters", () => {
+    const r = CBEBirrParser.parseText(SYNTHETIC_PDF_TEXT_11);
+    expect(r.verified).toBe(true);
+    expect(r.reference).toBe("DTS41AB2C90");
+    expect(r.date).toBe("2026-10-01 09:15");
+    expect(r.senderName).toBe("ABEBE KEBEDE");
+    expect(r.receiverName).toBe("TIGIST ALEMU");
+    expect(r.amount).toBe(1250.5);
+    expect(r.reason).toBe("Invoice 42");
+    expect(r.paymentChannel).toBe("App");
+  });
+
+  it("still splits a 10-character receipt number that ends in digits from the date", () => {
+    expect(CBEBirrParser.parseText(SYNTHETIC_PDF_TEXT).reference).toBe("CHK0000001");
+  });
+
+  it("treats the page cbepay1 actually returns for an empty result as an empty shell", () => {
+    expect(CBEBirrParser.isEmptyShell(EMPTY_SHELL)).toBe(true);
+    expect(parser.parse(EMPTY_SHELL, "text/html").verified).toBe(false);
+    expect(parser.parse(Buffer.from(EMPTY_SHELL), "text/html").verified).toBe(false);
+  });
+
+  it("normalises the payer phone to the 251XXXXXXXXX form CBE Birr's links use", () => {
+    for (const [input, want] of [
+      ["251911223344", "251911223344"],
+      ["+251 911 223 344", "251911223344"],
+      ["0911223344", "251911223344"],
+      ["911223344", "251911223344"],
+      ["0711223344", "251711223344"],
+      ["251711223344", "251711223344"],
+    ] as const) {
+      const r = normalizeCbeBirrPhone(input);
+      expect(r, input).toEqual({ ok: true, value: want });
+    }
+    for (const bad of ["", "12345", "0811223344", "2518112233445", "251911-22x344", "1911223344"]) {
+      expect(normalizeCbeBirrPhone(bad).ok, bad).toBe(false);
+    }
+  });
+
+  it("builds the URL with the normalised phone", () => {
+    expect(parser.buildUrl("DTS41AB2C90", undefined, "0911223344")).toBe(
+      "https://cbepay1.cbe.com.et/aureceipt?TID=DTS41AB2C90&PH=251911223344",
+    );
+  });
+
+  it("accepts 10 and 11 character receipt numbers and rejects other shapes", () => {
+    expect(parser.normalizeReference("DTS41AB2C90")).toEqual({ ok: true, value: "DTS41AB2C90" });
+    expect(parser.normalizeReference("CHK0000001")).toEqual({ ok: true, value: "CHK0000001" });
+    for (const bad of ["SHORT", "DTS41-AB2C90", "DTS41AB2C90.pdf", "A".repeat(40), "DTS41AB2C90&PH=1"]) {
+      expect(parser.normalizeReference(bad).ok, bad).toBe(false);
     }
   });
 });

@@ -834,13 +834,13 @@
     "sslVerify": false,
     "color": "#502878",
     "initials": "CB",
-    "notes": "Requires the payer phone number. Unknown TID/PH returns HTTP 200 with an empty Telerik ReportViewer shell (checked 2026-10-10). Another open-source verifier reads real receipts as a PDF; the parser accepts PDF or HTML. Not yet confirmed with a real receipt.",
+    "notes": "Requires the payer phone number. An unknown TID/PH returns HTTP 200 with an empty Telerik ReportViewer shell (checked 2026-10-10). On 2026-10-16 a real contributed receipt returned the same empty shell from cheki's egress outside Ethiopia, so from abroad an empty shell cannot tell a fake from a real receipt; the verifier returns the receipt link instead of a not-found verdict. Other open-source verifiers read real receipts as a PDF; the parser accepts PDF or HTML. Not yet confirmed with a real receipt.",
     "description": "CBE Birr is the Commercial Bank of Ethiopia's mobile wallet service. CBE Birr receipts require the transaction reference and the payer's phone number for verification.",
-    "referenceFormat": "Alphanumeric transaction reference",
-    "referenceExample": "CB12345678",
+    "referenceFormat": "10 or 11 letters and digits (the TID in the receipt link from the SMS)",
+    "referenceExample": "DTS41AB2C90",
     "howToVerify": [
-      "Get the transaction reference from the customer's CBE Birr receipt",
-      "Get the payer's phone number (format: 2519XXXXXXXXX)",
+      "Get the receipt number (TID) from the CBE Birr SMS or app",
+      "Get the payer's phone number (09XXXXXXXX, 07XXXXXXXX or 251XXXXXXXXX)",
       "cheki fetches the receipt from CBE Birr's public endpoint"
     ],
     "useCases": [
@@ -884,16 +884,17 @@
         "inputs": [
           {
             "name": "reference",
-            "label": "Receipt number"
+            "label": "Receipt number",
+            "example": "DTS41AB2C90"
           },
           {
             "name": "phone",
-            "label": "Payer phone (2519XXXXXXXX)"
+            "label": "Payer phone (09XXXXXXXX or 2519XXXXXXXX)"
           }
         ],
         "responseType": "pdf",
         "confidence": "inferred",
-        "evidence": "A miss returns an empty Telerik ReportViewer HTML shell (cheki, 2026-10-10); the endpoint timed out from cheki's egress on 2026-10-11. Real receipts are read as a PDF by Vixen878/verifier-api and links.et (cbebirr-pdf). Same URL either way, so this is not a host move; cheki's parser accepts PDF or HTML."
+        "evidence": "A miss returns an empty Telerik ReportViewer HTML shell (cheki, 2026-10-10); the endpoint timed out from cheki's egress on 2026-10-11. On 2026-10-16 a real contributed receipt also returned the empty shell from cheki's egress outside Ethiopia, with every phone format, a browser user agent and a form postback, so it is unconfirmed whether cbepay1 serves receipts only to Ethiopian networks or the pair did not match. Real receipts are read as a PDF by Vixen878/verifier-api and links.et (cbebirr-pdf). Same URL either way, so this is not a host move; cheki's parser accepts PDF or HTML."
       }
     ],
     "endpointHistory": [
@@ -907,6 +908,12 @@
         "date": "2026-10-11",
         "formatId": "cbebirr-aureceipt",
         "change": "Request timed out from cheki's egress.",
+        "source": "cheki probe"
+      },
+      {
+        "date": "2026-10-16",
+        "formatId": "cbebirr-aureceipt",
+        "change": "A real contributed receipt returned the same empty Telerik shell as an unknown TID from cheki's egress outside Ethiopia; still unconfirmed whether receipts are only served to Ethiopian networks.",
         "source": "cheki probe"
       }
     ]

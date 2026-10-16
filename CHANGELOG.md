@@ -2,6 +2,14 @@
 
 Every cheki SDK ships the same version: npm `cheki-verify` (and `@1rb/cheki-verify` on GitHub Packages), PyPI `cheki`, Packagist `cheki/cheki`, pub.dev `cheki` and the Go module `github.com/1RB/cheki/sdks/go` (tag `sdks/go/vX.Y.Z`). The Dart package keeps its own copy in `sdks/dart/CHANGELOG.md` for pub.dev.
 
+## Unreleased
+
+**CBE Birr (still in development)**
+- A real contributed receipt came back from `cbepay1.cbe.com.et` as the same empty "Auto Receipt" page an unknown receipt number gets, when fetched from outside Ethiopia. When CBE Birr goes live, that page is reported as "could not confirm" (502 with `fallbackUrl`, the receipt link), never as not found.
+- Phone numbers are sent as `251XXXXXXXXX` (the form CBE Birr's own links use); `09…`, `07…` and `+251…` are accepted. Receipt numbers are 10 or 11 letters and digits.
+- Fix: an 11-character receipt number lost its first character in the PDF layout, so the gate would have rejected a real receipt.
+- Python direct mode: CBE Birr no longer reports any HTTP 200 as verified (an empty page passed), no longer crashes with a duplicate `timeout` argument, URL-encodes the receipt number and phone, and no longer keeps the response body in `raw`.
+
 ## 1.5.0
 
 The first registry release of the SDK rework: npm, PyPI and Packagist 1.4.1 were built from June 2026 code, so everything listed under 1.4.1 below reaches those registries now.

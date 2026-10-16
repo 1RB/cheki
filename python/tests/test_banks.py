@@ -414,3 +414,41 @@ def test_supported_banks():
     assert "telebirr" in banks
     assert "boa" in banks
     assert "mpesa" in banks
+
+
+# ── CBE Birr (direct mode never parses, so it never reports verified) ──
+
+CBEBIRR_SHELL = (Path(__file__).resolve().parents[2] / "tests/fixtures/cbebirr/empty-shell.html").read_text()
+
+
+@responses.activate
+def test_cbebirr_empty_shell_is_not_verified():
+    url = "https://cbepay1.cbe.com.et/aureceipt?TID=DTS41AB2C90&PH=251911223344"
+    responses.add(responses.GET, url, body=CBEBIRR_SHELL, status=200, content_type="text/html; charset=utf-8")
+    result = verify("cbebirr", "DTS41AB2C90", phone_number="0911223344")
+    assert result.status.value != "verified"
+    assert result.exists is False
+    assert result.source_url == url
+    assert "empty receipt page" in (result.message or "")
+    assert "response" not in result.raw  # no receipt body is kept
+
+
+@pytest.mark.parametrize(
+    "phone,want",
+    [("251911223344", "251911223344"), ("+251 911 223 344", "251911223344"), ("0711223344", "251711223344"), ("911223344", "251911223344")],
+)
+def test_cbebirr_normalize_phone(phone, want):
+    from cheki.banks.cbebirr import normalize_phone
+
+    assert normalize_phone(phone) == want
+
+
+@pytest.mark.parametrize("phone", ["0811223344", "12345", "2519112233"])
+def test_cbebirr_rejects_bad_phone(phone):
+    with pytest.raises(ValueError):
+        verify("cbebirr", "DTS41AB2C90", phone_number=phone)
+
+
+def test_cbebirr_rejects_bad_reference():
+    with pytest.raises(ValueError):
+        verify("cbebirr", "DTS41AB2C90&PH=1", phone_number="0911223344")

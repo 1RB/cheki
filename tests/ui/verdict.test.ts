@@ -186,6 +186,20 @@ describe("neutral: couldn't check", () => {
     expect(presentVerdict({ success: false, httpStatus: 502 }, { bankCode: "mpesa" }).kind).toBe("geoBlocked");
   });
 
+  it("a bank that sent an empty page (CBE Birr) links its receipt without claiming a geo-block", () => {
+    const v = presentVerdict(
+      { success: false, httpStatus: 502, error: "[CBE Birr] CBE Birr sent cheki's server an empty receipt page.", fallbackUrl: "https://cbepay1.cbe.com.et/aureceipt?TID=DTS41AB2C90&PH=251900000000" },
+      { bankCode: "cbebirr" },
+    );
+    expect(v.tone).toBe("neutral");
+    expect(v.kind).toBe("geoBlocked");
+    expect(v.fallbackUrl).toBe("https://cbepay1.cbe.com.et/aureceipt?TID=DTS41AB2C90&PH=251900000000");
+    expect(v.title).toBe("CBE Birr didn't show cheki the receipt");
+    expect(v.subtitle).not.toMatch(/Ethiopian networks/);
+    // A geo-blocked bank keeps its own copy.
+    expect(presentVerdict({ success: false, httpStatus: 502, fallbackUrl: "https://transactioninfo.ethiotelecom.et/receipt/X" }, { bankCode: "telebirr" }).subtitle).toMatch(/Ethiopian networks/);
+  });
+
   it("an http: fallback link is dropped", () => {
     expect(presentVerdict({ success: false, httpStatus: 502, fallbackUrl: "http://evil.example" }, { bankCode: "cbe" }).fallbackUrl).toBeUndefined();
   });
