@@ -1,3 +1,7 @@
+<p align="center">
+  <a href="https://cheki.et"><img src="docs/assets/readme-header.png" width="100%" alt="cheki: Screenshots are just pixels. Anyone can fake one. cheki checks it with the bank, in seconds. A dithered hand holds a phone showing a green check and 25,000."></a>
+</p>
+
 # cheki
 
 **Free, open-source Ethiopian bank receipt verification. No signup. No API key. No scam.**
@@ -17,6 +21,35 @@
 [![Website](https://img.shields.io/website?style=flat&label=cheki.et&url=https%3A%2F%2Fcheki.et&logo=vercel&logoColor=fff)](https://cheki.et)
 
 cheki verifies Ethiopian bank and mobile money receipts by fetching public bank endpoints. The data is free. The code is MIT licensed. No one should charge you for accessing public bank data.
+
+## Screenshots
+
+<a href="https://cheki.et">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/verify-desktop-dark.png">
+    <img src="docs/assets/verify-desktop-light.png" width="100%" alt="cheki.et on a desktop browser: a CBE receipt verified with the bank, showing 1,250 ETB from Abebe Kebede to Sample Shop PLC, reference FT00000SAMPLE.">
+  </picture>
+</a>
+
+<table>
+  <tr>
+    <td width="36%" valign="top">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/assets/verify-phone-dark.png">
+        <img src="docs/assets/verify-phone-light.png" width="100%" alt="The same verified receipt on a 390px phone screen.">
+      </picture>
+    </td>
+    <td width="64%" valign="top">
+      <a href="https://cheki.et/developers"><img src="docs/assets/developers-api.png" width="100%" alt="The cheki.et developers page: a cURL request to POST /api/verify and its JSON response."></a>
+    </td>
+  </tr>
+  <tr>
+    <td>Phone, 390px</td>
+    <td>API docs at <a href="https://cheki.et/developers">cheki.et/developers</a></td>
+  </tr>
+</table>
+
+The receipt in these screenshots is made up. The verify call was answered with a mocked response, so no real payment, name or account appears. The images follow your GitHub light or dark theme.
 
 ## Why?
 
