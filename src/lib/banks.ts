@@ -10,13 +10,15 @@
  *   - filters out parser-only aliases (e.g. `cbe-new`) so they do not get pages
  */
 import manifestData from "./manifest/banks.json";
-import type { BankManifestEntry, BankRefPattern, ManifestResponseType, ReceiptFormat } from "./core/types";
+import type { BankManifestEntry, BankRefPattern, BankSwift, ManifestResponseType, ReceiptFormat } from "./core/types";
 
 export interface Bank {
   code: string;
   name: string;
   shortName: string;
   type: "bank" | "wallet" | "mobile";
+  /** Head-office SWIFT/BIC with its sources; reference info only. */
+  swift?: BankSwift;
   requiresAccount: boolean;
   accountLabel?: string;
   accountDigits?: number;
@@ -69,6 +71,7 @@ function manifestToBank(entry: BankManifestEntry): Bank {
     name: entry.name,
     shortName: entry.shortName ?? entry.initials ?? entry.id,
     type: entry.type,
+    swift: entry.swift,
     requiresAccount: entry.requiresAccount,
     accountLabel: entry.accountLabel,
     accountDigits: entry.accountDigits,

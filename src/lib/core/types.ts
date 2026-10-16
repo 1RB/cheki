@@ -282,11 +282,31 @@ export interface EndpointHistoryEntry {
   source?: string;
 }
 
+/**
+ * A bank's head-office SWIFT/BIC, shown on its page as reference info.
+ * `registry: "confirmed"` means SWIFT's own BIC search returned this code and
+ * it matches the bank's website. `"not-checked"` means the SWIFT registry was
+ * not searched: the code comes from the bank's website or the National Bank
+ * of Ethiopia plus one independent cross-check, and the page says so. A code
+ * without two agreeing sources is left out rather than guessed.
+ */
+export interface BankSwift {
+  /** 8-character head-office BIC (11 with XXX is the same office). */
+  bic: string;
+  /** Source pages: the bank's own site (or NBE) first, then the cross-check. */
+  sources: string[];
+  /** ISO date (YYYY-MM-DD) the sources were last read. */
+  checkedAt: string;
+  /** Whether SWIFT's BIC search itself confirmed the code. */
+  registry: "confirmed" | "not-checked";
+}
+
 export interface BankManifestEntry {
   id: string;
   name: string;
   shortName?: string;
-  swift?: string;
+  /** Head-office SWIFT/BIC, reference only (see BankSwift). Absent for wallets and unconfirmed codes. */
+  swift?: BankSwift;
   type: "bank" | "wallet" | "mobile";
   status: "live" | "in-development";
   /**

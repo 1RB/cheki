@@ -40,7 +40,7 @@ export function suggestBank(input: string): string | undefined {
     if (bank.id.toLowerCase().includes(inputLower) || inputLower.includes(bank.id.toLowerCase())) {
       return bank.id;
     }
-    if (bank.swift && bank.swift.toLowerCase().includes(inputLower.toUpperCase())) {
+    if (bank.swift && bank.swift.bic.toLowerCase() === inputLower.replace(/xxx$/, "")) {
       return bank.id;
     }
     if (bank.name.toLowerCase().includes(inputLower)) {

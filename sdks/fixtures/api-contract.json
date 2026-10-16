@@ -265,6 +265,7 @@
           {
             "id": "nib",
             "name": "Nib International Bank",
+            "swift": "NIBIETAA",
             "type": "bank",
             "status": "in-development",
             "requiresAccount": false,
@@ -292,6 +293,7 @@
           {
             "id": "zamzam",
             "name": "ZamZam Bank",
+            "swift": "ZAMZETAA",
             "type": "bank",
             "status": "live",
             "beta": true,
