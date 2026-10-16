@@ -16,6 +16,7 @@ import type { Bank } from "./banks";
 import { NO_SIGNUP_SENTENCE, competitorPrices } from "./guides-facts";
 import { BANK_HEADING, BANKS_WITH_TOPIC_PAGES } from "./seo-redirects";
 import { withArticle } from "./indefinite-article";
+import { swiftFaq } from "./swift";
 
 export interface BankFaq {
   q: string;
@@ -87,6 +88,7 @@ export function builtInHeadings(b: Bank): string[] {
     `How ${b.shortName} receipt verification works`,
     `Who uses ${b.shortName} verification`,
     `Verifying ${b.shortName} via API`,
+    ...(b.swift ? [`${b.shortName} SWIFT code`] : []),
   ];
 }
 
@@ -465,7 +467,10 @@ export function hasGeoSection(content: Pick<BankPageContent, "sections">): boole
 }
 
 export function bankPageContent(b: Bank): BankPageContent {
-  if (b.status !== "live") return { sections: [], faq: b.faq };
+  // The SWIFT code is reference info every bank page with a confirmed code
+  // carries, live or not; it goes last so receipt questions lead.
+  const swift: BankFaq[] = b.swift ? [swiftFaq(b.name, b.shortName, b.swift)] : [];
+  if (b.status !== "live") return { sections: [], faq: [...b.faq, ...swift] };
 
   const verify = VERIFY_BY_HAND[b.code] ?? (GENERATED_VERIFY.has(b.code) ? generatedVerify(b) : { sections: [], faq: [] });
   const check = checkPayment(b);
@@ -488,7 +493,7 @@ export function bankPageContent(b: Bank): BankPageContent {
   });
 
   const seenQ = new Set<string>();
-  const faq = [...b.faq, ...verify.faq, ...howto.faq, ...(download?.faq ?? []), ...check.faq, ...formatFaq, ...(fake?.faq ?? [])].filter((f) => {
+  const faq = [...b.faq, ...verify.faq, ...howto.faq, ...(download?.faq ?? []), ...check.faq, ...formatFaq, ...(fake?.faq ?? []), ...swift].filter((f) => {
     const key = faqTopic(f.q);
     if (seenQ.has(key)) return false;
     seenQ.add(key);

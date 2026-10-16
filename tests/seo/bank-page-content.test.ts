@@ -38,9 +38,10 @@ describe("bank page content", () => {
     }
   });
 
-  it("gives banks still in development only their manifest FAQ", () => {
+  it("gives banks still in development only their manifest FAQ, plus the SWIFT code when listed", () => {
     for (const b of banks.filter((x) => x.status !== "live")) {
-      expect(bankPageContent(b)).toEqual({ sections: [], faq: b.faq });
+      const swift = b.swift ? [expect.objectContaining({ q: `What is the SWIFT code for ${b.name}?` })] : [];
+      expect(bankPageContent(b)).toEqual({ sections: [], faq: [...b.faq, ...swift] });
     }
   });
 
