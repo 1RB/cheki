@@ -903,6 +903,22 @@
         "confidence": "verified",
         "evidence": "Verified 2026-10-16 against 2 real receipts (a wallet-to-wallet Send Money and a wallet-to-bank transfer): cbepay1 answered HTTP 200 application/pdf, a one-page PDF 1.6 titled \"VAT Invoice/ Customer Receipt\" with the labels Debit Account, Credit Account, Receiver Name, Order ID, Transaction Status, Reference, Receipt Number, Transaction Date, Amount, Paid amount, Service Charge, VAT, Total Paid Amount, Total Amount in word, Payment Reason and Payment Channel. Fetched from cheki's egress outside Ethiopia, so not geo-blocked. A pair that does not match answers the empty Telerik ReportViewer HTML shell (cheki, 2026-10-10; another verifier gets the same empty page for such a pair). cheki's test fixture is synthetic (tests/fixtures/cbebirr).",
         "notes": "Beta. Phone numbers are printed in full on the PDF; cheki masks them (09****1234). The receipt time has no offset and is Addis Ababa time."
+      },
+      {
+        "id": "cbebirr-receipt-qr",
+        "status": "current",
+        "label": "Receipt QR code",
+        "via": "cbebirr-aureceipt",
+        "inputs": [
+          {
+            "name": "qr",
+            "label": "QR code at the bottom right of the receipt"
+          }
+        ],
+        "responseType": "pdf",
+        "confidence": "verified",
+        "evidence": "Decoded 2026-10-16 from the QR on 2 real CBE Birr receipt PDFs (drawn as vector graphics at the bottom right, not an embedded image) and on a screenshot of a third: the QR text is the receipt's own link, https://cbepay1.cbe.com.et/aureceipt?TID={receipt number}&PH={payer phone as 251XXXXXXXXX}, the same URL cheki fetches. Test fixtures are synthetic.",
+        "notes": "Input only, never proof of payment: cheki reads the receipt number and payer phone out of the QR link (on the device, or from qrData in the API) and checks them through cbebirr-aureceipt exactly like typed ones, so no phone needs to be typed. Anyone can make a QR with any link, so only CBE Birr's own receipt confirms it."
       }
     ],
     "endpointHistory": [
@@ -929,6 +945,12 @@
         "formatId": "cbebirr-aureceipt",
         "change": "Verified against 2 real receipts: a matching receipt number and payer phone return the receipt as a PDF, also from outside Ethiopia. The earlier empty page was a pair that did not match. CBE Birr goes live in beta.",
         "source": "cheki (2 real receipts, 2026-10-16)"
+      },
+      {
+        "date": "2026-10-16",
+        "formatId": "cbebirr-receipt-qr",
+        "change": "The receipt QR is the receipt link (TID + PH). cheki reads it from a scan, an upload or qrData and checks it like a typed receipt number and phone.",
+        "source": "cheki (QR on 3 real receipts, 2026-10-16)"
       }
     ]
   },

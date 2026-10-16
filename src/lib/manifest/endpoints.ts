@@ -455,6 +455,7 @@ export const endpointDocs: EndpointDoc[] = [
       "The PDF prints the payer's and receiver's phone numbers in full (Debit Account '<phone> - <NAME>'); cheki masks them (09****1234).",
       "The receipt time (yyyy-mm-dd HH:MM) has no offset; it is Addis Ababa time.",
       "Not geo-blocked: the real receipts were fetched from cheki's egress outside Ethiopia.",
+      "The QR at the bottom right of the receipt (vector graphics, not an image) is this same URL with TID and PH, so a scanned QR supplies the receipt number and the payer phone.",
     ],
     changelog: [
       { date: "2026-10-10", note: "Marked in development until tested on a real receipt." },

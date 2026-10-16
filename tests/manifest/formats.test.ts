@@ -10,7 +10,7 @@ import { describe, it, expect, afterEach, vi } from "vitest";
 import { NextRequest } from "next/server";
 import { Verifier } from "@/lib";
 import { getAllBanks, getBank } from "@/lib/manifest/loader";
-import { formatsOf, primaryFormat, selectFormat, supportedFormats, templateHost } from "@/lib/manifest/formats";
+import { formatNeeds, formatsOf, primaryFormat, selectFormat, supportedFormats, templateHost } from "@/lib/manifest/formats";
 import { verificationGate } from "@/lib/core/gate";
 import { allowedHosts, isAllowedUrl } from "@/lib/security/hosts";
 import { CBEParser } from "@/lib/parsers/cbe";
@@ -91,7 +91,8 @@ describe("current format selected first", () => {
       if (!example) continue;
       // The example is a link for CBE; the reference is its last path segment.
       const ref = /^https:\/\//.test(example) ? new URL(example).pathname.split("/").filter(Boolean).pop()! : example;
-      const sel = selectFormat(bank, { reference: ref });
+      // CBE Birr's receipt link needs the payer phone as well.
+      const sel = selectFormat(bank, { reference: ref, ...(formatNeeds(primary, "phone") ? { phoneNumber: "0911004321" } : {}) });
       expect(sel.ok, bank.id).toBe(true);
       if (sel.ok) expect(sel.format?.id, bank.id).toBe(primary.id);
     }

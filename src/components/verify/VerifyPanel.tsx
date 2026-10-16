@@ -22,7 +22,7 @@ import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState, type ClipboardEvent } from "react";
 import { verificationState, type VerifyResult } from "@/lib/banks";
 import { useTranslation } from "@/lib/i18n/use-translation";
-import { isUrl } from "@/lib/adapters/url-detector";
+import { detectBankFromUrl, isUrl } from "@/lib/adapters/url-detector";
 import { isBoaQrPayload } from "@/lib/qr/decode";
 import { isTelebirrQrPayload, parseTelebirrQr } from "@/lib/qr/telebirr";
 import { accountFieldKeys, browserReceiptUrl, detectInput, liveBanks, type Detection } from "@/lib/verify/detect";
@@ -184,7 +184,7 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
       if (opts.force) setForced(true);
       if (d.needsAccount || d.needsPhone) {
         const digits = extraValue.replace(/\D/g, "");
-        const phoneOk = /^(251|0)?9\d{8}$/.test(digits);
+        const phoneOk = /^(251|0)?[79]\d{8}$/.test(digits);
         const accountOk = digits.length >= (d.accountDigits ?? 5);
         if (d.needsPhone ? !phoneOk : !accountOk) {
           setExtraError(d.needsPhone ? t("verify.extra.phoneMissing") : t(accountFieldKeys(d).missing, { digits: d.accountDigits ?? 5 }));
@@ -253,7 +253,7 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
    * receipt, like a link for another bank.
    */
   const acceptScanned = useCallback(
-    async (raw: string) => {
+    async (raw: string, fromQr = false) => {
       const text = raw.trim();
       const telebirr = parseTelebirrQr(text);
       if (telebirr.ok && (!lockedBank || lockedBank === "telebirr")) {
@@ -265,6 +265,9 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
       }
       setInput(text);
       await runCheck(text);
+      // A CBE Birr receipt QR is its receipt link (receipt number + payer
+      // phone), so it is the link flow; say where the two values came from.
+      if (fromQr && isUrl(text) && detectBankFromUrl(text)?.bank === "cbebirr") setNotice(t("verify.qr.cbebirr"));
     },
     [lockedBank, runCheck, t]
   );
@@ -288,7 +291,7 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
       const raw = await decodeQrFromImage(file);
       if (raw) {
         setPhase("idle");
-        await acceptScanned(raw);
+        await acceptScanned(raw, true);
         return;
       }
       try {
@@ -427,7 +430,7 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
             }}
             onResult={(raw) => {
               setCamera(false);
-              acceptScanned(raw);
+              acceptScanned(raw, true);
             }}
             onPhoto={(file) => handleFiles([file])}
           />

@@ -232,6 +232,7 @@ export const translations = {
       },
       qr: {
         telebirr: "Transaction number read from the Telebirr receipt QR. The QR is not proof of payment: only Telebirr's own receipt confirms it.",
+        cbebirr: "Receipt number and payer phone read from the CBE Birr receipt QR. The QR is not proof of payment: only CBE Birr's own receipt confirms it.",
       },
     },
     banks: {

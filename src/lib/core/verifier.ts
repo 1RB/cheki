@@ -142,12 +142,32 @@ export class Verifier {
       if (looksLikeUrl(qrData)) {
         // Only a receipt link cheki recognises. An unknown URL is rejected,
         // never fetched or used as a reference.
-        if (!isUrl(qrData) || !detectBankFromUrl(qrData)) {
+        const detected = isUrl(qrData) ? detectBankFromUrl(qrData) : null;
+        if (!detected) {
           return err({
             kind: "MISSING_INPUT",
             field: "qrData",
             message: "This QR code is not a receipt link cheki recognises.",
           });
+        }
+        // A CBE Birr receipt QR is its own receipt link: the receipt number
+        // and the payer phone it was issued for (TID + PH). Like a Telebirr
+        // QR it names its bank, and the pair in it wins over a typed phone,
+        // since CBE Birr only answers for the pair that belongs together.
+        if (detected.bank === "cbebirr") {
+          const named = (bank || "").trim().toLowerCase();
+          if (named && named !== "cbebirr") {
+            return err({
+              kind: "MISSING_INPUT",
+              field: "qrData",
+              message: "This QR code is from a CBE Birr receipt. Check it with bank \"cbebirr\".",
+            });
+          }
+          return this.resolve(
+            { bank: "cbebirr", reference: detected.reference, phoneNumber: detected.phoneNumber ?? phoneNumber },
+            startTime,
+            depth + 1
+          );
         }
         return this.resolve({ bank: bank ?? "", reference: qrData, accountNumber, phoneNumber }, startTime, depth + 1);
       }

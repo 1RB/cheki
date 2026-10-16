@@ -25,7 +25,8 @@ Usage:
   cheki info                                      List supported banks
   cheki verify <bank> <ref> [-a <account>] [-p <phone>]
                                                   Verify a receipt (-p: payer phone, CBE Birr)
-  cheki verify-qr <bank> <qr-data>                Verify from QR code
+  cheki verify-qr [bank] <qr-data>                Verify from QR code (bank optional for a
+                                                  Telebirr or CBE Birr receipt QR)
   cheki health                                    Check endpoint health
   cheki --version                                 Show version
 
@@ -37,6 +38,7 @@ Examples:
   cheki verify cbebirr DTS41AB2C90 -p 09XXXXXXXX     (CBE Birr: receipt number + payer phone)
   cheki verify-qr boa <base64-qr-payload>
   cheki verify-qr telebirr <telebirr-receipt-qr>     (reads the transaction number, then checks it)
+  cheki verify-qr "<cbe-birr-receipt-qr>"            (a cbepay1 receipt link: receipt number + payer phone)
   cheki verify cbe FT26140P01YB -a 1000560536171   (older CBE receipt, legacy format)
 `);
     process.exit(0);
@@ -132,11 +134,12 @@ Examples:
   }
 
   if (command === "verify-qr") {
-    const bank = args[1];
-    const qrData = args[2];
+    // One argument: the QR names its own bank (Telebirr QR, CBE Birr link).
+    const bank = args.length >= 3 ? args[1] : "";
+    const qrData = args.length >= 3 ? args[2] : args[1];
 
-    if (!bank || !qrData) {
-      console.error("Usage: cheki verify-qr <bank> <qr-data>");
+    if (!qrData) {
+      console.error("Usage: cheki verify-qr [bank] <qr-data>");
       process.exit(1);
     }
 
