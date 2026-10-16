@@ -196,7 +196,7 @@ void main() {
         () => respond('error_502_geo_blocked', {'retry-after': '0'})
       ]);
       await expectLater(
-        c.verify(bank: 'telebirr', reference: 'CHQ0FJ403O'),
+        c.verify(bank: 'telebirr', reference: 'CHQ0SAMPLE'),
         throwsA(
             isA<ChekiException>().having((e) => e.fallbackUrl, 'fallbackUrl', startsWith('https://transactioninfo'))),
       );
@@ -212,8 +212,8 @@ void main() {
           final body = rc.containsKey('rawBody') ? rc['rawBody'] as String : jsonEncode(rc['body']);
           final (c, calls) = clientFor([() => http.Response(body, rc['status'] as int, headers: headers)]);
           final Future<Object?> run = switch (rc['path']) {
-            '/api/verify' => c.verify(bank: 'telebirr', reference: 'CHQ0FJ403O'),
-            '/api/verify/batch' => c.verifyBatch(const [BatchReceipt(bank: 'telebirr', reference: 'CHQ0FJ403O')]),
+            '/api/verify' => c.verify(bank: 'telebirr', reference: 'CHQ0SAMPLE'),
+            '/api/verify/batch' => c.verifyBatch(const [BatchReceipt(bank: 'telebirr', reference: 'CHQ0SAMPLE')]),
             '/api/banks' => c.getBanks(),
             _ => c.getHealth(),
           };

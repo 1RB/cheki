@@ -56,7 +56,7 @@ describe("analytics url", () => {
     expect(map(`${O}/docs?x=1#verify`)).toBe(`${O}/docs`);
     const g = articles[0].slug;
     expect(map(`${O}/guides/${g}?utm_source=telegram`)).toBe(`${O}/guides/${g}`);
-    for (const u of STATIC_PAGES) expect(map(`${O}${u}?id=DET8FJGUJ4#top`)).toBe(`${O}${u}`);
+    for (const u of STATIC_PAGES) expect(map(`${O}${u}?id=DET0SAMPLE#top`)).toBe(`${O}${u}`);
   });
 
   it("keeps the deployment's own origin", () => {
@@ -74,7 +74,7 @@ describe("analytics url", () => {
   it("drops paths that are not cheki pages, so a reference in the path never leaves", () => {
     for (const p of [
       "/FT26SAMPLE01",
-      "/DET8FJGUJ4",
+      "/DET0SAMPLE",
       "/fHCxExampleRcpt01",
       "/banks/FT26SAMPLE01",
       "/banks/cbe/FT26SAMPLE01",

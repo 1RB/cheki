@@ -58,7 +58,7 @@ QR-only (BOA): `client.Verify(ctx, cheki.VerifyOptions{Bank: "boa", QRData: "KPH
 ```go
 batch, err := client.VerifyBatch(ctx, []cheki.VerifyOptions{
 	{Bank: "cbe", Reference: "https://mbreciept.cbe.com.et/fHCxExampleRcpt01"},
-	{Bank: "telebirr", Reference: "CHQ0FJ403O"},
+	{Bank: "telebirr", Reference: "CHQ0SAMPLE"},
 })
 // batch.Total, batch.Verified (only Verified: true), batch.Failed (everything else), batch.Cached
 for _, item := range batch.Results {

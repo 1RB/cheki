@@ -42,10 +42,10 @@ describe("detectInput", () => {
   });
 
   it("Telebirr and M-Pesa are browser-first", () => {
-    const tb = detectInput("DET8FJGUJ4");
+    const tb = detectInput("DET0SAMPLE");
     expect(tb.bank?.code).toBe("telebirr");
     expect(tb.browserFirst).toBe(true);
-    expect(browserReceiptUrl(tb)).toBe("https://transactioninfo.ethiotelecom.et/receipt/DET8FJGUJ4");
+    expect(browserReceiptUrl(tb)).toBe("https://transactioninfo.ethiotelecom.et/receipt/DET0SAMPLE");
     const mp = detectInput("SE12345678", { overrideBank: "mpesa" });
     expect(mp.bank?.code).toBe("mpesa");
     expect(mp.overridden).toBe(true);

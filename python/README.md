@@ -40,7 +40,7 @@ QR-only (BOA): `cheki.verify("boa", "", qr_data="KPHO0k4YlK/5s6...")`.
 ```python
 batch = cheki.verify_batch([
     {"bank": "cbe", "reference": "https://mbreciept.cbe.com.et/fHCxExampleRcpt01"},
-    {"bank": "telebirr", "reference": "DET8FJGUJ4"},
+    {"bank": "telebirr", "reference": "DET0SAMPLE"},
     {"bank": "boa", "qr_data": "KPHO0k4YlK/5s6..."},
 ])
 print(f"{batch.verified}/{batch.total} verified, {batch.failed} not, {batch.cached} from cache")
@@ -119,7 +119,7 @@ cheki.get_receipt_url("cbe", "FT26SAMPLE01", account_number="1000000006171")  # 
 
 ```bash
 cheki-verify cbe https://mbreciept.cbe.com.et/fHCxExampleRcpt01
-cheki-verify telebirr DET8FJGUJ4 --json
+cheki-verify telebirr DET0SAMPLE --json
 cheki-verify boa --qr 'KPHO0k4YlK/5s6...'
 cheki-verify --health
 cheki-verify --list-banks

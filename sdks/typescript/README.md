@@ -54,7 +54,7 @@ const r = await cheki.verify("boa", "", { qrData: "KPHO0k4YlK/5s6..." });
 ```ts
 const batch = await cheki.verifyBatch([
   { bank: "cbe", reference: "https://mbreciept.cbe.com.et/fHCxExampleRcpt01" },
-  { bank: "telebirr", reference: "CHQ0FJ403O" },
+  { bank: "telebirr", reference: "CHQ0SAMPLE" },
 ]);
 
 console.log(`${batch.verified}/${batch.total} verified, ${batch.failed} not, ${batch.cached} from cache`);
@@ -97,8 +97,8 @@ for (const b of health.banks) console.log(b.id, b.status, b.latencyMs); // reach
 ```ts
 cheki.getReceiptUrl("cbe", "fHCxExampleRcpt01");
 // https://cheki.et/api/receipt?bank=cbe&reference=fHCxExampleRcpt01 (redirects to CBE's own receipt page)
-cheki.getReceiptUrl("dashen", "B22WDTI2619100WH");
-// https://cheki.et/api/receipt?bank=dashen&reference=B22WDTI2619100WH (redirects to Dashen's own receipt page)
+cheki.getReceiptUrl("dashen", "B22WDTI00SAMPLE1");
+// https://cheki.et/api/receipt?bank=dashen&reference=B22WDTI00SAMPLE1 (redirects to Dashen's own receipt page)
 ```
 
 Only `cbe`, `zemen`, `dashen` and `zamzam` are supported; anything else throws `ChekiValidationError`, and so does a ZamZam receipt id that is not digits only. CBE, Dashen and ZamZam links redirect to the bank's own page; Zemen (and older CBE receipts) are served as the bank's PDF.

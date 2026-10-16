@@ -210,7 +210,7 @@ def test_get_banks_raises_payload_too_large():
 @responses.activate
 def test_502_geo_blocked_not_retried_with_fallback():
     add("error_502_geo_blocked", extra_headers={"Retry-After": "0"})
-    r = client().verify("telebirr", "CHQ0FJ403O")
+    r = client().verify("telebirr", "CHQ0SAMPLE")
     assert r.fallback_url.startswith("https://transactioninfo")
     assert r.http_status == 502
     assert len(responses.calls) == 1
@@ -218,9 +218,9 @@ def test_502_geo_blocked_not_retried_with_fallback():
 
 def _call_for(path: str, c: ChekiClient):
     if path == "/api/verify":
-        return lambda: c.verify("telebirr", "CHQ0FJ403O")
+        return lambda: c.verify("telebirr", "CHQ0SAMPLE")
     if path == "/api/verify/batch":
-        return lambda: c.verify_batch([{"bank": "telebirr", "reference": "CHQ0FJ403O"}])
+        return lambda: c.verify_batch([{"bank": "telebirr", "reference": "CHQ0SAMPLE"}])
     if path == "/api/banks":
         return c.get_banks
     return c.get_health

@@ -350,7 +350,7 @@ DASHEN_HTML = """<!DOCTYPE html><html><head><script>var x = "<div>";</script></h
 
 @responses.activate
 def test_dashen_current_host_html():
-    ref = "B22WDTI2619100WH"
+    ref = "B22WDTI00SAMPLE1"
     responses.add(
         responses.GET,
         f"https://receipts.dashenbanksc.com/receipt/{ref}",
@@ -371,20 +371,20 @@ def test_dashen_current_host_html():
 def test_dashen_400_is_not_found_and_mismatch_fails():
     responses.add(
         responses.GET,
-        "https://receipts.dashenbanksc.com/receipt/WDTI5186142501962",
+        "https://receipts.dashenbanksc.com/receipt/WDTI0000000000002",
         json={"statusCode": 400, "message": "Transaction not found"},
         status=400,
     )
     with pytest.raises(ReceiptNotFoundError):
-        verify("dashen", "WDTI5186142501962")
+        verify("dashen", "WDTI0000000000002")
     responses.add(
         responses.GET,
-        "https://receipts.dashenbanksc.com/receipt/B22WDTI2619100WH",
+        "https://receipts.dashenbanksc.com/receipt/B22WDTI00SAMPLE1",
         body=DASHEN_HTML.format(ref="B22WDTI0000000XX"),
         status=200,
         content_type="text/html",
     )
-    assert verify("dashen", "B22WDTI2619100WH").status.value == "failed"
+    assert verify("dashen", "B22WDTI00SAMPLE1").status.value == "failed"
 
 
 def test_gate_reference_parity_with_the_server():

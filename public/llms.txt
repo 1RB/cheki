@@ -36,7 +36,7 @@ Successful results are cached, so re-checking the same receipt returns
 instantly with "cached": true.
 
 POST https://cheki.et/api/verify/batch
-Body: { "receipts": [{ "bank": "cbe", "reference": "https://mbreciept.cbe.com.et/fHCxExampleRcpt01" }, { "bank": "telebirr", "reference": "DET8FJGUJ4" }] }
+Body: { "receipts": [{ "bank": "cbe", "reference": "https://mbreciept.cbe.com.et/fHCxExampleRcpt01" }, { "bank": "telebirr", "reference": "DET0SAMPLE" }] }
 Up to 20 receipts at once. Response: results, total, verified, failed, cached.
 
 GET https://cheki.et/api/banks - list all supported banks (use each bank's "id")
@@ -72,7 +72,7 @@ cheki fetches these URLs, parses the response, and returns structured JSON. That
 ## Reference number formats
 
 - CBE: Receipt ID from the receipt link or QR code (fHCx... or v2-...). Older receipts: "FT" followed by 10 alphanumeric characters (e.g., FT26SAMPLE01), which also needs the account
-- Dashen: FT Ref, 16 letters and digits (e.g., B22WDTI2619100WH), not the longer Transaction Ref
+- Dashen: FT Ref, 16 letters and digits (e.g., B22WDTI00SAMPLE1), not the longer Transaction Ref
 - Telebirr: Starts with 2-3 letter prefix (DET, CHQ, DAB, DEL, ADQ) followed by 6-8 alphanumeric characters
 - BOA: Alphanumeric reference starting with 2 letters
 - M-Pesa: Alphanumeric reference, typically 2 letters + 6+ digits

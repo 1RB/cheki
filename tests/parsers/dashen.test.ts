@@ -83,8 +83,8 @@ describe("DashenParser", () => {
       <div><span>Beneficiary Bank Name:</span><span>Dashen Bank Sc</span></div>
       <div><span>Institution Name:</span><span>Dashen Bank sc</span></div>
       <div><span>Receiver Account Number:</span><span>7938******911</span></div>
-      <div><span>Transaction Reference:</span><span>B22WDTI2619100WH</span></div>
-      <div><span>Transfer Reference:</span><span>WDTI5186142501962751085</span></div>
+      <div><span>Transaction Reference:</span><span>B22WDTI00SAMPLE1</span></div>
+      <div><span>Transfer Reference:</span><span>WDTI0000000000000000002</span></div>
       <div><span>Transaction Date:</span><span>Jul 9, 2026, 10:25:33 pm</span></div>
       <table><tr><td>Transaction Amount</td><td>ETB 12600.00</td></tr>
       <tr><td>Service Charge</td><td>ETB 0.00</td></tr>
@@ -98,7 +98,7 @@ describe("DashenParser", () => {
       expect(result.receiverName).toBe("Sample Trading Plc (main) & Co");
       expect(result.receiverAccount).toBe("7938******911");
       expect(result.amount).toBe(12600);
-      expect(result.reference).toBe("B22WDTI2619100WH");
+      expect(result.reference).toBe("B22WDTI00SAMPLE1");
       expect(result.date).toBe("Jul 9, 2026, 10:25:33 pm");
       expect(result.reason).toBe("Course fee");
     });

@@ -205,8 +205,8 @@
       "DF"
     ],
     "description": "Telebirr is Ethio Telecom's mobile money service and the most widely used digital wallet in Ethiopia. Telebirr receipts are published as public HTML pages accessible via a URL containing only the transaction reference number. The endpoint is geo-blocked to Ethiopian IP addresses.",
-    "referenceFormat": "2-3 letter prefix followed by 6-8 alphanumeric characters (e.g. DET8FJGUJ4, CHQ0FJ403O)",
-    "referenceExample": "DET8FJGUJ4",
+    "referenceFormat": "2-3 letter prefix followed by 6-8 alphanumeric characters (e.g. DET0SAMPLE, CHQ0SAMPLE)",
+    "referenceExample": "DET0SAMPLE",
     "howToVerify": [
       "Get the transaction number from the customer's Telebirr SMS or receipt, or scan or upload the Payment QR Code on the Telebirr receipt",
       "The transaction number is 10 letters and digits starting with a 2-3 letter prefix (DET, CHQ, DAB, DJA, DEL, ADQ, etc.)",
@@ -272,7 +272,7 @@
           {
             "name": "reference",
             "label": "Transaction number",
-            "example": "DET8FJGUJ4"
+            "example": "DET0SAMPLE"
           }
         ],
         "responseType": "html",
@@ -551,10 +551,10 @@
     "initials": "DB",
     "notes": "Current: receipts.dashenbanksc.com/receipt/{FT Ref} (HTML; an unknown ref answers HTTP 400 JSON 'Transaction not found'). Deprecated: receipt.dashensuperapp.com / api.dashensuperapp.com PDFs (502 since 2026-10-10); old links are still read for their FT Ref.",
     "description": "Dashen Bank publishes every transfer receipt as a public web page. cheki reads it with only the FT Ref, for both within-Dashen and other-bank transfers.",
-    "referenceFormat": "16-character FT Ref shown in the Dashen app (also labelled Transaction Reference on the web receipt), e.g. B22WDTI2619100WH. Do not use the longer Transaction Ref / Transfer Reference.",
-    "referenceExample": "B22WDTI2619100WH",
+    "referenceFormat": "16-character FT Ref shown in the Dashen app (also labelled Transaction Reference on the web receipt), e.g. B22WDTI00SAMPLE1. Do not use the longer Transaction Ref / Transfer Reference.",
+    "referenceExample": "B22WDTI00SAMPLE1",
     "howToVerify": [
-      "Get the FT Ref from the Dashen receipt or app screen (e.g. B22WDTI2619100WH)",
+      "Get the FT Ref from the Dashen receipt or app screen (e.g. B22WDTI00SAMPLE1)",
       "cheki fetches the official receipt page from receipts.dashenbanksc.com",
       "Sender, receiver, amount, date and reference are read from Dashen's own record and returned as structured JSON"
     ],
@@ -570,7 +570,7 @@
       },
       {
         "q": "What is the difference between FT Ref and Transaction Ref?",
-        "a": "Use the FT Ref (labelled Transaction Reference on the web receipt). It looks like B22WDTI... or D31OBTI... The app's longer Transaction Ref / Transfer Reference (e.g. WDTI5186...) is an internal tracking number, and Dashen's receipt page returns 'Transaction not found' for it."
+        "a": "Use the FT Ref (labelled Transaction Reference on the web receipt). It looks like B22WDTI... or D31OBTI... The app's longer Transaction Ref / Transfer Reference (e.g. WDTI0000...) is an internal tracking number, and Dashen's receipt page returns 'Transaction not found' for it."
       },
       {
         "q": "Does Dashen verification work for inter-bank transfers?",
@@ -605,7 +605,7 @@
           {
             "name": "reference",
             "label": "FT Ref",
-            "example": "B22WDTI2619100WH"
+            "example": "B22WDTI00SAMPLE1"
           }
         ],
         "refPattern": {

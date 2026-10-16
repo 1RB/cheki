@@ -10,7 +10,7 @@ Examples::
 
     cheki-verify cbe https://mbreciept.cbe.com.et/fHCxExampleRcpt01
     cheki-verify cbe FT26SAMPLE01 --account 1000000006171   # older FT receipt (legacy)
-    cheki-verify telebirr DET8FJGUJ4 --json
+    cheki-verify telebirr DET0SAMPLE --json
     cheki-verify boa --qr '<qr payload>'
     cheki-verify --health
     cheki-verify --list-banks

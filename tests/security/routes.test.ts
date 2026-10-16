@@ -76,9 +76,9 @@ describe("/api/receipt", () => {
   it("redirects Dashen (HTML) to Dashen's own receipt page instead of proxying it", async () => {
     const fetchSpy = vi.fn();
     vi.stubGlobal("fetch", fetchSpy);
-    const r = await receiptGET(new NextRequest("https://cheki.et/api/receipt?bank=dashen&reference=B22WDTI2619100WH", { headers: freshIp() }));
+    const r = await receiptGET(new NextRequest("https://cheki.et/api/receipt?bank=dashen&reference=B22WDTI00SAMPLE1", { headers: freshIp() }));
     expect(r.status).toBe(302);
-    expect(r.headers.get("location")).toBe("https://receipts.dashenbanksc.com/receipt/B22WDTI2619100WH");
+    expect(r.headers.get("location")).toBe("https://receipts.dashenbanksc.com/receipt/B22WDTI00SAMPLE1");
     expect(r.headers.get("referrer-policy")).toBe("no-referrer");
     expect(fetchSpy).not.toHaveBeenCalled();
   });

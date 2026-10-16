@@ -262,7 +262,7 @@ A clone of this repo also has a Node CLI that runs the verifier locally (`info`,
 
 ```bash
 npm run cli -- verify cbe https://mbreciept.cbe.com.et/fHCxExampleRcpt01
-npm run cli -- verify telebirr DET8FJGUJ4
+npm run cli -- verify telebirr DET0SAMPLE
 npm run cli -- health
 ```
 

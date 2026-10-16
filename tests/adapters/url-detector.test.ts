@@ -54,10 +54,10 @@ describe("detectBankFromUrl", () => {
   });
 
   it("detects Telebirr receipt URLs", () => {
-    const result = detectBankFromUrl("https://transactioninfo.ethiotelecom.et/receipt/CHQ0FJ403O");
+    const result = detectBankFromUrl("https://transactioninfo.ethiotelecom.et/receipt/CHQ0SAMPLE");
     expect(result).not.toBeNull();
     expect(result!.bank).toBe("telebirr");
-    expect(result!.reference).toBe("CHQ0FJ403O");
+    expect(result!.reference).toBe("CHQ0SAMPLE");
   });
 
   it("detects BOA URLs with trx param", () => {
@@ -76,10 +76,10 @@ describe("detectBankFromUrl", () => {
   });
 
   it("detects Dashen receipt URLs on receipts.dashenbanksc.com", () => {
-    const result = detectBankFromUrl("https://receipts.dashenbanksc.com/receipt/B22WDTI2619100WH");
+    const result = detectBankFromUrl("https://receipts.dashenbanksc.com/receipt/B22WDTI00SAMPLE1");
     expect(result).not.toBeNull();
     expect(result!.bank).toBe("dashen");
-    expect(result!.reference).toBe("B22WDTI2619100WH");
+    expect(result!.reference).toBe("B22WDTI00SAMPLE1");
   });
 
   it("detects Dashen legacy receipt URLs", () => {

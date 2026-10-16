@@ -43,7 +43,7 @@ Signature: `verify(string $bank, string $reference, ?string $accountNumber = nul
 ```php
 $batch = $client->verifyBatch([
     ['bank' => 'cbe', 'reference' => 'https://mbreciept.cbe.com.et/fHCxExampleRcpt01'],
-    ['bank' => 'telebirr', 'reference' => 'CHQ0FJ403O'],
+    ['bank' => 'telebirr', 'reference' => 'CHQ0SAMPLE'],
     ['bank' => 'boa', 'qrData' => 'KPHO0k4YlK/5s6...'],
 ]);
 

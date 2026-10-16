@@ -6,7 +6,7 @@
  *   cheki info                                    List supported banks
  *   cheki verify cbe https://mbreciept.cbe.com.et/<id>  Verify a CBE receipt (Receipt ID link)
  *   cheki verify cbe FT26SAMPLE01 -a 1000000006171  Older CBE receipt (legacy FT reference)
- *   cheki verify telebirr CHQ0FJ403O                 Verify a Telebirr receipt
+ *   cheki verify telebirr CHQ0SAMPLE                 Verify a Telebirr receipt
  *   cheki verify boa AB12345 -a 1234567890           Verify a BOA receipt
  *   cheki health                                     Check endpoint health
  */
@@ -29,8 +29,8 @@ Usage:
 
 Examples:
   cheki verify cbe https://mbreciept.cbe.com.et/fHCxExampleRcpt01
-  cheki verify dashen B22WDTI2619100WH
-  cheki verify telebirr CHQ0FJ403O
+  cheki verify dashen B22WDTI00SAMPLE1
+  cheki verify telebirr CHQ0SAMPLE
   cheki verify boa AB12345 -a 1234567890
   cheki verify-qr boa <base64-qr-payload>
   cheki verify-qr telebirr <telebirr-receipt-qr>     (reads the transaction number, then checks it)

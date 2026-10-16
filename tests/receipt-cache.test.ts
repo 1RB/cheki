@@ -53,7 +53,7 @@ describe("receipt-cache", () => {
   });
 
   describe("verificationCacheKey", () => {
-    const telebirrUrl = "https://transactioninfo.ethiotelecom.et/receipt/DET8FJGUJ4";
+    const telebirrUrl = "https://transactioninfo.ethiotelecom.et/receipt/DET0SAMPLE";
 
     it("gives the same key for a receipt URL whatever bank was pre-selected", () => {
       // The verifier rewrites the URL into (bank, reference) before fetching,
@@ -66,7 +66,7 @@ describe("receipt-cache", () => {
     it("pulls the reference out of the URL", () => {
       const key = verificationCacheKey({ bank: "telebirr", reference: telebirrUrl });
       expect(key).toContain("telebirr");
-      expect(key).toContain("DET8FJGUJ4");
+      expect(key).toContain("DET0SAMPLE");
       expect(key).not.toContain("ethiotelecom.et");
     });
 

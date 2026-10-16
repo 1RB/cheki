@@ -39,7 +39,7 @@ void main() async {
     print('\n=== Batch Verification (max ${ChekiClient.maxBatchSize}) ===');
     final batch = await client.verifyBatch(const [
       BatchReceipt(bank: 'cbe', reference: 'https://mbreciept.cbe.com.et/fHCxExampleRcpt01'),
-      BatchReceipt(bank: 'telebirr', reference: 'CHQ0FJ403O'),
+      BatchReceipt(bank: 'telebirr', reference: 'CHQ0SAMPLE'),
     ]);
     print('Verified ${batch.verified}/${batch.total}, failed ${batch.failed}');
     for (final r in batch.results) {

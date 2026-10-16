@@ -78,7 +78,7 @@ describe("detectInput", () => {
     const boaSized = telebirrQr(SYNTHETIC_REF, { tag80: TAG80_VALUE + "000000" }); // 64 bytes: BOA-sized
     expect(detectInput(boaSized).kind).toBe("telebirrQr");
     expect(detectInput(Buffer.alloc(96, 7).toString("base64")).kind).toBe("boaQr");
-    expect(detectInput(RECEIPT_URL("DET8FJGUJ4")).kind).toBe("url");
+    expect(detectInput(RECEIPT_URL("DET0SAMPLE")).kind).toBe("url");
     expect(detectInput("https://mbreciept.cbe.com.et/fHCxExampleRcpt01").kind).toBe("url");
   });
 

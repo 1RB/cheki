@@ -109,7 +109,7 @@ describe("current format selected first", () => {
     const dashen = getBank("dashen");
     expect(primaryFormat(dashen)?.id).toBe("dashen-receipts-html");
     expect(supportedFormats(dashen).some((f) => f.status === "deprecated")).toBe(false);
-    const sel = selectFormat(dashen, { reference: "B22WDTI2619100WH" });
+    const sel = selectFormat(dashen, { reference: "B22WDTI00SAMPLE1" });
     expect(sel.ok && sel.format?.id).toBe("dashen-receipts-html");
   });
 });
@@ -128,7 +128,7 @@ describe("gate: CBE Receipt ID is an opaque token", () => {
 
   it("still fails a mismatched reference for a non-opaque bank (legacy CBE FT, Dashen)", () => {
     expect(verificationGate({ ...receipt, reference: "FT00000XXXXX" }, { bankId: "cbe", requestedReference: "FT26SAMPLE01" })).toMatchObject({ ok: false, reason: "reference" });
-    expect(verificationGate({ ...receipt, reference: "B22WDTI0000000XX" }, { bankId: "dashen", requestedReference: "B22WDTI2619100WH" })).toMatchObject({ ok: false, reason: "reference" });
+    expect(verificationGate({ ...receipt, reference: "B22WDTI0000000XX" }, { bankId: "dashen", requestedReference: "B22WDTI00SAMPLE1" })).toMatchObject({ ok: false, reason: "reference" });
   });
 
   it("the opaque-token exemption does not relax the other checks for cbe-new", () => {
@@ -251,7 +251,7 @@ describe("GET /api/receipt", () => {
     vi.stubGlobal("fetch", fetchSpy);
     for (const [bank, ref, host] of [
       ["cbe", "fHCxExampleRcpt01", "mbreciept.cbe.com.et"],
-      ["dashen", "B22WDTI2619100WH", "receipts.dashenbanksc.com"],
+      ["dashen", "B22WDTI00SAMPLE1", "receipts.dashenbanksc.com"],
     ] as const) {
       const r = await receiptGET(new NextRequest(`https://cheki.et/api/receipt?bank=${bank}&reference=${ref}`, { headers: freshIp() }));
       expect(r.status, bank).toBe(302);

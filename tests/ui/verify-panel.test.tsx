@@ -94,11 +94,11 @@ describe("VerifyPanel", () => {
 
   it("Telebirr leads with 'Open the receipt' and sends nothing until asked", async () => {
     const input = setup();
-    await submit(input, "DET8FJGUJ4");
+    await submit(input, "DET0SAMPLE");
     expect(fetchMock).not.toHaveBeenCalled();
     const open = screen.getByRole("link", { name: /Open the Telebirr receipt/ });
-    expect(open.getAttribute("href")).toBe("https://transactioninfo.ethiotelecom.et/receipt/DET8FJGUJ4");
-    fetchMock.mockResolvedValue(json({ success: false, error: "[Telebirr] blocked", fallbackUrl: "https://transactioninfo.ethiotelecom.et/receipt/DET8FJGUJ4" }, 502));
+    expect(open.getAttribute("href")).toBe("https://transactioninfo.ethiotelecom.et/receipt/DET0SAMPLE");
+    fetchMock.mockResolvedValue(json({ success: false, error: "[Telebirr] blocked", fallbackUrl: "https://transactioninfo.ethiotelecom.et/receipt/DET0SAMPLE" }, 502));
     await act(async () => { screen.getByRole("button", { name: "Check from cheki's server anyway" }).click(); });
     expect(fetchMock).toHaveBeenCalledTimes(1);
     await waitFor(() => expect(screen.getByRole("heading", { name: /didn't answer cheki's server/ })).toBeTruthy());

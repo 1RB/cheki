@@ -58,7 +58,7 @@ if ($result->isVerified()) {
 // --- Up to 20 receipts per batch
 $batch = $client->verifyBatch([
     ['bank' => 'cbe', 'reference' => 'https://mbreciept.cbe.com.et/fHCxExampleRcpt01'],
-    ['bank' => 'telebirr', 'reference' => 'CHQ0FJ403O'],
+    ['bank' => 'telebirr', 'reference' => 'CHQ0SAMPLE'],
 ]);
 echo "Batch: {$batch->verified}/{$batch->total} verified, {$batch->failed} not\n";
 foreach ($batch->results as $r) {

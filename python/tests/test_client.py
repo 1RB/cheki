@@ -72,8 +72,8 @@ def test_verify_telebirr_wallet_fields():
             "verified": True,
             "bank": "Telebirr",
             "bankCode": "telebirr",
-            "reference": "DET8FJGUJ4",
-            "sourceUrl": "https://transactioninfo.ethiotelecom.et/receipt/DET8FJGUJ4",
+            "reference": "DET0SAMPLE",
+            "sourceUrl": "https://transactioninfo.ethiotelecom.et/receipt/DET0SAMPLE",
             "senderName": "liya bekele tola",
             "invoiceNumber": "INV123",
             "transactionStatus": "completed",
@@ -90,7 +90,7 @@ def test_verify_telebirr_wallet_fields():
     )
 
     with ChekiClient() as cheki:
-        result = cheki.verify("telebirr", "DET8FJGUJ4")
+        result = cheki.verify("telebirr", "DET0SAMPLE")
 
     assert result.is_verified is True
     assert result.invoice_number == "INV123"
@@ -128,16 +128,16 @@ def test_verify_geo_blocked_returns_fallback_url():
         json={
             "success": False,
             "error": "Telebirr endpoint is geo-blocked.",
-            "fallbackUrl": "https://transactioninfo.ethiotelecom.et/receipt/DET8FJGUJ4",
+            "fallbackUrl": "https://transactioninfo.ethiotelecom.et/receipt/DET0SAMPLE",
         },
         status=502,
     )
     with ChekiClient(max_retries=0) as cheki:
-        result = cheki.verify("telebirr", "DET8FJGUJ4")
+        result = cheki.verify("telebirr", "DET0SAMPLE")
 
     assert result.success is False
     assert result.fallback_url == (
-        "https://transactioninfo.ethiotelecom.et/receipt/DET8FJGUJ4"
+        "https://transactioninfo.ethiotelecom.et/receipt/DET0SAMPLE"
     )
 
 
@@ -339,7 +339,7 @@ def test_get_receipt_url():
     assert url == f"{API}/api/receipt?bank=cbe&reference=FT26SAMPLE01&account=1000000006171"
     assert cheki.get_receipt_url("Zemen", "ZB123") == f"{API}/api/receipt?bank=zemen&reference=ZB123"
     for bank, ref, acct in [
-        ("telebirr", "DET8FJGUJ4", None),
+        ("telebirr", "DET0SAMPLE", None),
         ("constructor", "X1", None),
         ("zemen", "../admin", None),
         ("zemen", "a/b", None),

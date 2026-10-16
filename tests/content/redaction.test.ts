@@ -41,6 +41,10 @@ const REMOVED = new Set([
   "c951b7911e29686b", "99f06d44783cc041", "9ae19d5bfd1281fb", "401b0ccaecf79cda",
   "08841df14f3499a5", "250e00e43b17f328", "e973b88d001dc958", "02681f5724c58c0e",
   "f328ebf0adfdf818", "3c379065194bb4f0",
+  // Telebirr transaction numbers and a Dashen FT Ref / Transfer Reference
+  // that were examples since v0.3 (one was noted as a tested real receipt).
+  "273a5a17fe85e249", "a2bdebdd9cef38e0", "935c4fdfa8d08d3b", "df34b5b0dfb39ce6",
+  "a0eae1dbd6284cf3",
 ]);
 
 const SKIP_DIRS = new Set(["node_modules", ".next", ".git", "vendor", "build", "dist", ".dart_tool", "__pycache__", ".venv"]);

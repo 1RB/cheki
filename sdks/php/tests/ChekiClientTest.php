@@ -198,7 +198,7 @@ final class ChekiClientTest extends TestCase
 
     public function testGeoBlocked502NotRetried(): void
     {
-        $r = $this->client(self::fx('error_502_geo_blocked', ['retry-after' => '0']))->verify('telebirr', 'CHQ0FJ403O');
+        $r = $this->client(self::fx('error_502_geo_blocked', ['retry-after' => '0']))->verify('telebirr', 'CHQ0SAMPLE');
         self::assertSame(502, $r->httpStatus);
         self::assertStringStartsWith('https://transactioninfo', (string) $r->fallbackUrl);
         self::assertCount(1, $this->calls);
@@ -235,10 +235,10 @@ final class ChekiClientTest extends TestCase
         try {
             switch ($case['path']) {
                 case '/api/verify':
-                    $status = $c->verify('telebirr', 'CHQ0FJ403O')->httpStatus;
+                    $status = $c->verify('telebirr', 'CHQ0SAMPLE')->httpStatus;
                     break;
                 case '/api/verify/batch':
-                    $status = $c->verifyBatch([['bank' => 'telebirr', 'reference' => 'CHQ0FJ403O']])->httpStatus;
+                    $status = $c->verifyBatch([['bank' => 'telebirr', 'reference' => 'CHQ0SAMPLE']])->httpStatus;
                     break;
                 case '/api/banks':
                     $c->getBanks();

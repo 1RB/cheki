@@ -322,9 +322,9 @@ export const articles: Article[] = [
       { type: "text", text: "Reference numbers follow patterns, so a made-up one can look right:" },
       { type: "list", items: [
         "CBE: new receipts carry a Receipt ID in the mbreciept.cbe.com.et link or QR code; older ones show FT plus 10 letters and digits (e.g. FT26SAMPLE01)",
-        "Telebirr: 10 letters and digits starting with a 2-3 letter prefix (e.g. DET8FJGUJ4)",
+        "Telebirr: 10 letters and digits starting with a 2-3 letter prefix (e.g. DET0SAMPLE)",
         "BOA: the transaction reference plus the last 5 digits of the account on the receipt",
-        "Dashen: a 16-character FT Ref (e.g. B22WDTI2619100WH)",
+        "Dashen: a 16-character FT Ref (e.g. B22WDTI00SAMPLE1)",
       ]},
       { type: "text", text: "A format check only catches careless fakes. FT plus today's date plus random characters passes it and still does not exist at CBE. Only the bank's own record can tell, which is what cheki asks." },
 
@@ -465,7 +465,7 @@ export const articles: Article[] = [
           ["ADQ", "Additional transaction types"],
         ],
       },
-      { type: "code", code: "# Telebirr URL construction\nREFERENCE = 'DET8FJGUJ4'\nURL = f'https://transactioninfo.ethiotelecom.et/receipt/{REFERENCE}'" },
+      { type: "code", code: "# Telebirr URL construction\nREFERENCE = 'DET0SAMPLE'\nURL = f'https://transactioninfo.ethiotelecom.et/receipt/{REFERENCE}'" },
       { type: "callout", variant: "warning", title: "Geo-blocking", text: "Telebirr's endpoint blocks all non-Ethiopian IP addresses at the network level. Cloud servers (AWS, Vercel, Cloudflare) cannot reach it. Self-host cheki on an Ethiopian server or use the fallback URL feature." },
 
       { type: "heading", text: "Bank of Abyssinia (BOA)" },
@@ -877,7 +877,7 @@ export const articles: Article[] = [
 
       { type: "heading", text: "Batch verification" },
       { type: "text", text: "For end-of-day reconciliation, verify up to 20 receipts in a single request (5 are checked at a time, and each one counts against the per-IP verify limit):" },
-      { type: "code", lang: "bash", code: 'curl -X POST https://cheki.et/api/verify/batch \\\n  -H "Content-Type: application/json" \\\n  -d \'{\n    "receipts": [\n      {"bank": "cbe", "reference": "https://mbreciept.cbe.com.et/fHCxExampleRcpt01"},\n      {"bank": "telebirr", "reference": "DET8FJGUJ4"},\n      {"bank": "boa", "reference": "AB12345678", "accountNumber": "12345"}\n    ]\n  }\'' },
+      { type: "code", lang: "bash", code: 'curl -X POST https://cheki.et/api/verify/batch \\\n  -H "Content-Type: application/json" \\\n  -d \'{\n    "receipts": [\n      {"bank": "cbe", "reference": "https://mbreciept.cbe.com.et/fHCxExampleRcpt01"},\n      {"bank": "telebirr", "reference": "DET0SAMPLE"},\n      {"bank": "boa", "reference": "AB12345678", "accountNumber": "12345"}\n    ]\n  }\'' },
 
       { type: "heading", text: "JavaScript integration" },
       { type: "code", lang: "javascript", code: "class ChekiAPI {\n  constructor(baseUrl = 'https://cheki.et') {\n    this.baseUrl = baseUrl;\n  }\n\n  async verify(bank, reference, accountNumber) {\n    const res = await fetch(`${this.baseUrl}/api/verify`, {\n      method: 'POST',\n      headers: { 'Content-Type': 'application/json' },\n      body: JSON.stringify({ bank, reference, accountNumber })\n    });\n    return res.json();\n  }\n\n  async verifyUrl(url) {\n    const res = await fetch(`${this.baseUrl}/api/verify`, {\n      method: 'POST',\n      headers: { 'Content-Type': 'application/json' },\n      body: JSON.stringify({ reference: url })\n    });\n    return res.json();\n  }\n\n  async batchVerify(receipts) {\n    const res = await fetch(`${this.baseUrl}/api/verify/batch`, {\n      method: 'POST',\n      headers: { 'Content-Type': 'application/json' },\n      body: JSON.stringify({ receipts })\n    });\n    return res.json();\n  }\n}\n\n// Usage\nconst cheki = new ChekiAPI();\nconst result = await cheki.verify('cbe', 'FT26SAMPLE01', '1000000006171');\nif (result.verified && result.amount === expectedAmount) {\n  console.log('Payment confirmed:', result.amount, result.currency);\n}" },

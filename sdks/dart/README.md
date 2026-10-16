@@ -60,7 +60,7 @@ QR-only (BOA): `client.verify(bank: 'boa', qrData: 'KPHO0k4YlK/5s6...')`.
 ```dart
 final batch = await client.verifyBatch(const [
   BatchReceipt(bank: 'cbe', reference: 'https://mbreciept.cbe.com.et/fHCxExampleRcpt01'),
-  BatchReceipt(bank: 'telebirr', reference: 'CHQ0FJ403O'),
+  BatchReceipt(bank: 'telebirr', reference: 'CHQ0SAMPLE'),
 ]);
 print('${batch.verified}/${batch.total} verified, ${batch.failed} not, ${batch.cached} cached');
 for (final r in batch.results) {

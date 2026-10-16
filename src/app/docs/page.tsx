@@ -49,7 +49,7 @@ try {
 // Max 20 receipts per batch (checked before sending)
 const batch = await cheki.verifyBatch([
   { bank: "cbe", reference: "https://mbreciept.cbe.com.et/fHCxExampleRcpt01" },
-  { bank: "telebirr", reference: "DET8FJGUJ4" },
+  { bank: "telebirr", reference: "DET0SAMPLE" },
 ]);
 console.log(batch.verified, batch.failed, batch.total);
 
@@ -75,7 +75,7 @@ with ChekiClient() as cheki:  # 65 s timeout, at most 1 retry
 
     batch = cheki.verify_batch([  # max 20
         {"bank": "cbe", "reference": "https://mbreciept.cbe.com.et/fHCxExampleRcpt01"},
-        {"bank": "telebirr", "reference": "DET8FJGUJ4"},
+        {"bank": "telebirr", "reference": "DET0SAMPLE"},
     ])
     print(batch.verified, batch.failed, batch.total)
 
@@ -107,7 +107,7 @@ case err == nil && result.IsVerified(): // the only success signal
 
 batch, err := client.VerifyBatch(ctx, []cheki.VerifyOptions{ // max 20
     {Bank: "cbe", Reference: "https://mbreciept.cbe.com.et/fHCxExampleRcpt01"},
-    {Bank: "telebirr", Reference: "DET8FJGUJ4"},
+    {Bank: "telebirr", Reference: "DET0SAMPLE"},
 })
 
 banks, err := client.GetBanks(ctx)   // banks[i].ID
@@ -137,7 +137,7 @@ try {
 
 final batch = await client.verifyBatch(const [ // max 20
   BatchReceipt(bank: 'cbe', reference: 'https://mbreciept.cbe.com.et/fHCxExampleRcpt01'),
-  BatchReceipt(bank: 'telebirr', reference: 'DET8FJGUJ4'),
+  BatchReceipt(bank: 'telebirr', reference: 'DET0SAMPLE'),
 ]);
 
 client.close();`,
@@ -164,7 +164,7 @@ if ($result->isVerified()) {          // the only success signal
 
 $batch = $client->verifyBatch([       // max 20
     ['bank' => 'cbe', 'reference' => 'https://mbreciept.cbe.com.et/fHCxExampleRcpt01'],
-    ['bank' => 'telebirr', 'reference' => 'DET8FJGUJ4'],
+    ['bank' => 'telebirr', 'reference' => 'DET0SAMPLE'],
 ]);
 
 $banks = $client->getBanks();   // $banks[0]->id
@@ -186,7 +186,7 @@ git clone https://github.com/1RB/cheki.git && cd cheki && npm install
 npm run cli -- info
 npm run cli -- verify cbe https://mbreciept.cbe.com.et/fHCxExampleRcpt01
 npm run cli -- verify cbe FT26SAMPLE01 -a 1000000006171   # older FT receipt (legacy)
-npm run cli -- verify telebirr CHQ0FJ403O
+npm run cli -- verify telebirr CHQ0SAMPLE
 npm run cli -- verify-qr boa KPHO0k4YlK/5s6...
 npm run cli -- health
 
@@ -428,7 +428,7 @@ export default async function DocsPage() {
       {
         receipts: [
           { bank: "cbe", reference: "https://mbreciept.cbe.com.et/fHCxExampleRcpt01" },
-          { bank: "telebirr", reference: "DET8FJGUJ4" },
+          { bank: "telebirr", reference: "DET0SAMPLE" },
         ],
       },
       null,
@@ -858,7 +858,7 @@ docker-compose up -d
                   {
                     receipts: [
                       { bank: "cbe", reference: "https://mbreciept.cbe.com.et/fHCxExampleRcpt01" },
-                      { bank: "telebirr", reference: "DET8FJGUJ4" },
+                      { bank: "telebirr", reference: "DET0SAMPLE" },
                     ],
                   },
                   null,

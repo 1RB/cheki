@@ -117,7 +117,7 @@ describe("SDK contract fixtures match the route handlers", () => {
   // is read from the route's own 400 message for an unsupported bank.
   it("receiptDownloadBanks matches the banks /api/receipt serves", async () => {
     const r = await receiptGET(
-      new NextRequest("https://cheki.et/api/receipt?bank=telebirr&reference=CHQ0FJ403O", { headers: freshIp() })
+      new NextRequest("https://cheki.et/api/receipt?bank=telebirr&reference=CHQ0SAMPLE", { headers: freshIp() })
     );
     expect(r.status).toBe(400);
     const { error } = await r.json();
@@ -326,7 +326,7 @@ describe("SDK contract fixtures match the route handlers", () => {
         fallbackUrl: f.body.fallbackUrl as string,
       })
     );
-    const r = await verifyPOST(jsonReq("/api/verify", { bank: "telebirr", reference: "CHQ0FJ403O" }));
+    const r = await verifyPOST(jsonReq("/api/verify", { bank: "telebirr", reference: "CHQ0SAMPLE" }));
     expect(r.status).toBe(f.status);
     expect(await r.json()).toEqual(f.body);
   });

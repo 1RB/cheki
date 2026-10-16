@@ -10,8 +10,8 @@ describe("TelebirrParser", () => {
   const parser = new TelebirrParser();
 
   it("builds correct URL", () => {
-    expect(parser.buildUrl("CHQ0FJ403O")).toBe(
-      "https://transactioninfo.ethiotelecom.et/receipt/CHQ0FJ403O"
+    expect(parser.buildUrl("CHQ0SAMPLE")).toBe(
+      "https://transactioninfo.ethiotelecom.et/receipt/CHQ0SAMPLE"
     );
   });
 

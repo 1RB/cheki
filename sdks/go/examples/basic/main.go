@@ -68,7 +68,7 @@ func main() {
 	fmt.Println("\n=== Batch Verify ===")
 	batch, err := client.VerifyBatch(ctx, []cheki.VerifyOptions{
 		{Bank: "cbe", Reference: "https://mbreciept.cbe.com.et/fHCxExampleRcpt01"},
-		{Bank: "telebirr", Reference: "CHQ0FJ403O"},
+		{Bank: "telebirr", Reference: "CHQ0SAMPLE"},
 	})
 	if err != nil {
 		log.Printf("batch verification failed: %v", err)

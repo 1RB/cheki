@@ -265,7 +265,7 @@ func TestLongRetryAfterIsNotWaited(t *testing.T) {
 func TestGeoBlocked502NotRetried(t *testing.T) {
 	c := loadContract(t)
 	client, calls := serve(t, withRetryAfter(c.Cases["error_502_geo_blocked"], "0"))
-	_, err := client.Verify(context.Background(), VerifyOptions{Bank: "telebirr", Reference: "CHQ0FJ403O"})
+	_, err := client.Verify(context.Background(), VerifyOptions{Bank: "telebirr", Reference: "CHQ0SAMPLE"})
 	var apiErr *APIError
 	if !errors.As(err, &apiErr) || !strings.HasPrefix(apiErr.FallbackURL, "https://transactioninfo") {
 		t.Fatalf("got %v", err)
@@ -306,9 +306,9 @@ func TestSharedRetryCases(t *testing.T) {
 			var err error
 			switch rc.Path {
 			case "/api/verify":
-				_, err = client.Verify(ctx, VerifyOptions{Bank: "telebirr", Reference: "CHQ0FJ403O"})
+				_, err = client.Verify(ctx, VerifyOptions{Bank: "telebirr", Reference: "CHQ0SAMPLE"})
 			case "/api/verify/batch":
-				_, err = client.VerifyBatch(ctx, []VerifyOptions{{Bank: "telebirr", Reference: "CHQ0FJ403O"}})
+				_, err = client.VerifyBatch(ctx, []VerifyOptions{{Bank: "telebirr", Reference: "CHQ0SAMPLE"}})
 			case "/api/banks":
 				_, err = client.GetBanks(ctx)
 			default:

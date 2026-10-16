@@ -120,7 +120,7 @@ function extractReferenceByLabel(text: string, labels = REFERENCE_LABELS): strin
 }
 
 // Preferred labels when a bank is already detected from text. Order matters:
-// for Dashen the app screen shows "FT Ref" (B22WDTI2619100WH, what the receipt
+// for Dashen the app screen shows "FT Ref" (B22WDTI00SAMPLE1, what the receipt
 // endpoint accepts) and "Transaction Ref" (a long WDTI/OBTI id it rejects), so
 // FT Ref wins. On the web/PDF receipt the same value is "Transaction Reference".
 const BANK_PREFERRED_LABELS: Record<string, string[]> = {

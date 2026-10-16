@@ -12,10 +12,10 @@ describe("ocr parser", () => {
   });
 
   it("extracts a Telebirr reference from receipt text", () => {
-    const text = "Ethio Telecom Telebirr\nTransaction ID: CHQ0FJ403O\nStatus: Success\nAmount: 500 ETB";
+    const text = "Ethio Telecom Telebirr\nTransaction ID: CHQ0SAMPLE\nStatus: Success\nAmount: 500 ETB";
     const result = parseReceiptText(text);
     expect(result).not.toBeNull();
-    expect(result!.reference).toBe("CHQ0FJ403O");
+    expect(result!.reference).toBe("CHQ0SAMPLE");
     expect(result!.bank).toBe("telebirr");
   });
 

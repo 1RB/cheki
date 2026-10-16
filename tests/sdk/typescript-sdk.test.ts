@@ -198,7 +198,7 @@ describe("TS SDK: errors and retries", () => {
 
   it("502 geo-blocked: never retried, fallbackUrl exposed", async () => {
     const calls = serve(() => respond(fx("error_502_geo_blocked"), { "retry-after": "0" }));
-    const e = await client().verify("telebirr", "CHQ0FJ403O").catch((x) => x);
+    const e = await client().verify("telebirr", "CHQ0SAMPLE").catch((x) => x);
     expect(e).toBeInstanceOf(ChekiAPIError);
     expect(e.fallbackUrl).toMatch(/^https:\/\/transactioninfo/);
     expect(calls).toHaveLength(1);
@@ -217,9 +217,9 @@ describe("TS SDK: errors and retries", () => {
         const c = client();
         const run =
           rc.path === "/api/verify"
-            ? c.verify("telebirr", "CHQ0FJ403O")
+            ? c.verify("telebirr", "CHQ0SAMPLE")
             : rc.path === "/api/verify/batch"
-              ? c.verifyBatch([{ bank: "telebirr", reference: "CHQ0FJ403O" }])
+              ? c.verifyBatch([{ bank: "telebirr", reference: "CHQ0SAMPLE" }])
               : rc.path === "/api/banks"
                 ? c.getBanks()
                 : c.getHealth();
