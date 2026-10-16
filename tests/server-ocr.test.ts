@@ -3,8 +3,8 @@ import { parseQrReference } from "@/lib/server-ocr";
 
 describe("parseQrReference", () => {
   it("extracts CBE reference from raw QR text", () => {
-    const result = parseQrReference("FT26140P01YB");
-    expect(result).toEqual({ bank: "cbe", reference: "FT26140P01YB" });
+    const result = parseQrReference("FT26SAMPLE01");
+    expect(result).toEqual({ bank: "cbe", reference: "FT26SAMPLE01" });
   });
 
   it("extracts Telebirr invoice number from base64-encoded QR payload", () => {

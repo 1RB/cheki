@@ -28,8 +28,8 @@ describe("receipt-cache", () => {
 
   describe("cacheKeyFor", () => {
     it("is stable across whitespace and bank casing", () => {
-      const a = cacheKeyFor({ bank: "CBE", reference: " FT26140P01YB " });
-      const b = cacheKeyFor({ bank: "cbe", reference: "FT26140P01YB" });
+      const a = cacheKeyFor({ bank: "CBE", reference: " FT26SAMPLE01 " });
+      const b = cacheKeyFor({ bank: "cbe", reference: "FT26SAMPLE01" });
       expect(a).toBe(b);
     });
 
@@ -53,7 +53,7 @@ describe("receipt-cache", () => {
   });
 
   describe("verificationCacheKey", () => {
-    const telebirrUrl = "https://transactioninfo.ethiotelecom.et/receipt/DET8FJGUJ4";
+    const telebirrUrl = "https://transactioninfo.ethiotelecom.et/receipt/DET0SAMPLE";
 
     it("gives the same key for a receipt URL whatever bank was pre-selected", () => {
       // The verifier rewrites the URL into (bank, reference) before fetching,
@@ -66,24 +66,24 @@ describe("receipt-cache", () => {
     it("pulls the reference out of the URL", () => {
       const key = verificationCacheKey({ bank: "telebirr", reference: telebirrUrl });
       expect(key).toContain("telebirr");
-      expect(key).toContain("DET8FJGUJ4");
+      expect(key).toContain("DET0SAMPLE");
       expect(key).not.toContain("ethiotelecom.et");
     });
 
     it("harvests the account suffix from a CBE receipt URL", () => {
-      const url = "https://apps.cbe.com.et:100/?id=FT26140P01YB60536171";
+      const url = "https://apps.cbe.com.et:100/?id=FT26SAMPLE0100006171";
       const fromUrl = verificationCacheKey({ bank: "cbe", reference: url });
       const fromParts = verificationCacheKey({
         bank: "cbe",
-        reference: "FT26140P01YB",
-        accountNumber: "60536171",
+        reference: "FT26SAMPLE01",
+        accountNumber: "00006171",
       });
       expect(fromUrl).toBe(fromParts);
     });
 
     it("leaves a plain reference untouched", () => {
-      expect(verificationCacheKey({ bank: "cbe", reference: "FT26140P01YB" })).toBe(
-        cacheKeyFor({ bank: "cbe", reference: "FT26140P01YB" })
+      expect(verificationCacheKey({ bank: "cbe", reference: "FT26SAMPLE01" })).toBe(
+        cacheKeyFor({ bank: "cbe", reference: "FT26SAMPLE01" })
       );
     });
 

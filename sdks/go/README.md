@@ -51,14 +51,14 @@ func main() {
 
 `Verify` returns a result for HTTP 200, and a 200 can still be unverified: a BOA QR code that BOA could not confirm comes back with `Success: true, Verified: false, DecodedOnly: true`. A QR code can be forged. Use `result.IsVerified()`.
 
-QR-only (BOA): `client.Verify(ctx, cheki.VerifyOptions{Bank: "boa", QRData: "3cHRaxVjn/pySp..."})`.
+QR-only (BOA): `client.Verify(ctx, cheki.VerifyOptions{Bank: "boa", QRData: "KPHO0k4YlK/5s6..."})`.
 
 ### Batch (max 20)
 
 ```go
 batch, err := client.VerifyBatch(ctx, []cheki.VerifyOptions{
 	{Bank: "cbe", Reference: "https://mbreciept.cbe.com.et/fHCxExampleRcpt01"},
-	{Bank: "telebirr", Reference: "CHQ0FJ403O"},
+	{Bank: "telebirr", Reference: "CHQ0SAMPLE"},
 })
 // batch.Total, batch.Verified (only Verified: true), batch.Failed (everything else), batch.Cached
 for _, item := range batch.Results {
@@ -100,8 +100,8 @@ Only `cbe`, `zemen`, `dashen` and `zamzam`; anything else returns `ErrInvalidInp
 Older CBE receipts that only show an FT reference still work as a legacy format: pass the receiving account (at least the last 8 digits). CBE's older receipt service is often unreachable, so prefer the receipt link when you have it.
 
 ```go
-result, err := client.Verify(ctx, cheki.VerifyOptions{Bank: "cbe", Reference: "FT26140P01YB", AccountNumber: "1000560536171"})
-u, err := client.GetReceiptURL("cbe", "FT26140P01YB", "1000560536171") // the bank's PDF
+result, err := client.Verify(ctx, cheki.VerifyOptions{Bank: "cbe", Reference: "FT26SAMPLE01", AccountNumber: "1000000006171"})
+u, err := client.GetReceiptURL("cbe", "FT26SAMPLE01", "1000000006171") // the bank's PDF
 ```
 
 ## Errors

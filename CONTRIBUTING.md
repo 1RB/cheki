@@ -100,9 +100,9 @@ A receipt link is a bearer token: anyone who opens it sees the payment, the name
 `npm run probe` runs the same URL detector, parsers and Verifier as cheki.et, on your machine. Nothing is sent anywhere except to the bank itself.
 
 ```bash
-npm run probe -- "https://receipts.dashenbanksc.com/receipt/B22WDTI2619100WH"
-npm run probe -- dashen B22WDTI2619100WH
-npm run probe -- cbe FT26140P01YB 60536171          # third argument: account or phone
+npm run probe -- "https://receipts.dashenbanksc.com/receipt/B22WDTI00SAMPLE1"
+npm run probe -- dashen B22WDTI00SAMPLE1
+npm run probe -- cbe FT26SAMPLE01 00006171          # third argument: account or phone
 npm run probe -- cbebirr CHK0000001 --phone 2519XXXXXXXX
 npm run probe -- <link> --raw                       # also print the first 2,000 characters of the body
 npm run probe -- <link> --redact                    # mask names, accounts and phones before you share output
@@ -165,7 +165,7 @@ A bank that has more than one way to look a receipt up also lists them in `forma
 
 A receipt QR that only names the reference (Telebirr's Payment QR Code) is an **input-only** format: no `parser`, no `endpoint`, `"inputs": [{ "name": "qr", ... }]` and `"via": "<the format it is checked through>"`. It is never fetched and never proof of payment: the decoder reads the reference out of it (on the device for uploads and the camera, from `qrData` in the API) and the check runs exactly as if the reference had been typed. Keep such decoders in `src/lib/qr/` with hard size caps, no backtracking regexes, an integrity check where the format has one, and synthetic test fixtures only (see `src/lib/qr/telebirr.ts` and [docs/telebirr-qr.md](docs/telebirr-qr.md)). Never use the amount or names a QR claims.
 
-`confidence` is `verified` only for what cheki itself observed (a real receipt, or a probe). Anything taken from another site (links.et, another app's source code) is `inferred`, says so in `evidence`, and is never described as live in copy.
+`confidence` is `verified` only for what cheki itself observed (a real receipt, or a probe). Anything taken from another site (another verifier's provider list, another app's source code) is `inferred`, says so in `evidence`, and is never described as live in copy.
 
 Keep `status` as `in-development` until the parser has passed against a real receipt. In-development banks are noindexed, and their page shows the private submission box instead of the checker.
 
@@ -294,8 +294,8 @@ Guides live in `src/lib/guides.ts` as content blocks (text, steps, callouts, tab
 ```bash
 npm run cli -- info
 npm run cli -- verify cbe https://mbreciept.cbe.com.et/fHCxExampleRcpt01
-npm run cli -- verify cbe FT26140P01YB -a 1000560536171   # older FT receipt (legacy)
-npm run cli -- verify telebirr CHQ0FJ403O
+npm run cli -- verify cbe FT26SAMPLE01 -a 1000000006171   # older FT receipt (legacy)
+npm run cli -- verify telebirr CHQ0SAMPLE
 npm run cli -- health
 ```
 

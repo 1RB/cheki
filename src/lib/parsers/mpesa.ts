@@ -13,7 +13,7 @@
  * calls this endpoint reads that envelope and parses the PDF -
  * Vixen878/verifier-api src/services/verifyMpesa.ts, nahom-d54/tx-verify
  * src/providers/mpesa.ts, nahom-d54/veri-py, kira-coding/kira-verify-opensource
- * MpesaVerifier.php, matthias22m/transaction-verify - and links.et tags these
+ * MpesaVerifier.php, matthias22m/transaction-verify - and another verifier tags these
  * receipts `mpesa-pdf` ("PDF parsed"). None of them reads flat JSON fields, so
  * the old flat-JSON reader (senderName/amount/transactionId at the top level)
  * was removed: no source shows that shape exists.

@@ -6,7 +6,7 @@ import { RelativeTime } from "@/components/RelativeTime";
 import { Chevron } from "@/components/reference/Chevron";
 import { UrlTemplate } from "@/components/reference/UrlTemplate";
 import { BankJump } from "@/components/reference/BankJump";
-import { changelogFor, getEndpointRows, REPO_URL, REPORT_CHANGE_URL, type EndpointRow, type PlaceholderDoc } from "@/lib/manifest/endpoints";
+import { changelogFor, getEndpointRows, REPO_URL, REPORT_CHANGE_URL, THIRD_PARTY_PROVIDER_LIST, type EndpointRow, type PlaceholderDoc } from "@/lib/manifest/endpoints";
 import { primaryFormat, secondaryFormats, templateHost } from "@/lib/manifest/formats";
 import type { ReceiptFormat } from "@/lib/core/types";
 import { getBankHealth, healthStatusFor, statusFile } from "@/lib/status-data";
@@ -339,6 +339,9 @@ export default function EndpointsPage() {
           </p>
           <p className="ref-small">
             Calling cheki instead of the banks? See the <Link href="/docs">API docs</Link>. Requests are rate limited per IP (verify 30 per minute, batch 5 per minute with up to 20 receipts each); over the limit you get a 429 with a Retry-After header.
+          </p>
+          <p className="ref-small">
+            Formats marked inferred rest on another public source, mostly the <a href={THIRD_PARTY_PROVIDER_LIST} target="_blank" rel="noopener noreferrer">links.et provider list</a>, rather than a receipt cheki has checked itself.
           </p>
         </div>
 

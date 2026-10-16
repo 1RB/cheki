@@ -6,6 +6,7 @@ import { Nav, Footer } from "@/components/Chrome";
 import { useTranslation } from "@/lib/i18n/use-translation";
 import { Icon, ChevronDownIcon, ChevronUpIcon } from "@/components/Icon";
 import { brandTileBg } from "@/lib/utils";
+import { NEW_BANK_ISSUE_URL } from "@/lib/trust-pages";
 
 export default function BanksPage() {
   const { t } = useTranslation();
@@ -121,7 +122,7 @@ export default function BanksPage() {
             {inDev.length} Ethiopian banks still need receipt endpoints. If you use one of these banks and can share a receipt with a QR code or receipt URL, we can reverse-engineer the endpoint and add it to cheki for free. No technical knowledge needed, just send us a screenshot or link.
           </p>
           <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-            <a href="https://github.com/1RB/cheki/issues/new?labels=new-bank&title=Add+support+for+%5Bbank+name%5D&body=Bank%3A%20%0AReceipt%20URL%20or%20QR%20screenshot%3A%20%0AReference%20number%3A%20" target="_blank" rel="noopener" style={{
+            <a href={NEW_BANK_ISSUE_URL} target="_blank" rel="noopener" style={{
               padding: "12px 24px", borderRadius: "8px", background: "var(--green-cta)", color: "var(--green-cta-fg)",
               fontSize: "14px", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "8px",
             }}>
