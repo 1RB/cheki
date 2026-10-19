@@ -547,7 +547,18 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
         )}
       </div>
 
-      {batch && <BatchPanel files={batch} t={t} onClear={() => setBatch(null)} />}
+      {batch && (
+        <BatchPanel
+          files={batch}
+          t={t}
+          onClear={() => setBatch(null)}
+          onPick={(reference, bankCode) => {
+            setInput(reference);
+            if (!lockedBank && bankCode) setOverrideBank(bankCode);
+            focusInput();
+          }}
+        />
+      )}
 
       {phase === "idle" && !batch && (
         <RecentChecks

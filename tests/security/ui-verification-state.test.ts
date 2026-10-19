@@ -77,6 +77,14 @@ describe("verify panel labels", () => {
     expect(card).not.toMatch(/var\(--green/);
   });
 
+  it("the batch takes its colours from rowTone, which never makes green itself", () => {
+    const batchLib = read("src/lib/verify/batch.ts");
+    expect(batch).toMatch(/data-tone=\{rowTone\(r\)\}/);
+    expect(batch).not.toMatch(/"green"|"red"|"amber"/);
+    const fn = batchLib.slice(batchLib.indexOf("export function rowTone"), batchLib.indexOf("export function rowTone") + 400);
+    expect(fn).not.toMatch(/return "green"/);
+  });
+
   it("an image scan that throws still settles and frees its object URL", () => {
     const qr = read("src/lib/qr/decode.ts");
     const img = read("src/lib/image/prepare.ts");
