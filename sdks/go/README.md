@@ -8,7 +8,7 @@ Website: [cheki.et](https://cheki.et) · API reference: [cheki.et/docs](https://
 go get github.com/1RB/cheki/sdks/go
 ```
 
-Releases are tagged `sdks/go/vX.Y.Z` (the Go convention for a module in a subdirectory), so `go get` resolves the newest tagged version; pin one with `go get github.com/1RB/cheki/sdks/go@v1.5.0`. Docs: [pkg.go.dev](https://pkg.go.dev/github.com/1RB/cheki/sdks/go).
+Releases are tagged `sdks/go/vX.Y.Z` (the Go convention for a module in a subdirectory), so `go get` resolves the newest tagged version; pin one with `go get github.com/1RB/cheki/sdks/go@v1.6.0`. Docs: [pkg.go.dev](https://pkg.go.dev/github.com/1RB/cheki/sdks/go).
 
 ## Quick start
 

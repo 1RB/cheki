@@ -10,7 +10,7 @@ namespace Cheki;
 class VerifyOptions
 {
     /** SDK version, sent in the User-Agent header. */
-    public const VERSION = '1.5.0';
+    public const VERSION = '1.6.0';
 
     /**
      * Default per-attempt timeout in seconds. The server gives a verification
