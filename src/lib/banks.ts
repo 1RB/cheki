@@ -147,6 +147,8 @@ export interface VerifyResult {
   success: boolean;
   error?: string;
   fallbackUrl?: string;
+  /** On a 422: the bank page cheki asked, so the user can see the bank's own answer. */
+  checkedUrl?: string;
   /** True when the API served this from the in-memory receipt cache. */
   cached?: boolean;
   bank?: string;
