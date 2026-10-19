@@ -55,7 +55,7 @@ function walk(dir: string): string[] {
     if (SKIP_DIRS.has(name)) return [];
     const p = join(dir, name);
     if (statSync(p).isDirectory()) return walk(p);
-    return TEXT.test(name) && name !== "package-lock.json" && name !== "CHANGELOG.md" ? [p] : [];
+    return TEXT.test(name) && name !== "package-lock.json" ? [p] : [];
   });
 }
 

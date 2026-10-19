@@ -89,7 +89,7 @@ export const articles: Article[] = [
     excerpt:
       "CBE launched a new receipt sharing system at mbreciept.cbe.com.et. Here's what the QR codes contain, how the API works, and why it makes verification easier.",
     date: "2026-06-18",
-    updated: "2026-10-12",
+    updated: "2026-10-19",
     readTime: "4 min",
     content: [
       { type: "text", text: "Commercial Bank of Ethiopia recently launched a new receipt sharing system. When you complete a transfer in the CBE mobile app, you can now share a short link like https://mbreciept.cbe.com.et/fHCxExampleRcpt01. The recipient opens this link and sees the full receipt in their browser, no app required." },
@@ -172,7 +172,7 @@ export const articles: Article[] = [
     excerpt:
       "check.et charges 499 ETB/month after 200 one-time free verifications, and verify.et's API plans start at 500 ETB/month. Both use the same public bank endpoints cheki uses for free. Here's the complete guide to free verification.",
     date: "2026-06-18",
-    updated: "2026-10-15",
+    updated: "2026-10-19",
     readTime: "5 min",
     content: [
       { type: "text", text: "If you're an Ethiopian business owner, you've probably heard of check.et or verify.et. They verify bank receipts so you can confirm payments before releasing goods. They charge you for data that is already free." },
@@ -386,7 +386,7 @@ export const articles: Article[] = [
     excerpt:
       `The definitive reference for Ethiopian bank receipt formats. Reference patterns, endpoint URLs, required fields, and response types for the ${LIVE_BANK_COUNT} live banks and wallets, plus the ones still in research.`,
     date: "2026-06-18",
-    updated: "2026-10-13",
+    updated: "2026-10-19",
     readTime: "6 min",
     content: [
       { type: "text", text: "This is a complete technical reference for every Ethiopian bank and mobile wallet receipt system. If you're building a verification system, integrating payments, or just want to understand how Ethiopian bank receipts work, this is your reference." },
@@ -623,8 +623,8 @@ export const articles: Article[] = [
         "Can the counter prediction be improved with more samples from underrepresented time periods?",
       ]},
 
-      { type: "callout", variant: "tip", title: "Help us improve the counter model", text: "We have 18 samples but need more from underrepresented periods (especially March 2026, September-December 2025, and pre-July 2025). If you have Awash SMS messages with receipt links, please share the two-part token (e.g. 2KDL95XE81-4U0000) and the transaction date/time on GitHub. Each sample narrows the prediction window and reduces brute-force time." },
-      { type: "callout", variant: "info", title: "Privacy note", text: "If you share Awash links, the receipts already contain the transaction details. If you want to help without exposing real data, paste just the two-part token (e.g. 2KDL95XE81-4U0000) and the transaction date/time from the SMS. Do not include the full URL if you are not comfortable sharing it." },
+      { type: "callout", variant: "tip", title: "Help us improve the counter model", text: "We have 18 samples but need more from underrepresented periods (especially March 2026, September-December 2025, and pre-July 2025). If you have Awash SMS messages with receipt links, send the two-part token (e.g. 2KDL95XE81-4U0000) and the transaction date/time through the private form on the Awash bank page. Please don't post tokens on GitHub: a token opens the full receipt. Each sample narrows the prediction window and reduces brute-force time." },
+      { type: "callout", variant: "info", title: "Privacy note", text: "An Awash token is as sensitive as the full link: anyone with it can open the receipt, with names and amounts. Only send tokens through the private form, which goes to the maintainer and is not published. In public (a GitHub issue), share only the transaction date/time and the token's shape with characters masked, e.g. 2KDL9XXXXX-4UXXXX." },
 
       { type: "heading", text: "How to verify Awash with cheki" },
       { type: "text", text: "Paste the full share link from your Awash SMS or app into cheki. The parser will extract the Transaction ID, receiver, amount, date, and other fields from the official HTML receipt. cheki handles all receipt variants (Transfer successful, Transaction successful, Transaction Details, Telebirr Transfer) including IPS bank transfers, merchant payments, send-to-wallet, and other-bank transfers." },
@@ -846,7 +846,7 @@ export const articles: Article[] = [
     excerpt:
       "From cURL to production: everything you need to integrate free Ethiopian receipt verification into your application.",
     date: "2026-06-18",
-    updated: "2026-10-11",
+    updated: "2026-10-19",
     readTime: "8 min",
     content: [
       { type: "text", text: "This guide walks through integrating cheki's free REST API into a real application. No API key, no signup; requests are rate limited per IP. We'll cover single verification, batch verification, error handling, and fraud prevention patterns." },
@@ -1024,7 +1024,7 @@ export const articles: Article[] = [
     excerpt:
       "BOA's receipt QR codes are AES-256-CBC encrypted payloads using CryptoJS format. The key is public in BOA's web app. This guide covers how decryption works and why inter-bank transfers need it.",
     date: "2026-06-19",
-    updated: "2026-10-07",
+    updated: "2026-10-19",
     readTime: "6 min",
     content: [
       { type: "text", text: "Bank of Abyssinia takes a different approach to receipt QR codes than CBE. Instead of encoding a URL that points to a server-side receipt, BOA encrypts the full transaction data directly into the QR code. This means the QR code itself IS the receipt, not just a link to one." },

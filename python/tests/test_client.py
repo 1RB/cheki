@@ -33,7 +33,7 @@ def test_verify_success_cbe():
             "bank": "Commercial Bank of Ethiopia",
             "bankCode": "cbe",
             "reference": "FT26SAMPLE01",
-            "sourceUrl": "https://apps.cbe.com.et:100/?id=FT26SAMPLE010536171",
+            "sourceUrl": "https://apps.cbe.com.et:100/?id=FT26SAMPLE0100006171",
             "senderName": "Mr Payer",
             "senderAccount": "1****1234",
             "receiverName": "Ms Receiver",
