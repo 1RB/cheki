@@ -4,6 +4,12 @@ Every cheki SDK ships the same version: npm `cheki-verify` (and `@1rb/cheki-veri
 
 ## Unreleased
 
+**Batch check results built for end-of-day reconciliation**
+- Several screenshots at once now open with a total: how many the banks confirmed and the confirmed amount. A receipt that appears twice is flagged ("Same as #1") and counted once.
+- Each row shows a thumbnail, the amount (bank-confirmed only), the verdict and the reference, and opens in place for the payer, receiver, date, bank and the bank's page. Unavailable or rate-limited rows can be retried.
+- A screenshot with no QR is read with OCR, like a single photo. When its bank also needs account digits, "Add the account" moves it to the main field.
+- Copy summary and Download CSV. The CSV carries amounts and names only for bank-confirmed first copies, and cells that would run as spreadsheet formulas are defused.
+
 **BOA receipts filed under the payer's account**
 - BOA files some receipts under the source account's last 5 digits instead of the receiver's (seen on an Apollo app transfer). A BOA QR carries both accounts, so when BOA answers "Invalid reference number" under the receiver and the QR's source account is full (not masked), cheki asks once more under it. An unreadable BOA answer is unconfirmed, never a "no", and triggers no retry. BOA still decides, and its amount must still match the QR.
 - A typed BOA lookup that finds nothing now says to try the source account's last 5 digits.
