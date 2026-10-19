@@ -237,7 +237,7 @@ describe("CBEBirrParser", () => {
   it("accepts 10 and 11 character receipt numbers and rejects other shapes", () => {
     expect(parser.normalizeReference("DTS41AB2C90")).toEqual({ ok: true, value: "DTS41AB2C90" });
     expect(parser.normalizeReference("CHK0000001")).toEqual({ ok: true, value: "CHK0000001" });
-    for (const bad of ["SHORT", "DTS41-AB2C90", "DTS41AB2C90.pdf", "A".repeat(40), "DTS41AB2C90&PH=1"]) {
+    for (const bad of ["SHORT", "CHK000001", "DTS41AB2C901", "DTS41-AB2C90", "DTS41AB2C90.pdf", "A".repeat(40), "DTS41AB2C90&PH=1"]) {
       expect(parser.normalizeReference(bad).ok, bad).toBe(false);
     }
   });

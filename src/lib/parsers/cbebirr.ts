@@ -150,7 +150,8 @@ function splitParty(v: string | undefined): { number?: string; name?: string } {
 }
 
 /** TID: letters and digits only. Real ones are 10 or 11 characters. */
-const TID_RE = /^[A-Za-z0-9]{8,16}$/;
+/** A CBE Birr receipt number (TID): 10 or 11 letters and digits, as in the SMS. */
+const TID_RE = /^[A-Za-z0-9]{10,11}$/;
 
 /**
  * The payer's wallet number as CBE Birr's receipt links carry it: 251 then 9

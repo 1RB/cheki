@@ -947,7 +947,7 @@ export const articles: Article[] = [
         type: "table",
         headers: ["Project", "Language", "Banks", "Stars", "Unique feature"],
         rows: [
-          ["cheki", "TypeScript + Python", "9", "0", "Web UI + API + Docker + QR scanning"],
+          ["cheki", "TypeScript + Python", String(LIVE_BANK_COUNT), "0", "Web UI + API + Docker + QR scanning"],
           ["ethiobank_receipts", "Python", "6", "40", "PyPI published, multithreaded"],
           ["verification-engine", "TypeScript", "4", "1", "OCR + SMS parsing, npm published"],
           ["telebirr-receipt", "JavaScript", "1", "14", "Telebirr-only, npm published"],

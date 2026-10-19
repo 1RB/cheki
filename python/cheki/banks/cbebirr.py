@@ -32,7 +32,7 @@ from cheki.banks.base import BankVerifier
 from cheki.errors import ReceiptNotFoundError, UpstreamError
 from cheki.result import VerificationResult, VerificationStatus
 
-_TID_RE = re.compile(r"^[A-Za-z0-9]{8,16}$")
+_TID_RE = re.compile(r"^[A-Za-z0-9]{10,11}$")
 
 # Same limits as the server: the body is read under safe-fetch's 5 MB PDF cap.
 MAX_PDF_BYTES = 5 * 1024 * 1024
@@ -260,11 +260,15 @@ class CBEBirrVerifier(BankVerifier):
             )
 
         body = bytearray()
-        for chunk in resp.iter_content(64 * 1024):
-            body.extend(chunk)
-            if len(body) > MAX_PDF_BYTES:
-                resp.close()
-                raise UpstreamError("CBE Birr returned a receipt larger than cheki accepts.")
+        try:
+            for chunk in resp.iter_content(64 * 1024):
+                body.extend(chunk)
+                if len(body) > MAX_PDF_BYTES:
+                    raise UpstreamError("CBE Birr returned a receipt larger than cheki accepts.")
+        except requests.RequestException as exc:
+            raise UpstreamError(f"CBE Birr receipt download failed: {exc}") from exc
+        finally:
+            resp.close()
 
         if not bytes(body[:5]).startswith(b"%PDF"):
             return VerificationResult(
@@ -281,7 +285,11 @@ class CBEBirrVerifier(BankVerifier):
                 ),
             )
 
-        fields = parse_lines(pdf_lines(bytes(body)))
+        try:
+            lines = pdf_lines(bytes(body))
+        except Exception as exc:  # a truncated or malformed PDF behind a %PDF header
+            raise UpstreamError("CBE Birr returned a receipt PDF cheki could not read.") from exc
+        fields = parse_lines(lines)
         if not (
             fields["reference"]
             and fields["amount"]
