@@ -150,6 +150,8 @@ export interface BatchItemError {
     status: number;
     /** For a geo-blocked bank: open this link in a browser in Ethiopia instead (when the server sends it). */
     fallbackUrl?: string;
+    /** On a 422: the bank page cheki asked, so you can see the bank's own answer (https). */
+    checkedUrl?: string;
     /** Position in the input array (added by the SDK). */
     index: number;
 }
@@ -243,7 +245,8 @@ export declare class ChekiValidationError extends ChekiError {
 }
 /**
  * The API answered with a non-2xx status. The server's own message is in
- * `serverMessage` (and in `message`); geo-blocked banks add `fallbackUrl`.
+ * `serverMessage` (and in `message`); geo-blocked banks add `fallbackUrl`,
+ * and a 422 adds `checkedUrl` when the server sends it.
  *
  * Status codes: 400 bad input, 404 unsupported bank, 413 body too large,
  * 422 receipt not found / not a valid receipt, 429 rate limited, 502 bank
@@ -259,6 +262,8 @@ export declare class ChekiAPIError extends ChekiError {
     readonly serverMessage?: string;
     /** For geo-blocked banks: open this link in a browser in Ethiopia instead. */
     readonly fallbackUrl?: string;
+    /** On a 422: the bank page cheki asked, so you can see the bank's own answer (https). */
+    readonly checkedUrl?: string;
     constructor(message: string, statusCode: number, body: unknown, endpoint: string);
 }
 /** HTTP 429. `retryAfterSeconds` is the server's Retry-After, when sent. */

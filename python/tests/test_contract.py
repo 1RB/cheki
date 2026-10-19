@@ -282,12 +282,14 @@ def test_order_id_and_batch_fallback_url():
         f"{API}/api/verify/batch",
         json={
             "success": True,
-            "results": ["junk", {"success": False, "error": "geo", "status": 502, "fallbackUrl": "https://x.test/r"}],
-            "total": 2, "verified": 0, "failed": 2, "cached": 0,
+            "results": ["junk", {"success": False, "error": "geo", "status": 502, "fallbackUrl": "https://x.test/r"},
+                        {"success": False, "error": "not found", "status": 422, "checkedUrl": "https://cs.bankofabyssinia.com/api/onlineSlip/getDetails/?id=FT26SAMPLE0706171"}],
+            "total": 3, "verified": 0, "failed": 3, "cached": 0,
         },
     )
-    b = client().verify_batch([{"bank": "telebirr", "reference": "A1"}, {"bank": "telebirr", "reference": "B2"}])
+    b = client().verify_batch([{"bank": "telebirr", "reference": "A1"}, {"bank": "telebirr", "reference": "B2"}, {"bank": "boa", "reference": "FT26SAMPLE07", "accountNumber": "06171"}])
     assert b.results[0].fallback_url == "https://x.test/r"
+    assert b.results[1].checked_url == "https://cs.bankofabyssinia.com/api/onlineSlip/getDetails/?id=FT26SAMPLE0706171"
     assert b.results[0].index == 1  # position in the response, not shifted by the skipped item
 
 

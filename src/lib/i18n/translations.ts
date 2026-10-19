@@ -143,6 +143,7 @@ export const translations = {
           title: "No matching receipt",
           subtitle: "{bank} has no receipt with this reference.",
           next: "Read the reference off the original receipt again. A fabricated screenshot looks exactly like this.",
+          nextBoa: "BOA files some receipts under the payer's account. If you entered the receiving account, try the last 5 digits of the source account. If neither works, treat the receipt as unconfirmed.",
         },
         notCompleted: {
           title: "Payment not completed",
@@ -183,6 +184,7 @@ export const translations = {
         retryIn: "Try again in {s}s",
         retry: "Try again",
         openReceipt: "Open the receipt",
+        checked: "Bank's answer",
       },
       checks: {
         seenBefore: "Checked before on this device",

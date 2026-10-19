@@ -79,6 +79,10 @@ class VerifyResult {
   /// open this link in a browser in Ethiopia instead.
   final String? fallbackUrl;
 
+  /// A failed batch item with status 422, when the server sends it: the bank
+  /// page cheki asked, so you can see the bank's own answer.
+  final String? checkedUrl;
+
   /// Failed batch items: the HTTP status a single verify would have returned.
   final int? status;
 
@@ -125,6 +129,7 @@ class VerifyResult {
     this.orderId,
     this.error,
     this.fallbackUrl,
+    this.checkedUrl,
     this.status,
     this.index,
   });
@@ -174,6 +179,7 @@ class VerifyResult {
       orderId: _toStr(json['orderId']),
       error: _toStr(json['error']),
       fallbackUrl: _toStr(json['fallbackUrl']),
+      checkedUrl: _toStr(json['checkedUrl']),
       status: _toInt(json['status']),
       index: index,
     );
@@ -220,6 +226,7 @@ class VerifyResult {
       'orderId': orderId,
       'error': error,
       'fallbackUrl': fallbackUrl,
+      'checkedUrl': checkedUrl,
       'status': status,
     };
     m.removeWhere((_, v) => v == null);

@@ -236,12 +236,19 @@ export function VerdictCard({ verdict, result, checkedAt, t, onAnother, onRetry 
         )}
       </div>
 
-      {(v.sourceUrl || (result && isJudgement)) && (
+      {(v.sourceUrl || v.checkedUrl || (result && isJudgement)) && (
         <div className="vc-foot vc-no-print">
           {v.sourceUrl && (
             <a className="vc-source" href={v.sourceUrl} target="_blank" rel="noopener noreferrer">
               <span>{t("verify.card.source")}</span>
               <span className="vc-source-url">{v.sourceUrl.replace(/^https:\/\//, "")}</span>
+              <Icon icon={ArrowUpRight01Icon} size={16} />
+            </a>
+          )}
+          {!v.sourceUrl && v.checkedUrl && (
+            <a className="vc-source" href={v.checkedUrl} target="_blank" rel="noopener noreferrer nofollow">
+              <span>{t("verify.card.checked")}</span>
+              <span className="vc-source-url">{v.checkedUrl.replace(/^https:\/\//, "")}</span>
               <Icon icon={ArrowUpRight01Icon} size={16} />
             </a>
           )}

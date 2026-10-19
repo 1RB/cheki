@@ -62,6 +62,10 @@ export async function POST(request: NextRequest) {
       if (result.error.kind === "ENDPOINT_ERROR" && "fallbackUrl" in result.error) {
         response.fallbackUrl = (result.error as { fallbackUrl?: string }).fallbackUrl;
       }
+      // The bank answered but did not confirm: the page it answered on.
+      if (result.error.kind === "EXTRACTION_ERROR" && result.error.checkedUrl) {
+        response.checkedUrl = result.error.checkedUrl;
+      }
       // Failures are never cached. A timeout or geo-block must retry live.
       return NextResponse.json(response, { status });
     }

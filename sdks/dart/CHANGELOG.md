@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- `ChekiException.checkedUrl` and `VerifyResult.checkedUrl` on failed batch items: on a 422, the bank page cheki asked.
+
 ## 1.5.0
 
 - Responses are decoded as UTF-8 from the bytes, and `http` must be 1.4.0 or newer (older versions decoded `application/json` without a charset as latin1, garbling Amharic names and messages). Requires Dart 3.4+, as `http` 1.4.0 does.

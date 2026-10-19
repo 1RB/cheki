@@ -26,7 +26,8 @@ with ChekiClient() as cheki:  # https://cheki.et, 65 s per attempt, at most 1 re
         print(f"Rate limited, retry in {result.retry_after} s")
     else:
         print(f"Not verified ({result.http_status}): {result.error}")
-        # result.fallback_url is set for geo-blocked banks
+        # result.fallback_url is set for geo-blocked banks; result.checked_url
+        # on a 422 is the bank page cheki asked
 ```
 
 ### `is_verified` is the only success signal
@@ -57,7 +58,7 @@ for i in range(0, len(receipts), RECOMMENDED_BATCH_CHUNK):
     batch = cheki.verify_batch(receipts[i:i + RECOMMENDED_BATCH_CHUNK])
 ```
 
-A failed item has `http_status` and `error`, plus `fallback_url` when the server sends one for a geo-blocked bank. Results carry `order_id` when the receipt has one (CBE Birr).
+A failed item has `http_status` and `error`, plus `fallback_url` when the server sends one for a geo-blocked bank, or `checked_url` (the bank page cheki asked) on a 422. Results carry `order_id` when the receipt has one (CBE Birr).
 
 ### Banks and health
 

@@ -97,6 +97,7 @@ export async function POST(request: NextRequest) {
           success: false,
           error: errorToMessage(r.error),
           status: errorToHttpStatus(r.error),
+          ...(r.error.kind === "EXTRACTION_ERROR" && r.error.checkedUrl ? { checkedUrl: r.error.checkedUrl } : {}),
         };
       }
       const payload = { success: true, ...r.value };

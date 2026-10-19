@@ -71,6 +71,8 @@ export interface Verdict {
   sourceUrl?: string;
   /** The bank's own receipt page, for geo-blocked banks. https only. */
   fallbackUrl?: string;
+  /** The bank page cheki asked when the bank did not confirm the receipt. https only. */
+  checkedUrl?: string;
   nextStep?: string;
   guideHref?: string;
   retryAfter?: number;
@@ -162,6 +164,7 @@ export function presentVerdict(result: VerifyResult | null | undefined, opts: Pr
   const short = bank?.shortName ?? t("verify.verdict.theBank");
   const reference = str(result?.reference) ?? str(opts.reference);
   const fallbackUrl = str(result?.fallbackUrl) && HTTPS.test(result!.fallbackUrl!) ? result!.fallbackUrl : undefined;
+  const checkedUrl = str(result?.checkedUrl) && HTTPS.test(result!.checkedUrl!) ? result!.checkedUrl : undefined;
   const base = { bank, checks, reference, showDetails: false } as const;
 
   const details = (r: VerifyResult) => ({
@@ -234,7 +237,10 @@ export function presentVerdict(result: VerifyResult | null | undefined, opts: Pr
       if (/(no valid amount|missing the payer|cannot be confirmed as a receipt)/i.test(message)) {
         return { ...base, kind: "unconfirmed", tone: "amber", title: t("verify.verdict.unconfirmed.title"), subtitle: t("verify.verdict.unconfirmed.subtitle", { bank: short }), nextStep: t("verify.verdict.unconfirmed.next"), detail: message || undefined };
       }
-      return red("notFound", t("verify.verdict.notFound.title"), t("verify.verdict.notFound.subtitle", { bank: short }), t("verify.verdict.notFound.next"));
+      // BOA files some receipts under the payer's account; the API says so
+      // when a typed account found nothing.
+      const next = /try the last 5 digits of the source account/i.test(message) ? t("verify.verdict.notFound.nextBoa") : t("verify.verdict.notFound.next");
+      return red("notFound", t("verify.verdict.notFound.title"), t("verify.verdict.notFound.subtitle", { bank: short }), next, { checkedUrl });
     }
     if (status === 400 || status === 404) {
       return neutral("invalidInput", t("verify.verdict.invalidInput.title"), message || t("verify.verdict.invalidInput.subtitle"));

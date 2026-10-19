@@ -30,7 +30,7 @@ if ($result->isVerified()) {
 }
 ```
 
-`verify()` and `verifyBatch()` never throw for API answers: errors come back on the result (`success` false, `error`, `httpStatus`, `retryAfter`, `fallbackUrl`). `getBanks()` and `getHealth()` throw `Cheki\ChekiException` when the request fails.
+`verify()` and `verifyBatch()` never throw for API answers: errors come back on the result (`success` false, `error`, `httpStatus`, `retryAfter`, `fallbackUrl`, and `checkedUrl` on a 422: the bank page cheki asked). `getBanks()` and `getHealth()` throw `Cheki\ChekiException` when the request fails.
 
 ### `isVerified()` is the only success signal
 
@@ -61,7 +61,7 @@ foreach (array_chunk($receipts, ChekiClient::RECOMMENDED_BATCH_CHUNK) as $chunk)
 }
 ```
 
-A failed item has `httpStatus` and `error`, plus `fallbackUrl` when the server sends one for a geo-blocked bank. Results carry `orderId` when the receipt has one (CBE Birr), and `Bank::$beta` is true for M-Pesa, ZamZam and CBE Birr.
+A failed item has `httpStatus` and `error`, plus `fallbackUrl` when the server sends one for a geo-blocked bank, or `checkedUrl` (the bank page cheki asked) on a 422. Results carry `orderId` when the receipt has one (CBE Birr), and `Bank::$beta` is true for M-Pesa, ZamZam and CBE Birr.
 
 ### Banks and health
 

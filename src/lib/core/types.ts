@@ -31,7 +31,16 @@ export type ChekiError =
   | { kind: "BANK_NOT_SUPPORTED"; bank: string; suggestion?: string; message?: string }
   | { kind: "REF_ERROR"; bank: string; message: string }
   | { kind: "ENDPOINT_ERROR"; bank: string; message: string; fallbackUrl?: string }
-  | { kind: "EXTRACTION_ERROR"; bank: string; message: string }
+  | {
+      kind: "EXTRACTION_ERROR";
+      bank: string;
+      message: string;
+      /**
+       * The bank page cheki asked, when the bank answered but did not confirm
+       * the receipt, so anyone can open it and see the bank's answer.
+       */
+      checkedUrl?: string;
+    }
   | { kind: "MISSING_INPUT"; field: string; message: string }
   | { kind: "INTERNAL_ERROR"; message: string };
 

@@ -5,7 +5,8 @@
  * Response: JSON with receipt fields
  * Requires: reference + last 5 digits of an account on the receipt. Not
  *   always the receiver's: a fee receipt with no receiver uses the source
- *   account. (A QR lookup uses the receiver account the QR names.) A slip
+ *   account. (A QR lookup tries the receiver account the QR names, then
+ *   the QR's source account if BOA has no record under the receiver.) A slip
  *   link (/slip/?trx=) can carry these 5 digits after the reference.
  *
  * QR decryption:
@@ -20,8 +21,8 @@
  *     sourceAccount,sourceName,amount,reference,date,receiverAccount,receiverName
  *
  *   The key is public, so anyone can mint a QR payload. A decrypted QR is
- *   therefore only a way to FIND the receipt (reference + receiver account
- *   suffix); it never proves anything on its own. decryptQr always returns
+ *   therefore only a way to FIND the receipt (reference + an account
+ *   suffix from the QR); it never proves anything on its own. decryptQr always returns
  *   verified: false, and the verifier looks the receipt up at BOA.
  */
 import { createDecipheriv, pbkdf2Sync } from "node:crypto";
@@ -98,6 +99,22 @@ export class BOAParser extends BaseParser {
       date,
       reference,
     };
+  }
+
+  /**
+   * BOA's answer plus whether it was BOA's explicit "no record" reply
+   * ("Invalid reference number"). Only that reply means BOA has no such
+   * receipt; malformed JSON or an unexpected shape is not a "no".
+   */
+  parseLookup(data: string | Buffer, contentType: string): { parsed: ParsedReceipt; notFound: boolean } {
+    let notFound = false;
+    try {
+      const row = JSON.parse(data.toString())?.body?.[0];
+      notFound = !!row && typeof row === "object" && row["Payer's Name"] === "Invalid reference number";
+    } catch {
+      notFound = false;
+    }
+    return { parsed: this.parse(data, contentType), notFound };
   }
 
   parse(data: string | Buffer, _contentType: string): ParsedReceipt {

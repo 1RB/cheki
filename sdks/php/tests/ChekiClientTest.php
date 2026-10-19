@@ -276,10 +276,12 @@ final class ChekiClientTest extends TestCase
 
         $b = $this->client(['status' => 200, 'headers' => [], 'body' => json_encode([
             'success' => true,
-            'results' => [['success' => false, 'error' => 'geo', 'status' => 502, 'fallbackUrl' => 'https://x.test/r']],
-            'total' => 1, 'verified' => 0, 'failed' => 1, 'cached' => 0,
-        ])])->verifyBatch([['bank' => 'telebirr', 'reference' => 'A1']]);
+            'results' => [['success' => false, 'error' => 'geo', 'status' => 502, 'fallbackUrl' => 'https://x.test/r'],
+                ['success' => false, 'error' => 'not found', 'status' => 422, 'checkedUrl' => 'https://cs.bankofabyssinia.com/api/onlineSlip/getDetails/?id=FT26SAMPLE0706171']],
+            'total' => 2, 'verified' => 0, 'failed' => 2, 'cached' => 0,
+        ])])->verifyBatch([['bank' => 'telebirr', 'reference' => 'A1'], ['bank' => 'boa', 'reference' => 'FT26SAMPLE07', 'accountNumber' => '06171']]);
         self::assertSame('https://x.test/r', $b->results[0]->fallbackUrl);
+        self::assertSame('https://cs.bankofabyssinia.com/api/onlineSlip/getDetails/?id=FT26SAMPLE0706171', $b->results[1]->checkedUrl);
         self::assertLessThanOrEqual(ChekiClient::MAX_BATCH_SIZE, ChekiClient::RECOMMENDED_BATCH_CHUNK);
     }
 

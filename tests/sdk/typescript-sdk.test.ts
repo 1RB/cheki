@@ -104,6 +104,22 @@ describe("TS SDK: models decode the contract fixtures", () => {
     expect(r.orderId).toBe("FT26SAMPLE01");
   });
 
+  it("a 422 keeps checkedUrl on the error and on batch items", async () => {
+    const body = { success: false, error: "[Bank of Abyssinia] not found", checkedUrl: "https://cs.bankofabyssinia.com/api/onlineSlip/getDetails/?id=FT26SAMPLE0706171" };
+    serve(() => new Response(JSON.stringify(body), { status: 422, headers: { "content-type": "application/json" } }));
+    const e = await client().verify("boa", "FT26SAMPLE07", { accountNumber: "06171" }).catch((x) => x);
+    expect(e).toBeInstanceOf(ChekiAPIError);
+    expect(e.checkedUrl).toBe("https://cs.bankofabyssinia.com/api/onlineSlip/getDetails/?id=FT26SAMPLE0706171");
+    serve(() =>
+      new Response(
+        JSON.stringify({ success: true, results: [{ success: false, error: "not found", status: 422, checkedUrl: "https://cs.bankofabyssinia.com/api/onlineSlip/getDetails/?id=FT26SAMPLE0706171" }], total: 1, verified: 0, failed: 1, cached: 0 }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      ),
+    );
+    const b = await client().verifyBatch([{ bank: "boa", reference: "FT26SAMPLE07", accountNumber: "06171" }]);
+    expect((b.results[0] as BatchItemError).checkedUrl).toBe("https://cs.bankofabyssinia.com/api/onlineSlip/getDetails/?id=FT26SAMPLE0706171");
+  });
+
   it("batch error items keep fallbackUrl when the server sends it", async () => {
     serve(() =>
       new Response(

@@ -333,17 +333,22 @@ class ChekiException implements Exception {
   /// For geo-blocked banks: open this link in a browser in Ethiopia instead.
   final String? fallbackUrl;
 
+  /// On a 422: the bank page cheki asked, so you can see the bank's own answer.
+  final String? checkedUrl;
+
   /// Constructs a [ChekiException].
-  const ChekiException(this.message, {this.statusCode, this.path, this.fallbackUrl});
+  const ChekiException(this.message, {this.statusCode, this.path, this.fallbackUrl, this.checkedUrl});
 
   /// Builds the right exception type for an error response.
   factory ChekiException.fromResponse(http.Response response, String path, Duration? retryAfter) {
     String? serverMessage;
     String? fallbackUrl;
+    String? checkedUrl;
     final json = _decodeJson(response);
     if (json is Map<String, dynamic>) {
       serverMessage = json['error'] is String ? json['error'] as String : null;
       fallbackUrl = json['fallbackUrl'] is String ? json['fallbackUrl'] as String : null;
+      checkedUrl = json['checkedUrl'] is String ? json['checkedUrl'] as String : null;
     } else if (json == null) {
       final text = _utf8Body(response);
       serverMessage = text.isNotEmpty ? text : null;
@@ -354,7 +359,7 @@ class ChekiException implements Exception {
       return ChekiRateLimitException(message, path: path, retryAfter: retryAfter);
     }
     if (status == 413) return ChekiPayloadTooLargeException(message, path: path);
-    return ChekiException(message, statusCode: status, path: path, fallbackUrl: fallbackUrl);
+    return ChekiException(message, statusCode: status, path: path, fallbackUrl: fallbackUrl, checkedUrl: checkedUrl);
   }
 
   @override
@@ -363,6 +368,7 @@ class ChekiException implements Exception {
     if (statusCode != null) parts.add('status: $statusCode');
     if (path != null) parts.add('path: $path');
     if (fallbackUrl != null) parts.add('fallbackUrl: $fallbackUrl');
+    if (checkedUrl != null) parts.add('checkedUrl: $checkedUrl');
     return '$runtimeType(${parts.join(', ')})';
   }
 }

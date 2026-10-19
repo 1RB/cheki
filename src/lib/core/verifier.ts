@@ -39,6 +39,14 @@ import { selectFormat, formatNeeds, formatAccountDigits, fillTemplate } from "..
 /** Receipts verified at the same time in one batch. */
 export const BATCH_CONCURRENCY = 5;
 const MAX_QR_LENGTH = 4096;
+
+/** BOA has no receipt under this reference + account pair (typed input). */
+export const BOA_NOT_FOUND =
+  "BOA has no receipt with this reference and account. BOA files some receipts under the payer's account: if you entered the receiving account, try the last 5 digits of the source account.";
+/** BOA answered, but not in a shape cheki can read: not a "no record". */
+export const BOA_UNREADABLE = "BOA sent an answer cheki could not read, so the receipt is not confirmed. Try again in a minute.";
+/** BOA has no receipt under either account a QR names. */
+export const BOA_QR_NOT_FOUND = "BOA has no receipt for the reference and accounts on this QR code.";
 const MAX_BANK_LENGTH = 32;
 
 /** "Account on the receipt" → "account on the receipt" (keeps "FT" etc. intact). */
@@ -314,14 +322,26 @@ export class Verifier {
     if (!fetchResult.ok) return fetchResult;
 
     const { data, contentType } = fetchResult.value;
+    // The page that shows what the bank answered: the format's receipt page
+    // when it has one people can open, otherwise the URL cheki fetched. A
+    // "not found" carries it, so the user can see the bank's own answer.
+    const checkedUrl = format?.link ? fillTemplate(format.link, { ref, account, phone }) : fallbackUrl;
     const parsedResult = await this.parseResponse(manifestEntry, parser, data, contentType, ref, fallbackUrl);
-    if (!parsedResult.ok) return parsedResult;
+    if (!parsedResult.ok) {
+      const e = parsedResult.error;
+      return e.kind === "EXTRACTION_ERROR" && /^https:\/\//i.test(checkedUrl) ? err({ ...e, checkedUrl }) : parsedResult;
+    }
     const parsed = parsedResult.value;
 
     // The gate is keyed by the parser (format), e.g. cbe-new looks receipts up by an opaque Receipt ID.
     const gate = verificationGate(parsed, { bankId: parser.bankId, requestedReference: ref });
     if (!gate.ok) {
-      return err({ kind: "EXTRACTION_ERROR", bank: manifestEntry.name, message: gateFailureMessage(gate) });
+      return err({
+        kind: "EXTRACTION_ERROR",
+        bank: manifestEntry.name,
+        message: gateFailureMessage(gate),
+        ...(/^https:\/\//i.test(checkedUrl) ? { checkedUrl } : {}),
+      });
     }
 
     return ok({
@@ -456,6 +476,20 @@ export class Verifier {
       return ok(parsed);
     }
 
+    // BOA answers an unknown reference + account pair with "Invalid reference
+    // number". BOA files some receipts under the source account instead of
+    // the receiver's, so the message says which other account to try. Any
+    // other unreadable answer is not BOA saying "no": it stays unconfirmed.
+    if (id === "boa") {
+      const { parsed, notFound } = (parser as BOAParser).parseLookup(data, contentType);
+      if (!parsed.verified) {
+        return notFound
+          ? err({ kind: "EXTRACTION_ERROR", bank: manifestEntry.name, message: BOA_NOT_FOUND })
+          : err({ kind: "ENDPOINT_ERROR", bank: manifestEntry.name, message: BOA_UNREADABLE });
+      }
+      return ok(parsed);
+    }
+
     if (id === "dashen") {
       const parsed = parser.parse(data, contentType);
       if (!parsed.verified) {
@@ -533,11 +567,41 @@ export class Verifier {
         durationMs: Date.now() - startTime,
       });
 
-    const lookup = await this.resolve(
+    let lookup = await this.resolve(
       { bank: "boa", reference: refCheck.value, accountNumber: decoded.receiverAccount },
       startTime,
       depth + 1
     );
+
+    // BOA files some receipts under the source account's suffix instead of
+    // the receiver's (seen on an Apollo app transfer within BOA, 2026-10-19:
+    // the receiver suffix answered "Invalid reference number", the source
+    // suffix found the receipt). The QR carries both, so when BOA has no
+    // record under the receiver, ask once more under the source account. It
+    // is the same QR's own field, never a guess, and BOA still decides.
+    const senderCheck = decoded.senderAccount ? checkAccountSuffix(decoded.senderAccount, digits) : null;
+    if (
+      !lookup.ok &&
+      lookup.error.kind === "EXTRACTION_ERROR" &&
+      lookup.error.message === BOA_NOT_FOUND &&
+      senderCheck?.ok &&
+      senderCheck.value !== accountCheck.value
+    ) {
+      const bySender = await this.resolve(
+        { bank: "boa", reference: refCheck.value, accountNumber: decoded.senderAccount },
+        startTime,
+        depth + 1
+      );
+      // Only a found receipt replaces the first answer. If this second request
+      // fails, BOA's "no record" under the receiver stands, so a QR is never
+      // shown as decodedOnly after BOA already said it has no such receipt.
+      if (bySender.ok) lookup = bySender;
+    }
+    // The typed-input hint (try the other account) does not apply to a QR:
+    // cheki already asked under every full account the QR names.
+    if (!lookup.ok && lookup.error.kind === "EXTRACTION_ERROR" && lookup.error.message === BOA_NOT_FOUND) {
+      lookup = err({ ...lookup.error, message: BOA_QR_NOT_FOUND });
+    }
 
     if (lookup.ok) {
       // The bank's amount wins. A QR that claims a different amount than the

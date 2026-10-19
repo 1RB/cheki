@@ -400,9 +400,9 @@ func TestOrderIDBetaAndBatchFallback(t *testing.T) {
 	if !beta["zamzam"] || !beta["mpesa"] || beta["cbe"] {
 		t.Fatalf("beta %+v", beta)
 	}
-	client, _ = serve(t, fixtureCase{Status: 200, Body: json.RawMessage(`{"success":true,"results":[{"success":false,"error":"geo","status":502,"fallbackUrl":"https://x.test/r"}],"total":1,"verified":0,"failed":1,"cached":0}`)})
-	b, err := client.VerifyBatch(context.Background(), []VerifyOptions{{Bank: "telebirr", Reference: "A1"}})
-	if err != nil || b.Results[0].FallbackURL != "https://x.test/r" {
+	client, _ = serve(t, fixtureCase{Status: 200, Body: json.RawMessage(`{"success":true,"results":[{"success":false,"error":"geo","status":502,"fallbackUrl":"https://x.test/r"},{"success":false,"error":"not found","status":422,"checkedUrl":"https://cs.bankofabyssinia.com/api/onlineSlip/getDetails/?id=FT26SAMPLE0706171"}],"total":2,"verified":0,"failed":2,"cached":0}`)})
+	b, err := client.VerifyBatch(context.Background(), []VerifyOptions{{Bank: "telebirr", Reference: "A1"}, {Bank: "boa", Reference: "FT26SAMPLE07", AccountNumber: "06171"}})
+	if err != nil || b.Results[0].FallbackURL != "https://x.test/r" || b.Results[1].CheckedURL != "https://cs.bankofabyssinia.com/api/onlineSlip/getDetails/?id=FT26SAMPLE0706171" {
 		t.Fatalf("batch fallback: %v %+v", err, b)
 	}
 	if RecommendedBatchChunk > MaxBatchSize {

@@ -4,6 +4,11 @@ Every cheki SDK ships the same version: npm `cheki-verify` (and `@1rb/cheki-veri
 
 ## Unreleased
 
+**BOA receipts filed under the payer's account**
+- BOA files some receipts under the source account's last 5 digits instead of the receiver's (seen on an Apollo app transfer). A BOA QR carries both accounts, so when BOA answers "Invalid reference number" under the receiver and the QR's source account is full (not masked), cheki asks once more under it. An unreadable BOA answer is unconfirmed, never a "no", and triggers no retry. BOA still decides, and its amount must still match the QR.
+- A typed BOA lookup that finds nothing now says to try the source account's last 5 digits.
+- A 422 from `/api/verify` and a failed batch item now carry `checkedUrl` (https only), the bank page cheki asked, so anyone can see the bank's own answer. The verify card links it as "Bank's answer". Every SDK reads it: `checkedUrl` (TypeScript `ChekiAPIError` and batch items, PHP and Dart), `checked_url` (Python), `CheckedURL` (Go `APIError` and batch items).
+
 **CBE Birr is live (beta)**
 - Verified on 2026-10-16 against two real receipts (a wallet transfer and a transfer to a bank account). A matching receipt number and payer phone return the receipt as a one-page PDF, also from outside Ethiopia, so CBE Birr is not geo-blocked. Live banks: 9 → 10; `beta` is true for M-Pesa, ZamZam and CBE Birr.
 - Fields read: payer name and wallet number, receiver name and account, amount, service charge, VAT, total paid, date (Addis Ababa time, no offset), status, receipt number, order ID, amount in words, payment reason and payment channel. The PDF prints both phone numbers in full; cheki masks them (`09****1234`).
