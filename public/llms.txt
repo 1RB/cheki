@@ -4,7 +4,7 @@
 
 A result counts as confirmed only when the response has `"verified": true`. A 200 with `"verified": false` is not proof of payment: the bank may not know the receipt, a BOA QR code may only have been decoded (`"decodedOnly": true`), or the text may only have been parsed from what the caller sent (`"parsed": true`, `/api/parse`). Compare `amount` and `receiverAccount` with what you expected before releasing goods.
 
-There are 9 live banks (M-Pesa and ZamZam in beta) and 22 in research. `GET /api/banks` is the source of truth: each bank's `id`, `status`, `beta` flag and receipt `formats`, current format first, with the inputs each format needs. Bank ids and what to send as `reference`:
+There are 10 live banks (M-Pesa, ZamZam and CBE Birr in beta) and 21 in research. `GET /api/banks` is the source of truth: each bank's `id`, `status`, `beta` flag and receipt `formats`, current format first, with the inputs each format needs. Bank ids and what to send as `reference`:
 
 - `cbe` Commercial Bank of Ethiopia: the Receipt ID or receipt link (`https://mbreciept.cbe.com.et/{Receipt ID}`, also in the app's QR code), e.g. `fHCxExampleRcpt01`. No account number. Older receipts that only show an FT reference (`FT` plus 10 letters and digits, e.g. `FT26SAMPLE01`) also need `accountNumber`, at least the last 8 digits of the receiving account (e.g. `00006171`); that legacy host is often unreachable.
 - `telebirr` Telebirr: the 10-character transaction number with a 2 or 3 letter prefix (DET, CHQ, DAB, DJA, DEL, ADQ, ...), e.g. `DET0SAMPLE`, or the receipt's Payment QR code as `qrData`. Geo-blocked to Ethiopian IPs.
@@ -15,7 +15,8 @@ There are 9 live banks (M-Pesa and ZamZam in beta) and 22 in research. `GET /api
 - `siinqee` Siinqee Bank: the eBirr receipt link (`receipt.ebirr.com/siinqee/{token}`). Newer `receipts.siinqeebank.com` links are not supported yet.
 - `ebirr` eBirr: a receipt link (`receipt.ebirr.com/{tenant}/{token}`), including links issued for Nib, Wegagen, Ahadu and KAAFI.
 - `zamzam` ZamZam Bank (beta): the receipt link (`receipt.zamzambank.com.et/receipt/{id}`) or its numeric id. The account number in the answer is masked.
-- In development, not verifiable yet: Zemen Bank (in development) and CBE Birr (in development) have parsers waiting on a confirmed real receipt; the other banks need a receipt and an endpoint.
+- `cbebirr` CBE Birr (beta): the receipt number (TID, 10 or 11 letters and digits, e.g. `CHK0000001`) plus `phoneNumber`, the payer's phone (`09XXXXXXXX` or `2519XXXXXXXX`). The receipt's QR code is its own receipt link and can be sent as `qrData` with no phone. Phone numbers in the answer are masked. An empty "Auto Receipt" page is reported as could not confirm (usually the number and phone don't match), never as not found.
+- In development, not verifiable yet: Zemen Bank (in development) has a parser waiting on a confirmed real receipt; the other banks need a receipt and an endpoint.
 
 Where cheki reads each bank and what comes back:
 
@@ -26,6 +27,7 @@ Where cheki reads each bank and what comes back:
 - Dashen: `https://receipts.dashenbanksc.com/receipt/{FT_REF}` returns HTML.
 - Awash: the share link returns HTML. Siinqee and eBirr: `https://receipt.ebirr.com/{TENANT}/{TOKEN}` returns HTML.
 - ZamZam: `https://receipt-backend.zamzambank.com.et/api/v1/invoice/{RECEIPT_ID}` returns JSON. It expects an HTTP Basic credential that ZamZam ships in its own public receipt web app; cheki sends it and never returns it.
+- CBE Birr: `https://cbepay1.cbe.com.et/aureceipt?TID={RECEIPT_NUMBER}&PH={251XXXXXXXXX}` returns a PDF receipt.
 
 Verify one receipt (call it from a server; the verify routes send no CORS headers):
 

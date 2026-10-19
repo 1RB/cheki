@@ -16,6 +16,8 @@ export interface RegisteredParser {
   buildUrl(ref: string, account?: string, phone?: string): string;
   /** Validate and canonicalise a reference before it is put in a URL. */
   normalizeReference(ref: string): import("../security/reference").Checked<string>;
+  /** Canonicalise an already-checked phone number (CBE Birr: 251XXXXXXXXX). Optional. */
+  normalizePhone?(phone: string): import("../security/reference").Checked<string>;
   parse(data: string | Buffer, contentType: string): import("../core/types").ParsedReceipt;
   /** Bank-specific request headers (e.g. ZamZam's public Basic credential), for the health probe. */
   probeHeaders?(): Record<string, string>;

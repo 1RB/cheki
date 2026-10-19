@@ -100,8 +100,8 @@ describe("TS SDK: models decode the contract fixtures", () => {
 
   it("verify: orderId is passed through", async () => {
     serve(fx("verify_order_id"));
-    const r = await client().verify("cbebirr", "CB2610ABCD", { phoneNumber: "251911000000" });
-    expect(r.orderId).toBe("ORD123456789");
+    const r = await client().verify("cbebirr", "DTS41AB2C90", { phoneNumber: "0911004321" });
+    expect(r.orderId).toBe("FT26SAMPLE01");
   });
 
   it("batch error items keep fallbackUrl when the server sends it", async () => {
@@ -127,7 +127,7 @@ describe("TS SDK: models decode the contract fixtures", () => {
     expect(banks[0].requiresPhone).toBe(false);
     expect(banks.find((b) => b.id === "cbebirr")?.requiresPhone).toBe(true);
     expect(banks.find((b) => b.id === "telebirr")?.type).toBe("mobile");
-    // beta is always a boolean: true for M-Pesa and ZamZam, false when omitted.
+    // beta is always a boolean: true for M-Pesa, ZamZam and CBE Birr, false when omitted.
     expect(banks.find((b) => b.id === "zamzam")?.beta).toBe(true);
     expect(banks.find((b) => b.id === "mpesa")?.beta).toBe(true);
     expect(banks[0].beta).toBe(false);

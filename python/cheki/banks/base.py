@@ -23,7 +23,11 @@ class BankVerifier(ABC):
         ...
 
     def _get(self, url: str, **kwargs) -> requests.Response:
-        return self.session.get(url, timeout=30, **kwargs)
+        # A caller may pass its own timeout; a fixed timeout=30 plus theirs
+        # raised "multiple values for keyword argument 'timeout'".
+        kwargs.setdefault("timeout", 30)
+        return self.session.get(url, **kwargs)
 
     def _post(self, url: str, **kwargs) -> requests.Response:
-        return self.session.post(url, timeout=30, **kwargs)
+        kwargs.setdefault("timeout", 30)
+        return self.session.post(url, **kwargs)

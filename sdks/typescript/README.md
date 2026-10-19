@@ -2,7 +2,7 @@
 
 > TypeScript SDK for the [cheki](https://cheki.et) receipt verification API.
 
-Verify Ethiopian bank transfer receipts from CBE, Telebirr, BOA, Dashen, M-Pesa (beta: not yet confirmed with a real receipt), Awash, Siinqee, eBirr and ZamZam (beta: one receipt shape confirmed so far) (the live banks; `getBanks()` lists the current set). Zero runtime dependencies (uses the global `fetch`, Node.js ≥ 20).
+Verify Ethiopian bank transfer receipts from CBE, Telebirr, BOA, Dashen, M-Pesa (beta: not yet confirmed with a real receipt), Awash, Siinqee, eBirr, ZamZam (beta: one receipt shape confirmed so far) and CBE Birr (beta: two real receipts confirmed so far) (the live banks; `getBanks()` lists the current set). Zero runtime dependencies (uses the global `fetch`, Node.js ≥ 20).
 
 Website: [cheki.et](https://cheki.et) · API reference: [cheki.et/docs](https://cheki.et/docs) · Integration guide and every SDK: [cheki.et/developers](https://cheki.et/developers) · Supported banks: [cheki.et/banks](https://cheki.et/banks)
 
@@ -43,10 +43,12 @@ A `200` response does not always mean the payment is confirmed:
 
 Use `isVerified(result)` rather than `result.success`.
 
-### BOA QR codes
+### QR codes (BOA, CBE Birr)
 
 ```ts
 const r = await cheki.verify("boa", "", { qrData: "KPHO0k4YlK/5s6..." });
+// A CBE Birr receipt QR is its receipt link (receipt number + payer phone):
+// await cheki.verify("cbebirr", "", { qrData: scannedText });
 ```
 
 ### Batch (max 20)
@@ -82,7 +84,7 @@ A failed item has `success: false`, `status` and `error`, plus `fallbackUrl` whe
 ```ts
 const { banks } = await cheki.getBanks();
 for (const b of banks) console.log(b.id, b.name, b.type, b.status, b.beta, b.requiresAccount, b.accountDigits);
-// b.beta: live, but not yet confirmed with enough real receipts (M-Pesa, ZamZam)
+// b.beta: live, but not yet confirmed with enough real receipts (M-Pesa, ZamZam, CBE Birr)
 // b.code is a deprecated alias of b.id
 // b.formats: the bank's receipt formats, current first (status "current" | "legacy" | "deprecated")
 console.log(banks.find((b) => b.id === "cbe")?.formats.find((f) => f.supported)?.label); // "Receipt ID or mbreciept.cbe.com.et link"

@@ -414,3 +414,100 @@ def test_supported_banks():
     assert "telebirr" in banks
     assert "boa" in banks
     assert "mpesa" in banks
+
+
+# ── CBE Birr (receipt PDF parsed; the empty page is never verified) ──
+
+CBEBIRR_FIXTURES = Path(__file__).resolve().parents[2] / "tests/fixtures/cbebirr"
+CBEBIRR_SHELL = (CBEBIRR_FIXTURES / "empty-shell.html").read_text()
+# Synthetic PDF laid out like the real receipts (built by synthetic-receipt.ts).
+CBEBIRR_PDF = (CBEBIRR_FIXTURES / "synthetic-receipt.pdf").read_bytes()
+CBEBIRR_URL = "https://cbepay1.cbe.com.et/aureceipt?TID=DTS41AB2C90&PH=251911004321"
+
+
+@responses.activate
+def test_cbebirr_reads_the_receipt_pdf_and_masks_phones():
+    responses.add(responses.GET, CBEBIRR_URL, body=CBEBIRR_PDF, status=200, content_type="application/pdf")
+    result = verify("cbebirr", "DTS41AB2C90", phone_number="0911004321")
+    assert result.status.value == "verified"
+    assert result.amount == 1250.5
+    assert result.sender_name == "ABEBE KEBEDE"
+    assert result.sender_account == "09****4321"
+    assert result.receiver_name == "TIGIST ALEMU"
+    assert result.receiver_account == "09****6171"
+    assert result.transaction_date == datetime(2026, 10, 1, 9, 15)
+    assert result.source_url == CBEBIRR_URL
+    fields = result.raw["fields"]
+    assert fields["order_id"] == "DTS41AB2C90"
+    assert fields["transaction_status"] == "Completed"
+    assert (fields["service_fee"], fields["vat"], fields["total_paid"]) == (0.0, 0.0, 1250.5)
+    assert fields["reason"] == "Send Money"
+    assert fields["payment_channel"] == "API"
+    assert fields["amount_in_words"] == "One Thousand Two Hundred Fifty ETB and Fifty Cents"
+    assert "0911004321" not in repr(result.raw) and "0922006171" not in repr(result.raw)
+
+
+@responses.activate
+def test_cbebirr_gate_rejects_a_receipt_for_another_number():
+    url = "https://cbepay1.cbe.com.et/aureceipt?TID=DTS41AB2C91&PH=251911004321"
+    responses.add(responses.GET, url, body=CBEBIRR_PDF, status=200, content_type="application/pdf")
+    assert verify("cbebirr", "DTS41AB2C91", phone_number="0911004321").status.value == "failed"
+
+
+def test_cbebirr_parse_lines_wallet_to_bank_and_wrapped_names():
+    from cheki.banks.cbebirr import mask_number, parse_lines
+
+    lines = [
+        "VAT Registration No:000000",
+        "Debit Account 0911004321 - ABEBE KEBEDE",
+        "Credit Account 1000****6171 - CBE",
+        "Receiver Name Ms Tigist Alemu",
+        "Order ID FT26SAMPLE01",
+        "Transaction Status Completed",
+        "Reference Invoice 42 :",
+        "Receipt Number Transaction Date Amount",
+        "DTS41AB2C90 2026-10-01 09:15 1250.50",
+        "Paid amount 1250.50",
+        "VAT 0.00",
+    ]
+    f = parse_lines(lines)
+    assert (f["reference"], f["order_id"], f["amount"], f["vat"]) == ("DTS41AB2C90", "FT26SAMPLE01", 1250.5, 0.0)
+    assert (f["receiver_name"], f["receiver_account"]) == ("Ms Tigist Alemu", "1000****6171")
+    wrapped = parse_lines(["Credit Account 0922006171 - TIGIST ALEMU", "GEBREMEDHIN", "Order ID DTS41AB2C90"])
+    assert wrapped["receiver_name"] == "TIGIST ALEMU GEBREMEDHIN"
+    assert mask_number("251911004321") == "2519****4321"
+    assert mask_number("1000000006171") == "1********6171"
+
+
+@responses.activate
+def test_cbebirr_empty_shell_is_not_verified():
+    url = "https://cbepay1.cbe.com.et/aureceipt?TID=DTS41AB2C90&PH=251911223344"
+    responses.add(responses.GET, url, body=CBEBIRR_SHELL, status=200, content_type="text/html; charset=utf-8")
+    result = verify("cbebirr", "DTS41AB2C90", phone_number="0911223344")
+    assert result.status.value != "verified"
+    assert result.exists is False
+    assert result.source_url == url
+    assert "empty receipt page" in (result.message or "")
+    assert "may not match" in (result.message or "")
+    assert "response" not in result.raw  # no receipt body is kept
+
+
+@pytest.mark.parametrize(
+    "phone,want",
+    [("251911223344", "251911223344"), ("+251 911 223 344", "251911223344"), ("0711223344", "251711223344"), ("911223344", "251911223344")],
+)
+def test_cbebirr_normalize_phone(phone, want):
+    from cheki.banks.cbebirr import normalize_phone
+
+    assert normalize_phone(phone) == want
+
+
+@pytest.mark.parametrize("phone", ["0811223344", "12345", "2519112233"])
+def test_cbebirr_rejects_bad_phone(phone):
+    with pytest.raises(ValueError):
+        verify("cbebirr", "DTS41AB2C90", phone_number=phone)
+
+
+def test_cbebirr_rejects_bad_reference():
+    with pytest.raises(ValueError):
+        verify("cbebirr", "DTS41AB2C90&PH=1", phone_number="0911223344")

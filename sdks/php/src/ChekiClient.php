@@ -90,7 +90,7 @@ class ChekiClient
      * @param string      $reference     Reference or receipt link. '' with $qrData for QR-only.
      * @param string|null $accountNumber BOA: last 5 digits of the account on the receipt (a full slip link can carry them). Older CBE FT receipts: the receiving account.
      * @param string|null $phoneNumber   Payer phone (CBE Birr).
-     * @param string|null $qrData        Raw QR payload (a BOA QR code, or the Payment QR Code on a Telebirr receipt).
+     * @param string|null $qrData        Raw QR payload (a BOA QR code, the Payment QR Code on a Telebirr receipt, or the QR on a CBE Birr receipt, which carries the receipt number and payer phone).
      */
     public function verify(
         string $bank,

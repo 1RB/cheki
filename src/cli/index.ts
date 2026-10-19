@@ -8,6 +8,7 @@
  *   cheki verify cbe FT26SAMPLE01 -a 1000000006171  Older CBE receipt (legacy FT reference)
  *   cheki verify telebirr CHQ0SAMPLE                 Verify a Telebirr receipt
  *   cheki verify boa AB12345 -a 1234567890           Verify a BOA receipt
+ *   cheki verify cbebirr DTS41AB2C90 -p 09XXXXXXXX   Verify a CBE Birr receipt (payer phone)
  *   cheki health                                     Check endpoint health
  */
 import { Verifier, getAllBanks, errorToMessage, type BankManifestEntry } from "../lib";
@@ -22,8 +23,10 @@ async function main() {
 
 Usage:
   cheki info                                      List supported banks
-  cheki verify <bank> <ref> [-a <account>]        Verify a receipt
-  cheki verify-qr <bank> <qr-data>                Verify from QR code
+  cheki verify <bank> <ref> [-a <account>] [-p <phone>]
+                                                  Verify a receipt (-p: payer phone, CBE Birr)
+  cheki verify-qr [bank] <qr-data>                Verify from QR code (bank optional for a
+                                                  Telebirr or CBE Birr receipt QR)
   cheki health                                    Check endpoint health
   cheki --version                                 Show version
 
@@ -32,8 +35,10 @@ Examples:
   cheki verify dashen B22WDTI00SAMPLE1
   cheki verify telebirr CHQ0SAMPLE
   cheki verify boa AB12345 -a 1234567890
+  cheki verify cbebirr DTS41AB2C90 -p 09XXXXXXXX     (CBE Birr: receipt number + payer phone)
   cheki verify-qr boa <base64-qr-payload>
   cheki verify-qr telebirr <telebirr-receipt-qr>     (reads the transaction number, then checks it)
+  cheki verify-qr "<cbe-birr-receipt-qr>"            (a cbepay1 receipt link: receipt number + payer phone)
   cheki verify cbe FT26SAMPLE01 -a 1000000006171   (older CBE receipt, legacy format)
 `);
     process.exit(0);
@@ -52,10 +57,13 @@ Examples:
       const legacy = (b.formats ?? []).find((f) => f.status === "legacy" && f.parser && f.inputs.some((i) => i.name === "account"));
       const acct = b.requiresAccount
         ? ` (requires ${b.accountDigits}-digit account)`
-        : legacy
-          ? ` (older receipts: ${legacy.label})`
-          : "";
-      console.log(`  ${status.padEnd(4)} ${b.id.padEnd(12)} ${b.name}${acct}`);
+        : b.requiresPhone
+          ? " (requires payer phone: -p)"
+          : legacy
+            ? ` (older receipts: ${legacy.label})`
+            : "";
+      const beta = b.status === "live" && b.beta ? " [beta]" : "";
+      console.log(`  ${status.padEnd(4)} ${b.id.padEnd(12)} ${b.name}${beta}${acct}`);
     }
     console.log(`\n  ${banks.length} banks total, ${banks.filter(b => b.status === "live").length} live\n`);
     process.exit(0);
@@ -126,11 +134,12 @@ Examples:
   }
 
   if (command === "verify-qr") {
-    const bank = args[1];
-    const qrData = args[2];
+    // One argument: the QR names its own bank (Telebirr QR, CBE Birr link).
+    const bank = args.length >= 3 ? args[1] : "";
+    const qrData = args.length >= 3 ? args[2] : args[1];
 
-    if (!bank || !qrData) {
-      console.error("Usage: cheki verify-qr <bank> <qr-data>");
+    if (!qrData) {
+      console.error("Usage: cheki verify-qr [bank] <qr-data>");
       process.exit(1);
     }
 

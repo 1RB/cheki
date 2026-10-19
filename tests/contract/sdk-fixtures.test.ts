@@ -182,7 +182,7 @@ describe("SDK contract fixtures match the route handlers", () => {
   it("verify_order_id: a CBE Birr receipt passes orderId through", async () => {
     const f = fx("verify_order_id");
     vi.spyOn(Verifier.prototype, "verify").mockResolvedValue(ok(receiptOf(f.body, uniqueRef())));
-    const r = await verifyPOST(jsonReq("/api/verify", { bank: "cbebirr", reference: uniqueRef(), phoneNumber: "251911000000" }));
+    const r = await verifyPOST(jsonReq("/api/verify", { bank: "cbebirr", reference: uniqueRef(), phoneNumber: "0911004321" }));
     expect(r.status).toBe(f.status);
     const body = await r.json();
     expectShape(body, f.body, RECEIPT_OPTIONAL, "verify_order_id");

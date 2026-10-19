@@ -10,7 +10,7 @@ import { describe, it, expect, afterEach, vi } from "vitest";
 import { NextRequest } from "next/server";
 import { Verifier } from "@/lib";
 import { getAllBanks, getBank } from "@/lib/manifest/loader";
-import { formatsOf, primaryFormat, selectFormat, supportedFormats, templateHost } from "@/lib/manifest/formats";
+import { formatNeeds, formatsOf, primaryFormat, selectFormat, supportedFormats, templateHost } from "@/lib/manifest/formats";
 import { verificationGate } from "@/lib/core/gate";
 import { allowedHosts, isAllowedUrl } from "@/lib/security/hosts";
 import { CBEParser } from "@/lib/parsers/cbe";
@@ -57,9 +57,19 @@ describe("format data in banks.json", () => {
         if (/another verifier/i.test(f.evidence) && !/cheki/.test(f.evidence)) expect(f.confidence, `${bank.id}/${f.id}`).toBe("inferred");
       }
     }
-    for (const id of ["cbebirr", "siinqee", "mpesa"]) {
+    for (const id of ["siinqee", "mpesa"]) {
       for (const f of formatsOf(getBank(id))) expect(f.confidence, `${id}/${f.id}`).toBe("inferred");
     }
+  });
+
+  it("CBE Birr is verified with dated evidence from real receipts, and labelled beta", () => {
+    const bank = getBank("cbebirr");
+    expect(bank?.status).toBe("live");
+    expect(bank?.beta).toBe(true);
+    const [f] = formatsOf(bank);
+    expect(f.confidence).toBe("verified");
+    expect(f.evidence).toMatch(/^Verified 2026-10-16 against 2 real receipts/);
+    expect(bank?.endpointHistory?.at(-1)?.date).toBe("2026-10-16");
   });
 });
 
@@ -81,7 +91,8 @@ describe("current format selected first", () => {
       if (!example) continue;
       // The example is a link for CBE; the reference is its last path segment.
       const ref = /^https:\/\//.test(example) ? new URL(example).pathname.split("/").filter(Boolean).pop()! : example;
-      const sel = selectFormat(bank, { reference: ref });
+      // CBE Birr's receipt link needs the payer phone as well.
+      const sel = selectFormat(bank, { reference: ref, ...(formatNeeds(primary, "phone") ? { phoneNumber: "0911004321" } : {}) });
       expect(sel.ok, bank.id).toBe(true);
       if (sel.ok) expect(sel.format?.id, bank.id).toBe(primary.id);
     }

@@ -647,7 +647,7 @@ export const articles: Article[] = [
         headers: ["Field", "Value"],
         rows: [
           ["URL format", "https://cbepay1.cbe.com.et/aureceipt?TID={REFERENCE}&PH={PAYER_PHONE}"],
-          ["Response format", "PDF for real receipts (reported by other verifiers; an unknown reference returns an empty HTML viewer). In development in cheki"],
+          ["Response format", "PDF (verified on real receipts, beta in cheki). An unknown reference, or a reference with the wrong phone, returns an empty HTML viewer"],
           ["Input needed", "Transaction reference + payer phone number"],
           ["Account number required", "No (phone instead)"],
           ["Geo-blocked", "No"],
@@ -974,7 +974,7 @@ export const articles: Article[] = [
         type: "table",
         headers: ["Project", "Language", "Banks", "Stars", "Unique feature"],
         rows: [
-          ["cheki", "TypeScript + Python", "9", "0", "Web UI + API + Docker + QR scanning"],
+          ["cheki", "TypeScript + Python", String(LIVE_BANK_COUNT), "0", "Web UI + API + Docker + QR scanning"],
           ["ethiobank_receipts", "Python", "6", "40", "PyPI published, multithreaded"],
           ["verification-engine", "TypeScript", "4", "1", "OCR + SMS parsing, npm published"],
           ["telebirr-receipt", "JavaScript", "1", "14", "Telebirr-only, npm published"],
@@ -1204,7 +1204,7 @@ export const articles: Article[] = [
         headers: ["Status", "Count", "Banks"],
         rows: [
           ["Live", String(LIVE_BANK_COUNT), liveBankList()],
-          ["In development", String(IN_DEVELOPMENT_BANK_COUNT), "Every other bank on the banks page, including Zemen, CBE Birr and the eBirr tenants (Nib, Wegagen, Ahadu, KAAFI). Each goes live once a real receipt confirms its parser."],
+          ["In development", String(IN_DEVELOPMENT_BANK_COUNT), "Every other bank on the banks page, including Zemen and the eBirr tenants (Nib, Wegagen, Ahadu, KAAFI). Each goes live once a real receipt confirms its parser."],
         ],
       },
 
