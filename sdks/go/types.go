@@ -70,6 +70,9 @@ type VerifyResult struct {
 	// FallbackURL is set on a failed batch item for a geo-blocked bank, when
 	// the server sends it: open it in a browser in Ethiopia instead.
 	FallbackURL string `json:"fallbackUrl,omitempty"`
+	// CheckedURL is set on a failed batch item with status 422, when the
+	// server sends it: the bank page cheki asked.
+	CheckedURL string `json:"checkedUrl,omitempty"`
 }
 
 // IsVerified reports whether the bank confirmed the receipt. Success,

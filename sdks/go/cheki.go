@@ -454,6 +454,9 @@ type APIError struct {
 	Message string
 	// FallbackURL is set for geo-blocked banks: open it in a browser in Ethiopia.
 	FallbackURL string
+	// CheckedURL is set on a 422: the bank page cheki asked, so you can see
+	// the bank's own answer.
+	CheckedURL string
 	// RetryAfter is the server's Retry-After, or -1 when it sent none.
 	RetryAfter time.Duration
 	// Body is the raw response body.
@@ -474,11 +477,13 @@ func newAPIError(method, path string, status int, raw []byte, header http.Header
 	var envelope struct {
 		Error       string `json:"error"`
 		FallbackURL string `json:"fallbackUrl"`
+		CheckedURL  string `json:"checkedUrl"`
 		Retryable   *bool  `json:"retryable"`
 	}
 	if json.Unmarshal(raw, &envelope) == nil {
 		e.Message = envelope.Error
 		e.FallbackURL = envelope.FallbackURL
+		e.CheckedURL = envelope.CheckedURL
 		e.notRetryable = envelope.Retryable != nil && !*envelope.Retryable
 	}
 	return e

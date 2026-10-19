@@ -99,17 +99,22 @@ void main() {
             jsonEncode({
               'success': true,
               'results': [
-                {'success': false, 'error': 'geo', 'status': 502, 'fallbackUrl': 'https://x.test/r'}
+                {'success': false, 'error': 'geo', 'status': 502, 'fallbackUrl': 'https://x.test/r'},
+                {'success': false, 'error': 'not found', 'status': 422, 'checkedUrl': 'https://cs.bankofabyssinia.com/api/onlineSlip/getDetails/?id=FT26SAMPLE0706171'}
               ],
-              'total': 1,
+              'total': 2,
               'verified': 0,
-              'failed': 1,
+              'failed': 2,
               'cached': 0,
             }),
             200)
       ]);
-      final b = await c.verifyBatch(const [BatchReceipt(bank: 'telebirr', reference: 'A1')]);
-      expect(b.results.single.fallbackUrl, 'https://x.test/r');
+      final b = await c.verifyBatch(const [
+        BatchReceipt(bank: 'telebirr', reference: 'A1'),
+        BatchReceipt(bank: 'boa', reference: 'FT26SAMPLE07', accountNumber: '06171'),
+      ]);
+      expect(b.results[0].fallbackUrl, 'https://x.test/r');
+      expect(b.results[1].checkedUrl, 'https://cs.bankofabyssinia.com/api/onlineSlip/getDetails/?id=FT26SAMPLE0706171');
       expect(ChekiClient.recommendedBatchChunk, lessThanOrEqualTo(ChekiClient.maxBatchSize));
     });
 

@@ -179,6 +179,9 @@ class ClientVerifyResult:
     #: For a geo-blocked bank: open this link in a browser in Ethiopia instead
     #: (single verify, and batch items when the server sends it).
     fallback_url: str | None = None
+    #: On a 422: the bank page cheki asked, so you can see the bank's own
+    #: answer (single verify, and batch items when the server sends it).
+    checked_url: str | None = None
     #: HTTP status of the response. Failed batch items carry the status a
     #: single verify would have returned (the API's ``status`` field).
     http_status: int | None = None

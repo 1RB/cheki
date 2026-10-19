@@ -70,7 +70,7 @@ for _, item := range batch.Results {
 }
 ```
 
-More than 20 receipts returns `ErrBatchTooLarge` without a request. Each receipt also counts against the per-IP verify limit (30 per minute), and a batch is never retried after a 5xx or network error, so send long lists in chunks of `cheki.RecommendedBatchChunk` (15). A failed item has `Status` and `Error`, plus `FallbackURL` when the server sends one for a geo-blocked bank. Results carry `OrderID` when the receipt has one (CBE Birr), and `BankInfo.Beta` is true for M-Pesa, ZamZam and CBE Birr.
+More than 20 receipts returns `ErrBatchTooLarge` without a request. Each receipt also counts against the per-IP verify limit (30 per minute), and a batch is never retried after a 5xx or network error, so send long lists in chunks of `cheki.RecommendedBatchChunk` (15). A failed item has `Status` and `Error`, plus `FallbackURL` when the server sends one for a geo-blocked bank, or `CheckedURL` (the bank page cheki asked) on a 422. Results carry `OrderID` when the receipt has one (CBE Birr), and `BankInfo.Beta` is true for M-Pesa, ZamZam and CBE Birr.
 
 ### Banks and health
 
@@ -106,7 +106,7 @@ u, err := client.GetReceiptURL("cbe", "FT26SAMPLE01", "1000000006171") // the ba
 
 ## Errors
 
-Non-2xx responses are `*APIError` with `StatusCode`, `Message` (the server's text), `FallbackURL` (geo-blocked banks), `RetryAfter` (-1 when not sent) and `Body`. `errors.Is(err, cheki.ErrRateLimited)` matches 429 and `errors.Is(err, cheki.ErrPayloadTooLarge)` matches 413. Timeouts match `errors.Is(err, context.DeadlineExceeded)`.
+Non-2xx responses are `*APIError` with `StatusCode`, `Message` (the server's text), `FallbackURL` (geo-blocked banks), `CheckedURL` (on a 422: the bank page cheki asked), `RetryAfter` (-1 when not sent) and `Body`. `errors.Is(err, cheki.ErrRateLimited)` matches 429 and `errors.Is(err, cheki.ErrPayloadTooLarge)` matches 413. Timeouts match `errors.Is(err, context.DeadlineExceeded)`.
 
 Status codes: 400 bad input, 404 unsupported bank, 413 too large, 422 receipt not found or failed verification, 429 rate limited, 502 bank unreachable or geo-blocked, 500 internal error.
 

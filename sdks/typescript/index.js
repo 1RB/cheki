@@ -104,7 +104,8 @@ class ChekiValidationError extends ChekiError {
 exports.ChekiValidationError = ChekiValidationError;
 /**
  * The API answered with a non-2xx status. The server's own message is in
- * `serverMessage` (and in `message`); geo-blocked banks add `fallbackUrl`.
+ * `serverMessage` (and in `message`); geo-blocked banks add `fallbackUrl`,
+ * and a 422 adds `checkedUrl` when the server sends it.
  *
  * Status codes: 400 bad input, 404 unsupported bank, 413 body too large,
  * 422 receipt not found / not a valid receipt, 429 rate limited, 502 bank
@@ -122,6 +123,8 @@ class ChekiAPIError extends ChekiError {
             this.serverMessage = obj.error;
         if (typeof obj?.fallbackUrl === "string")
             this.fallbackUrl = obj.fallbackUrl;
+        if (typeof obj?.checkedUrl === "string")
+            this.checkedUrl = obj.checkedUrl;
         Object.setPrototypeOf(this, ChekiAPIError.prototype);
     }
 }

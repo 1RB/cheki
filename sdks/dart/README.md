@@ -68,7 +68,7 @@ for (final r in batch.results) {
 }
 ```
 
-More than 20 receipts (or none) throws `ChekiValidationException` without a request. Each receipt also counts against the per-IP verify limit (30 per minute), and a batch is never retried after a 5xx or network error, so send long lists in chunks of `ChekiClient.recommendedBatchChunk` (15). A failed item has `status` and `error`, plus `fallbackUrl` when the server sends one for a geo-blocked bank. Results carry `orderId` when the receipt has one (CBE Birr), and `BankInfo.beta` is true for M-Pesa, ZamZam and CBE Birr.
+More than 20 receipts (or none) throws `ChekiValidationException` without a request. Each receipt also counts against the per-IP verify limit (30 per minute), and a batch is never retried after a 5xx or network error, so send long lists in chunks of `ChekiClient.recommendedBatchChunk` (15). A failed item has `status` and `error`, plus `fallbackUrl` when the server sends one for a geo-blocked bank, or `checkedUrl` (the bank page cheki asked) on a 422. Results carry `orderId` when the receipt has one (CBE Birr), and `BankInfo.beta` is true for M-Pesa, ZamZam and CBE Birr.
 
 ### Banks and health
 
@@ -102,7 +102,7 @@ client.getReceiptUrl('cbe', 'FT26SAMPLE01', '1000000006171'); // the bank's PDF
 
 ## Errors
 
-`ChekiException` (`message` is the server's text, `statusCode`, `path`, `fallbackUrl`), with `ChekiRateLimitException` (429, `retryAfter`), `ChekiPayloadTooLargeException` (413), `ChekiTimeoutException` and `ChekiValidationException`.
+`ChekiException` (`message` is the server's text, `statusCode`, `path`, `fallbackUrl`, and `checkedUrl` on a 422: the bank page cheki asked), with `ChekiRateLimitException` (429, `retryAfter`), `ChekiPayloadTooLargeException` (413), `ChekiTimeoutException` and `ChekiValidationException`.
 
 ## Timeouts and retries
 

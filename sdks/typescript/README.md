@@ -77,7 +77,7 @@ for (let i = 0; i < receipts.length; i += RECOMMENDED_BATCH_CHUNK) {
 }
 ```
 
-A failed item has `success: false`, `status` and `error`, plus `fallbackUrl` when the server sends one for a geo-blocked bank.
+A failed item has `success: false`, `status` and `error`, plus `fallbackUrl` when the server sends one for a geo-blocked bank, or `checkedUrl` (the bank page cheki asked) on a 422.
 
 ### Banks and health
 
@@ -118,7 +118,7 @@ cheki.getReceiptUrl("cbe", "FT26SAMPLE01", "1000000006171"); // the bank's PDF
 
 | Class | When |
 |---|---|
-| `ChekiAPIError` | Any non-2xx. `statusCode`, `serverMessage` (the API's `error` text, also in `message`), `fallbackUrl` (geo-blocked banks), `body`. |
+| `ChekiAPIError` | Any non-2xx. `statusCode`, `serverMessage` (the API's `error` text, also in `message`), `fallbackUrl` (geo-blocked banks), `checkedUrl` (on a 422: the bank page cheki asked), `body`. |
 | `ChekiRateLimitError` | 429. `retryAfterSeconds` from the `Retry-After` header. |
 | `ChekiPayloadTooLargeError` | 413 (verify body > 16 KB, batch > 64 KB). |
 | `ChekiValidationError` | Rejected before sending (batch size, receipt URL input). |

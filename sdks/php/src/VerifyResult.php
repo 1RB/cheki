@@ -61,6 +61,8 @@ class VerifyResult
     public ?string $error;
     /** For geo-blocked banks: open this link in a browser in Ethiopia instead (single verify, and batch items when the server sends it). */
     public ?string $fallbackUrl = null;
+    /** On a 422: the bank page cheki asked, so you can see the bank's own answer (single verify, and batch items when the server sends it). */
+    public ?string $checkedUrl = null;
     /** HTTP status of the response (batch items: the status a single verify would have returned). */
     public ?int $httpStatus;
     /** Seconds from the Retry-After header on a 429, when sent. */
@@ -74,7 +76,7 @@ class VerifyResult
         'source', 'label', 'bank', 'bankCode', 'reference', 'sourceUrl', 'senderName', 'senderAccount',
         'receiverName', 'receiverAccount', 'currency', 'date', 'branch', 'reason', 'transactionType',
         'invoiceNumber', 'transactionStatus', 'amountInWords', 'paymentMode', 'paymentChannel',
-        'bankAccountNumber', 'bankAccountName', 'orderId', 'fallbackUrl',
+        'bankAccountNumber', 'bankAccountName', 'orderId', 'fallbackUrl', 'checkedUrl',
     ];
 
     private const FLOAT_FIELDS = [
