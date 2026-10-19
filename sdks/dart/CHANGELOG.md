@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.6.0
 
 - `ChekiException.checkedUrl` and `VerifyResult.checkedUrl` on failed batch items: on a 422, the bank page cheki asked.
 

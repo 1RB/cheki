@@ -2,7 +2,9 @@
 
 Every cheki SDK ships the same version: npm `cheki-verify` (and `@1rb/cheki-verify` on GitHub Packages), PyPI `cheki`, Packagist `cheki/cheki`, pub.dev `cheki` and the Go module `github.com/1RB/cheki/sdks/go` (tag `sdks/go/vX.Y.Z`). The Dart package keeps its own copy in `sdks/dart/CHANGELOG.md` for pub.dev.
 
-## Unreleased
+## 1.6.0
+
+SDKs: every SDK reads `checkedUrl` (the bank page cheki asked) on a 422 and on failed batch items; see "BOA receipts filed under the payer's account" below. The rest of this entry shipped to cheki.et as it merged.
 
 **Batch check results built for end-of-day reconciliation**
 - Several screenshots at once now read like a ledger: the confirmed total on top (bank-confirmed amounts only), then a numbered line per screenshot with its verdict, reference and amount in one right-aligned column.

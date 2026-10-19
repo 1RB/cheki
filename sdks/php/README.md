@@ -115,6 +115,10 @@ $client = new ChekiClient(
 );
 ```
 
+## Changes in 1.6.0
+
+- `VerifyResult::$checkedUrl` (from `verify()` and on failed batch items): on a 422, the bank page cheki asked (https only), so anyone can see the bank's own answer.
+
 ## Changes in 1.5.0
 
 - Requires PHP 8.1+ (8.0 is end-of-life and was never tested).
