@@ -120,7 +120,7 @@ function extractReferenceByLabel(text: string, labels = REFERENCE_LABELS): strin
 }
 
 // Preferred labels when a bank is already detected from text. Order matters:
-// for Dashen the app screen shows "FT Ref" (B22WDTI2619100WH, what the receipt
+// for Dashen the app screen shows "FT Ref" (B22WDTI00SAMPLE1, what the receipt
 // endpoint accepts) and "Transaction Ref" (a long WDTI/OBTI id it rejects), so
 // FT Ref wins. On the web/PDF receipt the same value is "Transaction Reference".
 const BANK_PREFERRED_LABELS: Record<string, string[]> = {
@@ -130,7 +130,7 @@ const BANK_PREFERRED_LABELS: Record<string, string[]> = {
 };
 
 // Reference patterns. Order matters: bank-specific, high-confidence first.
-// A standalone name like "ABDULWEHAB" should NOT be matched as a BOA reference.
+// A standalone name like "GEBRETSION" should NOT be matched as a BOA reference.
 const OCR_PATTERNS: { bank: string; pattern: RegExp; confidence: OcrParseConfidence }[] = [
   // CBE: FT followed by 10 alphanumeric characters.
   { bank: "cbe", pattern: /\bFT[A-Z0-9]{10}\b/i, confidence: "high" },
@@ -144,7 +144,7 @@ const OCR_PATTERNS: { bank: string; pattern: RegExp; confidence: OcrParseConfide
   { bank: "telebirr", pattern: /\b[A-Z0-9]{8,12}\b/i, confidence: "low" },
   // Awash: numeric transaction ID found near the Transaction ID label.
   { bank: "awash", pattern: /\b\d{14,18}\b/, confidence: "high" },
-  // Dashen: observed PDF format (B22WDTI261620001) and app format (OBTI28455679126320660525).
+  // Dashen: observed PDF format (B22WDTI000000001) and app format (OBTI00000000000000000001).
   { bank: "dashen", pattern: /\b[A-Z][A-Z0-9]{2,6}\d{9,}\b/i, confidence: "high" },
   // Zemen.
   { bank: "zemen", pattern: /\bZM[A-Z0-9]{6,}\b/i, confidence: "medium" },

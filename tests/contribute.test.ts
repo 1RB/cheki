@@ -13,6 +13,18 @@ import {
 } from "@/lib/contribute";
 import { getAllBanks } from "@/lib/manifest/loader";
 
+// No in-development bank needs the payer phone since CBE Birr went live
+// (2026-10-16), so the phone rule is exercised with a stand-in: CBE Birr's
+// manifest entry under another id, still in development.
+vi.mock("@/lib/manifest/loader", async (importOriginal) => {
+  const real = await importOriginal<typeof import("@/lib/manifest/loader")>();
+  return {
+    ...real,
+    getBank: (id: string) =>
+      id === "phone-bank-test" ? { ...real.getBank("cbebirr")!, id: "phone-bank-test", status: "in-development" as const } : real.getBank(id),
+  };
+});
+
 const base = { bank: "zemen", consent: true };
 
 describe("validateContribution", () => {
@@ -35,12 +47,13 @@ describe("validateContribution", () => {
 
   it("rejects live and unknown banks", () => {
     expect(validateContribution({ ...base, bank: "dashen", link: "https://example.com/x" }).ok).toBe(false);
+    expect(validateContribution({ ...base, bank: "cbebirr", reference: "DTS41AB2C90", phoneOrAccount: "0911004321" }).ok).toBe(false);
     expect(validateContribution({ ...base, bank: "nope", link: "https://example.com/x" }).ok).toBe(false);
   });
 
-  it("needs the payer phone with a bare CBE Birr reference", () => {
-    expect(validateContribution({ ...base, bank: "cbebirr", reference: "CHK0000001" }).ok).toBe(false);
-    const r = validateContribution({ ...base, bank: "cbebirr", reference: "CHK0000001", phoneOrAccount: "251900000000" });
+  it("needs the payer phone with a bare reference for a bank that requires one", () => {
+    expect(validateContribution({ ...base, bank: "phone-bank-test", reference: "CHK0000001" }).ok).toBe(false);
+    const r = validateContribution({ ...base, bank: "phone-bank-test", reference: "CHK0000001", phoneOrAccount: "251900000000" });
     expect(r.ok).toBe(true);
   });
 
@@ -66,7 +79,7 @@ describe("validateContribution", () => {
   });
 
   it("does not need the payer phone when a screenshot comes with the reference", () => {
-    expect(validateContribution({ ...base, bank: "cbebirr", reference: "CHK0000001" }, { type: "image/png", size: 1000 }).ok).toBe(true);
+    expect(validateContribution({ ...base, bank: "phone-bank-test", reference: "CHK0000001" }, { type: "image/png", size: 1000 }).ok).toBe(true);
   });
 
   it("needs at least one of link, reference or screenshot", () => {
@@ -117,7 +130,7 @@ describe("contributeLeadMode", () => {
     "abay", "addis", "amhara", "berhan", "bunna", "enat", "global", "lion", "oromia",
     "hibret", "hijra", "shabelle", "goh", "tsedey", "gadaa", "rammis",
   ];
-  const linkFirst = ["zemen", "cbebirr", "nib", "wegagen", "ahadu", "kaafi"];
+  const linkFirst = ["zemen", "nib", "wegagen", "ahadu", "kaafi"];
 
   it("leads with a screenshot for banks with no known endpoint", () => {
     for (const id of screenshotFirst) expect(contributeLeadMode(id), id).toBe("screenshot");

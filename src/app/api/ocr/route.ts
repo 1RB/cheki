@@ -82,6 +82,9 @@ export async function POST(request: NextRequest) {
             text: qr.data,
             bank: parsedUrl.bank,
             reference: parsedUrl.reference,
+            // A CBE Birr receipt QR is its receipt link, payer phone included
+            // (the user's own image; nothing is stored).
+            ...(parsedUrl.phoneNumber ? { phoneNumber: parsedUrl.phoneNumber } : {}),
             confidence: "high",
             candidates: ambiguousReferenceCandidates(parsedUrl.reference).slice(0, 20),
             durationMs: Date.now() - start,

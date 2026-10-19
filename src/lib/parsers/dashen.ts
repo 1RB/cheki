@@ -6,9 +6,9 @@
  *           client-side with html2pdf; the server only returns HTML).
  *           Unknown references return HTTP 400 with a JSON body
  *           ("Transaction not found").
- * Requires: only the FT Ref / Transaction Reference (e.g. B22WDTI2619100WH).
+ * Requires: only the FT Ref / Transaction Reference (e.g. B22WDTI00SAMPLE1).
  *           The app's long "Transaction Ref" / Transfer Reference
- *           (WDTI5186142501962751085) is NOT accepted by the endpoint.
+ *           (WDTI0000000000000000002) is NOT accepted by the endpoint.
  *
  * History: until mid-2026 receipts lived at receipt.dashensuperapp.com as
  * PDFs. That host now returns 502, which is why Dashen checks broke.
@@ -21,7 +21,7 @@ import { parseMoney } from "../core/money";
 
 /** Shown when Dashen answers 400/404: it has no receipt for this reference. */
 export const DASHEN_NOT_FOUND =
-  "Dashen has no receipt for this reference. Use the FT Ref (e.g. B22WDTI2619100WH), not the longer Transaction Ref.";
+  "Dashen has no receipt for this reference. Use the FT Ref (e.g. B22WDTI00SAMPLE1), not the longer Transaction Ref.";
 
 export class DashenParser extends BaseParser {
   readonly bankId = "dashen";

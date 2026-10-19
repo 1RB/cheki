@@ -17,7 +17,8 @@ class VerifyOptions {
   /// Payer phone number (CBE Birr).
   final String? phoneNumber;
 
-  /// Raw QR payload (BOA QR codes, or a receipt link from a QR).
+  /// Raw QR payload (BOA QR codes, a Telebirr receipt QR, or a receipt link
+  /// from a QR, e.g. a CBE Birr receipt QR with the receipt number and payer phone).
   final String? qrData;
 
   /// Constructs a [VerifyOptions] instance.

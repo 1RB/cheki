@@ -217,6 +217,12 @@ export function presentVerdict(result: VerifyResult | null | undefined, opts: Pr
     if (status === 413) {
       return neutral("tooLarge", t("verify.verdict.tooLarge.title"), t("verify.verdict.tooLarge.subtitle"));
     }
+    // A bank that answered with an empty page (CBE Birr, when the receipt
+    // number and phone don't match) is not geo-blocked, so it gets copy that
+    // does not claim it is.
+    if (fallbackUrl && !bank?.geoBlocked && bank?.code === "cbebirr") {
+      return neutral("geoBlocked", t("verify.verdict.openAtBank.title", { bank: short }), t("verify.verdict.openAtBank.subtitle", { bank: short }), { fallbackUrl });
+    }
     if (fallbackUrl || (bank?.geoBlocked && (status === 502 || status === 504))) {
       return neutral("geoBlocked", t("verify.verdict.geoBlocked.title", { bank: short }), t("verify.verdict.geoBlocked.subtitle", { bank: short }), { fallbackUrl });
     }

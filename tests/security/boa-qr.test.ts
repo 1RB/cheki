@@ -19,19 +19,19 @@ function mintQr(csv: string): string {
 
 // From the PoC: anyone with the repo can mint this.
 const FORGED = mintQr("1000000012345,ATTACKER,999999.00,FT26999FORGED,2026-10-11,1000099999999,VICTIM SHOP");
-// Real anonymised payload from tests/parsers/boa.test.ts
+// Synthetic payload (the sample receipt in src/lib/sample-receipt.ts), as in tests/parsers/boa.test.ts
 const GENUINE =
-  "3cHRaxVjn/pySpNXEHQE61JOQ2poZRMwnDHwMiX7YO9UVtJZT/ndmwHEzWkJoloEf4dIQIzJf5zmvbBo5qHTdm/23nc6NRzTSfxEjIHa7Ju4Ti+xydrVn8qF+9/OPAF5LIfMEvxFqZ6wlKMvSN/jrQ==";
+  "KPHO0k4YlK/5s61BrKNnjG8dcbVjm5WqkNeCv93+8UYEinGOPAL1+Wpq6cy8McTYhpdXUgKvK4qFFcGhM0Yi+ZgrqD8G3UKsoUNwSiKqWXilJTG+1yIE+KEEK7IuoZl7";
 
 const bankBody = (ref: string, amount: string) =>
   JSON.stringify({
     body: [{
-      "Source Account Name": "HABIB DAOUD OMAR",
-      "Source Account": "2****3957",
-      "Receiver's Name": "ABADIR MESGID",
-      "Receiver's Account": "1****42674",
+      "Source Account Name": "ABEBE KEBEDE",
+      "Source Account": "1****4321",
+      "Receiver's Name": "TIGIST ALEMU",
+      "Receiver's Account": "1****06171",
       "Transferred Amount": amount,
-      "Transaction Date": "16/06/2026 20:29:42",
+      "Transaction Date": "01/10/2026 14:05:00",
       "Transaction Reference": ref,
     }],
   });
@@ -65,17 +65,17 @@ describe("BOA QR", () => {
   });
 
   it("a genuine QR verifies with the bank's own record", async () => {
-    const fetchMock = vi.fn(async () => new Response(bankBody("FT26167ZVPCJ", "30,124.20 ETB"), { status: 200 }));
+    const fetchMock = vi.fn(async () => new Response(bankBody("FT26SAMPLE07", "1,250.50 ETB"), { status: 200 }));
     vi.stubGlobal("fetch", fetchMock);
     const r = await v.verify({ bank: "boa", qrData: GENUINE });
     expect(r.ok && r.value.verified).toBe(true);
     if (r.ok) {
-      expect(r.value.amount).toBe(30124.2);
+      expect(r.value.amount).toBe(1250.5);
       expect(r.value.sourceUrl).toMatch(/^https:\/\/cs\.bankofabyssinia\.com\//);
       expect(r.value.decodedOnly).toBeUndefined();
     }
     expect(String((fetchMock.mock.calls[0] as unknown[])[0])).toBe(
-      "https://cs.bankofabyssinia.com/api/onlineSlip/getDetails/?id=FT26167ZVPCJ42674"
+      "https://cs.bankofabyssinia.com/api/onlineSlip/getDetails/?id=FT26SAMPLE0706171"
     );
   });
 
@@ -143,7 +143,7 @@ describe("BOA QR", () => {
   });
 
   it("a QR whose amount differs from the bank's record fails", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => new Response(bankBody("FT26167ZVPCJ", "124.20 ETB"), { status: 200 })));
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(bankBody("FT26SAMPLE07", "124.20 ETB"), { status: 200 })));
     const r = await v.verify({ bank: "boa", qrData: GENUINE });
     expect(r.ok).toBe(false);
   });
@@ -161,7 +161,7 @@ describe("BOA QR", () => {
   it("a QR with an invalid reference fails without calling fetch", async () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
-    const qr = mintQr("1000000012345,PAYER,500.00,../../admin,2026-10-11,1000005842674,SHOP");
+    const qr = mintQr("1000000012345,PAYER,500.00,../../admin,2026-10-11,1000000042674,SHOP");
     const r = await v.verify({ bank: "boa", qrData: qr });
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.error.kind).toBe("EXTRACTION_ERROR");

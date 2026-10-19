@@ -44,7 +44,7 @@ describe("verificationGate", () => {
   });
 
   it("skips the reference match for banks whose link is an opaque token", () => {
-    const r = verificationGate({ ...good, reference: "123456789" }, { bankId: "awash", requestedReference: "2KDL95Z0NR-4U61O6" });
+    const r = verificationGate({ ...good, reference: "123456789" }, { bankId: "awash", requestedReference: "2KDL95XE81-4U0000" });
     expect(r.ok).toBe(true);
   });
 

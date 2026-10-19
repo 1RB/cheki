@@ -166,7 +166,7 @@ function generatedVerify(b: Bank): { sections: BankSection[]; faq: BankFaq[] } {
         a: b.requiresAccount
           ? `Select ${b.name}, paste your transaction reference number, enter the last ${b.accountDigits} digits of the account on the receipt, and click Verify. cheki fetches the receipt from ${b.shortName}'s public endpoint and shows you the result in seconds.`
           : b.requiresPhone
-          ? `Select ${b.name}, paste your transaction reference number and the payer's phone number (2519XXXXXXXXX format), and click Verify. cheki fetches the receipt from ${b.shortName}'s public endpoint and shows you the result instantly.`
+          ? `Select ${b.name}, paste your transaction reference number and the payer's phone number (09XXXXXXXX or 2519XXXXXXXX), and click Verify. cheki fetches the receipt from ${b.shortName}'s public endpoint and shows you the result instantly.`
           : `Select ${b.name}, paste your transaction reference number, and click Verify. cheki fetches the receipt from ${b.shortName}'s public endpoint and shows you the result instantly.`,
       },
       {
@@ -174,7 +174,7 @@ function generatedVerify(b: Bank): { sections: BankSection[]; faq: BankFaq[] } {
         a: b.requiresAccount
           ? `Yes. ${b.shortName}'s receipt endpoint requires the transaction reference plus the last ${b.accountDigits} digits of the account on the receipt. Without the account digits, the endpoint returns no data.`
           : b.requiresPhone
-          ? `No account number, but ${b.shortName} requires the payer's phone number (2519XXXXXXXXX format) in addition to the transaction reference. This is a security measure to prevent unauthorized receipt enumeration.`
+          ? `No account number, but ${b.shortName} requires the payer's phone number (09XXXXXXXX or 2519XXXXXXXX) in addition to the transaction reference. This is a security measure to prevent unauthorized receipt enumeration.`
           : `No. ${b.shortName} only requires the transaction reference number. The receipt is returned as ${withArticle(receiptTypeLabel(b))} with payer name, receiver name, amount, and date.`,
       },
       {

@@ -1,6 +1,6 @@
 # cheki Python SDK
 
-Python client for the [cheki](https://cheki.et) receipt verification API: verify Ethiopian bank and wallet receipts (live: CBE, Telebirr, BOA, M-Pesa (beta), Dashen, Awash, Siinqee, eBirr, ZamZam (beta); `get_banks()` lists the current set). Python 3.10+.
+Python client for the [cheki](https://cheki.et) receipt verification API: verify Ethiopian bank and wallet receipts (live: CBE, Telebirr, BOA, M-Pesa (beta), Dashen, Awash, Siinqee, eBirr, ZamZam (beta), CBE Birr (beta); `get_banks()` lists the current set). Python 3.10+.
 
 Website: [cheki.et](https://cheki.et) · API reference: [cheki.et/docs](https://cheki.et/docs) · Integration guide and every SDK: [cheki.et/developers](https://cheki.et/developers) · Supported banks: [cheki.et/banks](https://cheki.et/banks)
 
@@ -33,15 +33,15 @@ with ChekiClient() as cheki:  # https://cheki.et, 65 s per attempt, at most 1 re
 
 `verify()` returns a `ClientVerifyResult` for API errors too (it does not raise for a 4xx/5xx). `success` only means the request was processed: a BOA QR code that BOA could not confirm comes back with `success=True, verified=False, decoded_only=True`, and a QR code can be forged. `/api/parse` results (`parsed=True`) are never verified either.
 
-QR-only (BOA): `cheki.verify("boa", "", qr_data="3cHRaxVjn/pySp...")`.
+QR-only (BOA): `cheki.verify("boa", "", qr_data="KPHO0k4YlK/5s6...")`.
 
 ### Batch (max 20)
 
 ```python
 batch = cheki.verify_batch([
     {"bank": "cbe", "reference": "https://mbreciept.cbe.com.et/fHCxExampleRcpt01"},
-    {"bank": "telebirr", "reference": "DET8FJGUJ4"},
-    {"bank": "boa", "qr_data": "3cHRaxVjn/pySp..."},
+    {"bank": "telebirr", "reference": "DET0SAMPLE"},
+    {"bank": "boa", "qr_data": "KPHO0k4YlK/5s6..."},
 ])
 print(f"{batch.verified}/{batch.total} verified, {batch.failed} not, {batch.cached} from cache")
 for r in batch.results:
@@ -85,8 +85,8 @@ Only `cbe`, `zemen`, `dashen` and `zamzam`; anything else raises `ValueError`, a
 Older CBE receipts that only show an FT reference still work as a legacy format: pass the receiving account (at least the last 8 digits). CBE's older receipt service is often unreachable, so prefer the receipt link when you have it.
 
 ```python
-cheki.verify("cbe", "FT26140P01YB", account_number="1000560536171")
-cheki.get_receipt_url("cbe", "FT26140P01YB", account_number="1000560536171")  # the bank's PDF
+cheki.verify("cbe", "FT26SAMPLE01", account_number="1000000006171")
+cheki.get_receipt_url("cbe", "FT26SAMPLE01", account_number="1000000006171")  # the bank's PDF
 ```
 
 ## Errors
@@ -119,8 +119,8 @@ cheki.get_receipt_url("cbe", "FT26140P01YB", account_number="1000560536171")  # 
 
 ```bash
 cheki-verify cbe https://mbreciept.cbe.com.et/fHCxExampleRcpt01
-cheki-verify telebirr DET8FJGUJ4 --json
-cheki-verify boa --qr '3cHRaxVjn/pySp...'
+cheki-verify telebirr DET0SAMPLE --json
+cheki-verify boa --qr 'KPHO0k4YlK/5s6...'
 cheki-verify --health
 cheki-verify --list-banks
 ```

@@ -1,29 +1,20 @@
 /**
- * CBE Birr after merging #3 + #28 into #27: the PDF-or-HTML parser runs
+ * CBE Birr (live, beta since 2026-10-16): the PDF-or-HTML parser runs
  * through safeFetch (allowlisted host, PDF size cap since the body is read as
- * bytes, no 4xx retries) and its result goes through the shared gate.
- *
- * CBE Birr is in development, so the Verifier normally refuses it before any
- * fetch. Here the manifest entry is reported as live to exercise the path it
- * will take once it ships.
+ * bytes, no 4xx retries) and its result goes through the shared gate. The
+ * PDF here is the synthetic fixture laid out like the real receipts.
  */
 import { describe, it, expect, afterEach, vi } from "vitest";
 
-vi.mock("@/lib/manifest/loader", async (importOriginal) => {
-  const real = await importOriginal<typeof import("@/lib/manifest/loader")>();
-  return {
-    ...real,
-    getBank: (id: string) => {
-      const b = real.getBank(id);
-      return b && b.id === "cbebirr" ? { ...b, status: "live" as const } : b;
-    },
-  };
-});
-
-import { Verifier } from "@/lib";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { Verifier, errorToHttpStatus } from "@/lib";
+import { CBEBIRR_EMPTY_SHELL_MESSAGE } from "@/lib/core/verifier";
 import { CBEBirrParser } from "@/lib/parsers/cbebirr";
 import { allowedHosts, isAllowedUrl } from "@/lib/security/hosts";
 import { MAX_PDF_BYTES, MAX_TEXT_BYTES } from "@/lib/http/safe-fetch";
+import { getBank } from "@/lib/manifest/loader";
+import { buildSyntheticCbeBirrPdf } from "../fixtures/cbebirr/synthetic-receipt";
 import "@/lib/parsers";
 
 afterEach(() => {
@@ -84,7 +75,51 @@ describe("CBE Birr host and fetch", () => {
   });
 });
 
-describe("CBE Birr through parseResponse and the gate (as if live)", () => {
+const pdfResponse = (body: Buffer) =>
+  new Response(new Uint8Array(body), { status: 200, headers: { "content-type": "application/pdf" } });
+
+describe("CBE Birr through parseResponse and the gate", () => {
+  it("is live and labelled beta in the manifest", () => {
+    const b = getBank("cbebirr");
+    expect(b?.status).toBe("live");
+    expect(b?.beta).toBe(true);
+  });
+
+  it("verifies a receipt PDF laid out like the real ones, with phones masked", async () => {
+    const fetchMock = vi.fn(async () => pdfResponse(buildSyntheticCbeBirrPdf()));
+    vi.stubGlobal("fetch", fetchMock);
+    const r = await new Verifier().verify({ bank: "cbebirr", reference: "DTS41AB2C90", phoneNumber: "0911004321" });
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.value).toMatchObject({
+      verified: true,
+      bankCode: "cbebirr",
+      reference: "DTS41AB2C90",
+      amount: 1250.5,
+      senderName: "ABEBE KEBEDE",
+      senderAccount: "09****4321",
+      receiverName: "TIGIST ALEMU",
+      receiverAccount: "09****6171",
+      date: "2026-10-01 09:15",
+      transactionStatus: "Completed",
+    });
+    expect(String((fetchMock.mock.calls[0] as unknown[])[0])).toBe("https://cbepay1.cbe.com.et/aureceipt?TID=DTS41AB2C90&PH=251911004321");
+  });
+
+  it("the gate rejects a receipt PDF for a different receipt number or a failed transfer", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => pdfResponse(buildSyntheticCbeBirrPdf({ receiptNumber: "DTS41AB2C91" }))));
+    expect((await new Verifier().verify({ bank: "cbebirr", reference: "DTS41AB2C90", phoneNumber: "0911004321" })).ok).toBe(false);
+    vi.stubGlobal("fetch", vi.fn(async () => pdfResponse(buildSyntheticCbeBirrPdf({ status: "Failed" }))));
+    expect((await new Verifier().verify({ bank: "cbebirr", reference: "DTS41AB2C90", phoneNumber: "0911004321" })).ok).toBe(false);
+  });
+
+  it("a PDF that is not a readable receipt is an extraction error, not a verification", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => pdfResponse(Buffer.from("%PDF-1.4 broken"))));
+    const r = await new Verifier().verify({ bank: "cbebirr", reference: "DTS41AB2C90", phoneNumber: "0911004321" });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error.kind).toBe("EXTRACTION_ERROR");
+  });
+
   it("verifies a genuine HTML receipt", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => html(receipt())));
     const r = await new Verifier().verify({ bank: "cbebirr", reference: "CHK0000002", phoneNumber: PHONE });
@@ -110,11 +145,38 @@ describe("CBE Birr through parseResponse and the gate (as if live)", () => {
     }
   });
 
-  it("the empty Telerik shell is a not-found answer, not verified", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => html(SHELL)));
-    const r = await new Verifier().verify({ bank: "cbebirr", reference: "CHK0000002", phoneNumber: PHONE });
+  it("the empty Telerik shell is never verified and never called not-found: it hands back the receipt link", async () => {
+    // A receipt number and phone that don't match give this shell, so a typo
+    // looks the same as a fake: "could not confirm", with a hint to check.
+    for (const body of [SHELL, readFileSync(join(__dirname, "../fixtures/cbebirr/empty-shell.html"), "utf8")]) {
+      vi.stubGlobal("fetch", vi.fn(async () => html(body)));
+      const r = await new Verifier().verify({ bank: "cbebirr", reference: "DTS41AB2C90", phoneNumber: "0911223344" });
+      expect(r.ok).toBe(false);
+      if (r.ok) continue;
+      expect(r.error.kind).toBe("ENDPOINT_ERROR");
+      if (r.error.kind !== "ENDPOINT_ERROR") continue;
+      expect(r.error.message).toBe(CBEBIRR_EMPTY_SHELL_MESSAGE);
+      expect(r.error.message).toMatch(/receipt number and payer phone number may not match/);
+      expect(r.error.fallbackUrl).toBe("https://cbepay1.cbe.com.et/aureceipt?TID=DTS41AB2C90&PH=251911223344");
+      expect(errorToHttpStatus(r.error)).toBe(502);
+    }
+  });
+
+  it("sends the phone as 251XXXXXXXXX whatever form it was typed in", async () => {
+    const fetchMock = vi.fn(async () => html(receipt({ receipt: "DTS41AB2C90" })));
+    vi.stubGlobal("fetch", fetchMock);
+    const r = await new Verifier().verify({ bank: "cbebirr", reference: "DTS41AB2C90", phoneNumber: "+251 711 223 344" });
+    expect(r.ok).toBe(true);
+    expect(String((fetchMock.mock.calls[0] as unknown[])[0])).toBe("https://cbepay1.cbe.com.et/aureceipt?TID=DTS41AB2C90&PH=251711223344");
+  });
+
+  it("refuses a phone that is not an Ethiopian mobile number before any fetch", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    const r = await new Verifier().verify({ bank: "cbebirr", reference: "DTS41AB2C90", phoneNumber: "0811223344" });
     expect(r.ok).toBe(false);
-    if (!r.ok && r.error.kind === "EXTRACTION_ERROR") expect(r.error.message).toMatch(/empty receipt/);
+    if (!r.ok) expect(r.error.kind).toBe("MISSING_INPUT");
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it("a 4xx is answered once, never retried", async () => {

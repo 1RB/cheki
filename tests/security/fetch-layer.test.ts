@@ -80,7 +80,7 @@ describe("retry policy", () => {
 describe("reference validation and encoding (review M1)", () => {
   const v = new Verifier();
   const banks: Array<{ bank: string; accountNumber?: string; phoneNumber?: string }> = [
-    { bank: "cbe", accountNumber: "1000560536171" },
+    { bank: "cbe", accountNumber: "1000000006171" },
     { bank: "cbe-new" },
     { bank: "telebirr" },
     { bank: "boa", accountNumber: "1000054321" },

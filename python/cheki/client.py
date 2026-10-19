@@ -44,7 +44,7 @@ Example::
     cheki = ChekiClient()                       # uses the public instance
     result = cheki.verify("cbe", "https://mbreciept.cbe.com.et/fHCxExampleRcpt01")
     # Older CBE receipt with only an FT reference (legacy):
-    # cheki.verify("cbe", "FT26140P01YB", account_number="1000560536171")
+    # cheki.verify("cbe", "FT26SAMPLE01", account_number="1000000006171")
     if result.is_verified:
         print(result.sender_name, result.amount, result.currency)
 """
@@ -198,9 +198,11 @@ class ChekiClient:
                 slip link can carry them). Older cbe FT receipts: the
                 receiving account.
             phone_number: Payer phone number. Required for cbebirr.
-            qr_data: Raw QR payload: a boa inter-bank receipt QR, or the
+            qr_data: Raw QR payload: a boa inter-bank receipt QR, the
                 Payment QR Code on a telebirr receipt (the server reads the
-                transaction number and checks it like a typed one). A QR
+                transaction number and checks it like a typed one), or the
+                QR on a cbebirr receipt (a receipt link carrying the receipt
+                number and payer phone, so phone_number is not needed). A QR
                 alone never verifies.
 
         Returns:
