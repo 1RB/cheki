@@ -53,14 +53,14 @@ try {
 
 `verify` returns for HTTP 200, and a 200 can be unverified: a BOA QR code BOA could not confirm comes back with `success: true, verified: false, decodedOnly: true`. A QR code can be forged.
 
-QR-only (BOA): `client.verify(bank: 'boa', qrData: '3cHRaxVjn/pySp...')`. A CBE Birr receipt QR is its receipt link, carrying the receipt number and payer phone: `client.verify(bank: 'cbebirr', qrData: scannedText)`.
+QR-only (BOA): `client.verify(bank: 'boa', qrData: 'KPHO0k4YlK/5s6...')`. A CBE Birr receipt QR is its receipt link, carrying the receipt number and payer phone: `client.verify(bank: 'cbebirr', qrData: scannedText)`.
 
 ### Batch (max 20)
 
 ```dart
 final batch = await client.verifyBatch(const [
   BatchReceipt(bank: 'cbe', reference: 'https://mbreciept.cbe.com.et/fHCxExampleRcpt01'),
-  BatchReceipt(bank: 'telebirr', reference: 'CHQ0FJ403O'),
+  BatchReceipt(bank: 'telebirr', reference: 'CHQ0SAMPLE'),
 ]);
 print('${batch.verified}/${batch.total} verified, ${batch.failed} not, ${batch.cached} cached');
 for (final r in batch.results) {
@@ -96,8 +96,8 @@ Only `cbe`, `zemen`, `dashen` and `zamzam`; anything else throws `ChekiValidatio
 Older CBE receipts that only show an FT reference still work as a legacy format: pass the receiving account (at least the last 8 digits). CBE's older receipt service is often unreachable, so prefer the receipt link when you have it.
 
 ```dart
-await client.verify(bank: 'cbe', reference: 'FT26140P01YB', accountNumber: '1000560536171');
-client.getReceiptUrl('cbe', 'FT26140P01YB', '1000560536171'); // the bank's PDF
+await client.verify(bank: 'cbe', reference: 'FT26SAMPLE01', accountNumber: '1000000006171');
+client.getReceiptUrl('cbe', 'FT26SAMPLE01', '1000000006171'); // the bank's PDF
 ```
 
 ## Errors

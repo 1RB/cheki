@@ -5,6 +5,7 @@ import { Nav, Footer } from "@/components/Chrome";
 import { Icon, ArrowRight01Icon } from "@/components/Icon";
 import { BouncyAccordion } from "@/components/motion/bouncy-accordion";
 import { developersFaqs, faqPageJsonLd } from "@/lib/api-faq";
+import { SAMPLE, SAMPLE_QUICKSTART_RESPONSE } from "@/lib/sample-receipt";
 
 const h3Style = { fontSize: "17px", fontWeight: 700, marginBottom: "8px", scrollMarginTop: "80px" } as const;
 const proseStyle = { fontSize: "15px", color: "var(--ink-2)", lineHeight: 1.6, maxWidth: "68ch", marginBottom: "12px" } as const;
@@ -17,18 +18,18 @@ const codeExamples: Record<string, string> = {
     "reference": "https://mbreciept.cbe.com.et/fHCxExampleRcpt01"
   }'
 # Older CBE receipt with only an FT reference (legacy format):
-#   -d '{"bank":"cbe","reference":"FT26140P01YB","accountNumber":"1000560536171"}'`,
+#   -d '{"bank":"cbe","reference":"FT26SAMPLE01","accountNumber":"1000000006171"}'`,
   JavaScript: `import { Cheki, isVerified } from "cheki-verify";
 
 const cheki = new Cheki("https://cheki.et");
 const result = await cheki.verify("cbe", "https://mbreciept.cbe.com.et/fHCxExampleRcpt01");
-// Older FT-only receipt (legacy): cheki.verify("cbe", "FT26140P01YB", { accountNumber: "1000560536171" })
+// Older FT-only receipt (legacy): cheki.verify("cbe", "FT26SAMPLE01", { accountNumber: "1000000006171" })
 // verified is the only success signal
 if (isVerified(result)) console.log(result.amount, result.senderName);`,
   Python: `from cheki import ChekiClient
 
 result = ChekiClient().verify("cbe", "https://mbreciept.cbe.com.et/fHCxExampleRcpt01")
-# Older FT-only receipt (legacy): verify("cbe", "FT26140P01YB", account_number="1000560536171")
+# Older FT-only receipt (legacy): verify("cbe", "FT26SAMPLE01", account_number="1000000006171")
 if result.is_verified:  # the only success signal
     print(result.amount, result.sender_name)`,
 };
@@ -48,7 +49,7 @@ result.is_verified  # True only when the bank confirmed it`,
   CLI: `# From a clone of the repo ("npx cheki" is an unrelated npm package)
 git clone https://github.com/1RB/cheki.git && cd cheki && npm install
 npm run cli -- verify cbe https://mbreciept.cbe.com.et/fHCxExampleRcpt01
-npm run cli -- verify cbe FT26140P01YB -a 1000560536171   # older FT receipt (legacy)
+npm run cli -- verify cbe FT26SAMPLE01 -a 1000000006171   # older FT receipt (legacy)
 npm run cli -- info
 npm run cli -- health`,
 };
@@ -121,19 +122,7 @@ export default function DevelopersPage() {
             fontSize: "13px", fontFamily: "var(--mono)", lineHeight: 1.6, overflow: "auto",
             border: "1px solid var(--border)", margin: 0,
           }}>
-            <code>{`{
-  "success": true,
-  "verified": true,
-  "bank": "Commercial Bank of Ethiopia",
-  "reference": "FT26140P01YB",
-  "amount": 20000,
-  "currency": "ETB",
-  "senderName": "Mr Mohammed Abdulwasi Reshid",
-  "receiverName": "SAMI ADIL ZEKARIA",
-  "date": "5/20/2026 7:29:00 PM",
-  "durationMs": 1240,
-  "sourceUrl": "https://mbreciept.cbe.com.et/fHCxExampleRcpt01"
-}`}</code>
+            <code>{JSON.stringify({ ...SAMPLE_QUICKSTART_RESPONSE, durationMs: SAMPLE.durationMs }, null, 2)}</code>
           </pre>
         </div>
 

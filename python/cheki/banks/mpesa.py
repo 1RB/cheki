@@ -9,7 +9,7 @@ A non-"0" ``responseCode`` (or no ``base64Data``) means there is no receipt.
 The endpoint is geo-blocked outside Ethiopia, so cheki has not observed it
 itself: the envelope and the PDF labels below are inferred from other
 open-source verifiers (Vixen878/verifier-api, nahom-d54/tx-verify,
-nahom-d54/veri-py, kira-coding/kira-verify-opensource) and links.et's
+nahom-d54/veri-py, kira-coding/kira-verify-opensource) and another verifier's
 ``mpesa-pdf`` source tag. This is a port of ``src/lib/parsers/mpesa.ts``; keep
 the two in step. The old flat-JSON reader was removed: no source shows the
 endpoint ever answering with flat fields.

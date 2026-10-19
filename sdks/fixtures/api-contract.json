@@ -16,11 +16,11 @@
   "receiptUrlCases": [
     { "name": "cbe_receipt_id", "format": "current", "served": "redirect", "bank": "cbe", "reference": "fHCxExampleRcpt01", "query": { "bank": "cbe", "reference": "fHCxExampleRcpt01" } },
     { "name": "cbe_receipt_id_v2", "format": "current", "served": "redirect", "bank": "cbe", "reference": "v2-hfHCxExample0001", "query": { "bank": "cbe", "reference": "v2-hfHCxExample0001" } },
-    { "name": "cbe_receipt_id_ignores_account", "format": "current", "served": "redirect", "bank": "CBE", "reference": "fHCxExampleRcpt01", "account": "1000 5605 36171", "query": { "bank": "cbe", "reference": "fHCxExampleRcpt01" } },
-    { "name": "cbe_legacy_ft_with_account", "format": "legacy", "served": "pdf", "bank": "cbe", "reference": "FT26140P01YB", "account": "1000 5605 36171", "query": { "bank": "cbe", "reference": "FT26140P01YB", "account": "1000560536171" } },
-    { "name": "cbe_legacy_ft_without_account", "format": "legacy", "bank": "cbe", "reference": "FT26140P01YB", "error": true },
-    { "name": "cbe_legacy_ft_short_account", "format": "legacy", "bank": "cbe", "reference": "FT26140P01YB", "account": "1234", "error": true },
-    { "name": "dashen_ft_ref", "format": "current", "served": "redirect", "bank": "dashen", "reference": "B22WDTI2619100WH", "query": { "bank": "dashen", "reference": "B22WDTI2619100WH" } },
+    { "name": "cbe_receipt_id_ignores_account", "format": "current", "served": "redirect", "bank": "CBE", "reference": "fHCxExampleRcpt01", "account": "1000 0000 06171", "query": { "bank": "cbe", "reference": "fHCxExampleRcpt01" } },
+    { "name": "cbe_legacy_ft_with_account", "format": "legacy", "served": "pdf", "bank": "cbe", "reference": "FT26SAMPLE01", "account": "1000 0000 06171", "query": { "bank": "cbe", "reference": "FT26SAMPLE01", "account": "1000000006171" } },
+    { "name": "cbe_legacy_ft_without_account", "format": "legacy", "bank": "cbe", "reference": "FT26SAMPLE01", "error": true },
+    { "name": "cbe_legacy_ft_short_account", "format": "legacy", "bank": "cbe", "reference": "FT26SAMPLE01", "account": "1234", "error": true },
+    { "name": "dashen_ft_ref", "format": "current", "served": "redirect", "bank": "dashen", "reference": "B22WDTI00SAMPLE1", "query": { "bank": "dashen", "reference": "B22WDTI00SAMPLE1" } },
     { "name": "zamzam_receipt_id", "format": "current", "served": "redirect", "bank": "ZamZam", "reference": "12345678", "query": { "bank": "zamzam", "reference": "12345678" } },
     { "name": "zamzam_non_numeric", "format": "current", "bank": "zamzam", "reference": "ABC-123", "error": true },
     { "name": "zemen_token", "format": "current", "served": "pdf", "bank": "Zemen", "reference": "ZB123", "query": { "bank": "zemen", "reference": "ZB123" } },
@@ -32,7 +32,7 @@
   "retryCases": [
     { "name": "verify_422_not_found", "method": "POST", "path": "/api/verify", "status": 422, "headers": {}, "body": { "success": false, "error": "[Telebirr] Receipt not found. Check the reference number." }, "retried": false },
     { "name": "verify_500_internal", "method": "POST", "path": "/api/verify", "status": 500, "headers": { "retry-after": "0" }, "body": { "success": false, "error": "Internal server error." }, "retried": false },
-    { "name": "verify_502_geo_blocked", "method": "POST", "path": "/api/verify", "status": 502, "headers": { "retry-after": "0" }, "body": { "success": false, "error": "[Telebirr] Our server can't reach this bank (it blocks cloud IPs).", "fallbackUrl": "https://transactioninfo.ethiotelecom.et/receipt/CHQ0FJ403O" }, "retried": false },
+    { "name": "verify_502_geo_blocked", "method": "POST", "path": "/api/verify", "status": 502, "headers": { "retry-after": "0" }, "body": { "success": false, "error": "[Telebirr] Our server can't reach this bank (it blocks cloud IPs).", "fallbackUrl": "https://transactioninfo.ethiotelecom.et/receipt/CHQ0SAMPLE" }, "retried": false },
     { "name": "verify_504_platform", "method": "POST", "path": "/api/verify", "status": 504, "headers": { "content-type": "text/plain" }, "rawBody": "An error occurred with your deployment\n\nFUNCTION_INVOCATION_TIMEOUT", "retried": false },
     { "name": "verify_503_retry_after", "method": "POST", "path": "/api/verify", "status": 503, "headers": { "retry-after": "0" }, "body": { "success": false, "error": "Temporarily unavailable." }, "retried": true },
     { "name": "verify_503_no_retry_after", "method": "POST", "path": "/api/verify", "status": 503, "headers": {}, "body": { "success": false, "error": "Temporarily unavailable." }, "retried": false },
@@ -58,18 +58,18 @@
       "body": {
         "success": true,
         "senderName": "ABEBE KEBEDE",
-        "senderAccount": "1****6171",
+        "senderAccount": "1****4321",
         "receiverName": "TIGIST ALEMU",
-        "receiverAccount": "1****4321",
+        "receiverAccount": "1****6171",
         "amount": 1250.5,
         "currency": "ETB",
         "date": "2026-10-01",
-        "reference": "FT26140P01YB",
+        "reference": "FT26SAMPLE01",
         "reason": "Invoice 42",
         "verified": true,
         "bank": "Commercial Bank of Ethiopia",
         "bankCode": "cbe",
-        "sourceUrl": "https://apps.cbe.com.et:100/?id=FT26140P01YB60536171",
+        "sourceUrl": "https://apps.cbe.com.et:100/?id=FT26SAMPLE0100006171",
         "durationMs": 1830,
         "cached": false
       }
@@ -85,11 +85,11 @@
         "receiverName": "TIGIST ALEMU",
         "amount": 1250.5,
         "currency": "ETB",
-        "reference": "FT26140P01YB",
+        "reference": "FT26SAMPLE01",
         "verified": true,
         "bank": "Commercial Bank of Ethiopia",
         "bankCode": "cbe",
-        "sourceUrl": "https://apps.cbe.com.et:100/?id=FT26140P01YB60536171",
+        "sourceUrl": "https://apps.cbe.com.et:100/?id=FT26SAMPLE0100006171",
         "cached": true
       }
     },
@@ -153,7 +153,7 @@
         "label": "Parsed from your text, not checked with the bank",
         "bank": "Telebirr",
         "bankCode": "telebirr",
-        "reference": "CHQ0FJ403O",
+        "reference": "CHQ0SAMPLE",
         "senderName": "DAWIT GIRMA",
         "receiverName": "HANA SHOP",
         "amount": 320,
@@ -178,11 +178,11 @@
             "receiverName": "TIGIST ALEMU",
             "amount": 1250.5,
             "currency": "ETB",
-            "reference": "FT26140P01YB",
+            "reference": "FT26SAMPLE01",
             "verified": true,
             "bank": "Commercial Bank of Ethiopia",
             "bankCode": "cbe",
-            "sourceUrl": "https://apps.cbe.com.et:100/?id=FT26140P01YB60536171",
+            "sourceUrl": "https://apps.cbe.com.et:100/?id=FT26SAMPLE0100006171",
             "durationMs": 1830,
             "cached": false
           },
@@ -375,8 +375,8 @@
       "headers": {},
       "body": {
         "success": false,
-        "error": "[Telebirr] Our server can't reach this bank (it blocks cloud IPs). Open the receipt directly: Try the new receipt format: https://transactioninfo.ethiotelecom.et/receipt/CHQ0FJ403O",
-        "fallbackUrl": "https://transactioninfo.ethiotelecom.et/receipt/CHQ0FJ403O"
+        "error": "[Telebirr] Our server can't reach this bank (it blocks cloud IPs). Open the receipt directly: Try the new receipt format: https://transactioninfo.ethiotelecom.et/receipt/CHQ0SAMPLE",
+        "fallbackUrl": "https://transactioninfo.ethiotelecom.et/receipt/CHQ0SAMPLE"
       }
     },
     "error_500_internal": {

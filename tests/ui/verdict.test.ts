@@ -11,7 +11,7 @@ import type { VerifyResult } from "@/lib/banks";
 const at = new Date(2026, 9, 11, 14, 32);
 const verified: VerifyResult = {
   success: true, verified: true, bank: "Commercial Bank of Ethiopia", bankCode: "cbe",
-  reference: "FT26140P01YB", amount: 12500, currency: "ETB",
+  reference: "FT26SAMPLE01", amount: 12500, currency: "ETB",
   senderName: "Abebe Kebede", receiverName: "Selam Electronics PLC", receiverAccount: "1000****6171",
   date: "2026-10-11T14:32:00+03:00", sourceUrl: "https://mbreciept.cbe.com.et/abc",
 };
@@ -26,7 +26,7 @@ describe("green: verified only", () => {
     expect(v.amount).toEqual({ value: 12500, currency: "ETB" });
     expect(v.from?.name).toBe("Abebe Kebede");
     expect(v.to?.name).toBe("Selam Electronics PLC");
-    expect(v.reference).toBe("FT26140P01YB");
+    expect(v.reference).toBe("FT26SAMPLE01");
     expect(v.bank?.code).toBe("cbe");
     expect(v.sourceUrl).toBe("https://mbreciept.cbe.com.et/abc");
   });
@@ -83,14 +83,14 @@ describe("fraud checks", () => {
 describe("amber", () => {
   const decoded: VerifyResult = {
     success: true, verified: false, decodedOnly: true, bank: "Bank of Abyssinia", bankCode: "boa",
-    reference: "FT252003JZPP", amount: 50000, senderName: "Forged Name", receiverName: "Merchant", sourceUrl: "qr://boa",
+    reference: "FT25SAMPLE06", amount: 50000, senderName: "Forged Name", receiverName: "Merchant", sourceUrl: "qr://boa",
   };
 
   it("a decoded-only BOA QR shows only the notice and the reference", () => {
     const v = presentVerdict(decoded);
     expect(v.tone).toBe("amber");
     expect(v.title).toBe("Decoded from QR, not confirmed with the bank");
-    expect(v.reference).toBe("FT252003JZPP");
+    expect(v.reference).toBe("FT25SAMPLE06");
     expect(v.showDetails).toBe(false);
     expect(v.amount).toBeUndefined();
     expect(v.from).toBeUndefined();
@@ -105,10 +105,10 @@ describe("amber", () => {
     for (const out of [text, json]) {
       expect(out).not.toMatch(/50,?000/);
       expect(out).not.toMatch(/Forged Name|Merchant/);
-      expect(out).toMatch(/FT252003JZPP/);
+      expect(out).toMatch(/FT25SAMPLE06/);
     }
     expect(text).toMatch(/^NOT VERIFIED: Decoded from QR, not confirmed with the bank/);
-    expect(JSON.parse(json)).toEqual({ success: true, verified: false, decodedOnly: true, bank: "Bank of Abyssinia", reference: "FT252003JZPP" });
+    expect(JSON.parse(json)).toEqual({ success: true, verified: false, decodedOnly: true, bank: "Bank of Abyssinia", reference: "FT25SAMPLE06" });
   });
 
   it("pasted page text is amber and keeps its details", () => {

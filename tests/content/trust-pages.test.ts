@@ -107,7 +107,7 @@ describe("privacy matches the code", () => {
     const known = new Set(["/", "/banks/cbe"]);
     expect(analyticsUrl("https://cheki.et/banks/cbe?ref=FT123#x", known)).toBe("https://cheki.et/banks/cbe");
     expect(analyticsUrl("https://cheki.et/api/verify", known)).toBeNull();
-    expect(analyticsUrl("https://cheki.et/FT26140P01YB", known)).toBeNull();
+    expect(analyticsUrl("https://cheki.et/FT26SAMPLE01", known)).toBeNull();
     expect(t).toMatch(/no cookies/);
   });
 
@@ -139,6 +139,13 @@ describe("contact", () => {
     // The same bot /banks already links, so contact adds no new channel.
     expect(read("src/app/banks/page.tsx")).toContain("https://t.me/raysterminalbot");
     expect(trustPageText(CONTACT)).not.toMatch(/@[a-z0-9-]+\.[a-z]{2,}/i);
+  });
+
+  it("/banks opens the same bank-request form, not a label the repo does not have", () => {
+    const page = read("src/app/banks/page.tsx");
+    expect(page).toContain("href={NEW_BANK_ISSUE_URL}");
+    expect(page).not.toMatch(/issues\/new\?labels=/);
+    expect(read(".github/ISSUE_TEMPLATE/bank-request.yml")).toMatch(/^labels: \["bank-wanted"\]$/m);
   });
 });
 

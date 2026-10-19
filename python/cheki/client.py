@@ -44,7 +44,7 @@ Example::
     cheki = ChekiClient()                       # uses the public instance
     result = cheki.verify("cbe", "https://mbreciept.cbe.com.et/fHCxExampleRcpt01")
     # Older CBE receipt with only an FT reference (legacy):
-    # cheki.verify("cbe", "FT26140P01YB", account_number="1000560536171")
+    # cheki.verify("cbe", "FT26SAMPLE01", account_number="1000000006171")
     if result.is_verified:
         print(result.sender_name, result.amount, result.currency)
 """

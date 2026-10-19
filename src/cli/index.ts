@@ -5,8 +5,8 @@
  * Usage:
  *   cheki info                                    List supported banks
  *   cheki verify cbe https://mbreciept.cbe.com.et/<id>  Verify a CBE receipt (Receipt ID link)
- *   cheki verify cbe FT26140P01YB -a 1000560536171  Older CBE receipt (legacy FT reference)
- *   cheki verify telebirr CHQ0FJ403O                 Verify a Telebirr receipt
+ *   cheki verify cbe FT26SAMPLE01 -a 1000000006171  Older CBE receipt (legacy FT reference)
+ *   cheki verify telebirr CHQ0SAMPLE                 Verify a Telebirr receipt
  *   cheki verify boa AB12345 -a 1234567890           Verify a BOA receipt
  *   cheki verify cbebirr DTS41AB2C90 -p 09XXXXXXXX   Verify a CBE Birr receipt (payer phone)
  *   cheki health                                     Check endpoint health
@@ -32,14 +32,14 @@ Usage:
 
 Examples:
   cheki verify cbe https://mbreciept.cbe.com.et/fHCxExampleRcpt01
-  cheki verify dashen B22WDTI2619100WH
-  cheki verify telebirr CHQ0FJ403O
+  cheki verify dashen B22WDTI00SAMPLE1
+  cheki verify telebirr CHQ0SAMPLE
   cheki verify boa AB12345 -a 1234567890
   cheki verify cbebirr DTS41AB2C90 -p 09XXXXXXXX     (CBE Birr: receipt number + payer phone)
   cheki verify-qr boa <base64-qr-payload>
   cheki verify-qr telebirr <telebirr-receipt-qr>     (reads the transaction number, then checks it)
   cheki verify-qr "<cbe-birr-receipt-qr>"            (a cbepay1 receipt link: receipt number + payer phone)
-  cheki verify cbe FT26140P01YB -a 1000560536171   (older CBE receipt, legacy format)
+  cheki verify cbe FT26SAMPLE01 -a 1000000006171   (older CBE receipt, legacy format)
 `);
     process.exit(0);
   }

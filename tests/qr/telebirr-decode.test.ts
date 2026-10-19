@@ -99,7 +99,7 @@ describe("parseTelebirrQr: malformed input never throws and is rejected", () => 
   });
 
   it("ordinary references and links are not Telebirr QRs", () => {
-    for (const s of ["DET8FJGUJ4", "FT26140P01YB", "https://transactioninfo.ethiotelecom.et/receipt/DET8FJGUJ4", "B22WDTI2619100WH", "0123456789abcdef"]) {
+    for (const s of ["DET0SAMPLE", "FT26SAMPLE01", "https://transactioninfo.ethiotelecom.et/receipt/DET0SAMPLE", "B22WDTI00SAMPLE1", "0123456789abcdef"]) {
       expect(isTelebirrQrPayload(s), s).toBe(false);
     }
   });

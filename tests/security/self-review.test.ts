@@ -41,8 +41,8 @@ describe("batch response counts", () => {
       })
     );
     const receipts = [
-      { bank: "boa", reference: "FT26167GOOD1", accountNumber: "1000005842674" },
-      { bank: "boa", reference: "FT26167BAD22", accountNumber: "1000005842674" },
+      { bank: "boa", reference: "FT26167GOOD1", accountNumber: "1000000042674" },
+      { bank: "boa", reference: "FT26167BAD22", accountNumber: "1000000042674" },
       { bank: "nope", reference: "X1" },
     ];
     const res = await batchPOST(

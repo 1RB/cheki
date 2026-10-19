@@ -27,8 +27,8 @@ describe("geo-blocked fetch", () => {
       throw new Error("connect ETIMEDOUT");
     });
     const parser = new TelebirrParser();
-    const fallbackUrl = "https://transactioninfo.ethiotelecom.et/receipt/CHQ0FJ403O";
-    const result = await parser.fetchReceipt("CHQ0FJ403O", undefined, undefined, { fallbackUrl });
+    const fallbackUrl = "https://transactioninfo.ethiotelecom.et/receipt/CHQ0SAMPLE";
+    const result = await parser.fetchReceipt("CHQ0SAMPLE", undefined, undefined, { fallbackUrl });
 
     expect(safeFetchMock).toHaveBeenCalledTimes(1);
     const [url, opts] = safeFetchMock.mock.calls[0];

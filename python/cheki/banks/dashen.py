@@ -23,7 +23,7 @@ _LABELS = (
 class DashenVerifier(BankVerifier):
     """Dashen Bank receipt verifier.
 
-    Current format: the 16-character FT Ref (e.g. ``B22WDTI2619100WH``) on
+    Current format: the 16-character FT Ref (e.g. ``B22WDTI00SAMPLE1``) on
     Dashen's public HTML receipt page::
 
         https://receipts.dashenbanksc.com/receipt/<FT_REF>
@@ -46,7 +46,7 @@ class DashenVerifier(BankVerifier):
         if resp.status_code in (400, 404):
             raise ReceiptNotFoundError(
                 "Dashen did not find a receipt for this reference. Use the 16-character FT Ref "
-                "(e.g. B22WDTI2619100WH), not the longer Transaction Ref."
+                "(e.g. B22WDTI00SAMPLE1), not the longer Transaction Ref."
             )
         if resp.status_code != 200:
             raise UpstreamError(f"Dashen returned status {resp.status_code}.")

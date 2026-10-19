@@ -153,9 +153,9 @@ describe("detectInput: BOA slip links", () => {
   });
 
   it("links for other banks still need no extra field", () => {
-    expect(detectInput("https://apps.cbe.com.et:100/?id=FT26140P01YB60536171").needsAccount).toBe(false);
-    expect(detectInput("https://mbreciept.cbe.com.et/fHCxyV4mg5pRIwEkJO").needsAccount).toBe(false);
-    expect(detectInput("https://receipts.dashenbanksc.com/receipt/B22WDTI2619100WH").needsAccount).toBe(false);
+    expect(detectInput("https://apps.cbe.com.et:100/?id=FT26SAMPLE0100006171").needsAccount).toBe(false);
+    expect(detectInput("https://mbreciept.cbe.com.et/fHCxExampleRcpt01").needsAccount).toBe(false);
+    expect(detectInput("https://receipts.dashenbanksc.com/receipt/B22WDTI00SAMPLE1").needsAccount).toBe(false);
   });
 
   it("a typed BOA reference asks for the account on the receipt, not the receiving account", () => {
@@ -170,7 +170,7 @@ describe("detectInput: BOA slip links", () => {
   });
 
   it("other banks keep the receiving-account wording", () => {
-    const d = detectInput("FT26140P01YB");
+    const d = detectInput("FT26SAMPLE01");
     expect(d.bank?.code).toBe("cbe");
     expect(tEn(accountFieldKeys(d).label, { digits: 8 })).toBe("Receiving account, last 8 digits");
   });

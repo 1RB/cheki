@@ -172,7 +172,7 @@ export const endpointDocs: EndpointDoc[] = [
             name: "{REFERENCE}",
             what: "The CBE FT transaction reference.",
             whereToFind: 'On older receipts as "Reference No. (VAT Invoice No)", and in the CBE SMS.',
-            format: '12 characters: "FT" plus 10 letters and digits, e.g. FT26140P01YB.',
+            format: '12 characters: "FT" plus 10 letters and digits, e.g. FT26SAMPLE01.',
           },
           {
             name: "{LAST_8_DIGITS_OF_ACCOUNT}",
@@ -182,7 +182,7 @@ export const endpointDocs: EndpointDoc[] = [
             traps: "The payer's account does not work. Only the receiving account matches.",
           },
         ],
-        redactedExample: "https://apps.cbe.com.et:100/?id=FT26140P01YBXXXXXXXX",
+        redactedExample: "https://apps.cbe.com.et:100/?id=FT26SAMPLE01XXXXXXXX",
         unknownRef: 'HTTP 404 text/html, "You Are Not Allowed to See This Data, Please Check your Link" (seen 2026-10-10; the host is often unreachable).',
         probe: {
           parser: "cbe",
@@ -239,7 +239,7 @@ export const endpointDocs: EndpointDoc[] = [
         name: "{REFERENCE}",
         what: "The Telebirr transaction number.",
         whereToFind: "In the Telebirr SMS sent to payer and receiver, and on the in-app receipt. The receipt's Payment QR Code holds it too: scan or upload the QR and cheki reads the number out of it.",
-        format: "10 characters: a 2 or 3 letter prefix (DET, CHQ, DAB, DJA, DEL, ADQ, ...) plus letters and digits, e.g. DET8FJGUJ4.",
+        format: "10 characters: a 2 or 3 letter prefix (DET, CHQ, DAB, DJA, DEL, ADQ, ...) plus letters and digits, e.g. DET0SAMPLE.",
       },
     ],
     redactedExample: "https://transactioninfo.ethiotelecom.et/receipt/DETXXXXXXX",
@@ -262,23 +262,23 @@ export const endpointDocs: EndpointDoc[] = [
       {
         name: "{REFERENCE}",
         what: "The Bank of Abyssinia transaction reference.",
-        whereToFind: "On the BOA receipt, or at the start of the slip link's trx value (cs.bankofabyssinia.com/slip/?trx=FT252003JZPP12345 → FT252003JZPP).",
-        format: "Letters and digits, starting with 2 letters, e.g. FT252003JZPP.",
+        whereToFind: "On the BOA receipt, or at the start of the slip link's trx value (cs.bankofabyssinia.com/slip/?trx=FT25SAMPLE0612345 → FT25SAMPLE06).",
+        format: "Letters and digits, starting with 2 letters, e.g. FT25SAMPLE06.",
       },
       {
         name: "{LAST_5_DIGITS}",
         what: "The last 5 digits of an account on the receipt, which BOA looks the receipt up by. Not always the receiver's: a fee receipt with no receiver uses the source account.",
-        whereToFind: "The last 5 characters of the slip link's trx value (FT252003JZPP12345 → 12345), or the account on the receipt.",
+        whereToFind: "The last 5 characters of the slip link's trx value (FT25SAMPLE0612345 → 12345), or the account on the receipt.",
         format: "5 digits, appended directly after the reference.",
       },
     ],
-    redactedExample: "https://cs.bankofabyssinia.com/api/onlineSlip/getDetails/?id=FT252003JZPPXXXXX",
+    redactedExample: "https://cs.bankofabyssinia.com/api/onlineSlip/getDetails/?id=FT25SAMPLE06XXXXX",
     fieldsParsed: ["senderName", "senderAccount", "receiverName", "receiverAccount", "amount", "currency", "date", "reference", "transactionType", "amountInWords", "serviceFee", "totalPaid", "reason"],
     unknownRef: 'HTTP 200 application/json with body[0]["Payer\'s Name"] = "Invalid reference number".',
     gotchas: [
       "A miss still returns HTTP 200, so the parser must read the body.",
       "Fee and charge receipts (e.g. Transaction Type \"Account Transfer MB Maintenance\") have no Receiver's Name or Receiver's Account; receiver fields stay empty.",
-      "Slip links put the 5 account digits straight after the reference (trx=FT252003JZPP12345); cheki splits them off.",
+      "Slip links put the 5 account digits straight after the reference (trx=FT25SAMPLE0612345); cheki splits them off.",
       "\"VAT (15%)\" is not mapped: on the fee receipt observed it was 15% of the Transferred Amount, not of the Service Charge, so it does not fit serviceFeeVat. totalPaid includes it.",
     ],
     changelog: [
@@ -345,7 +345,7 @@ export const endpointDocs: EndpointDoc[] = [
         name: "{REFERENCE}",
         what: "The Dashen FT Ref.",
         whereToFind: 'In the Dashen app it is labelled "FT Ref". On the web receipt it is labelled "Transaction Reference".',
-        format: "16 characters, letters and digits, e.g. B22WDTI2619100WH.",
+        format: "16 characters, letters and digits, e.g. B22WDTI00SAMPLE1.",
         traps: 'The app also shows a longer "Transaction Ref" or "Transfer Reference" (WDTI... or OBTI...). The endpoint rejects it. Use the FT Ref.',
       },
     ],
@@ -408,7 +408,7 @@ export const endpointDocs: EndpointDoc[] = [
         name: "{REFERENCE}",
         what: "The token in a Zemen share link, share.zemenbank.com/rt/{token}/pdf.",
         whereToFind: "Use the share button on the Zemen receipt and paste the whole link. cheki reads the token from the path.",
-        format: "Unconfirmed. links.et docs describe a 24 character token (an 8 character prefix plus the 16 character reference). Another open-source app builds the URL from the bare reference. Neither is proven.",
+        format: "Unconfirmed. Another verifier's docs describe a 24 character token (an 8 character prefix plus the 16 character reference). Another open-source app builds the URL from the bare reference. Neither is proven.",
         traps: "A bare reference may not work. Paste the full share link until a real receipt settles the format.",
         confirmed: false,
       },
@@ -577,6 +577,13 @@ export const endpointDocs: EndpointDoc[] = [
 
 export const REPO_URL = "https://github.com/1RB/cheki";
 export const REPORT_CHANGE_URL = `${REPO_URL}/issues/new?template=bank-request.yml`;
+/**
+ * The one place cheki credits the third-party provider list that most
+ * "inferred" formats come from: a single line in the /endpoints intro.
+ * Evidence strings say "another verifier" instead of repeating the name
+ * (tests/content/credits.test.ts).
+ */
+export const THIRD_PARTY_PROVIDER_LIST = "https://links.et/docs/providers";
 
 export interface EndpointRow {
   bank: BankManifestEntry;

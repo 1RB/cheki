@@ -22,7 +22,7 @@
  *   - A wrong TID/PH pair (or an unknown TID) returns HTTP 200 with an empty
  *     Telerik ReportViewer shell (ASP.NET page titled "Auto Receipt", no
  *     data). The earlier "real receipt came back empty" report was a pair that
- *     did not match; links.et gets the same empty page for it. The verifier
+ *     did not match; another verifier gets the same empty page for it. The verifier
  *     still reports the shell as "could not confirm" with the receipt link,
  *     never as "fake", because a typo in the phone gives the same page.
  *
