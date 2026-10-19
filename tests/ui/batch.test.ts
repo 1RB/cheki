@@ -3,7 +3,7 @@
  * summary may carry.
  */
 import { describe, it, expect } from "vitest";
-import { batchCsv, batchText, markDuplicates, summarize, type BatchRow } from "@/lib/verify/batch";
+import { batchCsv, batchText, displayReference, markDuplicates, needsLook, rowTone, summarize, type BatchRow } from "@/lib/verify/batch";
 import type { Verdict } from "@/lib/verify/verdict";
 
 const bank = { code: "cbe", name: "Commercial Bank of Ethiopia", shortName: "CBE", type: "bank" } as Verdict["bank"];
@@ -78,14 +78,39 @@ describe("batch", () => {
     expect(batchCsv(rows)).not.toContain("4321");
   });
 
-  it("the copied summary leads with the confirmed count and total", () => {
-    const rows = markDuplicates([done("a", verified("FT26AAA", 1000)), done("b", failed("FT26B"))]);
-    const text = batchText(rows, { title: "Batch check", confirmed: "confirmed by the bank", attention: "need a look" });
+  it("the copied summary speaks in the screen's words, never verdict kinds", () => {
+    const rows = markDuplicates([done("a", verified("FT26AAA", 1000)), done("b", failed("FT26B")), done("c", verified("FT26AAA", 1000))]);
+    const text = batchText(rows, {
+      headline: (s) => `${s.confirmed} of ${s.total} confirmed by the bank`,
+      label: (r) => (r.duplicateOf !== undefined ? `Same receipt as #${r.duplicateOf + 1}` : r.verdict!.title),
+    });
     expect(text.split("\n")).toEqual([
-      "Batch check: 1/2 confirmed by the bank (1,000 ETB)",
-      "1 need a look",
-      "1. verified 1,000 ETB FT26AAA",
-      "2. notFound FT26B",
+      "1 of 3 confirmed by the bank",
+      "1. Verified · 1,000 ETB · FT26AAA",
+      "2. Not found · FT26B",
+      "3. Same receipt as #1 · FT26AAA",
     ]);
+    expect(text).not.toMatch(/notFound|verified |decodedOnly|duplicate\b/);
+  });
+
+  it("queued rows are pending, not scanning, and never finished", () => {
+    const rows: BatchRow[] = [{ name: "a", status: "queued" }, { name: "b", status: "scanning" }];
+    expect(summarize(rows)).toMatchObject({ finished: 0 });
+    expect(rows.map(rowTone)).toEqual(["pending", "pending"]);
+    expect(rows.some(needsLook)).toBe(false);
+  });
+
+  it("tone: the bank decides, a second copy is red, nothing in the batch makes green", () => {
+    const rows = markDuplicates([done("a", verified("FT26AAA", 1)), done("b", verified("FT26AAA", 1)), { name: "c", status: "noQr" }]);
+    expect(rows.map(rowTone)).toEqual(["green", "red", "neutral"]);
+    expect(rows.map(needsLook)).toEqual([false, true, true]);
+    const amberOnly = { ...verified("X", 1), tone: "amber", kind: "decodedOnly" } as Verdict;
+    expect(rowTone(done("d", amberOnly))).toBe("amber");
+  });
+
+  it("a receipt link shows as its id", () => {
+    expect(displayReference("https://transactioninfo.ethiotelecom.et/receipt/CJK1AB2CD3")).toBe("CJK1AB2CD3");
+    expect(displayReference("https://apps.cbe.com.et:100/?id=FT26AAA12345678")).toBe("FT26AAA12345678");
+    expect(displayReference("FT26AAA")).toBe("FT26AAA");
   });
 });

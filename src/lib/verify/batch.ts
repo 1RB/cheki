@@ -8,12 +8,44 @@
 import type { Verdict } from "./verdict";
 
 export type BatchRowStatus =
+  | "queued" // waiting for its turn
   | "scanning" // looking for a QR on the device
   | "reading" // no QR: reading the text (OCR)
   | "checking" // asking the bank
   | "done" // the bank (or cheki) answered: see verdict
   | "needsAccount" // a reference was read, but this bank also needs account digits
-  | "noReceipt"; // nothing checkable in the image
+  | "noQr" // no QR on the device; reading the text (OCR) is opt-in, it is slow
+  | "noReceipt"; // nothing checkable in the image, even after reading the text
+
+const PENDING: ReadonlySet<BatchRowStatus> = new Set(["queued", "scanning", "reading", "checking"]);
+
+export function isPending(row: BatchRow): boolean {
+  return PENDING.has(row.status);
+}
+
+/** Bank-confirmed and not a second copy: the only rows that count. */
+export function isConfirmed(row: BatchRow): boolean {
+  return row.status === "done" && row.verdict?.kind === "verified" && row.duplicateOf === undefined;
+}
+
+/** Finished, but not a confirmed first copy: someone should look at it. */
+export function needsLook(row: BatchRow): boolean {
+  return !isPending(row) && !isConfirmed(row);
+}
+
+export type BatchTone = "green" | "amber" | "red" | "neutral" | "pending";
+
+/**
+ * A row's dot. The bank's answer decides through presentVerdict (green only
+ * ever comes from there); the batch adds exactly one judgement of its own: a
+ * second copy of a receipt is red, whatever the bank said about the first.
+ */
+export function rowTone(row: BatchRow): BatchTone {
+  if (isPending(row)) return "pending";
+  if (row.duplicateOf !== undefined) return "red";
+  if (row.status === "done" && row.verdict) return row.verdict.tone;
+  return "neutral";
+}
 
 export interface BatchRow {
   name: string;
@@ -71,7 +103,7 @@ export function summarize(rows: BatchRow[]): BatchSummary {
   let confirmed = 0;
   let duplicates = 0;
   for (const row of rows) {
-    if (row.status === "scanning" || row.status === "reading" || row.status === "checking") continue;
+    if (isPending(row)) continue;
     finished++;
     if (row.duplicateOf !== undefined) {
       duplicates++;
@@ -93,7 +125,7 @@ export function summarize(rows: BatchRow[]): BatchSummary {
   };
 }
 
-/** One word per row for the CSV and the copied summary. */
+/** One machine word per row, for the CSV (never shown as prose). */
 export function rowOutcome(row: BatchRow): string {
   if (row.duplicateOf !== undefined) return "duplicate";
   if (row.status === "done" && row.verdict) return row.verdict.kind;
@@ -128,7 +160,7 @@ export function batchCsv(rows: BatchRow[]): string {
         row.name,
         rowOutcome(row),
         v?.bank?.shortName ?? row.bankCode,
-        v?.reference ?? row.reference,
+        displayReference(v?.reference ?? row.reference),
         details && v?.amount ? v.amount.value : undefined,
         details && v?.amount ? v.amount.currency : undefined,
         details ? party(v?.from) : undefined,
@@ -147,17 +179,33 @@ export function formatTotals(amounts: BatchSummary["amounts"]): string {
   return amounts.map((a) => `${a.value.toLocaleString("en-US", { maximumFractionDigits: 2 })} ${a.currency}`).join(" + ");
 }
 
-/** Plain text a cashier pastes into a chat at the end of the day. */
-export function batchText(rows: BatchRow[], labels: { title: string; confirmed: string; attention: string }): string {
+/**
+ * Plain text a cashier pastes into a chat at the end of the day. It is read
+ * by people, so every row speaks in the same words as the screen (`label`),
+ * never in verdict kinds.
+ */
+export function batchText(
+  rows: BatchRow[],
+  words: { headline: (s: BatchSummary) => string; label: (row: BatchRow) => string }
+): string {
   const s = summarize(rows);
-  const lines = [`${labels.title}: ${s.confirmed}/${s.total} ${labels.confirmed}${s.amounts.length ? ` (${formatTotals(s.amounts)})` : ""}`];
-  if (s.attention) lines.push(`${s.attention} ${labels.attention}`);
+  const lines = [words.headline(s)];
   rows.forEach((row, i) => {
     const v = row.verdict;
-    const ref = v?.reference ?? row.reference ?? "";
-    const amt = v?.showDetails && v.amount && row.duplicateOf === undefined ? ` ${v.amount.value.toLocaleString("en-US", { maximumFractionDigits: 2 })} ${v.amount.currency}` : "";
-    const same = row.duplicateOf !== undefined ? ` = #${row.duplicateOf + 1}` : "";
-    lines.push(`${i + 1}. ${rowOutcome(row)}${amt}${ref ? ` ${ref}` : ""}${same}`);
+    const ref = displayReference(v?.reference ?? row.reference);
+    const amt = isConfirmed(row) && v?.showDetails && v.amount ? ` · ${v.amount.value.toLocaleString("en-US", { maximumFractionDigits: 2 })} ${v.amount.currency}` : "";
+    lines.push(`${i + 1}. ${words.label(row)}${amt}${ref ? ` · ${ref}` : ""}`);
   });
   return lines.join("\n");
+}
+
+/** A receipt link shows as its id or last path part, not the whole URL. */
+export function displayReference(ref?: string): string | undefined {
+  if (!ref || !/^https?:\/\//i.test(ref)) return ref;
+  try {
+    const u = new URL(ref);
+    return u.searchParams.get("id") || u.searchParams.get("trx") || u.pathname.split("/").filter(Boolean).pop() || ref;
+  } catch {
+    return ref;
+  }
 }
