@@ -65,7 +65,7 @@ export interface VerifyOptions {
     accountNumber?: string;
     /** Payer phone number (required by CBE Birr). */
     phoneNumber?: string;
-    /** Raw QR code payload (BOA QR codes, a Telebirr receipt QR, or a receipt link from a QR). */
+    /** Raw QR code payload (BOA QR codes, a Telebirr receipt QR, or a receipt link from a QR, e.g. a CBE Birr receipt QR, which carries the receipt number and payer phone). */
     qrData?: string;
 }
 /** A receipt to verify, as sent to {@link Cheki.verifyBatch}. */
@@ -178,7 +178,7 @@ export interface BankInfo {
     swift?: string;
     type: "bank" | "mobile" | "wallet";
     status: "live" | "in-development";
-    /** Live, but the parser has not yet been confirmed with enough real receipts (M-Pesa and ZamZam today). Always set by the SDK (false when the server omits it). */
+    /** Live, but the parser has not yet been confirmed with enough real receipts (M-Pesa, ZamZam and CBE Birr today). Always set by the SDK (false when the server omits it). */
     beta: boolean;
     requiresAccount: boolean;
     /** How many trailing account digits the bank needs, when it needs an account. */

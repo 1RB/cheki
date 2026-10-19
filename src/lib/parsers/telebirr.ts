@@ -245,7 +245,7 @@ export class TelebirrParser extends BaseParser {
     const receiverAccount = valAfter("Credited party account no", "\u12E8\u1300\u12AD\u12F0\u12E5 \u1320\u1241\u124B\u12ED \u124C\u12EC\u12A5\u1228\u1201 \u1230\u1201");
 
     // ── Bank account (the REAL recipient bank account) ──
-    // "Bank account number" contains both the account and name, e.g. "1000370251685   Mr Mohammed Abdulwasi Reshid"
+    // "Bank account number" contains both the account and name, e.g. "1000000006171   Mr Tigist Alemu"
     const bankAccountRaw = valAfter("Bank account number", "\u12E8\u1230\u12AD\u12AD \u12A0\u12AB\u12A0\u12CD\u12F5 \u1230\u1201\u120D");
     let bankAccountNumber: string | undefined;
     let bankAccountName: string | undefined;

@@ -28,7 +28,7 @@ export const translations = {
       subtitle: "Paste a receipt link, reference or QR before you hand over the goods. Free, no signup, no API key.",
       bankLabel: "Bank or wallet",
       referenceLabel: "Receipt",
-      referencePlaceholder: "e.g. https://mbreciept.cbe.com.et/fHCxyV4mg5pRIwEkJO",
+      referencePlaceholder: "e.g. https://mbreciept.cbe.com.et/fHCxExampleRcpt01",
       accountLabel: "Account number",
       accountPlaceholder: "Required for BOA and older CBE FT receipts",
       verifyButton: "Verify receipt",
@@ -89,7 +89,7 @@ export const translations = {
         accountOnReceiptMissing: "Enter at least the last {digits} digits of the account on the receipt, or paste the full receipt link.",
         phone: "Payer phone number",
         phoneHint: "{bank} matches the receipt on the payer's number. Nothing is stored.",
-        phoneMissing: "Enter the payer's phone number (2519XXXXXXXX).",
+        phoneMissing: "Enter the payer's phone number (09XXXXXXXX or 2519XXXXXXXX).",
       },
       older: {
         summary: "Older receipt?",
@@ -163,6 +163,7 @@ export const translations = {
         offline: { title: "You're offline", subtitle: "Nothing was checked. Reconnect and try again." },
         unavailable: { title: "Couldn't check right now", subtitle: "The checker or the bank did not answer. This says nothing about the receipt." },
         geoBlocked: { title: "{bank} didn't answer cheki's server", subtitle: "{bank} only answers Ethiopian networks. Open the receipt from your browser instead." },
+        openAtBank: { title: "{bank} didn't show cheki the receipt", subtitle: "{bank} sent back an empty page, which usually means the receipt number and payer phone don't match. Check both, or open the receipt on {bank}'s own site." },
         invalidInput: { title: "Check what you entered", subtitle: "That doesn't look like a receipt reference for this bank." },
       },
       card: {
@@ -231,6 +232,7 @@ export const translations = {
       },
       qr: {
         telebirr: "Transaction number read from the Telebirr receipt QR. The QR is not proof of payment: only Telebirr's own receipt confirms it.",
+        cbebirr: "Receipt number and payer phone read from the CBE Birr receipt QR. The QR is not proof of payment: only CBE Birr's own receipt confirms it.",
       },
     },
     banks: {
@@ -342,7 +344,7 @@ export const translations = {
       subtitle: "ምዝገባ የለም። የAPI ቁልፍ የለም። ክፍያ የለም። የግብይት ማጣበቂያ ቁጥርን ያስገቡና ከብረኛው ከመሰናበት በፊት ክፍያውን ያረጋግጡ።",
       bankLabel: "ባንክ ወይም ዋላት",
       referenceLabel: "የማጣበቂያ ቁጥር",
-      referencePlaceholder: "ለምሳሌ https://mbreciept.cbe.com.et/fHCxyV4mg5pRIwEkJO",
+      referencePlaceholder: "ለምሳሌ https://mbreciept.cbe.com.et/fHCxExampleRcpt01",
       accountLabel: "የሂሳብ ቁጥር",
       accountPlaceholder: "ለBOA እና ለቀድሞ የCBE FT ደረሰኞች ያስፈልጋል",
       verifyButton: "ደረሰኝ ያረጋግጡ",

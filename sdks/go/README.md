@@ -1,6 +1,6 @@
 # cheki Go SDK
 
-Go client for the [cheki](https://cheki.et) receipt verification API: verify Ethiopian bank transfer receipts from CBE, Telebirr, BOA, Dashen, M-Pesa (beta: not yet confirmed with a real receipt), Awash, Siinqee, eBirr and ZamZam (beta: one receipt shape confirmed so far) (the live banks; `GetBanks` lists the current set).
+Go client for the [cheki](https://cheki.et) receipt verification API: verify Ethiopian bank transfer receipts from CBE, Telebirr, BOA, Dashen, M-Pesa (beta: not yet confirmed with a real receipt), Awash, Siinqee, eBirr, ZamZam (beta: one receipt shape confirmed so far) and CBE Birr (beta: two real receipts confirmed so far) (the live banks; `GetBanks` lists the current set).
 
 Website: [cheki.et](https://cheki.et) · API reference: [cheki.et/docs](https://cheki.et/docs) · Integration guide and every SDK: [cheki.et/developers](https://cheki.et/developers) · Supported banks: [cheki.et/banks](https://cheki.et/banks)
 
@@ -51,14 +51,14 @@ func main() {
 
 `Verify` returns a result for HTTP 200, and a 200 can still be unverified: a BOA QR code that BOA could not confirm comes back with `Success: true, Verified: false, DecodedOnly: true`. A QR code can be forged. Use `result.IsVerified()`.
 
-QR-only (BOA): `client.Verify(ctx, cheki.VerifyOptions{Bank: "boa", QRData: "3cHRaxVjn/pySp..."})`.
+QR-only (BOA): `client.Verify(ctx, cheki.VerifyOptions{Bank: "boa", QRData: "KPHO0k4YlK/5s6..."})`.
 
 ### Batch (max 20)
 
 ```go
 batch, err := client.VerifyBatch(ctx, []cheki.VerifyOptions{
 	{Bank: "cbe", Reference: "https://mbreciept.cbe.com.et/fHCxExampleRcpt01"},
-	{Bank: "telebirr", Reference: "CHQ0FJ403O"},
+	{Bank: "telebirr", Reference: "CHQ0SAMPLE"},
 })
 // batch.Total, batch.Verified (only Verified: true), batch.Failed (everything else), batch.Cached
 for _, item := range batch.Results {
@@ -70,7 +70,7 @@ for _, item := range batch.Results {
 }
 ```
 
-More than 20 receipts returns `ErrBatchTooLarge` without a request. Each receipt also counts against the per-IP verify limit (30 per minute), and a batch is never retried after a 5xx or network error, so send long lists in chunks of `cheki.RecommendedBatchChunk` (15). A failed item has `Status` and `Error`, plus `FallbackURL` when the server sends one for a geo-blocked bank. Results carry `OrderID` when the receipt has one (CBE Birr), and `BankInfo.Beta` is true for M-Pesa and ZamZam.
+More than 20 receipts returns `ErrBatchTooLarge` without a request. Each receipt also counts against the per-IP verify limit (30 per minute), and a batch is never retried after a 5xx or network error, so send long lists in chunks of `cheki.RecommendedBatchChunk` (15). A failed item has `Status` and `Error`, plus `FallbackURL` when the server sends one for a geo-blocked bank. Results carry `OrderID` when the receipt has one (CBE Birr), and `BankInfo.Beta` is true for M-Pesa, ZamZam and CBE Birr.
 
 ### Banks and health
 
@@ -100,8 +100,8 @@ Only `cbe`, `zemen`, `dashen` and `zamzam`; anything else returns `ErrInvalidInp
 Older CBE receipts that only show an FT reference still work as a legacy format: pass the receiving account (at least the last 8 digits). CBE's older receipt service is often unreachable, so prefer the receipt link when you have it.
 
 ```go
-result, err := client.Verify(ctx, cheki.VerifyOptions{Bank: "cbe", Reference: "FT26140P01YB", AccountNumber: "1000560536171"})
-u, err := client.GetReceiptURL("cbe", "FT26140P01YB", "1000560536171") // the bank's PDF
+result, err := client.Verify(ctx, cheki.VerifyOptions{Bank: "cbe", Reference: "FT26SAMPLE01", AccountNumber: "1000000006171"})
+u, err := client.GetReceiptURL("cbe", "FT26SAMPLE01", "1000000006171") // the bank's PDF
 ```
 
 ## Errors

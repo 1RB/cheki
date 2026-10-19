@@ -1,0 +1,103 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R /F2 5 0 R >> >> /Contents 6 0 R >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>
+endobj
+6 0 obj
+<< /Length 3045 >>
+stream
+BT /F2 14 Tf 32 760 Td (Commercial Bank of Ethiopia) Tj ET
+BT /F1 10 Tf 32 742 Td (VAT Invoice/ Customer Receipt) Tj ET
+BT /F2 10 Tf 32 728 Td (CBEBirr) Tj ET
+BT /F1 7 Tf 32 714 Td (SYNTHETIC TEST FIXTURE - NOT A REAL CBE BIRR RECEIPT) Tj ET
+BT /F2 9 Tf 32 703 Td (Company Address & Other Information) Tj ET
+BT /F2 9 Tf 327 703 Td (Customer Information) Tj ET
+BT /F1 8 Tf 32 689 Td (Country: Ethiopia) Tj ET
+BT /F1 8 Tf 32 674 Td (City: Addis Ababa) Tj ET
+BT /F1 8 Tf 32 660 Td (Address: Example St, 01, Kirkos) Tj ET
+BT /F1 8 Tf 32 645 Td (Postal code: 000) Tj ET
+BT /F1 8 Tf 32 631 Td (SWIFT Code: CBETETAA) Tj ET
+BT /F1 8 Tf 327 689 Td (Customer Name:) Tj ET
+BT /F1 8 Tf 327 674 Td (Region:) Tj ET
+BT /F1 8 Tf 327 660 Td (City:) Tj ET
+BT /F1 8 Tf 327 645 Td (Sub city:) Tj ET
+BT /F1 8 Tf 435 689 Td (ABEBE KEBEDE) Tj ET
+BT /F1 8 Tf 327 631 Td (Wereda/kebele:) Tj ET
+BT /F1 8 Tf 327 617 Td (VAT Registration No:) Tj ET
+BT /F1 8 Tf 32 559 Td (VAT Invoice No:) Tj ET
+BT /F1 8 Tf 32 545 Td (VAT Registration No:000000) Tj ET
+BT /F1 8 Tf 32 530 Td (VAT Registration Date: 01/01/2000) Tj ET
+BT /F2 10 Tf 251 507 Td (Transaction Information) Tj ET
+BT /F1 8 Tf 32 473 Td (Debit Account) Tj ET
+BT /F1 8 Tf 406 473 Td (0911004321 - ABEBE KEBEDE) Tj ET
+BT /F1 8 Tf 32 458 Td (Credit Account) Tj ET
+BT /F1 8 Tf 406 458 Td (0922006171 - TIGIST ALEMU) Tj ET
+BT /F1 8 Tf 32 435 Td (Receiver Name) Tj ET
+BT /F1 8 Tf 406 435 Td (0922006171 - TIGIST ALEMU) Tj ET
+BT /F1 8 Tf 32 405 Td (Order ID) Tj ET
+BT /F1 8 Tf 406 405 Td (DTS41AB2C90) Tj ET
+BT /F1 8 Tf 32 391 Td (Transaction Status) Tj ET
+BT /F1 8 Tf 406 391 Td (Completed) Tj ET
+BT /F1 8 Tf 32 376 Td (Reference) Tj ET
+BT /F1 8 Tf 406 376 Td (:) Tj ET
+BT /F2 10 Tf 255 348 Td (Transaction Details) Tj ET
+BT /F1 8 Tf 24 320 Td (Receipt Number) Tj ET
+BT /F1 8 Tf 274 320 Td (Transaction Date) Tj ET
+BT /F1 8 Tf 491 320 Td (Amount) Tj ET
+BT /F1 8 Tf 39 293 Td (DTS41AB2C90) Tj ET
+BT /F1 8 Tf 284 293 Td (2026-10-01) Tj ET
+BT /F1 8 Tf 337 293 Td (09:15) Tj ET
+BT /F1 8 Tf 507 293 Td (1250.50) Tj ET
+BT /F1 8 Tf 500 271 Td (1250.50) Tj ET
+BT /F1 8 Tf 500 257 Td (0.00) Tj ET
+BT /F1 8 Tf 500 213 Td (0.00) Tj ET
+BT /F1 8 Tf 500 185 Td (1250.50) Tj ET
+BT /F1 8 Tf 406 271 Td (Paid amount) Tj ET
+BT /F1 8 Tf 406 257 Td (Service Charge) Tj ET
+BT /F1 8 Tf 406 213 Td (VAT) Tj ET
+BT /F1 8 Tf 406 185 Td (Total Paid Amount) Tj ET
+BT /F1 8 Tf 32 170 Td (Total Amount in word) Tj ET
+BT /F1 8 Tf 32 156 Td (Payment Reason) Tj ET
+BT /F1 8 Tf 32 141 Td (Payment Channel) Tj ET
+BT /F1 8 Tf 183 170 Td (One Thousand Two Hundred Fifty ETB and Fifty Cents .) Tj ET
+BT /F1 8 Tf 183 156 Td (Send Money) Tj ET
+BT /F1 8 Tf 183 141 Td (API) Tj ET
+BT /F1 9 Tf 144 111 Td (The Bank you can always rely on!) Tj ET
+BT /F1 7 Tf 124 92 Td (\(c\) 2026 Commercial Bank of Ethiopia. All rights reserved) Tj ET
+BT /F1 8 Tf 327 573 Td (Branch:) Tj ET
+BT /F1 8 Tf 500 199 Td (0.00) Tj ET
+BT /F1 8 Tf 406 199 Td (Tip) Tj ET
+BT /F1 8 Tf 500 240 Td (0.00) Tj ET
+BT /F1 8 Tf 406 242 Td (Disaster Response) Tj ET
+BT /F1 8 Tf 406 231 Td (Fee) Tj ET
+endstream
+endobj
+7 0 obj
+<< /Title (SYNTHETIC CBE Birr receipt - test fixture, not real) /Producer (cheki tests) >>
+endobj
+xref
+0 8
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000251 00000 n 
+0000000348 00000 n 
+0000000450 00000 n 
+0000003547 00000 n 
+trailer
+<< /Size 8 /Root 1 0 R /Info 7 0 R >>
+startxref
+3653
+%%EOF

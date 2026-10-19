@@ -43,12 +43,12 @@ describe("validateContribution", () => {
   });
 
   it("explains which characters a reference may use", () => {
-    const r = validateContribution({ bank: "cbebirr", consent: true, reference: "AB 12?x", phoneOrAccount: "0911000000" });
+    const r = validateContribution({ bank: "zemen", consent: true, reference: "AB 12?x" });
     expect(r.ok).toBe(false);
     if (r.ok) return;
     expect(r.error).toContain("letters and digits");
     expect(r.error).toContain("64");
-    const okRef = validateContribution({ bank: "cbebirr", consent: true, reference: "AB-12_x.y/z", phoneOrAccount: "0911000000" });
+    const okRef = validateContribution({ bank: "zemen", consent: true, reference: "AB-12_x.y/z" });
     expect(okRef.ok).toBe(true);
   });
 });

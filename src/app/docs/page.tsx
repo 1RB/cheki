@@ -8,6 +8,7 @@ import { Icon, ArrowRight01Icon } from "@/components/Icon";
 import { liveProviders } from "@/lib/bank-counts";
 import { BouncyAccordion } from "@/components/motion/bouncy-accordion";
 import { docsFaqs, faqPageJsonLd } from "@/lib/api-faq";
+import { SAMPLE, SAMPLE_QUICKSTART_RESPONSE, SAMPLE_VERIFY_RESPONSE } from "@/lib/sample-receipt";
 
 const sections = [
   { id: "overview", label: "Overview", group: "Getting Started" },
@@ -37,7 +38,7 @@ const cheki = new Cheki(); // 65 s timeout, at most 1 retry
 try {
   const result = await cheki.verify("cbe", "https://mbreciept.cbe.com.et/fHCxExampleRcpt01");
   // Older receipt with only an FT reference (legacy format):
-  // await cheki.verify("cbe", "FT26140P01YB", { accountNumber: "1000560536171" });
+  // await cheki.verify("cbe", "FT26SAMPLE01", { accountNumber: "1000000006171" });
   // verified is the only success signal (a decoded-only BOA QR is success: true, verified: false)
   if (isVerified(result)) console.log(result.amount, result.senderName);
 } catch (err) {
@@ -48,7 +49,7 @@ try {
 // Max 20 receipts per batch (checked before sending)
 const batch = await cheki.verifyBatch([
   { bank: "cbe", reference: "https://mbreciept.cbe.com.et/fHCxExampleRcpt01" },
-  { bank: "telebirr", reference: "DET8FJGUJ4" },
+  { bank: "telebirr", reference: "DET0SAMPLE" },
 ]);
 console.log(batch.verified, batch.failed, batch.total);
 
@@ -64,7 +65,7 @@ from cheki import ChekiClient
 
 with ChekiClient() as cheki:  # 65 s timeout, at most 1 retry
     result = cheki.verify("cbe", "https://mbreciept.cbe.com.et/fHCxExampleRcpt01")
-    # Older receipt, FT reference only (legacy): cheki.verify("cbe", "FT26140P01YB", account_number="1000560536171")
+    # Older receipt, FT reference only (legacy): cheki.verify("cbe", "FT26SAMPLE01", account_number="1000000006171")
     if result.is_verified:  # the only success signal
         print(result.amount, result.sender_name)
     elif result.is_rate_limited:
@@ -74,7 +75,7 @@ with ChekiClient() as cheki:  # 65 s timeout, at most 1 retry
 
     batch = cheki.verify_batch([  # max 20
         {"bank": "cbe", "reference": "https://mbreciept.cbe.com.et/fHCxExampleRcpt01"},
-        {"bank": "telebirr", "reference": "DET8FJGUJ4"},
+        {"bank": "telebirr", "reference": "DET0SAMPLE"},
     ])
     print(batch.verified, batch.failed, batch.total)
 
@@ -92,7 +93,7 @@ client := cheki.NewClient() // 65 s timeout, at most 1 retry
 result, err := client.Verify(ctx, cheki.VerifyOptions{
     Bank:      "cbe",
     Reference: "https://mbreciept.cbe.com.et/fHCxExampleRcpt01",
-    // Older receipt, FT reference only (legacy): Reference: "FT26140P01YB", AccountNumber: "1000560536171"
+    // Older receipt, FT reference only (legacy): Reference: "FT26SAMPLE01", AccountNumber: "1000000006171"
 })
 var apiErr *cheki.APIError
 switch {
@@ -106,7 +107,7 @@ case err == nil && result.IsVerified(): // the only success signal
 
 batch, err := client.VerifyBatch(ctx, []cheki.VerifyOptions{ // max 20
     {Bank: "cbe", Reference: "https://mbreciept.cbe.com.et/fHCxExampleRcpt01"},
-    {Bank: "telebirr", Reference: "DET8FJGUJ4"},
+    {Bank: "telebirr", Reference: "DET0SAMPLE"},
 })
 
 banks, err := client.GetBanks(ctx)   // banks[i].ID
@@ -125,7 +126,7 @@ try {
   final result = await client.verify(
     bank: 'cbe',
     reference: 'https://mbreciept.cbe.com.et/fHCxExampleRcpt01',
-    // Older receipt, FT reference only (legacy): reference: 'FT26140P01YB', accountNumber: '1000560536171'
+    // Older receipt, FT reference only (legacy): reference: 'FT26SAMPLE01', accountNumber: '1000000006171'
   );
   if (result.isVerified) print(result.amount); // the only success signal
 } on ChekiRateLimitException catch (e) {
@@ -136,7 +137,7 @@ try {
 
 final batch = await client.verifyBatch(const [ // max 20
   BatchReceipt(bank: 'cbe', reference: 'https://mbreciept.cbe.com.et/fHCxExampleRcpt01'),
-  BatchReceipt(bank: 'telebirr', reference: 'DET8FJGUJ4'),
+  BatchReceipt(bank: 'telebirr', reference: 'DET0SAMPLE'),
 ]);
 
 client.close();`,
@@ -151,7 +152,7 @@ use Cheki\\ChekiClient;
 $client = new ChekiClient(); // 65 s timeout, at most 1 retry
 
 $result = $client->verify('cbe', 'https://mbreciept.cbe.com.et/fHCxExampleRcpt01');
-// Older receipt, FT reference only (legacy): $client->verify('cbe', 'FT26140P01YB', '1000560536171');
+// Older receipt, FT reference only (legacy): $client->verify('cbe', 'FT26SAMPLE01', '1000000006171');
 
 if ($result->isVerified()) {          // the only success signal
     echo $result->senderName, ' ', $result->amount;
@@ -163,7 +164,7 @@ if ($result->isVerified()) {          // the only success signal
 
 $batch = $client->verifyBatch([       // max 20
     ['bank' => 'cbe', 'reference' => 'https://mbreciept.cbe.com.et/fHCxExampleRcpt01'],
-    ['bank' => 'telebirr', 'reference' => 'DET8FJGUJ4'],
+    ['bank' => 'telebirr', 'reference' => 'DET0SAMPLE'],
 ]);
 
 $banks = $client->getBanks();   // $banks[0]->id
@@ -184,9 +185,9 @@ $health = $client->getHealth(); // $health->banks[0]->status`,
 git clone https://github.com/1RB/cheki.git && cd cheki && npm install
 npm run cli -- info
 npm run cli -- verify cbe https://mbreciept.cbe.com.et/fHCxExampleRcpt01
-npm run cli -- verify cbe FT26140P01YB -a 1000560536171   # older FT receipt (legacy)
-npm run cli -- verify telebirr CHQ0FJ403O
-npm run cli -- verify-qr boa 3cHRaxVjn/pySp...
+npm run cli -- verify cbe FT26SAMPLE01 -a 1000000006171   # older FT receipt (legacy)
+npm run cli -- verify telebirr CHQ0SAMPLE
+npm run cli -- verify-qr boa KPHO0k4YlK/5s6...
 npm run cli -- health
 
 # Or, through the hosted API: pip install cheki && cheki-verify cbe https://mbreciept.cbe.com.et/fHCxExampleRcpt01`,
@@ -197,7 +198,7 @@ npm run cli -- health
 const BATCH_RESPONSE_EXAMPLE = {
   success: true,
   results: [
-    { success: true, verified: true, bank: "Commercial Bank of Ethiopia", bankCode: "cbe", reference: "FT26140P01YB", amount: 20000, currency: "ETB", sourceUrl: "https://mbreciept.cbe.com.et/fHCxExampleRcpt01", durationMs: 7782, cached: false },
+    { success: true, verified: true, bank: "Commercial Bank of Ethiopia", bankCode: "cbe", reference: SAMPLE.reference, amount: SAMPLE.amount, currency: SAMPLE.currency, sourceUrl: "https://mbreciept.cbe.com.et/fHCxExampleRcpt01", durationMs: 7782, cached: false },
     { success: false, error: "[Telebirr] Receipt not found. Check the reference number.", status: 422 },
   ],
   cached: 0,
@@ -210,8 +211,8 @@ const verifyParams = [
   { name: "bank", type: "string", required: "Yes (unless URL)", desc: `Bank id (the id field from GET /api/banks). Live: ${liveProviders.map((b) => b.id).join(", ")}` },
   { name: "reference", type: "string", required: "Yes (unless qrData)", desc: "Receipt link, Receipt ID or transaction reference, in the bank's current format (e.g. a CBE mbreciept.cbe.com.et link, a Dashen FT Ref, a Telebirr transaction number, a ZamZam receipt.zamzambank.com.et link). A bare ZamZam receipt id needs bank \"zamzam\"" },
   { name: "accountNumber", type: "string", required: "BOA (typed reference); older CBE FT receipts", desc: "BOA: the last 5 digits of the account on the receipt, not needed when you send a BOA slip link that ends with them. Last 8 digits only for an older CBE receipt that shows just an FT reference (legacy format); a CBE Receipt ID or link needs none" },
-  { name: "qrData", type: "string", required: "BOA or Telebirr QR", desc: "Raw QR payload: a BOA inter-bank receipt QR (bank \"boa\"), or the Payment QR Code on a Telebirr receipt (bank \"telebirr\" or empty), whose transaction number is checked exactly like a typed one. A QR alone is never proof of payment." },
-  { name: "phoneNumber", type: "string", required: "CBE Birr", desc: "Payer phone number, format: 2519XXXXXXXXX" },
+  { name: "qrData", type: "string", required: "BOA, Telebirr or CBE Birr QR", desc: "Raw QR payload: a BOA inter-bank receipt QR (bank \"boa\"), the Payment QR Code on a Telebirr receipt (bank \"telebirr\" or empty), whose transaction number is checked exactly like a typed one, or the QR on a CBE Birr receipt (bank \"cbebirr\" or empty), a cbepay1.cbe.com.et receipt link whose receipt number and payer phone are used, so no phoneNumber is needed. A QR alone is never proof of payment." },
+  { name: "phoneNumber", type: "string", required: "CBE Birr", desc: "Payer phone number: 09XXXXXXXX, 07XXXXXXXX or 251XXXXXXXXX (sent to CBE Birr as 251XXXXXXXXX)" },
 ];
 
 const batchParams = [
@@ -407,30 +408,16 @@ export default async function DocsPage() {
     "json"
   );
   const verifyLegacyReqHtml = await highlightCode(
-    JSON.stringify({ bank: "cbe", reference: "FT26140P01YB", accountNumber: "1000560536171" }, null, 2),
+    JSON.stringify({ bank: "cbe", reference: SAMPLE.reference, accountNumber: SAMPLE.accountNumber }, null, 2),
     "json"
   );
   const verifyQrReqHtml = await highlightCode(
-    JSON.stringify({ bank: "boa", qrData: "3cHRaxVjn/pySp..." }, null, 2),
+    JSON.stringify({ bank: "boa", qrData: "KPHO0k4YlK/5s6..." }, null, 2),
     "json"
   );
   const verifyRespHtml = await highlightCode(
     JSON.stringify(
-      {
-        success: true,
-        verified: true,
-        bank: "Commercial Bank of Ethiopia",
-        reference: "FT26140P01YB",
-        senderName: "Mr Mohammed Abdulwasi Reshid",
-        senderAccount: "1****1685",
-        receiverName: "SAMI ADIL ZEKARIA",
-        receiverAccount: "1****6171",
-        amount: 20000,
-        currency: "ETB",
-        date: "5/20/2026 7:29:00 PM",
-        durationMs: 1240,
-        sourceUrl: "https://mbreciept.cbe.com.et/fHCxExampleRcpt01",
-      },
+      SAMPLE_VERIFY_RESPONSE,
       null,
       2
     ),
@@ -441,7 +428,7 @@ export default async function DocsPage() {
       {
         receipts: [
           { bank: "cbe", reference: "https://mbreciept.cbe.com.et/fHCxExampleRcpt01" },
-          { bank: "telebirr", reference: "DET8FJGUJ4" },
+          { bank: "telebirr", reference: "DET0SAMPLE" },
         ],
       },
       null,
@@ -535,18 +522,7 @@ docker-compose up -d
   );
   const quickstartRespHtml = await highlightCode(
     JSON.stringify(
-      {
-        success: true,
-        verified: true,
-        bank: "Commercial Bank of Ethiopia",
-        reference: "FT26140P01YB",
-        amount: 20000,
-        currency: "ETB",
-        senderName: "Mr Mohammed Abdulwasi Reshid",
-        receiverName: "SAMI ADIL ZEKARIA",
-        date: "5/20/2026 7:29:00 PM",
-        sourceUrl: "https://mbreciept.cbe.com.et/fHCxExampleRcpt01",
-      },
+      SAMPLE_QUICKSTART_RESPONSE,
       null,
       2
     ),
@@ -731,18 +707,7 @@ docker-compose up -d
               </p>
               <CodeBlock
                 code={JSON.stringify(
-                  {
-                    success: true,
-                    verified: true,
-                    bank: "Commercial Bank of Ethiopia",
-                    reference: "FT26140P01YB",
-                    amount: 20000,
-                    currency: "ETB",
-                    senderName: "Mr Mohammed Abdulwasi Reshid",
-                    receiverName: "SAMI ADIL ZEKARIA",
-                    date: "5/20/2026 7:29:00 PM",
-                    sourceUrl: "https://mbreciept.cbe.com.et/fHCxExampleRcpt01",
-                  },
+                  SAMPLE_QUICKSTART_RESPONSE,
                   null,
                   2
                 )}
@@ -796,7 +761,7 @@ docker-compose up -d
                   A CBE receipt that shows only an FT reference uses the legacy format: send the FT reference and the receiving account (cheki uses the last 8 digits). CBE&apos;s older receipt host is often unreachable, so prefer the receipt link when you have it. Old Dashen Super App links still work: cheki reads the FT Ref from them. Each bank&apos;s formats, current first, are in <code>GET /api/banks</code> and on the <a href="/endpoints">endpoint reference</a>.
                 </p>
                 <CodeBlock
-                  code={JSON.stringify({ bank: "cbe", reference: "FT26140P01YB", accountNumber: "1000560536171" }, null, 2)}
+                  code={JSON.stringify({ bank: "cbe", reference: SAMPLE.reference, accountNumber: SAMPLE.accountNumber }, null, 2)}
                   highlightedHtml={verifyLegacyReqHtml}
                   langLabel="json"
                 />
@@ -813,7 +778,7 @@ docker-compose up -d
               </p>
               <CodeBlock
                 code={JSON.stringify(
-                  { bank: "boa", qrData: "3cHRaxVjn/pySp..." },
+                  { bank: "boa", qrData: "KPHO0k4YlK/5s6..." },
                   null,
                   2
                 )}
@@ -832,21 +797,7 @@ docker-compose up -d
               </p>
               <CodeBlock
                 code={JSON.stringify(
-                  {
-                    success: true,
-                    verified: true,
-                    bank: "Commercial Bank of Ethiopia",
-                    reference: "FT26140P01YB",
-                    senderName: "Mr Mohammed Abdulwasi Reshid",
-                    senderAccount: "1****1685",
-                    receiverName: "SAMI ADIL ZEKARIA",
-                    receiverAccount: "1****6171",
-                    amount: 20000,
-                    currency: "ETB",
-                    date: "5/20/2026 7:29:00 PM",
-                    durationMs: 1240,
-                    sourceUrl: "https://mbreciept.cbe.com.et/fHCxExampleRcpt01",
-                  },
+                  SAMPLE_VERIFY_RESPONSE,
                   null,
                   2
                 )}
@@ -907,7 +858,7 @@ docker-compose up -d
                   {
                     receipts: [
                       { bank: "cbe", reference: "https://mbreciept.cbe.com.et/fHCxExampleRcpt01" },
-                      { bank: "telebirr", reference: "DET8FJGUJ4" },
+                      { bank: "telebirr", reference: "DET0SAMPLE" },
                     ],
                   },
                   null,

@@ -1,5 +1,5 @@
 name: cheki
-description: "Dart client for cheki, the free Ethiopian receipt verifier. Verify CBE, Telebirr, BOA, M-Pesa, Dashen, Awash, Siinqee, eBirr and ZamZam transfer receipts."
+description: "Dart client for cheki, the free Ethiopian receipt verifier. Verify CBE, Telebirr, BOA, M-Pesa, Dashen, Awash, Siinqee, eBirr, ZamZam and CBE Birr transfer receipts."
 version: 1.5.0
 homepage: https://cheki.et
 documentation: https://cheki.et/docs

@@ -221,9 +221,10 @@ describe("site copy: cheki's bank counts are derived", () => {
     expect(src).not.toMatch(/cheki: "\d+"/);
   });
 
-  it("in-development banks are not listed as live in llms.txt", () => {
+  it("in-development banks are not listed as live in llms.txt, and beta banks say beta", () => {
     expect(read("public/llms.txt")).toMatch(/Zemen Bank \(in development\)/);
-    expect(read("public/llms.txt")).toMatch(/CBE Birr \(in development\)/);
+    expect(read("public/llms.txt")).toMatch(/CBE Birr \(beta\)/);
+    expect(read("public/llms.txt")).not.toMatch(/CBE Birr \(in development\)/);
   });
 });
 

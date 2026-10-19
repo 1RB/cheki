@@ -32,7 +32,7 @@ A screenshot of a receipt is only pixels. cheki takes the link, reference, QR co
       </picture>
     </td>
     <td width="64%" valign="top">
-      <a href="https://cheki.et/developers"><img src="docs/assets/developers-api.png" width="100%" alt="The cheki.et developers page: a cURL request to POST /api/verify and its JSON response."></a>
+      <a href="https://cheki.et/developers"><img src="docs/assets/developers-api.png" width="100%" alt="The cheki.et developers page: a cURL request to POST /api/verify."></a>
     </td>
   </tr>
   <tr>
@@ -62,7 +62,7 @@ Confirmed results are cached in memory for 6 hours, so checking the same receipt
 
 ## Supported banks
 
-**9 live banks** (two in beta) and 22 in research. The source of truth is [`src/lib/manifest/banks.json`](src/lib/manifest/banks.json); `GET /api/banks` returns it, including each bank's receipt formats, current first.
+**10 live banks** (three in beta) and 21 in research. The source of truth is [`src/lib/manifest/banks.json`](src/lib/manifest/banks.json); `GET /api/banks` returns it, including each bank's receipt formats, current first.
 
 | Bank | `id` | What to send | Notes |
 |------|------|--------------|-------|
@@ -75,13 +75,14 @@ Confirmed results are cached in memory for 6 hours, so checking the same receipt
 | Siinqee Bank | `siinqee` | eBirr receipt link (`receipt.ebirr.com/siinqee/…`) | Newer `receipts.siinqeebank.com` links are not supported yet |
 | eBirr | `ebirr` | Receipt link (`receipt.ebirr.com/{tenant}/{token}`) | Also reads eBirr links issued for Nib, Wegagen, Ahadu and KAAFI |
 | ZamZam Bank | `zamzam` | Receipt link (`receipt.zamzambank.com.et/receipt/…`) or its numeric id | Beta |
+| CBE Birr | `cbebirr` | Receipt number (TID, e.g. `DTS41AB2C90`) + the payer's phone number, or the receipt QR (it carries both) | Beta. An empty page back usually means the number and phone don't match |
 
 Beta means the bank is live but not yet confirmed with enough real receipts. [cheki.et/endpoints](https://cheki.et/endpoints) shows every format with a dated changelog, and [cheki.et/status](https://cheki.et/status) shows the daily endpoint health check.
 
 <details>
-<summary>In research (22)</summary>
+<summary>In research (21)</summary>
 
-Zemen Bank and CBE Birr have parsers and are waiting on a confirmed real receipt. The others need a receipt and an endpoint: Nib, Wegagen, Ahadu, KAAFI, Abay, Addis International, Amhara, Berhan, Bunna, Enat, Global Bank Ethiopia, Lion International, Oromia International, Hibret, Hijra, Shabelle, Goh Betoch, Tsedey, Gadaa, Rammis.
+Zemen Bank has a parser and is waiting on a confirmed real receipt. The others need a receipt and an endpoint: Nib, Wegagen, Ahadu, KAAFI, Abay, Addis International, Amhara, Berhan, Bunna, Enat, Global Bank Ethiopia, Lion International, Oromia International, Hibret, Hijra, Shabelle, Goh Betoch, Tsedey, Gadaa, Rammis.
 
 </details>
 
@@ -100,9 +101,11 @@ Zemen Bank and CBE Birr have parsers and are waiting on a confirmed real receipt
 | Siinqee | `https://receipt.ebirr.com/siinqee/{TOKEN}` | HTML |
 | eBirr | `https://receipt.ebirr.com/{TENANT}/{TOKEN}` | HTML |
 | ZamZam | `https://receipt-backend.zamzambank.com.et/api/v1/invoice/{RECEIPT_ID}` | JSON |
+| CBE Birr | `https://cbepay1.cbe.com.et/aureceipt?TID={RECEIPT_NUMBER}&PH={PAYER_PHONE}` | PDF |
 
 - **M-Pesa** is geo-blocked and has not been probed by cheki: the envelope shape comes from five other open-source verifiers, and the tests use a synthetic receipt. It stays in beta until a real receipt verifies.
 - **ZamZam**'s service expects an HTTP Basic credential that ZamZam ships in its own public receipt web app (the same precedent as BOA's public QR key). cheki sends it from the parser and never returns it. The record carries the full account number, which cheki masks (first digit and last 4) before any output or cache.
+- **CBE Birr** was verified on 2026-10-16 against two real receipts; the tests use a synthetic PDF with the same layout. The PDF prints the payer's and receiver's phone numbers in full, which cheki masks (09****1234). A receipt number and phone that don't match return an empty "Auto Receipt" page, which cheki reports as could not confirm, never as fake.
 
 </details>
 
@@ -129,13 +132,13 @@ curl -X POST https://cheki.et/api/verify \
   "verified": true,
   "bank": "Commercial Bank of Ethiopia",
   "bankCode": "cbe",
-  "reference": "FT26140P01YB",
+  "reference": "FT26SAMPLE01",
   "amount": 1250.5,
   "currency": "ETB",
   "senderName": "ABEBE KEBEDE",
-  "senderAccount": "1****6171",
+  "senderAccount": "1****4321",
   "receiverName": "TIGIST ALEMU",
-  "receiverAccount": "1****4321",
+  "receiverAccount": "1****6171",
   "date": "2026-10-01",
   "cached": false
 }
@@ -175,8 +178,8 @@ The TypeScript SDK is also on GitHub Packages as [`@1rb/cheki-verify`](https://g
 <summary>What every SDK does the same way</summary>
 
 - **`verified` is the only success signal.** Each SDK has a helper: `isVerified()`, `is_verified`, `IsVerified()`.
-- **QR codes go in `qrData`:** a BOA inter-bank receipt QR (bank `boa`) or the Payment QR code on a Telebirr receipt (bank `telebirr`). The server reads the reference out of the QR and checks it with the bank; a QR on its own never verifies.
-- **Banks are identified by `id`** (`code` is kept as a deprecated alias). `beta` is true for M-Pesa and ZamZam today. Results carry `orderId` when the receipt has one (CBE Birr).
+- **QR codes go in `qrData`:** a BOA inter-bank receipt QR (bank `boa`), the Payment QR code on a Telebirr receipt (bank `telebirr`), or the QR on a CBE Birr receipt (bank `cbebirr`: a receipt link carrying the receipt number and payer phone, so no phone number is needed). The server reads the reference out of the QR and checks it with the bank; a QR on its own never verifies.
+- **Banks are identified by `id`** (`code` is kept as a deprecated alias). `beta` is true for M-Pesa, ZamZam and CBE Birr today. Results carry `orderId` when the receipt has one (CBE Birr).
 - **Batch: at most 20 receipts**, checked before sending. Send long lists in chunks of 15 or fewer (`RECOMMENDED_BATCH_CHUNK`): every receipt also counts toward the verify limit, the whole batch has 60 s on the server, and a batch is never retried.
 - **Typed errors** for 429 (with the `Retry-After` seconds) and 413, and the server's `error` text and `fallbackUrl` (geo-blocked banks) on every API error.
 - **Timeouts and retries:** each attempt waits up to 65 s. At most one retry, and only where it is safe: `GET` requests on a network error or 5xx; verify on a network error or a 429/503 with a `Retry-After` of 60 s or less; a batch only on a 429/503 with a short `Retry-After`. The server makes at most 2 attempts per bank fetch, so one SDK call reaches a bank at most 4 times.
@@ -192,7 +195,7 @@ from cheki import ChekiClient
 
 cheki = ChekiClient()
 result = cheki.verify("cbe", "https://mbreciept.cbe.com.et/fHCxExampleRcpt01")
-# Older receipt, FT reference only: cheki.verify("cbe", "FT26140P01YB", account_number="1000560536171")
+# Older receipt, FT reference only: cheki.verify("cbe", "FT26SAMPLE01", account_number="1000000006171")
 print(result.is_verified, result.amount, result.sender_name)
 ```
 
@@ -262,7 +265,7 @@ A clone of this repo also has a Node CLI that runs the verifier locally (`info`,
 
 ```bash
 npm run cli -- verify cbe https://mbreciept.cbe.com.et/fHCxExampleRcpt01
-npm run cli -- verify telebirr DET8FJGUJ4
+npm run cli -- verify telebirr DET0SAMPLE
 npm run cli -- health
 ```
 

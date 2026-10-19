@@ -90,7 +90,7 @@ def test_telebirr_verify_success():
     <body>
     <div>telebirr receipt</div>
     <div>የከፋይ ስም/Payer Name</div>
-    <div>samuel bayisa urge</div>
+    <div>liya bekele tola</div>
     <div>የገንዘብ ተቀባይ ስም/Credited Party name</div>
     <div>Yabsera Tibebu Chefek</div>
     <div>የከፋይ ቴሌብር ቁ./Payer telebirr no.</div>
@@ -114,7 +114,7 @@ def test_telebirr_verify_success():
     result = verify("telebirr", "DET12345")
     assert result.status.value == "verified"
     assert result.amount == 90.0
-    assert result.sender_name == "samuel bayisa urge"
+    assert result.sender_name == "liya bekele tola"
     assert result.receiver_name == "Yabsera Tibebu Chefek"
     assert result.transaction_date == datetime(2026, 5, 29, 9, 4, 16)
 
@@ -278,12 +278,12 @@ def test_mpesa_parse_lines_is_linear_on_hostile_text():
 @responses.activate
 def test_cbe_receipt_id_is_the_current_format():
     """A Receipt ID goes to the JSON API (no account); the receipt's FT id is not compared to it."""
-    token = "fHCxyV4mg5pRIwEkJO"
+    token = "fHCxExampleRcpt01"
     responses.add(
         responses.GET,
         f"https://mb.cbe.com.et/api/v1/transactions/public/transaction-detail/{token}",
         json={
-            "id": "FT26140P01YB",
+            "id": "FT26SAMPLE01",
             "debitAccountHolder": "Test Payer",
             "creditAccountHolder": "Test Receiver",
             "debitAccountNo": "1****1685",
@@ -319,7 +319,7 @@ def test_cbe_receipt_id_unknown_token_is_not_found():
 
 def test_cbe_ft_reference_without_account_points_at_the_receipt_id():
     with pytest.raises(ValueError, match="Receipt ID"):
-        verify("cbe", "FT26140P01YB")
+        verify("cbe", "FT26SAMPLE01")
 
 
 @responses.activate
@@ -350,7 +350,7 @@ DASHEN_HTML = """<!DOCTYPE html><html><head><script>var x = "<div>";</script></h
 
 @responses.activate
 def test_dashen_current_host_html():
-    ref = "B22WDTI2619100WH"
+    ref = "B22WDTI00SAMPLE1"
     responses.add(
         responses.GET,
         f"https://receipts.dashenbanksc.com/receipt/{ref}",
@@ -371,20 +371,20 @@ def test_dashen_current_host_html():
 def test_dashen_400_is_not_found_and_mismatch_fails():
     responses.add(
         responses.GET,
-        "https://receipts.dashenbanksc.com/receipt/WDTI5186142501962",
+        "https://receipts.dashenbanksc.com/receipt/WDTI0000000000002",
         json={"statusCode": 400, "message": "Transaction not found"},
         status=400,
     )
     with pytest.raises(ReceiptNotFoundError):
-        verify("dashen", "WDTI5186142501962")
+        verify("dashen", "WDTI0000000000002")
     responses.add(
         responses.GET,
-        "https://receipts.dashenbanksc.com/receipt/B22WDTI2619100WH",
+        "https://receipts.dashenbanksc.com/receipt/B22WDTI00SAMPLE1",
         body=DASHEN_HTML.format(ref="B22WDTI0000000XX"),
         status=200,
         content_type="text/html",
     )
-    assert verify("dashen", "B22WDTI2619100WH").status.value == "failed"
+    assert verify("dashen", "B22WDTI00SAMPLE1").status.value == "failed"
 
 
 def test_gate_reference_parity_with_the_server():
@@ -401,11 +401,11 @@ def test_gate_reference_parity_with_the_server():
         )
 
     # Opaque share tokens (server: REFERENCE_IS_OPAQUE_TOKEN) are exempt...
-    assert gate(make("cbe", "FT26140P01YB", "cbe-new"), "fHCxyV4mg5pRIwEkJO").status.value == "verified"
+    assert gate(make("cbe", "FT26SAMPLE01", "cbe-new"), "fHCxExampleRcpt01").status.value == "verified"
     assert gate(make("awash", "123456"), "tok").status.value == "verified"
     # ...every other bank must return the reference that was asked for.
-    assert gate(make("cbe", "FT00000XXXXX"), "FT26140P01YB").status.value == "failed"
-    assert gate(make("cbe", " ft26140p01yb "), "FT26140P01YB").status.value == "verified"
+    assert gate(make("cbe", "FT00000XXXXX"), "FT26SAMPLE01").status.value == "failed"
+    assert gate(make("cbe", " ft26sample01 "), "FT26SAMPLE01").status.value == "verified"
 
 
 def test_supported_banks():
@@ -414,3 +414,100 @@ def test_supported_banks():
     assert "telebirr" in banks
     assert "boa" in banks
     assert "mpesa" in banks
+
+
+# ── CBE Birr (receipt PDF parsed; the empty page is never verified) ──
+
+CBEBIRR_FIXTURES = Path(__file__).resolve().parents[2] / "tests/fixtures/cbebirr"
+CBEBIRR_SHELL = (CBEBIRR_FIXTURES / "empty-shell.html").read_text()
+# Synthetic PDF laid out like the real receipts (built by synthetic-receipt.ts).
+CBEBIRR_PDF = (CBEBIRR_FIXTURES / "synthetic-receipt.pdf").read_bytes()
+CBEBIRR_URL = "https://cbepay1.cbe.com.et/aureceipt?TID=DTS41AB2C90&PH=251911004321"
+
+
+@responses.activate
+def test_cbebirr_reads_the_receipt_pdf_and_masks_phones():
+    responses.add(responses.GET, CBEBIRR_URL, body=CBEBIRR_PDF, status=200, content_type="application/pdf")
+    result = verify("cbebirr", "DTS41AB2C90", phone_number="0911004321")
+    assert result.status.value == "verified"
+    assert result.amount == 1250.5
+    assert result.sender_name == "ABEBE KEBEDE"
+    assert result.sender_account == "09****4321"
+    assert result.receiver_name == "TIGIST ALEMU"
+    assert result.receiver_account == "09****6171"
+    assert result.transaction_date == datetime(2026, 10, 1, 9, 15)
+    assert result.source_url == CBEBIRR_URL
+    fields = result.raw["fields"]
+    assert fields["order_id"] == "DTS41AB2C90"
+    assert fields["transaction_status"] == "Completed"
+    assert (fields["service_fee"], fields["vat"], fields["total_paid"]) == (0.0, 0.0, 1250.5)
+    assert fields["reason"] == "Send Money"
+    assert fields["payment_channel"] == "API"
+    assert fields["amount_in_words"] == "One Thousand Two Hundred Fifty ETB and Fifty Cents"
+    assert "0911004321" not in repr(result.raw) and "0922006171" not in repr(result.raw)
+
+
+@responses.activate
+def test_cbebirr_gate_rejects_a_receipt_for_another_number():
+    url = "https://cbepay1.cbe.com.et/aureceipt?TID=DTS41AB2C91&PH=251911004321"
+    responses.add(responses.GET, url, body=CBEBIRR_PDF, status=200, content_type="application/pdf")
+    assert verify("cbebirr", "DTS41AB2C91", phone_number="0911004321").status.value == "failed"
+
+
+def test_cbebirr_parse_lines_wallet_to_bank_and_wrapped_names():
+    from cheki.banks.cbebirr import mask_number, parse_lines
+
+    lines = [
+        "VAT Registration No:000000",
+        "Debit Account 0911004321 - ABEBE KEBEDE",
+        "Credit Account 1000****6171 - CBE",
+        "Receiver Name Ms Tigist Alemu",
+        "Order ID FT26SAMPLE01",
+        "Transaction Status Completed",
+        "Reference Invoice 42 :",
+        "Receipt Number Transaction Date Amount",
+        "DTS41AB2C90 2026-10-01 09:15 1250.50",
+        "Paid amount 1250.50",
+        "VAT 0.00",
+    ]
+    f = parse_lines(lines)
+    assert (f["reference"], f["order_id"], f["amount"], f["vat"]) == ("DTS41AB2C90", "FT26SAMPLE01", 1250.5, 0.0)
+    assert (f["receiver_name"], f["receiver_account"]) == ("Ms Tigist Alemu", "1000****6171")
+    wrapped = parse_lines(["Credit Account 0922006171 - TIGIST ALEMU", "GEBREMEDHIN", "Order ID DTS41AB2C90"])
+    assert wrapped["receiver_name"] == "TIGIST ALEMU GEBREMEDHIN"
+    assert mask_number("251911004321") == "2519****4321"
+    assert mask_number("1000000006171") == "1********6171"
+
+
+@responses.activate
+def test_cbebirr_empty_shell_is_not_verified():
+    url = "https://cbepay1.cbe.com.et/aureceipt?TID=DTS41AB2C90&PH=251911223344"
+    responses.add(responses.GET, url, body=CBEBIRR_SHELL, status=200, content_type="text/html; charset=utf-8")
+    result = verify("cbebirr", "DTS41AB2C90", phone_number="0911223344")
+    assert result.status.value != "verified"
+    assert result.exists is False
+    assert result.source_url == url
+    assert "empty receipt page" in (result.message or "")
+    assert "may not match" in (result.message or "")
+    assert "response" not in result.raw  # no receipt body is kept
+
+
+@pytest.mark.parametrize(
+    "phone,want",
+    [("251911223344", "251911223344"), ("+251 911 223 344", "251911223344"), ("0711223344", "251711223344"), ("911223344", "251911223344")],
+)
+def test_cbebirr_normalize_phone(phone, want):
+    from cheki.banks.cbebirr import normalize_phone
+
+    assert normalize_phone(phone) == want
+
+
+@pytest.mark.parametrize("phone", ["0811223344", "12345", "2519112233"])
+def test_cbebirr_rejects_bad_phone(phone):
+    with pytest.raises(ValueError):
+        verify("cbebirr", "DTS41AB2C90", phone_number=phone)
+
+
+def test_cbebirr_rejects_bad_reference():
+    with pytest.raises(ValueError):
+        verify("cbebirr", "DTS41AB2C90&PH=1", phone_number="0911223344")

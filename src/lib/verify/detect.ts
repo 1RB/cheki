@@ -143,6 +143,9 @@ export function detectInput(raw: string, opts: { lockedBank?: string; overrideBa
     // link without the 5-digit suffix (trx={reference} only) does not, so
     // the account field opens instead of sending a check that must fail.
     const linkNeedsAccount = Boolean(format && formatNeeds(format, "account") && !hit.accountNumber);
+    // A CBE Birr link or QR carries the payer phone (PH); one without it
+    // opens the phone field instead of sending a check that must fail.
+    const linkNeedsPhone = !linkNeedsAccount && Boolean(format && formatNeeds(format, "phone") && !hit.phoneNumber);
     return finish({
       ...base,
       kind: "url",
@@ -153,7 +156,7 @@ export function detectInput(raw: string, opts: { lockedBank?: string; overrideBa
       format,
       olderFormat: Boolean(format && primary && format !== primary),
       needsAccount: linkNeedsAccount,
-      needsPhone: false,
+      needsPhone: linkNeedsPhone,
       ...(linkNeedsAccount ? { accountDigits: formatAccountDigits(format) ?? bank.accountDigits } : {}),
     });
   }
@@ -196,7 +199,7 @@ export function accountFieldKeys(d: Pick<Detection, "bank">): { label: string; m
 /** What the extra field must hold before a check can go out, or null when it is fine. */
 export function extraFieldProblem(d: Detection, extra: string): "phone" | "account" | null {
   const digits = extra.replace(/\D/g, "");
-  if (d.needsPhone && !/^(251|0)?9\d{8}$/.test(digits)) return "phone";
+  if (d.needsPhone && !/^(251|0)?[79]\d{8}$/.test(digits)) return "phone";
   if (d.needsAccount && digits.length < (d.accountDigits ?? 5)) return "account";
   return null;
 }

@@ -31,11 +31,11 @@ describe("VerdictCard", () => {
   });
 
   it("decoded-only: no amount and no names anywhere in the DOM, JSON panel included", () => {
-    const { container } = card({ success: true, verified: false, decodedOnly: true, bankCode: "boa", reference: "FT252003JZPP", amount: 50000, senderName: "Forged Name", receiverName: "Merchant" });
+    const { container } = card({ success: true, verified: false, decodedOnly: true, bankCode: "boa", reference: "FT25SAMPLE06", amount: 50000, senderName: "Forged Name", receiverName: "Merchant" });
     const html = container.innerHTML;
     expect(container.querySelector(".vc")?.getAttribute("data-tone")).toBe("amber");
     expect(screen.getByText("Decoded from QR, not confirmed with the bank")).toBeTruthy();
-    expect(html).toContain("FT252003JZPP");
+    expect(html).toContain("FT25SAMPLE06");
     expect(html).not.toMatch(/50,?000|Forged Name|Merchant/);
   });
 

@@ -71,8 +71,8 @@ describe("history: BOA QR payloads", () => {
   it("stores the bank's reference, never the QR payload", () => {
     const mem = new Map<string, string>();
     const s = { getItem: (k: string) => mem.get(k) ?? null, setItem: (k: string, v: string) => void mem.set(k, v), removeItem: (k: string) => void mem.delete(k) };
-    const list = addVerified([], { success: true, verified: true, bankCode: "boa", reference: "FT252003JZPP", amount: 5 }, { bank: "boa", ref: QR }, new Date(), s);
-    expect(list[0].ref).toBe("FT252003JZPP");
+    const list = addVerified([], { success: true, verified: true, bankCode: "boa", reference: "FT25SAMPLE06", amount: 5 }, { bank: "boa", ref: QR }, new Date(), s);
+    expect(list[0].ref).toBe("FT25SAMPLE06");
     expect(mem.get(HISTORY_KEY)).not.toContain(QR.slice(0, 40));
   });
   it("drops a stored QR payload on read", () => {

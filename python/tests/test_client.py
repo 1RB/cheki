@@ -32,8 +32,8 @@ def test_verify_success_cbe():
             "verified": True,
             "bank": "Commercial Bank of Ethiopia",
             "bankCode": "cbe",
-            "reference": "FT26140P01YB",
-            "sourceUrl": "https://apps.cbe.com.et:100/?id=FT26140P01YB0536171",
+            "reference": "FT26SAMPLE01",
+            "sourceUrl": "https://apps.cbe.com.et:100/?id=FT26SAMPLE0100006171",
             "senderName": "Mr Payer",
             "senderAccount": "1****1234",
             "receiverName": "Ms Receiver",
@@ -47,7 +47,7 @@ def test_verify_success_cbe():
     )
 
     with ChekiClient() as cheki:
-        result = cheki.verify("cbe", "FT26140P01YB", account_number="1000560536171")
+        result = cheki.verify("cbe", "FT26SAMPLE01", account_number="1000000006171")
 
     assert isinstance(result, ClientVerifyResult)
     assert result.success is True
@@ -72,9 +72,9 @@ def test_verify_telebirr_wallet_fields():
             "verified": True,
             "bank": "Telebirr",
             "bankCode": "telebirr",
-            "reference": "DET8FJGUJ4",
-            "sourceUrl": "https://transactioninfo.ethiotelecom.et/receipt/DET8FJGUJ4",
-            "senderName": "samuel bayisa urge",
+            "reference": "DET0SAMPLE",
+            "sourceUrl": "https://transactioninfo.ethiotelecom.et/receipt/DET0SAMPLE",
+            "senderName": "liya bekele tola",
             "invoiceNumber": "INV123",
             "transactionStatus": "completed",
             "settledAmount": 90.0,
@@ -90,7 +90,7 @@ def test_verify_telebirr_wallet_fields():
     )
 
     with ChekiClient() as cheki:
-        result = cheki.verify("telebirr", "DET8FJGUJ4")
+        result = cheki.verify("telebirr", "DET0SAMPLE")
 
     assert result.is_verified is True
     assert result.invoice_number == "INV123"
@@ -128,16 +128,16 @@ def test_verify_geo_blocked_returns_fallback_url():
         json={
             "success": False,
             "error": "Telebirr endpoint is geo-blocked.",
-            "fallbackUrl": "https://transactioninfo.ethiotelecom.et/receipt/DET8FJGUJ4",
+            "fallbackUrl": "https://transactioninfo.ethiotelecom.et/receipt/DET0SAMPLE",
         },
         status=502,
     )
     with ChekiClient(max_retries=0) as cheki:
-        result = cheki.verify("telebirr", "DET8FJGUJ4")
+        result = cheki.verify("telebirr", "DET0SAMPLE")
 
     assert result.success is False
     assert result.fallback_url == (
-        "https://transactioninfo.ethiotelecom.et/receipt/DET8FJGUJ4"
+        "https://transactioninfo.ethiotelecom.et/receipt/DET0SAMPLE"
     )
 
 
@@ -335,16 +335,16 @@ def test_get_receipt_url():
     """Matches /api/receipt: a CBE Receipt ID needs no account; a legacy CBE FT reference does."""
     cheki = ChekiClient()
     assert cheki.get_receipt_url("cbe", "fHCxExampleRcpt01") == f"{API}/api/receipt?bank=cbe&reference=fHCxExampleRcpt01"
-    url = cheki.get_receipt_url("cbe", "FT26140P01YB", account_number="1000 5605 36171")
-    assert url == f"{API}/api/receipt?bank=cbe&reference=FT26140P01YB&account=1000560536171"
+    url = cheki.get_receipt_url("cbe", "FT26SAMPLE01", account_number="1000 0000 06171")
+    assert url == f"{API}/api/receipt?bank=cbe&reference=FT26SAMPLE01&account=1000000006171"
     assert cheki.get_receipt_url("Zemen", "ZB123") == f"{API}/api/receipt?bank=zemen&reference=ZB123"
     for bank, ref, acct in [
-        ("telebirr", "DET8FJGUJ4", None),
+        ("telebirr", "DET0SAMPLE", None),
         ("constructor", "X1", None),
         ("zemen", "../admin", None),
         ("zemen", "a/b", None),
-        ("cbe", "FT26140P01YB", None),
-        ("cbe", "FT26140P01YB", "1234"),
+        ("cbe", "FT26SAMPLE01", None),
+        ("cbe", "FT26SAMPLE01", "1234"),
     ]:
         try:
             cheki.get_receipt_url(bank, ref, account_number=acct)

@@ -58,6 +58,14 @@ function publicFields(parsed: ParsedReceipt): Omit<ParsedReceipt, "raw" | "verif
   return rest as Omit<ParsedReceipt, "raw" | "verified">;
 }
 
+
+/**
+ * CBE Birr sent an empty receipt page. From cheki's servers that is not proof
+ * of a fake: a real receipt fetched from outside Ethiopia looked the same.
+ */
+export const CBEBIRR_EMPTY_SHELL_MESSAGE =
+  "CBE Birr sent back an empty receipt page, so this could not be confirmed. The receipt number and payer phone number may not match: check both, or open the receipt on CBE Birr's own site.";
+
 export class Verifier {
   /**
    * Verify a single receipt. Never throws: unexpected failures become
@@ -134,12 +142,32 @@ export class Verifier {
       if (looksLikeUrl(qrData)) {
         // Only a receipt link cheki recognises. An unknown URL is rejected,
         // never fetched or used as a reference.
-        if (!isUrl(qrData) || !detectBankFromUrl(qrData)) {
+        const detected = isUrl(qrData) ? detectBankFromUrl(qrData) : null;
+        if (!detected) {
           return err({
             kind: "MISSING_INPUT",
             field: "qrData",
             message: "This QR code is not a receipt link cheki recognises.",
           });
+        }
+        // A CBE Birr receipt QR is its own receipt link: the receipt number
+        // and the payer phone it was issued for (TID + PH). Like a Telebirr
+        // QR it names its bank, and the pair in it wins over a typed phone,
+        // since CBE Birr only answers for the pair that belongs together.
+        if (detected.bank === "cbebirr") {
+          const named = (bank || "").trim().toLowerCase();
+          if (named && named !== "cbebirr") {
+            return err({
+              kind: "MISSING_INPUT",
+              field: "qrData",
+              message: "This QR code is from a CBE Birr receipt. Check it with bank \"cbebirr\".",
+            });
+          }
+          return this.resolve(
+            { bank: "cbebirr", reference: detected.reference, phoneNumber: detected.phoneNumber ?? phoneNumber },
+            startTime,
+            depth + 1
+          );
         }
         return this.resolve({ bank: bank ?? "", reference: qrData, accountNumber, phoneNumber }, startTime, depth + 1);
       }
@@ -258,7 +286,10 @@ export class Verifier {
       }
       const checked = checkPhone(input.phoneNumber);
       if (!checked.ok) return err({ kind: "MISSING_INPUT", field: "phoneNumber", message: checked.message });
-      phone = checked.value;
+      // A bank may need one canonical form (CBE Birr: 251XXXXXXXXX, as in its own links).
+      const canonical = parser.normalizePhone ? parser.normalizePhone(checked.value) : checked;
+      if (!canonical.ok) return err({ kind: "MISSING_INPUT", field: "phoneNumber", message: canonical.message });
+      phone = canonical.value;
     }
 
     // Reference: strict charset, no path or query characters.
@@ -283,7 +314,7 @@ export class Verifier {
     if (!fetchResult.ok) return fetchResult;
 
     const { data, contentType } = fetchResult.value;
-    const parsedResult = await this.parseResponse(manifestEntry, parser, data, contentType, ref);
+    const parsedResult = await this.parseResponse(manifestEntry, parser, data, contentType, ref, fallbackUrl);
     if (!parsedResult.ok) return parsedResult;
     const parsed = parsedResult.value;
 
@@ -312,7 +343,8 @@ export class Verifier {
     parser: RegisteredParser,
     data: string | Buffer,
     contentType: string,
-    requestedReference: string
+    requestedReference: string,
+    receiptUrl?: string
   ): Promise<Result<ParsedReceipt, ChekiError>> {
     // Keyed by the parser, not the bank: one bank can have a PDF format
     // (CBE legacy) and a JSON one (CBE current).
@@ -353,22 +385,31 @@ export class Verifier {
       }
     }
 
-    // CBE Birr: a real receipt may come back as a PDF or as HTML (the body is
-    // read as bytes, under the PDF size cap); an unknown TID/PH is an empty
-    // Telerik shell. Either way the result still goes through the gate.
+    // CBE Birr: a real receipt is a PDF (confirmed 2026-10-16); the body is
+    // read as bytes, under the PDF size cap, and HTML is still parsed in case
+    // the bank changes format. A TID/PH pair that does not match is an empty
+    // Telerik shell. A typo in the phone gives the same page as a fake
+    // receipt, so the shell is "could not confirm" (with a hint to check the
+    // pair and CBE Birr's own receipt link), never "not found". A parsed
+    // receipt still goes through the gate.
     if (id === "cbebirr") {
       const buf = Buffer.isBuffer(data) ? data : Buffer.from(data);
       const isPdf = CBEBirrParser.isPdf(buf);
       const html = isPdf ? "" : buf.toString("utf8");
       const parsed = CBEBirrParser.parseText(isPdf ? await CBEBirrParser.extractPdfText(buf) : CBEBirrParser.htmlToText(html));
       if (!parsed.verified) {
+        if (html && CBEBirrParser.isEmptyShell(html)) {
+          return err({
+            kind: "ENDPOINT_ERROR",
+            bank: manifestEntry.name,
+            message: CBEBIRR_EMPTY_SHELL_MESSAGE,
+            ...(receiptUrl ? { fallbackUrl: receiptUrl } : {}),
+          });
+        }
         return err({
           kind: "EXTRACTION_ERROR",
           bank: manifestEntry.name,
-          message:
-            html && CBEBirrParser.isEmptyShell(html)
-              ? "CBE Birr returned an empty receipt. Check the receipt number and the payer phone number."
-              : "Could not read the CBE Birr receipt. Check the receipt number and the payer phone number.",
+          message: "Could not read the CBE Birr receipt. Check the receipt number and the payer phone number.",
         });
       }
       return ok(parsed);
