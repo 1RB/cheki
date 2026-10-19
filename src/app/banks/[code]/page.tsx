@@ -13,6 +13,7 @@ import { bankPageContent, hasGeoSection, receiptTypeLabel, requiredInfoIntro } f
 import { articles } from "@/lib/guides";
 import { BANK_HEADING } from "@/lib/seo-redirects";
 import { withArticle } from "@/lib/indefinite-article";
+import { SwiftCode } from "@/components/bank/SwiftCode";
 
 export function generateStaticParams() {
   return banks.map((b) => ({ code: b.code }));
@@ -274,6 +275,14 @@ export default async function BankPage({ params }: { params: Promise<{ code: str
                     <li key={g.slug}><Link href={`/guides/${g.slug}`}>{g.title}</Link></li>
                   ))}
                 </ul>
+              </>
+            )}
+
+            {bank.swift && (
+              <>
+                <h2 id="swift-code">{bank.shortName} SWIFT code</h2>
+                <p>The head-office SWIFT (BIC) code for {bank.name}, used with the account number for transfers from abroad. Reference only: confirm transfer details with {bank.shortName}.</p>
+                <SwiftCode swift={bank.swift} bankShortName={bank.shortName} />
               </>
             )}
 
