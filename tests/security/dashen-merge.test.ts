@@ -19,7 +19,7 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const REF = "B22WDTI2619100WH";
+const REF = "B22WDTI00SAMPLE1";
 
 function receiptHtml(opts: { ref?: string; amount?: string; extra?: string } = {}): string {
   return `<!DOCTYPE html><html><head><script>var x = "<div>";</script></head><body>
@@ -101,7 +101,7 @@ describe("Dashen 400 = not found, never retried", () => {
         })
     );
     vi.stubGlobal("fetch", fetchMock);
-    const r = await new Verifier().verify({ bank: "dashen", reference: "WDTI5186142501962" });
+    const r = await new Verifier().verify({ bank: "dashen", reference: "WDTI0000000000002" });
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(r.ok).toBe(false);
     if (!r.ok) {

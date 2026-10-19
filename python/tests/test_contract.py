@@ -72,7 +72,7 @@ def test_defaults_match_contract():
 @responses.activate
 def test_verified():
     add("verify_verified")
-    r = client().verify("cbe", "FT26140P01YB", account_number="1000560536171")
+    r = client().verify("cbe", "FT26SAMPLE01", account_number="1000000006171")
     assert r.is_verified and r.amount == 1250.5 and r.cached is False and r.http_status == 200
 
 
@@ -93,7 +93,7 @@ def test_parsed_is_never_verified():
 def test_batch():
     add("batch_mixed")
     b = client().verify_batch([
-        {"bank": "cbe", "reference": "A1", "accountNumber": "1000560536171"},
+        {"bank": "cbe", "reference": "A1", "accountNumber": "1000000006171"},
         {"bank": "boa", "qr_data": "q"},
         {"bank": "telebirr", "reference": "B2"},
     ])
@@ -210,7 +210,7 @@ def test_get_banks_raises_payload_too_large():
 @responses.activate
 def test_502_geo_blocked_not_retried_with_fallback():
     add("error_502_geo_blocked", extra_headers={"Retry-After": "0"})
-    r = client().verify("telebirr", "CHQ0FJ403O")
+    r = client().verify("telebirr", "CHQ0SAMPLE")
     assert r.fallback_url.startswith("https://transactioninfo")
     assert r.http_status == 502
     assert len(responses.calls) == 1
@@ -218,9 +218,9 @@ def test_502_geo_blocked_not_retried_with_fallback():
 
 def _call_for(path: str, c: ChekiClient):
     if path == "/api/verify":
-        return lambda: c.verify("telebirr", "CHQ0FJ403O")
+        return lambda: c.verify("telebirr", "CHQ0SAMPLE")
     if path == "/api/verify/batch":
-        return lambda: c.verify_batch([{"bank": "telebirr", "reference": "CHQ0FJ403O"}])
+        return lambda: c.verify_batch([{"bank": "telebirr", "reference": "CHQ0SAMPLE"}])
     if path == "/api/banks":
         return c.get_banks
     return c.get_health

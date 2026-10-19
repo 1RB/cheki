@@ -102,7 +102,7 @@ describe("URL detector host matching (review M6)", () => {
 
   it("still detects real hosts and subdomains", () => {
     expect(detectBankFromUrl("https://transactioninfo.ethiotelecom.et/receipt/DET1234567")?.bank).toBe("telebirr");
-    expect(detectBankFromUrl("https://awashpay.awashbank.com:8225/-2KDL95Z0NR-4U61O6")?.bank).toBe("awash");
+    expect(detectBankFromUrl("https://awashpay.awashbank.com:8225/-2KDL95XE81-4U0000")?.bank).toBe("awash");
     expect(detectBankFromUrl("https://cbepay1.cbe.com.et/aureceipt?TID=X1&PH=251911")?.bank).toBe("cbebirr");
   });
 
@@ -112,7 +112,7 @@ describe("URL detector host matching (review M6)", () => {
       expect(looksLikeUrl(s), s).toBe(true);
       expect(detectBankFromUrl(s), s).toBeNull();
     }
-    expect(looksLikeUrl("FT26140P01YB")).toBe(false);
+    expect(looksLikeUrl("FT26SAMPLE01")).toBe(false);
   });
 });
 

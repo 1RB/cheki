@@ -28,7 +28,7 @@ void main() async {
 
     print('\n=== Single Verification ===');
     // CBE: the receipt link or Receipt ID. Older FT-only receipts (legacy) also
-    // need the account: reference: 'FT26140P01YB', accountNumber: '1000560536171'.
+    // need the account: reference: 'FT26SAMPLE01', accountNumber: '1000000006171'.
     final result = await client.verify(bank: 'cbe', reference: 'https://mbreciept.cbe.com.et/fHCxExampleRcpt01');
     if (result.isVerified) {
       print('VERIFIED: ${result.senderName} sent ${result.amount} ${result.currency} to ${result.receiverName}');
@@ -39,7 +39,7 @@ void main() async {
     print('\n=== Batch Verification (max ${ChekiClient.maxBatchSize}) ===');
     final batch = await client.verifyBatch(const [
       BatchReceipt(bank: 'cbe', reference: 'https://mbreciept.cbe.com.et/fHCxExampleRcpt01'),
-      BatchReceipt(bank: 'telebirr', reference: 'CHQ0FJ403O'),
+      BatchReceipt(bank: 'telebirr', reference: 'CHQ0SAMPLE'),
     ]);
     print('Verified ${batch.verified}/${batch.total}, failed ${batch.failed}');
     for (final r in batch.results) {

@@ -37,26 +37,26 @@ describe("analytics url", () => {
   it("reports A/B share links as /ab/{arm}, query dropped", () => {
     for (const arm of OG_ARMS) {
       expect(map(`${O}/?v=${arm}`)).toBe(`${O}/ab/${arm}`);
-      expect(map(`${O}/?v=${arm}&trx=FT26140P01YB#x`)).toBe(`${O}/ab/${arm}`);
+      expect(map(`${O}/?v=${arm}&trx=FT26SAMPLE01#x`)).toBe(`${O}/ab/${arm}`);
       expect(map(`${O}/ab/${arm}`)).toBe(`${O}/ab/${arm}`);
-      expect(map(`${O}/ab/${arm}?ref=FT26140P01YB`)).toBe(`${O}/ab/${arm}`);
+      expect(map(`${O}/ab/${arm}?ref=FT26SAMPLE01`)).toBe(`${O}/ab/${arm}`);
     }
     // Not an arm: plain home (no rewrite happens), or an unknown /ab page.
     expect(map(`${O}/?v=current`)).toBe(`${O}/`);
-    expect(map(`${O}/?v=FT26140P01YB`)).toBe(`${O}/`);
+    expect(map(`${O}/?v=FT26SAMPLE01`)).toBe(`${O}/`);
     expect(map(`${O}/ab/current`)).toBeNull();
     expect(map(`${O}/ab/a/b`)).toBeNull();
   });
 
   it("strips every query string and fragment", () => {
-    expect(map(`${O}/?trx=FT26140P01YB&bank=boa`)).toBe(`${O}/`);
+    expect(map(`${O}/?trx=FT26SAMPLE01&bank=boa`)).toBe(`${O}/`);
     expect(map(`${O}/?ref=https%3A%2F%2Fmbreciept.cbe.com.et%2FfHCxExampleRcpt01`)).toBe(`${O}/`);
-    expect(map(`${O}/banks/cbe?reference=FT26140P01YB&accountNumber=1000560536171`)).toBe(`${O}/banks/cbe`);
+    expect(map(`${O}/banks/cbe?reference=FT26SAMPLE01&accountNumber=1000000006171`)).toBe(`${O}/banks/cbe`);
     expect(map(`${O}/banks#cbe`)).toBe(`${O}/banks`);
     expect(map(`${O}/docs?x=1#verify`)).toBe(`${O}/docs`);
     const g = articles[0].slug;
     expect(map(`${O}/guides/${g}?utm_source=telegram`)).toBe(`${O}/guides/${g}`);
-    for (const u of STATIC_PAGES) expect(map(`${O}${u}?id=DET8FJGUJ4#top`)).toBe(`${O}${u}`);
+    for (const u of STATIC_PAGES) expect(map(`${O}${u}?id=DET0SAMPLE#top`)).toBe(`${O}${u}`);
   });
 
   it("keeps the deployment's own origin", () => {
@@ -73,13 +73,13 @@ describe("analytics url", () => {
 
   it("drops paths that are not cheki pages, so a reference in the path never leaves", () => {
     for (const p of [
-      "/FT26140P01YB",
-      "/DET8FJGUJ4",
+      "/FT26SAMPLE01",
+      "/DET0SAMPLE",
       "/fHCxExampleRcpt01",
-      "/banks/FT26140P01YB",
-      "/banks/cbe/FT26140P01YB",
-      "/guides/FT26140P01YB",
-      "/verify/FT26140P01YB",
+      "/banks/FT26SAMPLE01",
+      "/banks/cbe/FT26SAMPLE01",
+      "/guides/FT26SAMPLE01",
+      "/verify/FT26SAMPLE01",
       "/slip/",
       "/banks/",
       "/Banks",

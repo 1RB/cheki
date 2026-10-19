@@ -69,13 +69,13 @@ final class ChekiClientTest extends TestCase
 
     public function testVerifyVerified(): void
     {
-        $r = $this->client(self::fx('verify_verified'))->verify('cbe', 'FT26140P01YB', '1000560536171');
+        $r = $this->client(self::fx('verify_verified'))->verify('cbe', 'FT26SAMPLE01', '1000000006171');
         self::assertTrue($r->isVerified());
         self::assertSame(1250.5, $r->amount);
         self::assertFalse($r->cached);
         self::assertSame(200, $r->httpStatus);
         self::assertSame('https://api.test/api/verify', $this->calls[0]['url']);
-        self::assertSame(['bank' => 'cbe', 'reference' => 'FT26140P01YB', 'accountNumber' => '1000560536171'], json_decode((string) $this->calls[0]['body'], true));
+        self::assertSame(['bank' => 'cbe', 'reference' => 'FT26SAMPLE01', 'accountNumber' => '1000000006171'], json_decode((string) $this->calls[0]['body'], true));
     }
 
     public function testDecodedOnlyIsNotVerified(): void
@@ -90,7 +90,7 @@ final class ChekiClientTest extends TestCase
     public function testBatch(): void
     {
         $b = $this->client(self::fx('batch_mixed'))->verifyBatch([
-            ['bank' => 'cbe', 'reference' => 'A1', 'accountNumber' => '1000560536171'],
+            ['bank' => 'cbe', 'reference' => 'A1', 'accountNumber' => '1000000006171'],
             ['bank' => 'boa', 'qrData' => 'q'],
             ['bank' => 'telebirr', 'reference' => 'B2'],
         ]);
@@ -198,7 +198,7 @@ final class ChekiClientTest extends TestCase
 
     public function testGeoBlocked502NotRetried(): void
     {
-        $r = $this->client(self::fx('error_502_geo_blocked', ['retry-after' => '0']))->verify('telebirr', 'CHQ0FJ403O');
+        $r = $this->client(self::fx('error_502_geo_blocked', ['retry-after' => '0']))->verify('telebirr', 'CHQ0SAMPLE');
         self::assertSame(502, $r->httpStatus);
         self::assertStringStartsWith('https://transactioninfo', (string) $r->fallbackUrl);
         self::assertCount(1, $this->calls);
@@ -235,10 +235,10 @@ final class ChekiClientTest extends TestCase
         try {
             switch ($case['path']) {
                 case '/api/verify':
-                    $status = $c->verify('telebirr', 'CHQ0FJ403O')->httpStatus;
+                    $status = $c->verify('telebirr', 'CHQ0SAMPLE')->httpStatus;
                     break;
                 case '/api/verify/batch':
-                    $status = $c->verifyBatch([['bank' => 'telebirr', 'reference' => 'CHQ0FJ403O']])->httpStatus;
+                    $status = $c->verifyBatch([['bank' => 'telebirr', 'reference' => 'CHQ0SAMPLE']])->httpStatus;
                     break;
                 case '/api/banks':
                     $c->getBanks();

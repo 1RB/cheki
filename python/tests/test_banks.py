@@ -90,7 +90,7 @@ def test_telebirr_verify_success():
     <body>
     <div>telebirr receipt</div>
     <div>የከፋይ ስም/Payer Name</div>
-    <div>samuel bayisa urge</div>
+    <div>liya bekele tola</div>
     <div>የገንዘብ ተቀባይ ስም/Credited Party name</div>
     <div>Yabsera Tibebu Chefek</div>
     <div>የከፋይ ቴሌብር ቁ./Payer telebirr no.</div>
@@ -114,7 +114,7 @@ def test_telebirr_verify_success():
     result = verify("telebirr", "DET12345")
     assert result.status.value == "verified"
     assert result.amount == 90.0
-    assert result.sender_name == "samuel bayisa urge"
+    assert result.sender_name == "liya bekele tola"
     assert result.receiver_name == "Yabsera Tibebu Chefek"
     assert result.transaction_date == datetime(2026, 5, 29, 9, 4, 16)
 
@@ -278,12 +278,12 @@ def test_mpesa_parse_lines_is_linear_on_hostile_text():
 @responses.activate
 def test_cbe_receipt_id_is_the_current_format():
     """A Receipt ID goes to the JSON API (no account); the receipt's FT id is not compared to it."""
-    token = "fHCxyV4mg5pRIwEkJO"
+    token = "fHCxExampleRcpt01"
     responses.add(
         responses.GET,
         f"https://mb.cbe.com.et/api/v1/transactions/public/transaction-detail/{token}",
         json={
-            "id": "FT26140P01YB",
+            "id": "FT26SAMPLE01",
             "debitAccountHolder": "Test Payer",
             "creditAccountHolder": "Test Receiver",
             "debitAccountNo": "1****1685",
@@ -319,7 +319,7 @@ def test_cbe_receipt_id_unknown_token_is_not_found():
 
 def test_cbe_ft_reference_without_account_points_at_the_receipt_id():
     with pytest.raises(ValueError, match="Receipt ID"):
-        verify("cbe", "FT26140P01YB")
+        verify("cbe", "FT26SAMPLE01")
 
 
 @responses.activate
@@ -350,7 +350,7 @@ DASHEN_HTML = """<!DOCTYPE html><html><head><script>var x = "<div>";</script></h
 
 @responses.activate
 def test_dashen_current_host_html():
-    ref = "B22WDTI2619100WH"
+    ref = "B22WDTI00SAMPLE1"
     responses.add(
         responses.GET,
         f"https://receipts.dashenbanksc.com/receipt/{ref}",
@@ -371,20 +371,20 @@ def test_dashen_current_host_html():
 def test_dashen_400_is_not_found_and_mismatch_fails():
     responses.add(
         responses.GET,
-        "https://receipts.dashenbanksc.com/receipt/WDTI5186142501962",
+        "https://receipts.dashenbanksc.com/receipt/WDTI0000000000002",
         json={"statusCode": 400, "message": "Transaction not found"},
         status=400,
     )
     with pytest.raises(ReceiptNotFoundError):
-        verify("dashen", "WDTI5186142501962")
+        verify("dashen", "WDTI0000000000002")
     responses.add(
         responses.GET,
-        "https://receipts.dashenbanksc.com/receipt/B22WDTI2619100WH",
+        "https://receipts.dashenbanksc.com/receipt/B22WDTI00SAMPLE1",
         body=DASHEN_HTML.format(ref="B22WDTI0000000XX"),
         status=200,
         content_type="text/html",
     )
-    assert verify("dashen", "B22WDTI2619100WH").status.value == "failed"
+    assert verify("dashen", "B22WDTI00SAMPLE1").status.value == "failed"
 
 
 def test_gate_reference_parity_with_the_server():
@@ -401,11 +401,11 @@ def test_gate_reference_parity_with_the_server():
         )
 
     # Opaque share tokens (server: REFERENCE_IS_OPAQUE_TOKEN) are exempt...
-    assert gate(make("cbe", "FT26140P01YB", "cbe-new"), "fHCxyV4mg5pRIwEkJO").status.value == "verified"
+    assert gate(make("cbe", "FT26SAMPLE01", "cbe-new"), "fHCxExampleRcpt01").status.value == "verified"
     assert gate(make("awash", "123456"), "tok").status.value == "verified"
     # ...every other bank must return the reference that was asked for.
-    assert gate(make("cbe", "FT00000XXXXX"), "FT26140P01YB").status.value == "failed"
-    assert gate(make("cbe", " ft26140p01yb "), "FT26140P01YB").status.value == "verified"
+    assert gate(make("cbe", "FT00000XXXXX"), "FT26SAMPLE01").status.value == "failed"
+    assert gate(make("cbe", " ft26sample01 "), "FT26SAMPLE01").status.value == "verified"
 
 
 def test_supported_banks():

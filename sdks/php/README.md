@@ -43,8 +43,8 @@ Signature: `verify(string $bank, string $reference, ?string $accountNumber = nul
 ```php
 $batch = $client->verifyBatch([
     ['bank' => 'cbe', 'reference' => 'https://mbreciept.cbe.com.et/fHCxExampleRcpt01'],
-    ['bank' => 'telebirr', 'reference' => 'CHQ0FJ403O'],
-    ['bank' => 'boa', 'qrData' => '3cHRaxVjn/pySp...'],
+    ['bank' => 'telebirr', 'reference' => 'CHQ0SAMPLE'],
+    ['bank' => 'boa', 'qrData' => 'KPHO0k4YlK/5s6...'],
 ]);
 
 echo "{$batch->verified}/{$batch->total} verified, {$batch->failed} not, {$batch->cached} from cache\n";
@@ -90,8 +90,8 @@ Only `cbe`, `zemen`, `dashen` and `zamzam`; anything else throws `InvalidArgumen
 Older CBE receipts that only show an FT reference still work as a legacy format: pass the receiving account (at least the last 8 digits). CBE's older receipt service is often unreachable, so prefer the receipt link when you have it.
 
 ```php
-$result = $client->verify('cbe', 'FT26140P01YB', '1000560536171');
-$url = $client->getReceiptUrl('cbe', 'FT26140P01YB', '1000560536171'); // the bank's PDF
+$result = $client->verify('cbe', 'FT26SAMPLE01', '1000000006171');
+$url = $client->getReceiptUrl('cbe', 'FT26SAMPLE01', '1000000006171'); // the bank's PDF
 ```
 
 ## Timeouts and retries

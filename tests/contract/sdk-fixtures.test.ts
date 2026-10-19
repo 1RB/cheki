@@ -117,7 +117,7 @@ describe("SDK contract fixtures match the route handlers", () => {
   // is read from the route's own 400 message for an unsupported bank.
   it("receiptDownloadBanks matches the banks /api/receipt serves", async () => {
     const r = await receiptGET(
-      new NextRequest("https://cheki.et/api/receipt?bank=telebirr&reference=CHQ0FJ403O", { headers: freshIp() })
+      new NextRequest("https://cheki.et/api/receipt?bank=telebirr&reference=CHQ0SAMPLE", { headers: freshIp() })
     );
     expect(r.status).toBe(400);
     const { error } = await r.json();
@@ -155,7 +155,7 @@ describe("SDK contract fixtures match the route handlers", () => {
     const f = fx("verify_verified");
     const ref = uniqueRef();
     vi.spyOn(Verifier.prototype, "verify").mockResolvedValue(ok(receiptOf(f.body, ref)));
-    const r = await verifyPOST(jsonReq("/api/verify", { bank: "cbe", reference: ref, accountNumber: "1000560536171" }));
+    const r = await verifyPOST(jsonReq("/api/verify", { bank: "cbe", reference: ref, accountNumber: "1000000006171" }));
     expect(r.status).toBe(f.status);
     expect(r.headers.get("x-cheki-cache")).toBe("miss");
     const body = await r.json();
@@ -169,7 +169,7 @@ describe("SDK contract fixtures match the route handlers", () => {
     const f = fx("verify_cached");
     const ref = uniqueRef();
     vi.spyOn(Verifier.prototype, "verify").mockResolvedValue(ok(receiptOf(fx("verify_verified").body, ref)));
-    const input = { bank: "cbe", reference: ref, accountNumber: "1000560536171" };
+    const input = { bank: "cbe", reference: ref, accountNumber: "1000000006171" };
     await verifyPOST(jsonReq("/api/verify", input));
     const r = await verifyPOST(jsonReq("/api/verify", input));
     expect(r.headers.get("x-cheki-cache")).toBe("hit");
@@ -223,7 +223,7 @@ describe("SDK contract fixtures match the route handlers", () => {
     const r = await batchPOST(
       jsonReq("/api/verify/batch", {
         receipts: [
-          { bank: "cbe", reference: uniqueRef(), accountNumber: "1000560536171" },
+          { bank: "cbe", reference: uniqueRef(), accountNumber: "1000000006171" },
           { bank: "boa", qrData: "y".repeat(40) },
           { bank: "telebirr", reference: uniqueRef() },
         ],
@@ -326,7 +326,7 @@ describe("SDK contract fixtures match the route handlers", () => {
         fallbackUrl: f.body.fallbackUrl as string,
       })
     );
-    const r = await verifyPOST(jsonReq("/api/verify", { bank: "telebirr", reference: "CHQ0FJ403O" }));
+    const r = await verifyPOST(jsonReq("/api/verify", { bank: "telebirr", reference: "CHQ0SAMPLE" }));
     expect(r.status).toBe(f.status);
     expect(await r.json()).toEqual(f.body);
   });

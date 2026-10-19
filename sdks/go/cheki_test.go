@@ -109,7 +109,7 @@ func TestDefaults(t *testing.T) {
 func TestVerifyVerified(t *testing.T) {
 	c := loadContract(t)
 	client, _ := serve(t, c.Cases["verify_verified"])
-	r, err := client.Verify(context.Background(), VerifyOptions{Bank: "cbe", Reference: "FT26140P01YB", AccountNumber: "1000560536171"})
+	r, err := client.Verify(context.Background(), VerifyOptions{Bank: "cbe", Reference: "FT26SAMPLE01", AccountNumber: "1000000006171"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -145,7 +145,7 @@ func TestVerifyBatch(t *testing.T) {
 	c := loadContract(t)
 	client, _ := serve(t, c.Cases["batch_mixed"])
 	b, err := client.VerifyBatch(context.Background(), []VerifyOptions{
-		{Bank: "cbe", Reference: "A1", AccountNumber: "1000560536171"},
+		{Bank: "cbe", Reference: "A1", AccountNumber: "1000000006171"},
 		{Bank: "boa", QRData: "q"},
 		{Bank: "telebirr", Reference: "B2"},
 	})
@@ -265,7 +265,7 @@ func TestLongRetryAfterIsNotWaited(t *testing.T) {
 func TestGeoBlocked502NotRetried(t *testing.T) {
 	c := loadContract(t)
 	client, calls := serve(t, withRetryAfter(c.Cases["error_502_geo_blocked"], "0"))
-	_, err := client.Verify(context.Background(), VerifyOptions{Bank: "telebirr", Reference: "CHQ0FJ403O"})
+	_, err := client.Verify(context.Background(), VerifyOptions{Bank: "telebirr", Reference: "CHQ0SAMPLE"})
 	var apiErr *APIError
 	if !errors.As(err, &apiErr) || !strings.HasPrefix(apiErr.FallbackURL, "https://transactioninfo") {
 		t.Fatalf("got %v", err)
@@ -306,9 +306,9 @@ func TestSharedRetryCases(t *testing.T) {
 			var err error
 			switch rc.Path {
 			case "/api/verify":
-				_, err = client.Verify(ctx, VerifyOptions{Bank: "telebirr", Reference: "CHQ0FJ403O"})
+				_, err = client.Verify(ctx, VerifyOptions{Bank: "telebirr", Reference: "CHQ0SAMPLE"})
 			case "/api/verify/batch":
-				_, err = client.VerifyBatch(ctx, []VerifyOptions{{Bank: "telebirr", Reference: "CHQ0FJ403O"}})
+				_, err = client.VerifyBatch(ctx, []VerifyOptions{{Bank: "telebirr", Reference: "CHQ0SAMPLE"}})
 			case "/api/banks":
 				_, err = client.GetBanks(ctx)
 			default:
