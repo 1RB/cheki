@@ -337,7 +337,7 @@
       "For BOA-to-BOA receipts: paste the BOA slip link, or enter the transaction reference and the last 5 digits of the account on the receipt",
       "cheki calls BOA's public JSON API and returns structured payment data in 1-2 seconds",
       "For inter-bank transfers (BOA to CBE/Dashen/etc.): scan the QR code on the receipt with cheki's camera scanner or upload a screenshot",
-      "cheki auto-detects BOA QR payloads and decrypts them server-side: the QR supplies the reference and receiving account, and BOA confirms the receipt. No account number to type. If BOA cannot be reached, the result is shown as decoded only, not verified."
+      "cheki auto-detects BOA QR payloads and decrypts them server-side: the QR supplies the reference and both accounts, and BOA confirms the receipt (cheki asks under the receiving account, then under the source account if BOA has no record there). No account number to type. If BOA cannot be reached, the result is shown as decoded only, not verified."
     ],
     "useCases": [
       "Merchants verifying BOA transfers at checkout",

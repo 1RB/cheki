@@ -79,6 +79,69 @@ describe("BOA QR", () => {
     );
   });
 
+  it("when BOA has no record under the receiver, it asks once more under the QR's source account", async () => {
+    const qr = mintQr("1000000012345,PAYER,500.00,FT26999ABCDE,21/9/2026  11:37:45,1000099999999,SHOP");
+    const notFound = JSON.stringify({ body: [{ "Payer's Name": "Invalid reference number" }] });
+    const found = JSON.stringify({
+      body: [{
+        "Source Account Name": "PAYER",
+        "Source Account": "1******45",
+        "Receiver's Name": "SHOP",
+        "Receiver's Account": "1*****99",
+        "Transferred Amount": "500.00",
+        "Transaction Date": "21/09/26 11:37",
+        "Transaction Reference": "FT26999ABCDE",
+      }],
+    });
+    const fetchMock = vi.fn(async (url: unknown) =>
+      new Response(String(url).endsWith("12345") ? found : notFound, { status: 200 })
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const r = await v.verify({ bank: "boa", qrData: qr });
+    expect(r.ok && r.value.verified).toBe(true);
+    const urls = fetchMock.mock.calls.map((c) => String((c as unknown[])[0]));
+    expect(urls).toEqual([
+      "https://cs.bankofabyssinia.com/api/onlineSlip/getDetails/?id=FT26999ABCDE99999",
+      "https://cs.bankofabyssinia.com/api/onlineSlip/getDetails/?id=FT26999ABCDE12345",
+    ]);
+  });
+
+  it("the source-account retry still fails a QR whose amount differs from BOA's record", async () => {
+    const qr = mintQr("1000000012345,PAYER,999999.00,FT26999ABCDE,2026-10-11,1000099999999,SHOP");
+    vi.stubGlobal("fetch", vi.fn(async (url: unknown) =>
+      new Response(
+        String(url).endsWith("12345")
+          ? bankBody("FT26999ABCDE", "500.00")
+          : JSON.stringify({ body: [{ "Payer's Name": "Invalid reference number" }] }),
+        { status: 200 }
+      )
+    ));
+    const r = await v.verify({ bank: "boa", qrData: qr });
+    expect(r.ok).toBe(false);
+  });
+
+  it("no source-account retry when the source account is masked, and BOA's no stands", async () => {
+    const fetchMock = vi.fn(async () =>
+      new Response(JSON.stringify({ body: [{ "Payer's Name": "Invalid reference number" }] }), { status: 200 })
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const qr = mintQr("1****2345,PAYER,500.00,FT26999ABCDE,2026-10-11,1000099999999,SHOP");
+    const r = await v.verify({ bank: "boa", qrData: qr });
+    expect(r.ok).toBe(false);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("a failed source-account retry never turns BOA's no into decodedOnly", async () => {
+    const fetchMock = vi.fn(async (url: unknown) => {
+      if (String(url).endsWith("12345")) throw new Error("ETIMEDOUT");
+      return new Response(JSON.stringify({ body: [{ "Payer's Name": "Invalid reference number" }] }), { status: 200 });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const r = await v.verify({ bank: "boa", qrData: FORGED });
+    expect(r.ok).toBe(false);
+    expect(r.ok && r.value.decodedOnly).toBeFalsy();
+  });
+
   it("a QR whose amount differs from the bank's record fails", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response(bankBody("FT26167ZVPCJ", "124.20 ETB"), { status: 200 })));
     const r = await v.verify({ bank: "boa", qrData: GENUINE });
