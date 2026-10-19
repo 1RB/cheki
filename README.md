@@ -289,7 +289,7 @@ Base URL `https://cheki.et`. No authentication. Full reference: [cheki.et/docs](
 
 **Rate limits** are per IP and per server instance: verify 30/min, batch 5/min (each receipt in a batch also counts toward verify), parse and ocr 20/min each. Over the limit the API answers `429` with a `Retry-After` header. Self-host for more.
 
-**Errors** are JSON with `success: false` and an `error` message: `400` bad input, `404` unsupported bank, `413` body too large, `422` the bank does not know the receipt, `429` rate limited, `502` with a `fallbackUrl` when a geo-blocked bank cannot be reached. See [cheki.et/docs#errors](https://cheki.et/docs#errors).
+**Errors** are JSON with `success: false` and an `error` message: `400` bad input, `404` unsupported bank, `413` body too large, `422` the bank does not know the receipt (with `checkedUrl`, the bank page cheki asked), `429` rate limited, `502` with a `fallbackUrl` when a geo-blocked bank cannot be reached. See [cheki.et/docs#errors](https://cheki.et/docs#errors).
 
 ## Self-hosting and development
 

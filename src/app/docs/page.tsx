@@ -222,7 +222,7 @@ const batchParams = [
 const errorCodes = [
   { code: "400", name: "Bad Request", desc: "Missing required fields or malformed reference number" },
   { code: "404", name: "Not Found", desc: "Bank not supported: unknown id, or still in development" },
-  { code: "422", name: "Unprocessable", desc: "Receipt not found at the bank, or the bank's response failed verification (no amount, wrong reference, failed or pending status)" },
+  { code: "422", name: "Unprocessable", desc: "Receipt not found at the bank, or the bank's response failed verification (no amount, wrong reference, failed or pending status). Includes checkedUrl, the bank page cheki asked, when there is one." },
   { code: "413", name: "Payload Too Large", desc: "Request body is over the limit (16 KB verify, 64 KB batch, 256 KB parse, 10 MB ocr)" },
   { code: "429", name: "Too Many Requests", desc: "Per-IP rate limit reached. Wait the number of seconds in the Retry-After header, then retry." },
   { code: "502", name: "Bad Gateway", desc: "Bank endpoint is unreachable, geo-blocked, or timed out. Geo-blocked banks include a fallbackUrl to open in a browser." },
