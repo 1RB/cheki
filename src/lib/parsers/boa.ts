@@ -101,6 +101,22 @@ export class BOAParser extends BaseParser {
     };
   }
 
+  /**
+   * BOA's answer plus whether it was BOA's explicit "no record" reply
+   * ("Invalid reference number"). Only that reply means BOA has no such
+   * receipt; malformed JSON or an unexpected shape is not a "no".
+   */
+  parseLookup(data: string | Buffer, contentType: string): { parsed: ParsedReceipt; notFound: boolean } {
+    let notFound = false;
+    try {
+      const row = JSON.parse(data.toString())?.body?.[0];
+      notFound = !!row && typeof row === "object" && row["Payer's Name"] === "Invalid reference number";
+    } catch {
+      notFound = false;
+    }
+    return { parsed: this.parse(data, contentType), notFound };
+  }
+
   parse(data: string | Buffer, _contentType: string): ParsedReceipt {
     try {
       const payload = JSON.parse(data.toString());

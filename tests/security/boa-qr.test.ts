@@ -142,6 +142,17 @@ describe("BOA QR", () => {
     expect(r.ok && r.value.decodedOnly).toBeFalsy();
   });
 
+  it("an unreadable BOA answer is not a no: no source-account retry, and never verified", async () => {
+    const fetchMock = vi.fn(async () => new Response("<html>maintenance</html>", { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const qr = mintQr("1000000012345,PAYER,500.00,FT26999ABCDE,2026-10-11,1000099999999,SHOP");
+    const r = await v.verify({ bank: "boa", qrData: qr });
+    expect(r.ok && r.value.verified).toBeFalsy();
+    const urls = fetchMock.mock.calls.map((c) => String((c as unknown[])[0]));
+    expect(urls.length).toBeGreaterThan(0);
+    expect(urls.every((u) => u.endsWith("99999"))).toBe(true);
+  });
+
   it("a QR whose amount differs from the bank's record fails", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response(bankBody("FT26SAMPLE07", "124.20 ETB"), { status: 200 })));
     const r = await v.verify({ bank: "boa", qrData: GENUINE });

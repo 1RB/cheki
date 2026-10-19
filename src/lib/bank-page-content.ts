@@ -135,7 +135,7 @@ const VERIFY_BY_HAND: Record<string, { sections: BankSection[]; faq: BankFaq[] }
     sections: [
       {
         heading: "QR code verification for inter-bank transfers",
-        body: "BOA's JSON API does not recognize inter-bank transfer references. However, the QR code on the receipt is an AES-256-CBC encrypted payload that carries the reference and both full account numbers. cheki decrypts it server-side using the key exposed in BOA's receipt web app and confirms the receipt with BOA, under the receiving account first and then the source account, since BOA files some receipts under either. If BOA cannot be reached, the result is marked as decoded only, not verified.",
+        body: "BOA's JSON API does not recognize inter-bank transfer references. However, the QR code on the receipt is an AES-256-CBC encrypted payload that carries the reference and both account numbers (some apps mask part of one). cheki decrypts it server-side using the key exposed in BOA's receipt web app and confirms the receipt with BOA under the receiving account first. If BOA has no record there and the QR carries a full source account, cheki asks once more under that, since BOA files some receipts under either. If BOA cannot be reached, the result is marked as decoded only, not verified.",
         link: { href: "/guides/boa-qr-code-receipts", text: "BOA QR codes: how the decryption works" },
       },
     ],

@@ -43,6 +43,8 @@ const MAX_QR_LENGTH = 4096;
 /** BOA has no receipt under this reference + account pair (typed input). */
 export const BOA_NOT_FOUND =
   "BOA has no receipt with this reference and account. BOA files some receipts under the payer's account: if you entered the receiving account, try the last 5 digits of the source account.";
+/** BOA answered, but not in a shape cheki can read: not a "no record". */
+export const BOA_UNREADABLE = "BOA sent an answer cheki could not read, so the receipt is not confirmed. Try again in a minute.";
 /** BOA has no receipt under either account a QR names. */
 export const BOA_QR_NOT_FOUND = "BOA has no receipt for the reference and accounts on this QR code.";
 const MAX_BANK_LENGTH = 32;
@@ -476,11 +478,14 @@ export class Verifier {
 
     // BOA answers an unknown reference + account pair with "Invalid reference
     // number". BOA files some receipts under the source account instead of
-    // the receiver's, so the message says which other account to try.
+    // the receiver's, so the message says which other account to try. Any
+    // other unreadable answer is not BOA saying "no": it stays unconfirmed.
     if (id === "boa") {
-      const parsed = parser.parse(data, contentType);
+      const { parsed, notFound } = (parser as BOAParser).parseLookup(data, contentType);
       if (!parsed.verified) {
-        return err({ kind: "EXTRACTION_ERROR", bank: manifestEntry.name, message: BOA_NOT_FOUND });
+        return notFound
+          ? err({ kind: "EXTRACTION_ERROR", bank: manifestEntry.name, message: BOA_NOT_FOUND })
+          : err({ kind: "ENDPOINT_ERROR", bank: manifestEntry.name, message: BOA_UNREADABLE });
       }
       return ok(parsed);
     }
@@ -578,6 +583,7 @@ export class Verifier {
     if (
       !lookup.ok &&
       lookup.error.kind === "EXTRACTION_ERROR" &&
+      lookup.error.message === BOA_NOT_FOUND &&
       senderCheck?.ok &&
       senderCheck.value !== accountCheck.value
     ) {

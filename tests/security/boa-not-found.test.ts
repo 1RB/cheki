@@ -6,7 +6,7 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
 import { NextRequest } from "next/server";
 import { Verifier } from "@/lib";
-import { BOA_NOT_FOUND } from "@/lib/core/verifier";
+import { BOA_NOT_FOUND, BOA_UNREADABLE } from "@/lib/core/verifier";
 import { POST as verifyPOST } from "@/app/api/verify/route";
 import { POST as batchPOST } from "@/app/api/verify/batch/route";
 import { presentVerdict } from "@/lib/verify/verdict";
@@ -40,6 +40,16 @@ describe("BOA not found", () => {
         expect(r.error.message).toBe(BOA_NOT_FOUND);
         expect(r.error.checkedUrl).toBe(CHECKED);
       }
+    }
+  });
+
+  it("an unreadable BOA answer is unconfirmed, not a no-record", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("{not json", { status: 200 })));
+    const r = await new Verifier().verify({ bank: "boa", reference: "FT26SAMPLE07", accountNumber: "06171" });
+    expect(r.ok).toBe(false);
+    if (!r.ok) {
+      expect(r.error.kind).toBe("ENDPOINT_ERROR");
+      expect("message" in r.error && r.error.message).toBe(BOA_UNREADABLE);
     }
   });
 
