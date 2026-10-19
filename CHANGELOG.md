@@ -2,6 +2,15 @@
 
 Every cheki SDK ships the same version: npm `cheki-verify` (and `@1rb/cheki-verify` on GitHub Packages), PyPI `cheki`, Packagist `cheki/cheki`, pub.dev `cheki` and the Go module `github.com/1RB/cheki/sdks/go` (tag `sdks/go/vX.Y.Z`). The Dart package keeps its own copy in `sdks/dart/CHANGELOG.md` for pub.dev.
 
+## Unreleased
+
+**Search fixes from the October Search Console review**
+- A path with a capital letter (`/Guides`, which Google had indexed as a 404) now answers one 301 to its lowercase form, query kept (`src/proxy.ts`). API, assets and files are untouched.
+- eBirr page: a USSD code section per partner (Nib *617#/*635#, COOPay-Ebirr *841#, Kaafi and Wegagen *602#) and FAQs for the dial code and receipt.ebirr.com. "ebirr code" was the page's top query with no clicks.
+- CBE page: an FAQ confirming mbreciept.cbe.com.et (spelled "reciept") is CBE's own receipt address.
+- Fraud guide: section 6 is now "Fake Telebirr receipts and SMS spoofing" and covers edited screenshots as well as fake SMS, so the page answers "fake telebirr receipt" again.
+- README: the heading names the product ("Ethiopian bank receipt verifier") and the banks it checks, which become the GitHub page's heading and description text.
+
 ## 1.6.0
 
 SDKs: every SDK reads `checkedUrl` (the bank page cheki asked) on a 422 and on failed batch items; see "BOA receipts filed under the payer's account" below. The rest of this entry shipped to cheki.et as it merged.

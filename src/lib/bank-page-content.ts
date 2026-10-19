@@ -239,6 +239,33 @@ const HOWTO_EXTRA: Record<string, { sections: BankSection[]; faq: BankFaq[] }> =
     sections: [],
     faq: [
       { q: "Can I verify CBE receipts from outside Ethiopia?", a: "Yes. CBE's receipt service answers from anywhere, so the check works abroad too. Unlike Telebirr and M-Pesa, CBE is not geo-blocked." },
+      { q: "Is mbreciept.cbe.com.et CBE's real receipt site?", a: "Yes. mbreciept.cbe.com.et (spelled \"reciept\") is the address the CBE mobile banking app puts in every shared receipt link and receipt QR code. Paste the whole link into cheki to check it against CBE's record. A link on any domain that does not end in cbe.com.et is not CBE's, however close the spelling." },
+    ],
+  },
+  // Searchers who land on the eBirr page often want the dial code, not a
+  // receipt check (GSC 2026-10: "ebirr code" at position 9, no clicks). Codes
+  // are each partner's own: Nib (nibbanksc.com agency-banking FAQ), Coopbank
+  // (coopbankoromia.com.et/coopay-ebirr), KAAFI (ebirr.com FAQ), Wegagen
+  // (launch coverage, January 2025). Ahadu's code is unconfirmed, so it is
+  // not stated.
+  ebirr: {
+    sections: [
+      {
+        id: "ebirr-codes",
+        heading: "eBirr USSD codes by bank",
+        body: "eBirr runs under each partner's own brand, and each brand has its own dial code. The codes open the wallet on any phone, without internet. To check a payment someone sent you, use the receipt link instead, as described below: a code or an SMS is not proof of payment.",
+        bullets: [
+          "Nib E-Birr (Nib International Bank): *617# for customers, *635# for agents, merchants and resellers",
+          "COOPay-Ebirr (Cooperative Bank of Oromia): *841#",
+          "Kaafi Ebirr (KAAFI Microfinance): *602#",
+          "Wegagen Ebirr (Wegagen Bank): *602#, announced at its launch in January 2025",
+          "Ahadu Ebirr (Ahadu Bank): use the Ahadu Bank app or ask the bank for the current code",
+        ],
+      },
+    ],
+    faq: [
+      { q: "What is the eBirr USSD code?", a: "It depends on the bank behind your wallet: *617# for Nib E-Birr (*635# for Nib agents and merchants), *841# for COOPay-Ebirr and *602# for Kaafi Ebirr and Wegagen Ebirr. The code opens your wallet; to confirm a payment you received, check its receipt link with cheki." },
+      { q: "What is receipt.ebirr.com?", a: "It is the address eBirr uses for shared receipts: receipt.ebirr.com/ followed by the partner's tenant code (nib, wegagen, ahadu, kaafimf) and a token. Paste the whole link into cheki and it reads the receipt from eBirr and checks the amount, names and date." },
     ],
   },
   telebirr: {

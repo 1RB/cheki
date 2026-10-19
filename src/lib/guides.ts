@@ -332,7 +332,8 @@ export const articles: Article[] = [
       { type: "text", text: "The fraudster creates urgency. They claim they're in a hurry, the transfer is processing, or they'll lose a flight. They pressure staff into releasing goods before verification is complete." },
       { type: "text", text: "Detection: Never release goods under time pressure. If a customer is genuinely in a hurry, verify the payment first and release goods after. A real payment can be verified in 1-3 seconds with cheki." },
 
-      { type: "heading", id: "telebirr-sms-spoofing", text: "6. Telebirr SMS spoofing fraud" },
+      { type: "heading", id: "telebirr-sms-spoofing", text: "6. Fake Telebirr receipts and SMS spoofing" },
+      { type: "text", text: "A fake Telebirr payment comes in two forms: an edited screenshot of a Telebirr receipt, or a text message made to look like Telebirr's notification. Both fall apart the moment you check the transaction number with Telebirr." },
       { type: "text", text: "A text arrives that looks exactly like Telebirr's payment notification, apparently from Telebirr's own short code, with a made-up transaction number and amount. No money moved." },
       { type: "callout", variant: "danger", title: "Why it works", text: "SMS sender names are not authenticated on most networks. SMS gateways and SIM boxes can send under any sender ID, so the fake lands in the same thread as real Telebirr messages." },
       { type: "text", text: "Detection: Never release goods on an SMS alone. Check the transaction number with cheki, or in the Telebirr app under Accounts, then Verify Payment. If Telebirr has no record of it, the SMS was fake. Train delivery staff and cashiers to check during busy hours too, when skipping it is most tempting." },
