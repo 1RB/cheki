@@ -203,8 +203,14 @@ export const translations = {
         copy: "Copy result",
         copied: "Copied",
         share: "Share",
+        copyLink: "Copy re-check link",
+        linkCopied: "Link copied",
         print: "Print slip",
         another: "Verify another",
+      },
+      shared: {
+        opened: "Opened from a shared link. cheki asked the bank again just now: this is the bank's answer, not the sender's.",
+        recheck: "Re-check",
       },
       recent: {
         title: "Recent checks",
