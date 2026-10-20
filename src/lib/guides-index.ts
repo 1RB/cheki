@@ -52,7 +52,7 @@ export function sectionOf(a: Article): GuideSectionId {
  * follow, newest update first. The "verify" section is ordered by bank instead.
  */
 const PINNED: Partial<Record<GuideSectionId, readonly string[]>> = {
-  developers: ["payment-verification-api-guide", "self-hosting-docker-guide", "ethiopian-bank-receipt-formats", "boa-qr-code-receipts"],
+  developers: ["payment-verification-api-guide", "self-hosting-docker-guide", "ethiopian-bank-receipt-formats", "boa-qr-code-receipts", "telebirr-receipt-qr-code"],
   "open-source": ["contribute-new-bank", "contribute-translations", "open-source-ethiopian-fintech"],
   comparisons: ["free-receipt-verification-no-api-key"],
 };

@@ -4,6 +4,10 @@ Every cheki SDK ships the same version: npm `cheki-verify` (and `@1rb/cheki-veri
 
 ## Unreleased
 
+**Guide: the Telebirr receipt QR code**
+- New guide at /guides/telebirr-receipt-qr-code: how the Payment QR Code on a Telebirr receipt was decoded (base64, an EMVCo-style TLV over hex characters, a byte TLV holding the transaction number, a case-sensitive CRC-16/CCITT-FALSE), a Python decoder, and why a valid QR is not proof of payment. Synthetic examples only.
+- Linked from the Telebirr bank page's QR section, the CBE, BOA and receipt-formats guides, the /guides index (For developers) and llms.txt.
+
 **Re-check links for shared results**
 - A verdict now has a "Copy re-check link" button, and Share and Copy result include the link. Opening it fills the form and asks the bank again in the recipient's browser, so the person receiving it gets the bank's answer, not the sender's.
 - The link carries only what was entered (receipt link or reference, bank, and the account digits or phone the bank needs) and nothing about the result. It sits in the URL fragment, so it never reaches the server, logs or analytics, and search engines don't index it. Nothing is stored.

@@ -85,6 +85,7 @@ SDKs, all at version 1.6.0 and tested against one shared set of response fixture
 - [Ethiopian bank receipt formats](https://cheki.et/guides/ethiopian-bank-receipt-formats): what each bank's references look like
 - [CBE receipt QR codes](https://cheki.et/guides/cbe-receipt-qr-code): the Receipt ID and the legacy FT format
 - [BOA QR code receipts](https://cheki.et/guides/boa-qr-code-receipts): what a BOA QR holds and when it is only decoded
+- [Telebirr receipt QR code](https://cheki.et/guides/telebirr-receipt-qr-code): the Payment QR Code's format (base64, EMVCo-style TLV, CRC-16) and why it holds only the transaction number
 - [Self-hosting with Docker](https://cheki.et/guides/self-hosting-docker-guide): run cheki on an Ethiopian IP
 - [Payment fraud in Ethiopia](https://cheki.et/guides/payment-fraud-ethiopia): common fake receipt patterns and how to redact a receipt before sharing it
 

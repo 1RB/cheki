@@ -101,4 +101,7 @@ Hex is otherwise parsed case-insensitively.
   walks merchants through the upload, camera and paste paths and repeats that
   the QR alone is never proof (`src/lib/guides.ts`).
 
+- **Guide**: [`/guides/telebirr-receipt-qr-code`](https://cheki.et/guides/telebirr-receipt-qr-code)
+  walks through the format and a Python decoder for readers outside the repo.
+
 Recent checks store only the transaction number, never the QR text.

@@ -155,7 +155,7 @@ export const articles: Article[] = [
       { q: "Do I need the CBE app to scan QR codes?", a: "No. cheki has a built-in QR scanner that uses your phone's camera. Open cheki.et, tap Scan QR with camera, and point it at the QR code on the receipt." },
       { q: "What if the CBE receipt link doesn't work?", a: "The mbreciept.cbe.com.et service may occasionally be down. If the link returns a 502 or timeout, try again later. An old FT reference + account is a legacy fallback, but that endpoint is often unreachable too." },
     ],
-    related: ["free-receipt-verification-no-api-key", "ethiopian-bank-receipt-formats", "payment-fraud-ethiopia"],
+    related: ["telebirr-receipt-qr-code", "free-receipt-verification-no-api-key", "ethiopian-bank-receipt-formats", "payment-fraud-ethiopia"],
     relatedPages: ["/banks/cbe"],
     seo: {
       title: "CBE Receipt QR Codes: What They Contain and How to Scan Them",
@@ -750,7 +750,7 @@ export const articles: Article[] = [
       { q: "Can the banks change or remove these endpoints?", a: "Yes. If a bank changes their endpoint, cheki needs to update its parser. Because cheki is open source, anyone can submit a fix. This is an advantage over closed services like check.et." },
       { q: "Which banks require an account number?", a: "BOA requires the last 5 digits of the account on the receipt, which a full BOA slip link can carry. CBE's current receipts (the mbreciept link or Receipt ID) need no account number; only an older CBE receipt with just an FT reference needs the last 8 digits. CBE Birr needs the payer's phone. All other banks only need the receipt link or reference." },
     ],
-    related: ["cbe-receipt-qr-code", "boa-qr-code-receipts", "payment-verification-api-guide"],
+    related: ["cbe-receipt-qr-code", "boa-qr-code-receipts", "telebirr-receipt-qr-code", "payment-verification-api-guide"],
     relatedPages: ["/endpoints", "/banks"],
     seo: {
       title: "Ethiopian Bank Receipt Formats: Complete Reference",
@@ -1130,12 +1130,121 @@ export const articles: Article[] = [
       { q: "Does cheki decrypt BOA QR codes client-side or server-side?", a: "Server-side. The /api/verify endpoint performs the decryption using Node.js crypto. This prevents tampering with the decryption logic in the browser. The decrypted data is returned as structured JSON." },
       { q: "What if the BOA key changes?", a: "If BOA rotates the encryption key in their web app, cheki's parser will fail to decrypt new QR codes. The cheki team monitors BOA's JavaScript bundle for changes and updates the key when needed. If you're self-hosting, check src/lib/parsers/boa.ts for the current key." },
     ],
-    related: ["cbe-receipt-qr-code", "ethiopian-bank-receipt-formats", "payment-fraud-ethiopia"],
+    related: ["cbe-receipt-qr-code", "telebirr-receipt-qr-code", "ethiopian-bank-receipt-formats", "payment-fraud-ethiopia"],
     relatedPages: ["/banks/boa"],
     seo: {
       title: "BOA QR Codes: Encrypted Receipts and How Decryption Works",
       description: "Bank of Abyssinia QR codes use AES-256-CBC encryption. Here's how the encryption works, what's inside the payload, and how cheki decrypts it for instant inter-bank receipt verification.",
       keywords: ["BOA QR code", "Bank of Abyssinia QR", "BOA AES decryption", "BOA receipt encryption", "BOA inter-bank verification", "CryptoJS AES receipt", "BOA QR payload decrypt"],
+    },
+  },
+  {
+    slug: "telebirr-receipt-qr-code",
+    title: "Telebirr Receipt QR Code: What It Contains and How to Decode It",
+    description:
+      "The Payment QR Code on a Telebirr receipt is base64 around an EMVCo-style TLV with a CRC-16 checksum, and it holds one thing cheki uses: the transaction number. How the format was worked out, a Python decoder, and why the QR is not proof of payment.",
+    category: "technical",
+    bankCode: "telebirr",
+    excerpt:
+      "The Telebirr receipt QR is base64 around an EMVCo-style TLV with a CRC-16/CCITT-FALSE checksum, and the only field cheki uses is the transaction number. The format, a decoder, and why a valid QR proves nothing on its own.",
+    date: "2026-10-20",
+    updated: "2026-10-20",
+    readTime: "7 min",
+    content: [
+      { type: "text", text: "Every receipt in the Telebirr app shows a small square labelled **Payment QR Code**. cheki reads it so a shop can scan the QR instead of typing a 10-character transaction number at a busy counter. There is no public specification for the format, so this guide documents how it was worked out from one real receipt, the readings that were tried and rejected, a decoder you can run, and why a decoded QR still proves nothing on its own." },
+      { type: "text", text: "Why it matters: much everyday commerce in Ethiopia runs on bank transfers and mobile money, and the buyer usually shows the seller a screenshot of the receipt. Screenshots are easy to edit and easy to reuse, so the only trustworthy check is to ask the bank. Telebirr publishes each receipt at `transactioninfo.ethiotelecom.et/receipt/{transaction number}`; cheki fetches that page, reads it, and links it so you can open it yourself. The slow part at a counter is copying the transaction number off the customer's phone without a typo, which is what the QR fixes." },
+      { type: "callout", variant: "info", title: "Synthetic data only", text: "Every example uses the fake transaction number `ABC1D2E3F4`. The real receipt's payload is not published here or in the cheki repository." },
+
+      { type: "heading", id: "base64", text: "Step 1: the QR text is base64" },
+      { type: "text", text: "Scanning the QR gives an 80-character string. The trailing `==` gives it away as base64:" },
+      { type: "code", code: "ODAxODAwMDIwNjAxMDI5MTAyMDEzMTgxMjQwMDBBNDE0MjQzMzE0NDMyNDUzMzQ2MzQ2MzA0RTk2OQ==" },
+      { type: "text", text: "Decoded, it is neither binary nor JSON but ASCII text made of 58 hex characters:" },
+      { type: "code", code: "80180002060102910201318124000A414243314432453346346304E969" },
+      { type: "text", text: "The tail is the first clue. `41424331443245334634` is `ABC1D2E3F4` written as ASCII hex, and `6304` followed by four hex digits near the end is familiar from payment QR codes: in EMVCo merchant QR codes, tag `63` with length `04` is the checksum." },
+
+      { type: "heading", id: "tlv-rule", text: "Step 2: finding the TLV rule" },
+      { type: "text", text: "TLV means tag, length, value. The work is in deciding what the length counts and in which base. These readings were tried first and rejected:" },
+      {
+        type: "list",
+        items: [
+          "**BER-TLV over the bytes.** Read as bytes, `80 18` is tag `0x80` with 24 bytes of value. The following tags do not line up and 3 bytes are left over.",
+          "**Lengths as hex, counted in characters.** `80 18` would be 24 characters, which cuts into what is clearly the next tag.",
+          "**Lengths in bytes at the top level.** `63 04` would mean 4 bytes of checksum, but only 2 bytes (4 hex characters) follow.",
+        ],
+      },
+      { type: "text", text: "The EMVCo rule fits: two characters of tag, then two decimal digits giving the value length in characters. It consumes the string exactly:" },
+      {
+        type: "table",
+        headers: ["Tag", "Length", "Value", "Meaning"],
+        rows: [
+          ["80", "18", "000206010291020131", "Unknown; cheki ignores it"],
+          ["81", "24", "000A41424331443245334634", "Container holding the transaction number"],
+          ["63", "04", "E969", "CRC checksum"],
+        ],
+      },
+      { type: "text", text: "Tag `80` is still unexplained: 9 bytes (`00 02 06 01 02 91 02 01 31`) that parse cleanly under neither the EMVCo rule nor a byte TLV." },
+
+      { type: "heading", id: "inner-tlv", text: "Step 3: a TLV inside the TLV" },
+      { type: "text", text: "The value of tag `81` is itself hex. Turned into bytes, it is a byte-level TLV with a 1-byte tag and a 1-byte length counted in bytes:" },
+      { type: "code", code: "00                               tag 0x00\n0A                               length: 10 bytes\n41 42 43 31 44 32 45 33 46 34    \"ABC1D2E3F4\"" },
+      { type: "text", text: "So the transaction number sits at tag `81`, inner tag `00`. The inner length `0A` is not decimal: the two levels count length differently, which is much of why the format took a while to pin down." },
+
+      { type: "heading", id: "crc", text: "Step 4: the CRC, and why letter case matters" },
+      { type: "text", text: "EMVCo QR codes use **CRC-16/CCITT-FALSE**: polynomial `0x1021`, initial value `0xFFFF`, no reflection, no final XOR. It is computed over every character before the checksum value, including the `6304` itself:" },
+      { type: "code", lang: "python", code: "def crc16_ccitt_false(text: str) -> int:\n    crc = 0xFFFF\n    for ch in text:\n        crc ^= (ord(ch) & 0xFF) << 8\n        for _ in range(8):\n            if crc & 0x8000:\n                crc = ((crc << 1) ^ 0x1021) & 0xFFFF\n            else:\n                crc = (crc << 1) & 0xFFFF\n    return crc\n\npayload = \"80180002060102910201318124000A414243314432453346346304E969\"\nbody, crc = payload[:-4], payload[-4:]\nassert crc16_ccitt_false(body) == int(crc, 16)   # 0xE969" },
+      { type: "text", text: "The first attempts did not match the real receipt, because the hex had been upper-cased before hashing. The real payload mixes cases: lengths and checksum in upper case, the transaction-number bytes in lower case. A synthetic example in the same style, for the fake number `XKJ0L9N8M7`:" },
+      { type: "code", code: "...8124000A584b4a304c394e384d376304D22B" },
+      { type: "text", text: "The checksum is computed over the characters exactly as emitted. Over that string it is `D22B`; upper-case the string first and you get `E6B2`, a mismatch. Computing it over the decoded bytes, or without the `6304` prefix, matched with none of the seven CRC-16 variants tried (CCITT-FALSE, XMODEM, KERMIT, X-25, MCRF4XX, ARC, MODBUS). Only CCITT-FALSE over the original-case characters matched." },
+      { type: "text", text: "Because it validated on the real receipt, cheki enforces the checksum: a QR whose CRC does not match is rejected with a prompt to type the transaction number instead. Everything else about the hex is read case-insensitively." },
+
+      { type: "heading", id: "decoder", text: "Step 5: a decoder in Python" },
+      { type: "text", text: "A compact version, using `crc16_ccitt_false` from above. cheki's production decoder is TypeScript, in `src/lib/qr/telebirr.ts` in the repository, and adds size caps and stricter checks." },
+      { type: "code", lang: "python", code: "import base64, re\n\ndef parse_top_level(hex_str):\n    \"\"\"EMVCo style: 2-char tag, 2 decimal digits = value length in characters.\"\"\"\n    i, out = 0, []\n    while i < len(hex_str):\n        tag, length = hex_str[i:i+2].upper(), hex_str[i+2:i+4]\n        if not re.fullmatch(r\"\\d\\d\", length):\n            raise ValueError(\"length must be two decimal digits\")\n        n, at = int(length), i + 4\n        if n == 0 or at + n > len(hex_str):\n            raise ValueError(\"length runs past the end\")\n        out.append((tag, hex_str[at:at+n], at))\n        i = at + n\n    return out\n\ndef parse_inner(b: bytes):\n    \"\"\"Byte TLV inside tag 81: 1-byte tag, 1-byte length in bytes.\"\"\"\n    i, out = 0, {}\n    while i < len(b):\n        if i + 2 > len(b):\n            raise ValueError(\"bad inner TLV\")\n        tag, n = b[i], b[i+1]\n        if n >= 0x80 or i + 2 + n > len(b) or tag in out:\n            raise ValueError(\"bad inner TLV\")\n        out[tag] = b[i+2:i+2+n]\n        i += 2 + n\n    return out\n\ndef read_telebirr_qr(qr_text: str) -> str:\n    hex_str = base64.b64decode(qr_text).decode(\"ascii\")\n    entries = parse_top_level(hex_str)\n    tag, value, at = entries[-1]\n    if tag != \"63\" or len(value) != 4:\n        raise ValueError(\"CRC must be the last entry\")\n    if crc16_ccitt_false(hex_str[:at]) != int(value, 16):\n        raise ValueError(\"CRC mismatch\")\n    containers = [v for t, v, _ in entries if t == \"81\"]\n    if len(containers) != 1:\n        raise ValueError(\"expected exactly one tag 81\")\n    ref = parse_inner(bytes.fromhex(containers[0]))[0x00].decode(\"ascii\")\n    if not re.fullmatch(r\"[A-Z0-9]{10}\", ref):\n        raise ValueError(\"not a Telebirr transaction number\")\n    return ref\n\nprint(read_telebirr_qr(\n    \"ODAxODAwMDIwNjAxMDI5MTAyMDEzMTgxMjQwMDBBNDE0MjQzMzE0NDMyNDUzMzQ2MzQ2MzA0RTk2OQ==\"\n))  # ABC1D2E3F4" },
+      { type: "text", text: "The production decoder also:" },
+      {
+        type: "list",
+        items: [
+          "Strips whitespace, accepts URL-safe base64 and missing `=` padding, and accepts the already-decoded hex form from scanner apps that decode it for you.",
+          "Caps the size before doing any work: 1,024 characters of QR text, 512 hex characters, 16 TLV entries.",
+          "Uses only anchored, single character-class regular expressions, so nothing can backtrack.",
+          "Never throws. Every failure comes back as a typed reason (`notBase64`, `crc`, `noReference` and so on).",
+        ],
+      },
+
+      { type: "heading", id: "not-proof", text: "The QR is not proof of payment" },
+      { type: "text", text: "The QR holds the transaction number and nothing else cheki uses: no amount and no names. Anyone who knows a transaction number can generate a valid QR for it, checksum included, exactly as shown above." },
+      { type: "callout", variant: "warning", title: "A valid QR is only an input", text: "A decoded QR tells cheki which receipt to look up. The normal Telebirr check then runs as if the number had been typed, and a result is verified only when Telebirr's own receipt page confirms it and passes cheki's post-parse checks. Never release goods because a QR scanned cleanly." },
+      { type: "text", text: `The same rule holds for all ${LIVE_BANK_COUNT} live banks and wallets cheki checks: a decoded QR or pasted receipt text is labelled not confirmed, never verified.` },
+      { type: "text", text: "Telebirr's receipt page only answers requests from Ethiopian networks. The hosted cheki.et runs outside Ethiopia, so for Telebirr it opens the receipt in your own browser first. A self-hosted copy on an Ethiopian server can check it directly." },
+
+      { type: "heading", id: "use-it", text: "Scan it on cheki.et, or send it to the API" },
+      {
+        type: "steps",
+        items: [
+          { title: "Get the receipt", text: "Ask for a screenshot of the Telebirr receipt, or have the customer show it on their phone." },
+          { title: "Scan, upload or paste", text: "On cheki.et, upload or paste the screenshot, scan the QR with the camera, or paste the QR text into the receipt field. cheki reads the transaction number in your browser and selects Telebirr." },
+          { title: "Check with Telebirr", text: "cheki checks that number with Telebirr exactly as if you had typed it. You may get an Open the Telebirr receipt link to open on a phone on an Ethiopian network." },
+        ],
+      },
+      { type: "text", text: "Developers can send the QR text as `qrData` with bank `telebirr`, or no bank, to `POST /api/verify` or `/api/verify/batch`. No API key is needed:" },
+      { type: "code", lang: "bash", code: "curl -X POST https://cheki.et/api/verify \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"bank\":\"telebirr\",\"qrData\":\"ODAxODAwMDIwNjAxMDI5MTAyMDEzMTgxMjQwMDBBNDE0MjQzMzE0NDMyNDUzMzQ2MzQ2MzA0RTk2OQ==\"}'" },
+      { type: "text", text: "When the hosted server cannot reach Telebirr, the response is `success: false` with a `fallbackUrl`, the receipt link to open in a browser on an Ethiopian network. Sending a Telebirr QR with another bank named returns 400." },
+
+      { type: "heading", id: "open-questions", text: "Open questions" },
+      { type: "text", text: "The format was worked out from one real receipt. Two things are still open: what tag `80` means, and whether other Telebirr receipt types use other tags. If you have a Telebirr QR that cheki rejects, an issue on GitHub (https://github.com/1RB/cheki/issues) with the payload redacted helps. The full format notes are in docs/telebirr-qr.md in the repository." },
+    ],
+    faq: [
+      { q: "What is inside the Telebirr receipt QR code?", a: "Base64 text that decodes to an EMVCo-style TLV written in hex characters. Tag 81 holds the 10-character transaction number, tag 63 is a CRC-16/CCITT-FALSE checksum, and tag 80 is still unexplained. There is no amount and no names in it." },
+      { q: "Does a valid Telebirr QR prove the payment happened?", a: "No. Anyone who knows a transaction number can generate a valid QR for it, checksum included. cheki only uses the QR to find the transaction number, then asks Telebirr; a result is verified only when Telebirr's own receipt page confirms it." },
+      { q: "Why does cheki reject some Telebirr QR codes?", a: "Usually because the checksum does not match, often after the text was retyped or upper-cased: the CRC is computed over the characters exactly as emitted. Type the transaction number instead, and if a genuine QR keeps failing, open a GitHub issue with the payload redacted." },
+      { q: "Can I verify a Telebirr QR through the API?", a: "Yes. Send the QR text as qrData with bank telebirr (or no bank) to POST /api/verify or /api/verify/batch. No API key is needed. If the hosted server cannot reach Telebirr, the response includes a fallbackUrl to open in a browser on an Ethiopian network." },
+    ],
+    related: ["boa-qr-code-receipts", "cbe-receipt-qr-code", "ethiopian-bank-receipt-formats"],
+    relatedPages: ["/banks/telebirr", "/docs"],
+    seo: {
+      title: "Telebirr Receipt QR Code: What's Inside and How to Decode It",
+      description: "What the Telebirr receipt QR holds: base64, an EMVCo-style TLV, a CRC-16 checksum and the transaction number. A Python decoder, and why it is not proof.",
+      keywords: ["telebirr receipt qr code", "telebirr qr code", "telebirr payment qr code", "decode telebirr qr", "telebirr transaction number", "telebirr receipt verification", "EMVCo TLV CRC-16"],
     },
   },
   {

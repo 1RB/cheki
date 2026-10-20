@@ -262,6 +262,7 @@ const HOWTO_EXTRA: Record<string, { sections: BankSection[]; faq: BankFaq[] }> =
           "On cheki, upload or paste the screenshot, scan the QR with the camera, or paste the QR text into the receipt field. cheki reads the transaction number in your browser and selects Telebirr.",
           "cheki checks that number with Telebirr exactly as if you had typed it. Telebirr only answers Ethiopian networks, so you may get an 'Open the Telebirr receipt' link to open on your phone instead.",
         ],
+        link: { href: "/guides/telebirr-receipt-qr-code", text: "Telebirr receipt QR codes: what they hold and how to decode them" },
       },
       {
         heading: "Verify a payment in the Telebirr app",

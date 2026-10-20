@@ -10,6 +10,7 @@ import { articles, getArticle, type Article, type ContentBlock } from "@/lib/gui
 import { IN_DEVELOPMENT_BANK_COUNT, LIVE_BANK_COUNT, TOTAL_BANK_COUNT } from "@/lib/bank-counts";
 import { COMPETITORS_CHECKED, HOSTED_RATE_LIMITS } from "@/lib/guides-facts";
 import { limiters } from "@/lib/rate-limit";
+import { crc16CcittFalse, parseTelebirrQr } from "@/lib/qr/telebirr";
 
 const source = readFileSync(resolve(__dirname, "../../src/lib/guides.ts"), "utf8");
 
@@ -126,5 +127,42 @@ describe("guides: dates", () => {
 
   it("no guide still points at the removed 'Receipt URL' tab", () => {
     expect(articles.map(corpus).join("\n")).not.toMatch(/Receipt URL' tab/);
+  });
+});
+
+describe("guides: the Telebirr receipt QR guide matches the decoder", () => {
+  const a = getArticle("telebirr-receipt-qr-code")!;
+  const text = a ? corpus(a) : "";
+  const codes = a ? a.content.filter((b): b is Extract<ContentBlock, { type: "code" }> => b.type === "code").map((b) => b.code) : [];
+  const QR = "ODAxODAwMDIwNjAxMDI5MTAyMDEzMTgxMjQwMDBBNDE0MjQzMzE0NDMyNDUzMzQ2MzQ2MzA0RTk2OQ==";
+
+  it("exists and is filed with the QR internals", () => {
+    expect(a).toBeDefined();
+    expect(a.category).toBe("technical");
+    expect(a.bankCode).toBe("telebirr");
+    expect(a.related).toContain("boa-qr-code-receipts");
+    expect(a.relatedPages).toContain("/banks/telebirr");
+  });
+
+  it("its sample QR decodes to the fake transaction number with the CRC the guide states", () => {
+    expect(codes).toContain(QR);
+    expect(parseTelebirrQr(QR)).toEqual({ ok: true, reference: "ABC1D2E3F4", crc: "valid" });
+    const hex = atob(QR);
+    expect(codes).toContain(hex);
+    expect(crc16CcittFalse(hex.slice(0, -4)).toString(16).toUpperCase()).toBe("E969");
+  });
+
+  it("the mixed-case example's CRC is D22B as emitted and E6B2 upper-cased", () => {
+    const body = "8018000206010291020131" + "8124000A584b4a304c394e384d37" + "6304";
+    expect(text).toContain("...8124000A584b4a304c394e384d376304D22B");
+    expect(crc16CcittFalse(body).toString(16).toUpperCase()).toBe("D22B");
+    expect(crc16CcittFalse(body.toUpperCase()).toString(16).toUpperCase()).toBe("E6B2");
+    expect(parseTelebirrQr(btoa(body + "D22B"))).toMatchObject({ ok: true, reference: "XKJ0L9N8M7" });
+  });
+
+  it("says the QR is not proof and uses only synthetic transaction numbers", () => {
+    expect(text).toMatch(/not proof of payment/);
+    const refs = text.match(/\b[A-Z]{2,3}[A-Z0-9]{7,8}\b/g) ?? [];
+    for (const r of refs) if (/\d/.test(r) && r.length === 10) expect(["ABC1D2E3F4", "XKJ0L9N8M7"], r).toContain(r);
   });
 });
