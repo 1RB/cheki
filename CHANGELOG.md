@@ -2,6 +2,12 @@
 
 Every cheki SDK ships the same version: npm `cheki-verify` (and `@1rb/cheki-verify` on GitHub Packages), PyPI `cheki`, Packagist `cheki/cheki`, pub.dev `cheki` and the Go module `github.com/1RB/cheki/sdks/go` (tag `sdks/go/vX.Y.Z`). The Dart package keeps its own copy in `sdks/dart/CHANGELOG.md` for pub.dev.
 
+## Unreleased
+
+**Re-check links for shared results**
+- A verdict now has a "Copy re-check link" button, and Share and Copy result include the link. Opening it fills the form and asks the bank again in the recipient's browser, so the person receiving it gets the bank's answer, not the sender's.
+- The link carries only what was entered (receipt link or reference, bank, and the account digits or phone the bank needs) and nothing about the result. It sits in the URL fragment, so it never reaches the server, logs or analytics, and search engines don't index it. Nothing is stored.
+
 ## 1.6.0
 
 SDKs: every SDK reads `checkedUrl` (the bank page cheki asked) on a 422 and on failed batch items; see "BOA receipts filed under the payer's account" below. The rest of this entry shipped to cheki.et as it merged.
