@@ -4,12 +4,12 @@
 
 A result counts as confirmed only when the response has `"verified": true`. A 200 with `"verified": false` is not proof of payment: the bank may not know the receipt, a BOA QR code may only have been decoded (`"decodedOnly": true`), or the text may only have been parsed from what the caller sent (`"parsed": true`, `/api/parse`). Compare `amount` and `receiverAccount` with what you expected before releasing goods.
 
-There are 10 live banks (M-Pesa, ZamZam and CBE Birr in beta) and 21 in research. `GET /api/banks` is the source of truth: each bank's `id`, `status`, `beta` flag and receipt `formats`, current format first, with the inputs each format needs. Bank ids and what to send as `reference`:
+There are 10 live banks (M-Pesa, ZamZam and CBE Birr in beta) and 21 in research. The hosted API checks 8 directly; `telebirr` and `mpesa` block cloud servers, so it answers them with a 502 and `fallbackUrl` (the official receipt page) until a local relay exists. `GET /api/banks` is the source of truth: each bank's `id`, `status`, `beta` flag and receipt `formats`, current format first, with the inputs each format needs. Bank ids and what to send as `reference`:
 
 - `cbe` Commercial Bank of Ethiopia: the Receipt ID or receipt link (`https://mbreciept.cbe.com.et/{Receipt ID}`, also in the app's QR code), e.g. `fHCxExampleRcpt01`. No account number. Older receipts that only show an FT reference (`FT` plus 10 letters and digits, e.g. `FT26SAMPLE01`) also need `accountNumber`, at least the last 8 digits of the receiving account (e.g. `00006171`); that legacy host is often unreachable.
-- `telebirr` Telebirr: the 10-character transaction number with a 2 or 3 letter prefix (DET, CHQ, DAB, DJA, DEL, ADQ, ...), e.g. `DET0SAMPLE`, or the receipt's Payment QR code as `qrData`. Geo-blocked to Ethiopian IPs.
+- `telebirr` Telebirr: the 10-character transaction number with a 2 or 3 letter prefix (DET, CHQ, DAB, DJA, DEL, ADQ, ...), e.g. `DET0SAMPLE`, or the receipt's Payment QR code as `qrData`. Blocks cloud servers: the hosted API returns 502 with `fallbackUrl`.
 - `boa` Bank of Abyssinia: the slip link (`cs.bankofabyssinia.com/slip/?trx=...`), or the reference (e.g. `AB12345678`) plus `accountNumber`, the last 5 digits of the account on the receipt. Inter-bank transfers are checked from the receipt QR code.
-- `mpesa` M-Pesa Ethiopia (beta): the transaction number, e.g. `SE12345678`. Geo-blocked to Ethiopian IPs.
+- `mpesa` M-Pesa Ethiopia (beta): the transaction number, e.g. `SE12345678`. Blocks cloud servers: the hosted API returns 502 with `fallbackUrl`.
 - `dashen` Dashen Bank: the 16-character FT Ref, e.g. `B22WDTI00SAMPLE1`, not the longer Transaction Ref. Old Dashen Super App links are read for their FT Ref.
 - `awash` Awash Bank: the share link from the SMS (`awashpay.awashbank.com:8225/-{token}`).
 - `siinqee` Siinqee Bank: the eBirr receipt link (`receipt.ebirr.com/siinqee/{token}`). Newer `receipts.siinqeebank.com` links are not supported yet.

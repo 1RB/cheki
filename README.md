@@ -56,20 +56,20 @@ The receipt in these screenshots is made up. The verify call was answered with a
    - a BOA QR code the bank could not confirm (`verified: false, decodedOnly: true`)
    - receipt text you pasted, or a page sent by the bookmarklet (`parsed: true, source: "client-supplied"`): cheki can read it, but the bank did not confirm it
 
-Telebirr and M-Pesa only answer Ethiopian IP addresses, and the hosted API does not run in Ethiopia. For those, cheki.et offers to open the receipt in your own browser and paste it back (or send it with the bookmarklet); that result is read, never verified. To verify them, self-host on an Ethiopian IP.
+Telebirr and M-Pesa block cloud servers, and the hosted API does not run in Ethiopia, so cheki.et does not check them itself: the API answers 502 with `fallbackUrl` (the official receipt page), and the site opens that page for you to check the amount and receiver yourself. You can paste the page back or send it with the bookmarklet; that result is read, never verified. Direct checks return once a local relay is live. A copy self-hosted on an Ethiopian network checks them directly today.
 
 Confirmed results are cached in memory for 6 hours, so checking the same receipt again returns `cached: true` without another bank request. Failures are never cached.
 
 ## Supported banks
 
-**10 live banks** (three in beta) and 21 in research. The source of truth is [`src/lib/manifest/banks.json`](src/lib/manifest/banks.json); `GET /api/banks` returns it, including each bank's receipt formats, current first.
+**10 live banks** (three in beta) and 21 in research. From cheki.et, 8 are checked directly with the bank; Telebirr and M-Pesa go through their official receipt pages until a local relay exists. The source of truth is [`src/lib/manifest/banks.json`](src/lib/manifest/banks.json); `GET /api/banks` returns it, including each bank's receipt formats, current first.
 
 | Bank | `id` | What to send | Notes |
 |------|------|--------------|-------|
 | Commercial Bank of Ethiopia | `cbe` | Receipt ID or receipt link (`mbreciept.cbe.com.et/…`, also in the app's QR code) | Older receipts with only an FT reference also need the last 8 digits of the receiving account |
-| Telebirr | `telebirr` | Transaction number, or the Payment QR code on the receipt | Ethiopian IPs only |
+| Telebirr | `telebirr` | Transaction number, or the Payment QR code on the receipt | Blocks cloud servers: cheki.et links to the official receipt page |
 | Bank of Abyssinia | `boa` | Slip link, or reference + last 5 digits of the account on the receipt; receipt QR for inter-bank transfers | |
-| M-Pesa Ethiopia | `mpesa` | Transaction number | Beta. Ethiopian IPs only |
+| M-Pesa Ethiopia | `mpesa` | Transaction number | Beta. Blocks cloud servers: cheki.et gives the official receipt link |
 | Dashen Bank | `dashen` | FT Ref (16 letters and digits) | Old Dashen Super App links are read for their FT Ref |
 | Awash Bank | `awash` | Share link from the SMS | |
 | Siinqee Bank | `siinqee` | eBirr receipt link (`receipt.ebirr.com/siinqee/…`) | Newer `receipts.siinqeebank.com` links are not supported yet |

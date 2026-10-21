@@ -12,7 +12,7 @@
  * "Why I built it" and maintainer sections are written by Ray in the first
  * person; everything else stays in the product's voice ("cheki does X").
  */
-import { LIVE_BANK_COUNT } from "./bank-counts";
+import { coverageSentence } from "./bank-counts";
 import { RATE_LIMITS } from "./rate-limit-config";
 import { DEFAULT_TTL_MS } from "./receipt-cache";
 import { HISTORY_LIMIT } from "./verify/history";
@@ -59,7 +59,7 @@ export const ABOUT: TrustPage = {
   heading: "About cheki.et",
   description:
     "What cheki.et is, how it checks a receipt with the bank, who maintains it and why it is free and open source (MIT).",
-  updated: "2026-10-15",
+  updated: "2026-10-21",
   intro: [
     "cheki.et is a free, open-source tool that checks whether an Ethiopian bank or wallet receipt is real. You paste a receipt link, a QR code or a transaction reference, and cheki asks the bank's own receipt record what it says.",
   ],
@@ -69,14 +69,14 @@ export const ABOUT: TrustPage = {
       heading: "How a check works",
       paragraphs: [
         [
-          `Ethiopian banks and wallets publish each receipt at a public address on their own servers. cheki works out which bank a receipt belongs to, fetches that receipt from the bank, and shows the sender, receiver, amount and date it returns, with a link to the bank's own page so you can open it yourself. ${LIVE_BANK_COUNT} banks and wallets are live; the `,
+          `Ethiopian banks and wallets publish each receipt at a public address on their own servers. cheki works out which bank a receipt belongs to, fetches that receipt from the bank, and shows the sender, receiver, amount and date it returns, with a link to the bank's own page so you can open it yourself. That covers ${coverageSentence()}; the `,
           { href: "/banks", text: "bank list" },
           " says which, and ",
           { href: "/status", text: "endpoint status" },
           " says which bank pages answer today.",
         ],
         [
-          "A green result means one thing only: the bank confirmed the receipt. A QR code, a screenshot or pasted receipt text is never enough on its own, because anyone can make one. When the bank cannot be reached (Telebirr and M-Pesa only answer Ethiopian networks), cheki says so and gives you the bank's link instead of a guess.",
+          "A green result means one thing only: the bank confirmed the receipt. A QR code, a screenshot or pasted receipt text is never enough on its own, because anyone can make one. Telebirr and M-Pesa block cloud servers, so for those cheki says it could not check and gives you the official receipt page instead of a guess. Direct checks return once a local relay is live.",
         ],
       ],
     },

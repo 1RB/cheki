@@ -5,7 +5,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "cheki - Verify Ethiopian Receipts",
     short_name: "cheki",
     description:
-      "Free, open-source Ethiopian bank receipt verification. Verify CBE, Telebirr, BOA, M-Pesa, and more. No signup, no API key.",
+      "Free, open-source Ethiopian bank receipt verification. Checks CBE, BOA, Dashen and more with the bank; Telebirr and M-Pesa open on their official receipt pages. No signup, no API key.",
     start_url: "/",
     display: "standalone",
     background_color: "#faf9f6",

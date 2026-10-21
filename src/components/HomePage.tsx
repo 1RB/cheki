@@ -8,6 +8,7 @@ import Link from "next/link";
 import { banks } from "@/lib/banks";
 import { articles } from "@/lib/guides";
 import { homeFaqs } from "@/lib/home-faq";
+import { linkOutBankList, linkOutNote } from "@/lib/bank-counts";
 import { Nav, Footer } from "@/components/Chrome";
 import { BankLogoByName } from "@/components/BankLogo";
 import { VerifyPanel } from "@/components/verify/VerifyPanel";
@@ -44,6 +45,10 @@ const FEATURES = [
 
 export function HomePage() {
   const live = banks.filter((b) => b.status === "live");
+  // Telebirr and M-Pesa block cloud servers: cheki.et opens their official
+  // receipt page instead of checking them, so they are not counted as direct.
+  const direct = live.filter((b) => !b.geoBlocked);
+  const linkOut = live.length - direct.length;
   const research = banks.filter((b) => b.status === "soon").length;
   const featured = FEATURED_GUIDES.map((slug) => articles.find((a) => a.slug === slug)).filter((a): a is (typeof articles)[number] => Boolean(a));
 
@@ -59,7 +64,7 @@ export function HomePage() {
               </h1>
               <p className="hp-lede"><T k="hero.subtitle" /></p>
               <ul className="hp-trust" aria-label="Why cheki">
-                <li>{live.length} banks and wallets</li>
+                <li>{direct.length} banks and wallets checked directly</li>
                 <li>Answers in seconds</li>
                 <li>Open source</li>
               </ul>
@@ -80,6 +85,7 @@ export function HomePage() {
             Ethiopian banks and wallets publish each transaction receipt at a public address. cheki asks that page,
             reads it, and returns the same JSON for every bank, with the source link so you can open it yourself.
           </p>
+          {linkOut > 0 && <p className="hp-p">{linkOutNote()}</p>}
           <div className="hp-term">
             <div className="hp-term-bar" aria-hidden="true">
               <span /><span /><span />
@@ -94,7 +100,7 @@ export function HomePage() {
                       {b.shortName}
                     </span>
                     <span className="hp-endpoint-url">{b.endpointFormat}</span>
-                    <span className="hp-badge" data-tone={b.geoBlocked ? "amber" : "green"}>{b.geoBlocked ? "ET networks" : "Global"}</span>
+                    <span className="hp-badge" data-tone={b.geoBlocked ? "amber" : "green"}>{b.geoBlocked ? "Official page" : "Checked directly"}</span>
                   </Link>
                 </li>
               ))}
@@ -152,15 +158,18 @@ export function HomePage() {
         </section>
 
         <section className="container hp-section">
-          <h2 className="hp-h2">{live.length} banks and wallets live</h2>
-          <p className="hp-p">{research} more in research. All use public receipt pages.</p>
+          <h2 className="hp-h2">{direct.length} banks and wallets checked directly</h2>
+          <p className="hp-p">
+            {linkOut > 0 && <>Plus {linkOutBankList()} through their official receipt pages. </>}
+            {research} more in research. All use public receipt pages.
+          </p>
           <ul className="hp-banks">
             {live.map((b) => (
               <li key={b.code}>
                 <Link href={`/banks/${b.code}`} prefetch={false} className="hp-bank">
                   <BankLogoByName code={b.code} size={32} />
                   <span className="hp-bank-name">{b.shortName}</span>
-                  {b.geoBlocked && <span className="hp-badge" data-tone="amber">ET networks</span>}
+                  {b.geoBlocked && <span className="hp-badge" data-tone="amber">Official page</span>}
                 </Link>
               </li>
             ))}
@@ -186,7 +195,7 @@ export function HomePage() {
             <dl className="hp-facts">
               {[
                 ["License", "MIT"],
-                ["Banks", `${banks.length} (${live.length} live)`],
+                ["Banks", linkOut > 0 ? `${banks.length} (${direct.length} checked directly, ${linkOut} via official page)` : `${banks.length} (${live.length} live)`],
                 ["SDKs", "TS, Python, Dart, PHP, Go"],
                 ["CLI", "cheki verify, info, health"],
                 ["Self-hosting", "Docker included"],

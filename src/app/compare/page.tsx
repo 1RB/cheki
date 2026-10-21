@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Nav, Footer } from "@/components/Chrome";
-import { IN_DEVELOPMENT_BANK_COUNT, LIVE_BANK_COUNT } from "@/lib/bank-counts";
+import { DIRECT_BANK_COUNT, IN_DEVELOPMENT_BANK_COUNT, LINK_OUT_BANK_COUNT, LIVE_BANK_COUNT } from "@/lib/bank-counts";
 import {
   CHEKI_PRICING,
   COMPETITORS_CHECKED,
@@ -109,7 +109,7 @@ export default function ComparePage() {
   ];
 
   const platformData: Row[] = [
-    { feature: "Banks and wallets listed", cheki: `${LIVE_BANK_COUNT} live`, ...byService((c) => String(COMPETITOR_BANKS_LISTED[c])) },
+    { feature: "Banks and wallets listed", cheki: LINK_OUT_BANK_COUNT ? `${LIVE_BANK_COUNT} (${DIRECT_BANK_COUNT} checked directly)` : `${LIVE_BANK_COUNT} live`, ...byService((c) => String(COMPETITOR_BANKS_LISTED[c])) },
     { feature: "REST API", cheki: check, checket: check, verifyet: check, qbirr: check, tinaverify: dash, tally: dash },
     { feature: "QR code scanning", cheki: check, checket: check, verifyet: check, qbirr: "Upload", tinaverify: check, tally: check },
     { feature: "BOA QR decryption", cheki: check, checket: dash, verifyet: dash, qbirr: dash, tinaverify: dash, tally: dash },
@@ -353,7 +353,7 @@ export default function ComparePage() {
           Telebirr and M-Pesa block non-Ethiopian IP addresses at the network level. That affects every service without an Ethiopian relay or server, cheki&apos;s hosted version included. No service has a private line to Ethio Telecom or Safaricom.
         </p>
         <p style={proseStyle}>
-          When cheki cannot reach a geo-blocked bank, it returns the bank&apos;s own receipt link to open on a phone on an Ethiopian network, and you can paste the receipt text instead. A pasted or decoded receipt is marked as not confirmed: only the bank&apos;s record turns a result green.
+          cheki.et does not check Telebirr or M-Pesa receipts itself today: it opens the official receipt page for you to check the amount and receiver yourself, on a phone on an Ethiopian network, and you can paste the receipt text back. A pasted or decoded receipt is marked as not confirmed: only the bank&apos;s record turns a result green. Direct checks return once a local relay is live.
         </p>
         <p style={{ ...proseStyle, marginBottom: "40px" }}>
           The permanent fixes are to self-host cheki on an Ethiopian server, or to use a service that has an Ethiopian relay or server: as of {COMPETITOR_FACTS_AS_OF}, qbirr offered a relay and tally ran on an Ethio Telecom IP.
@@ -389,7 +389,7 @@ export default function ComparePage() {
           ))}
         </div>
         <p style={{ marginTop: "16px", fontSize: "14px", color: "var(--ink-2)" }}>
-          cheki combines these approaches: a web UI, REST API, batch verification, TypeScript SDK, Python library, Docker, {LIVE_BANK_COUNT} live banks, guide pages, and BOA QR decryption. All free and open source.
+          cheki combines these approaches: a web UI, REST API, batch verification, TypeScript SDK, Python library, Docker, {DIRECT_BANK_COUNT} banks checked directly, guide pages, and BOA QR decryption. All free and open source.
         </p>
 
         {/* Visible FAQ: the FAQPage JSON-LD above is built from these exact objects. */}

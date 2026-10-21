@@ -1,8 +1,10 @@
 # Telebirr receipt QR ("Payment QR Code")
 
 The in-app Telebirr receipt shows a **Payment QR Code**. cheki reads the
-transaction number out of it and then checks that number with Telebirr exactly
-as if it had been typed. Decoder: [`src/lib/qr/telebirr.ts`](../src/lib/qr/telebirr.ts).
+transaction number out of it and then handles that number exactly as if it had
+been typed. Telebirr blocks cloud servers, so on cheki.et that means opening
+Telebirr's official receipt page; a server on an Ethiopian network checks it
+directly. Decoder: [`src/lib/qr/telebirr.ts`](../src/lib/qr/telebirr.ts).
 
 **The QR is not proof of payment.** It holds the transaction number and
 nothing else cheki uses: no amount, no names. Anyone who knows a transaction

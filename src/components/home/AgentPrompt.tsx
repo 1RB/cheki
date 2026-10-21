@@ -24,8 +24,9 @@ function buildPrompt(origin: string): string {
      result.senderName      who paid
      result.receiverName    who was paid
      result.sourceUrl       the public bank endpoint that produced this
-   Telebirr and M-Pesa only answer Ethiopian networks; from elsewhere, expect an
-   error with a fallbackUrl to open in the user's browser.
+   Telebirr and M-Pesa block cloud servers: cheki.et answers them with a 502
+   and a fallbackUrl (the official receipt page). Send the user there to check
+   the amount, receiver and date; never treat it as verified.
 4. To reconcile many receipts, POST ${origin}/api/verify/batch with
    {"receipts": [{...}, ...]}, up to 20 per call.
 5. GET ${origin}/api/health reports per-bank latency if a check is slow.

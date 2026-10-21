@@ -5,7 +5,7 @@
  * FAQPage JSON-LD. Google requires the marked-up questions to appear in the
  * visible content, so they cannot drift apart.
  */
-import { LIVE_BANK_COUNT, liveBankList } from "./bank-counts";
+import { DIRECT_BANK_COUNT, directBankList, linkOutNote } from "./bank-counts";
 import { RATE_LIMIT_SENTENCE, competitorPrices } from "./guides-facts";
 export interface FaqItem {
   q: string;
@@ -19,11 +19,11 @@ export const homeFaqs: FaqItem[] = [
   },
   {
     q: "How does receipt verification work?",
-    a: "Every Ethiopian bank and mobile wallet publishes transaction receipts at publicly accessible URLs, and those URLs require no authentication. cheki fetches the URL, parses the response (PDF, HTML, or JSON), and returns clean structured JSON with sender, receiver, amount, date, and reference number, plus the source URL it came from.",
+    a: "Every Ethiopian bank and mobile wallet publishes transaction receipts at publicly accessible URLs, and those URLs require no authentication. cheki fetches the URL, parses the response (PDF, HTML, or JSON), and returns clean structured JSON with sender, receiver, amount, date, and reference number, plus the source URL it came from. Telebirr and M-Pesa block cloud servers, so for those cheki.et opens the official receipt page instead.",
   },
   {
     q: "Which banks are supported?",
-    a: `cheki supports ${LIVE_BANK_COUNT} live banks and wallets: ${liveBankList()}. Others are in research and anyone can contribute one. The endpoint formats live in a single file in the repo.`,
+    a: `cheki checks ${DIRECT_BANK_COUNT} banks and wallets directly with the bank: ${directBankList()}. ${linkOutNote()} Others are in research and anyone can contribute one. The endpoint formats live in a single file in the repo.`,
   },
   {
     q: "Do I need an API key?",
