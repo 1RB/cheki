@@ -80,7 +80,7 @@ describe("maintainer byline", () => {
       expect(ld.publisher.logo.url).toBe(LOGO.url);
       expect(ld.dateModified, a.slug).toBe(a.updated);
     }
-    expect(guideArticleJsonLd(getArticle("payment-fraud-ethiopia")!).dateModified).toBe("2026-10-16");
+    expect(guideArticleJsonLd(getArticle("payment-fraud-ethiopia")!).dateModified).toBe("2026-10-21");
   });
 
   it("no JSON-LD in the app still credits a bare 'cheki' Organization", () => {

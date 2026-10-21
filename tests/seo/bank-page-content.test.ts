@@ -131,7 +131,8 @@ describe("bank page content", () => {
       expect(c.sections.find((s) => s.id === BANK_HEADING.geoBlocking.id)!.heading).toBe(`${getBank(code)!.shortName} geo-blocking`);
     }
     const tb = bankPageContent(getBank("telebirr")!).sections.find((s) => s.id === "geo-blocking")!;
-    expect(tb.body).toMatch(/fallback/);
+    expect(tb.body).toMatch(/official receipt page/);
+    expect(tb.body).toMatch(/local relay/);
     expect(tb.body).toMatch(/self-host/);
     for (const code of ["cbe", "boa", "dashen"]) expect(hasGeoSection(bankPageContent(getBank(code)!)), code).toBe(false);
     // The page wires the note to hasGeoSection, so it never renders beside the section.

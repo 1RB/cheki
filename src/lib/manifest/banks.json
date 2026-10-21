@@ -212,14 +212,14 @@
       "DEP",
       "DF"
     ],
-    "description": "Telebirr is Ethio Telecom's mobile money service and the most widely used digital wallet in Ethiopia. Telebirr receipts are published as public HTML pages accessible via a URL containing only the transaction reference number. The endpoint is geo-blocked to Ethiopian IP addresses.",
+    "description": "Telebirr is Ethio Telecom's mobile money service and the most widely used digital wallet in Ethiopia. Telebirr receipts are published as public HTML pages at a URL containing only the transaction number. The page only answers Ethiopian networks and blocks cloud servers, so cheki.et opens the official receipt page for you to check the amount and receiver yourself. Direct checks return once a local relay is live.",
     "referenceFormat": "2-3 letter prefix followed by 6-8 alphanumeric characters (e.g. DET0SAMPLE, CHQ0SAMPLE)",
     "referenceExample": "DET0SAMPLE",
     "howToVerify": [
       "Get the transaction number from the customer's Telebirr SMS or receipt, or scan or upload the Payment QR Code on the Telebirr receipt",
       "The transaction number is 10 letters and digits starting with a 2-3 letter prefix (DET, CHQ, DAB, DJA, DEL, ADQ, etc.)",
-      "cheki fetches the receipt from Telebirr's public endpoint and extracts payment data",
-      "The receipt QR only holds the transaction number: cheki reads it and checks it exactly like a typed one. A QR on its own is never proof of payment."
+      "Telebirr blocks cloud servers, so cheki opens Telebirr's official receipt page for that number. Check the amount, the receiver's name and the date there",
+      "The receipt QR only holds the transaction number: cheki reads it and handles it exactly like a typed one. A QR on its own is never proof of payment."
     ],
     "useCases": [
       "Shops confirming Telebirr payments at the counter",
@@ -234,24 +234,24 @@
       },
       {
         "q": "Can I scan the QR code on a Telebirr receipt?",
-        "a": "Yes. Scan or upload the Payment QR Code on the Telebirr receipt and cheki reads the transaction number out of it, then checks that number with Telebirr exactly as if you had typed it. The QR only contains the transaction number (no amount or names), so it is not proof of payment on its own: only Telebirr's receipt record confirms a payment."
+        "a": "Yes. Scan or upload the Payment QR Code on the Telebirr receipt and cheki reads the transaction number out of it, then opens Telebirr's official receipt page for that number, exactly as if you had typed it. The QR only contains the transaction number (no amount and no names), so it is not proof of payment on its own: only Telebirr's receipt record confirms a payment."
       },
       {
-        "q": "Why does Telebirr verification fail from outside Ethiopia?",
-        "a": "Telebirr's receipt endpoint (transactioninfo.ethiotelecom.et) blocks requests from IP addresses outside Ethiopia. This is a network-level restriction. cheki provides a fallback URL so users on Ethiopian networks can open the receipt directly in their browser."
+        "q": "Why doesn't cheki.et check Telebirr receipts itself?",
+        "a": "Telebirr's receipt page (transactioninfo.ethiotelecom.et) only answers Ethiopian networks and blocks cloud servers, cheki.et's included. So cheki.et opens the official receipt page for you to check the amount and receiver yourself. Direct checks return once a local relay is live."
       },
       {
         "q": "Can I self-host cheki for Telebirr verification?",
-        "a": "Yes. Running cheki on a server with an Ethiopian IP address (or using X-Forwarded-For with an Ethiopian IP from a residential connection) bypasses the geo-block. See the Docker self-hosting guide in the GitHub repository."
+        "a": "Yes. A cheki server on an Ethiopian network reaches Telebirr's receipt page and checks it directly. See the Docker self-hosting guide in the GitHub repository."
       },
       {
         "q": "Is Telebirr receipt verification free?",
-        "a": "Yes. The Telebirr receipt URL is public and returns an HTML page with transaction details. check.et and verify.et charge you for fetching this same URL. cheki does it for free."
+        "a": "Yes. The Telebirr receipt URL is public and returns an HTML page with transaction details. check.et and verify.et charge you for fetching this same URL; cheki is free."
       }
     ],
     "seo": {
       "title": "Telebirr Receipt Check Online: Free, Instant",
-      "description": "Paste a Telebirr transaction number to confirm amount, sender and date against Ethio telecom's record. Spot fake receipts and SMS. Free, no account needed.",
+      "description": "Paste a Telebirr transaction number or scan the receipt QR, then check the amount, receiver and date on Ethio telecom's official receipt page. Free, no account needed.",
       "keywords": [
         "telebirr receipt check",
         "telebirr receipt verification",
@@ -462,13 +462,13 @@
     "refPrefixes": [
       "Various"
     ],
-    "description": "M-Pesa Ethiopia is Safaricom's mobile money service operating in Ethiopia. Its public receipt API answers with a small JSON envelope that carries the receipt as a PDF, which cheki decodes and reads. The endpoint is geo-blocked to Ethiopian IP addresses, similar to Telebirr. M-Pesa support is in beta until a real receipt confirms the parser.",
+    "description": "M-Pesa Ethiopia is Safaricom's mobile money service operating in Ethiopia. Its public receipt API answers with a small JSON envelope that carries the receipt as a PDF. The API only answers Ethiopian networks and blocks cloud servers, so cheki.et gives you the official receipt link to check the amount and receiver yourself. Direct checks return once a local relay is live. M-Pesa support is in beta until a real receipt confirms the parser.",
     "referenceFormat": "Alphanumeric reference (typically 2 letters followed by 6+ digits)",
     "referenceExample": "SE12345678",
     "howToVerify": [
       "Get the transaction number from the customer's M-Pesa SMS or receipt",
-      "cheki calls M-Pesa's public receipt API, decodes the receipt PDF it returns and reads the payment details",
-      "If the server can't reach M-Pesa (geo-block), cheki provides a direct receipt URL"
+      "M-Pesa blocks cloud servers, so cheki gives you the official M-Pesa receipt link for that number",
+      "Open it on a phone on an Ethiopian network and check the amount, the receiver's name and the date"
     ],
     "useCases": [
       "Shops confirming M-Pesa payments",
@@ -478,12 +478,12 @@
     ],
     "faq": [
       {
-        "q": "Why does M-Pesa verification fail from outside Ethiopia?",
-        "a": "M-Pesa's receipt API (m-pesabusiness.safaricom.et) blocks requests from non-Ethiopian IP addresses. cheki provides a fallback URL so users on Ethiopian networks can verify directly."
+        "q": "Why doesn't cheki.et check M-Pesa receipts itself?",
+        "a": "M-Pesa's receipt API (m-pesabusiness.safaricom.et) only answers Ethiopian networks and blocks cloud servers, cheki.et's included. So cheki.et gives you the official receipt link to check the amount and receiver yourself. Direct checks return once a local relay is live."
       },
       {
         "q": "Is M-Pesa receipt verification free?",
-        "a": "Yes. The M-Pesa receipt API is public: it returns the receipt as a PDF inside a JSON response. check.et and verify.et charge for accessing this same endpoint. cheki does it for free. M-Pesa support is in beta until a real receipt confirms cheki's parser."
+        "a": "Yes. The M-Pesa receipt API is public: it returns the receipt as a PDF inside a JSON response. check.et and verify.et charge for accessing this same endpoint; cheki is free. M-Pesa support is in beta until a real receipt confirms cheki's parser."
       },
       {
         "q": "What information do I need to verify an M-Pesa transaction?",
@@ -492,7 +492,7 @@
     ],
     "seo": {
       "title": "M-Pesa Ethiopia Receipt Check Online: Free",
-      "description": "Verify an M-Pesa Ethiopia receipt by transaction ID against Safaricom's record. Spot a fake M-Pesa receipt and see the receipt format. Free, no signup.",
+      "description": "Check an M-Pesa Ethiopia receipt by transaction ID: cheki opens Safaricom's official receipt page so you can confirm the amount, receiver and date. Free, no signup.",
       "keywords": [
         "m-pesa receipt check",
         "M-Pesa receipt verification",

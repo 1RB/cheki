@@ -36,7 +36,7 @@ export const FIT_ROWS: ReadonlyArray<readonly [need: string, service: string]> =
 /** cheki's own gaps, stated as plainly as the others'. */
 export function chekiShortfalls(liveCount: number = LIVE_BANK_COUNT): string {
   const more = servicesListingMoreBanks(liveCount);
-  return `Where cheki falls short: no native mobile app (it installs as a PWA), no staff accounts or business dashboard, no built-in duplicate detection and no relay for geo-blocked banks${more.length ? `, and fewer live banks than ${more.join("/")} list` : ""}.`;
+  return `Where cheki falls short: no native mobile app (it installs as a PWA), no staff accounts or business dashboard, no built-in duplicate detection and no relay yet for Telebirr and M-Pesa (it links to their official receipt pages)${more.length ? `, and fewer live banks than ${more.join("/")} list` : ""}.`;
 }
 
 /** Evidence that every service reads the same public endpoints. */
