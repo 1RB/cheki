@@ -132,12 +132,13 @@ export function findBank(codeOrName: string | undefined | null): Bank | undefine
   );
 }
 
-/** "[Telebirr] Our server can't reach this bank. Try the new receipt format: https://x" -> "Our server can't reach this bank." */
+/** "[Telebirr] Our server can't reach this bank (it blocks cloud IPs). Open the receipt directly: https://x" -> "Our server can't reach this bank (it blocks cloud IPs)." */
 export function cleanError(message: string | undefined): string | undefined {
   if (!message) return undefined;
   return message
     .replace(/^\s*\[[^\]]{1,60}\]\s*/, "")
-    .replace(/\s*Try the new receipt format:\s*\S+\s*$/i, "")
+    // The link is the card's button; older servers said "Try the new receipt format:".
+    .replace(/\s*(?:Open the receipt directly|Try the new receipt format):\s*\S+\s*$/i, "")
     .trim() || undefined;
 }
 
@@ -224,7 +225,13 @@ export function presentVerdict(result: VerifyResult | null | undefined, opts: Pr
       return neutral("geoBlocked", t("verify.verdict.openAtBank.title", { bank: short }), t("verify.verdict.openAtBank.subtitle", { bank: short }), { fallbackUrl });
     }
     if (fallbackUrl || (bank?.geoBlocked && (status === 502 || status === 504))) {
-      return neutral("geoBlocked", t("verify.verdict.geoBlocked.title", { bank: short }), t("verify.verdict.geoBlocked.subtitle", { bank: short }), { fallbackUrl });
+      // Never green, never a judgement: cheki did not see the receipt. The
+      // card's one primary action opens the official page, and the next step
+      // says what the merchant checks there.
+      return neutral("geoBlocked", t("verify.verdict.geoBlocked.title", { bank: short }), t("verify.verdict.geoBlocked.subtitle", { bank: short }), {
+        fallbackUrl,
+        nextStep: t("verify.verdict.geoBlocked.next", { bank: short }),
+      });
     }
     if (status === 422) {
       const listed = /lists this transaction as "([^"]{1,40})"/i.exec(message);
