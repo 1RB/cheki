@@ -4,6 +4,7 @@
  * the checker (VerifyPanel), the agent-prompt button and translated strings.
  */
 import "./home/home.css";
+import { Fragment } from "react";
 import Link from "next/link";
 import { banks } from "@/lib/banks";
 import { articles } from "@/lib/guides";
@@ -43,6 +44,17 @@ const FEATURES = [
   { title: "Open source", body: "MIT licensed. Read the code, contribute, fork it. No black box." },
 ];
 
+/**
+ * Break opportunities after "/", "?", "&" and "." so a long endpoint wraps at
+ * its own separators on a phone instead of mid-word. Desktop keeps the URL on
+ * one line (white-space: nowrap), where <wbr> does nothing.
+ */
+function breakableUrl(url: string) {
+  return url.split(/(?<=[/?&.])/).map((part, i) => (
+    <Fragment key={i}>{i > 0 && <wbr />}{part}</Fragment>
+  ));
+}
+
 export function HomePage() {
   const live = banks.filter((b) => b.status === "live");
   // Telebirr and M-Pesa block cloud servers: cheki.et opens their official
@@ -77,6 +89,11 @@ export function HomePage() {
               <VerifyPanel />
             </div>
           </div>
+          {/* Phones: the same spot as on desktop, the end of the hero, right
+              before the endpoint list (the developer content it introduces). */}
+          <div className="hp-agent-mobile">
+            <AgentPrompt />
+          </div>
         </section>
 
         <section className="container hp-section">
@@ -99,7 +116,7 @@ export function HomePage() {
                       <span className="hp-dot" style={{ background: b.color }} aria-hidden="true" />
                       {b.shortName}
                     </span>
-                    <span className="hp-endpoint-url">{b.endpointFormat}</span>
+                    <span className="hp-endpoint-url">{breakableUrl(b.endpointFormat)}</span>
                     <span className="hp-badge" data-tone={b.geoBlocked ? "amber" : "green"}>{b.geoBlocked ? "Official page" : "Checked directly"}</span>
                   </Link>
                 </li>
@@ -168,8 +185,10 @@ export function HomePage() {
               <li key={b.code}>
                 <Link href={`/banks/${b.code}`} prefetch={false} className="hp-bank">
                   <BankLogoByName code={b.code} size={32} />
-                  <span className="hp-bank-name">{b.shortName}</span>
-                  {b.geoBlocked && <span className="hp-badge" data-tone="amber">Official page</span>}
+                  <span className="hp-bank-text">
+                    <span className="hp-bank-name">{b.shortName}</span>
+                    {b.geoBlocked && <span className="hp-badge" data-tone="amber">Official page</span>}
+                  </span>
                 </Link>
               </li>
             ))}
@@ -222,10 +241,6 @@ export function HomePage() {
             ))}
           </div>
         </section>
-
-        <div className="container hp-section hp-agent-mobile">
-          <AgentPrompt />
-        </div>
       </main>
       <Footer />
     </>
