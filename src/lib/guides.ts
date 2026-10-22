@@ -321,7 +321,7 @@ export const articles: Article[] = [
 
       { type: "heading", id: "reference-number-fraud", text: "4. Fabricated receipts and reference number fraud" },
       { type: "text", text: "Some fraudsters create completely fake receipts that mimic the design of the real banking app. These are harder to make but can fool staff who don't know exactly what the real receipt looks like." },
-      { type: "text", text: "Detection: Verify the transaction reference. If the reference doesn't exist on the bank's system, the receipt is fake. The bank endpoint will return a 404 or error." },
+      { type: "text", text: "Detection: Verify the transaction reference. If the bank has no record of it, the payment is not confirmed: do not accept the receipt. A made-up reference and a mistyped one look the same from outside, so ask for the receipt link or QR code before you decide." },
       { type: "text", text: "Reference numbers follow patterns, so a made-up one can look right:" },
       { type: "list", items: [
         "CBE: new receipts carry a Receipt ID in the mbreciept.cbe.com.et link or QR code; older ones show FT plus 10 letters and digits (e.g. FT26SAMPLE01)",

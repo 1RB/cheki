@@ -387,7 +387,7 @@ export const endpointDocs: EndpointDoc[] = [
     redactedExample: "https://awashpay.awashbank.com:8225/-2KDLXXXXXX-4UXXXX",
     fieldsParsed: ["senderName", "senderAccount", "receiverName", "receiverAccount", "amount", "currency", "date", "reference", "branch", "reason", "transactionType"],
     unknownRef: 'HTTP 200 text/html, a short page reading "Receipt not found".',
-    gotchas: ["Port 8225 with a certificate that does not verify.", "Sits behind an F5 BIG-IP WAF; aggressive retries can get blocked."],
+    gotchas: ["Served on port 8225. The certificate verifies normally (publicly trusted chain, checked Oct 2026).", "Sits behind an F5 BIG-IP WAF; aggressive retries can get blocked."],
     changelog: [],
     parserSource: "src/lib/parsers/awash.ts",
     fixture: "tests/fixtures/awash",

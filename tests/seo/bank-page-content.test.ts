@@ -5,7 +5,7 @@
  */
 import { describe, it, expect } from "vitest";
 import { banks, getBank } from "@/lib/banks";
-import { bankPageContent, builtInHeadings, faqTopic, hasGeoSection, receiptTypeLabel, requiredInfoIntro } from "@/lib/bank-page-content";
+import { apiExampleBody, bankPageContent, builtInHeadings, faqTopic, hasGeoSection, howToSubmit, receiptTypeLabel, requiredInfoIntro } from "@/lib/bank-page-content";
 import { aOrAn } from "@/lib/indefinite-article";
 import { BANK_HEADING, BANKS_WITH_TOPIC_PAGES } from "@/lib/seo-redirects";
 import { readFileSync } from "node:fs";
@@ -70,6 +70,56 @@ describe("bank page content", () => {
 
   it("BOA: a decoded QR without BOA's answer is not verified", () => {
     expect(text("boa")).toMatch(/decoded only, not verified/);
+  });
+
+  it("BOA: no copy says the QR is the only way, or that BOA never knows inter-bank transfers", () => {
+    const t = text("boa");
+    expect(t).not.toMatch(/only (?:proof|option|way)|only via QR|not exposed in BOA's API|does not recognize inter-bank/i);
+    expect(t).not.toMatch(/CryptoJS|ethiobank_receipts/);
+    expect(t).toMatch(/not yet confirmed|have not confirmed/);
+  });
+
+  it("a record the bank does not have is 'not confirmed', never 'fake'", () => {
+    for (const b of live) {
+      expect(text(b.code), b.code).not.toMatch(/(?:not completed|doesn't exist|has no receipt)[^.]*\breceipt is fake/i);
+    }
+  });
+
+  it("QR first, link second, typed reference as the fallback", () => {
+    for (const code of ["cbe", "boa", "cbebirr", "dashen"]) {
+      expect(howToSubmit(getBank(code)!), code).toMatch(/^Scan the receipt's QR code or paste the receipt link/);
+    }
+    expect(howToSubmit(getBank("boa")!)).toMatch(/last 5 digits of the account on the receipt/);
+    expect(howToSubmit(getBank("cbebirr")!)).toMatch(/payer's phone number/);
+    // Link-only banks: a typed number is no fallback at all.
+    for (const code of ["awash", "siinqee", "ebirr"]) expect(howToSubmit(getBank(code)!), code).toBe("Paste the full receipt link into cheki");
+  });
+
+  it("the API example carries every input the bank's current format needs", () => {
+    expect(apiExampleBody(getBank("cbebirr")!)).toMatch(/"phoneNumber": "2519XXXXXXXX"/);
+    expect(apiExampleBody(getBank("boa")!)).toMatch(/"accountNumber"/);
+    expect(apiExampleBody(getBank("cbe")!)).not.toMatch(/accountNumber|phoneNumber/);
+    for (const b of live) {
+      const body = JSON.parse(apiExampleBody(b));
+      expect(body.bank, b.code).toBe(b.code);
+      if (b.requiresPhone) expect(body.phoneNumber, b.code).toBeTruthy();
+    }
+  });
+
+  it("CBE Birr leads with the QR code and link, and never calls a receipt fake from an empty page", () => {
+    const t = text("cbebirr");
+    expect(requiredInfoIntro(getBank("cbebirr")!)).toMatch(/QR code or link/);
+    expect(getBank("cbebirr")!.howToVerify[0]).toMatch(/^Scan the QR code/);
+    expect(t).toMatch(/payer's phone number, or the receipt QR code or link/);
+  });
+
+  it("Awash: no brute-force or counter-rate claims, and the sample link has the real 10+6 shape", () => {
+    const t = text("awash");
+    expect(t).not.toMatch(/brute|R-squared|per sec|\/sec|proven it is possible/i);
+    expect(t).toMatch(/awashpay\.awashbank\.com:8225\/-2KDLXXXXXX-4UXXXX/);
+    expect(t).toMatch(/cannot be derived from the Transaction ID/);
+    // The manifest (notes included) is public in the repo too.
+    expect(readFileSync(join(__dirname, "..", "..", "src/lib/manifest/banks.json"), "utf8")).not.toMatch(/brute|\/sec\b/i);
   });
 
   it("names M-Pesa's PDF-in-JSON receipts correctly", () => {

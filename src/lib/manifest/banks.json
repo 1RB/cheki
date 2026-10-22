@@ -700,10 +700,10 @@
     "requiresAccount": false,
     "endpoint": "https://awashpay.awashbank.com:8225/-{ref}",
     "endpointFormat": "https://awashpay.awashbank.com:8225/-{BASE36_TRANSACTION_ID}-{COUNTER_TOKEN}",
-    "sslVerify": false,
+    "sslVerify": true,
     "color": "#E2231A",
     "initials": "AB",
-    "notes": "URL fully reverse engineered with 18 samples (Apr 2025-Jun 2026). URL format: -{base36(txID)}-{base36(counter)}. txID has YYMMDDHHMM+5-digit-seq structure (2026+). Counter is monotonically increasing with accelerating rate (4.4/sec in 2025 to 7.5/sec in Jun 2026). Share link sent via SMS automatically. 2 successful brute-force proofs (May 14, Apr 1). Backend: MoonlightMBanking (Java) behind F5 BIG-IP WAF. Need more samples from underrepresented periods.",
+    "notes": "Share link format: -{base36(Transaction ID)}-{second segment issued by Awash's server}. The Transaction ID has a YYMMDDHHMM + 5-digit sequence structure (2026+). The second segment rises over time but cannot be derived from the Transaction ID, so cheki needs the full link. Share link sent via SMS automatically. Backend behind an F5 BIG-IP WAF.",
     "description": "Awash Bank publishes transaction receipts as public HTML pages on awashpay.awashbank.com. The share link has a two-part token: the first part is the numeric Transaction ID encoded in base-36, and the second part is a server-side counter that increases with transaction time. The link is sent automatically via SMS after every transaction. You can also share it from the Awash app.",
     "referenceFormat": "Awash share link from SMS (e.g. https://awashpay.awashbank.com:8225/-2KDL95XE81-4U0000). The first segment is base-36 of the Transaction ID; the second segment is a server counter.",
     "referenceExample": "2KDL95XE81-4U0000",
@@ -725,15 +725,15 @@
       },
       {
         "q": "Where is the share link in the Awash app?",
-        "a": "After a transfer, open the transaction details in the Awash app and use the share option. The link will look like https://awashpay.awashbank.com:8225/-XXXXXXXX-XXXXXXXX."
+        "a": "After a transfer, open the transaction details in the Awash app and use the share option. The link looks like https://awashpay.awashbank.com:8225/-2KDLXXXXXX-4UXXXX: about 10 characters, a dash, then about 6 more."
       },
       {
         "q": "Can cheki generate the share link from the Transaction ID?",
-        "a": "We have proven it is possible. By converting the Transaction ID to base-36 (part 1) and brute-forcing the counter (part 2) around a time-based prediction, we successfully constructed valid share URLs from just the Transaction ID twice. With 18 samples spanning April 2025 to June 2026, our prediction model is accurate enough for nearby dates. With more community samples, brute-force time could drop to under 1 minute."
+        "a": "No. The first part of the link is the Transaction ID in base 36, but the second part is issued by Awash's server when the receipt is shared and cannot be derived from the Transaction ID. Ask the sender for the full share link, from the Awash SMS or the app, and paste it into cheki."
       },
       {
         "q": "Is the second part of the Awash URL random?",
-        "a": "It is a monotonically increasing counter, not random. From 18 analyzed samples, the counter rate is accelerating: 4.4/sec in mid-2025, 6.4/sec by January 2026, and 7.5/sec by June 2026. A quadratic model fits with R-squared = 0.9999. The share link is sent automatically via SMS after every transaction."
+        "a": "It is not random, and it is not a hash of the Transaction ID: it rises over time. It is still issued by Awash's server, so cheki cannot work it out and needs the full link. The share link is sent automatically via SMS after every transaction."
       },
       {
         "q": "What is the Transaction ID structure?",
@@ -881,10 +881,10 @@
     "referenceFormat": "10 or 11 letters and digits (the TID in the receipt link from the SMS)",
     "referenceExample": "DTS41AB2C90",
     "howToVerify": [
-      "Get the receipt number (TID) from the CBE Birr SMS or receipt link, e.g. DTS41AB2C90",
-      "Get the payer's phone number (09XXXXXXXX, 07XXXXXXXX or 251XXXXXXXXX)",
+      "Scan the QR code on the CBE Birr receipt, or paste the receipt link (cbepay1.cbe.com.et/aureceipt?TID=...): both carry the receipt number and the payer's phone number",
+      "No QR code or link? Enter the receipt number (TID) from the CBE Birr SMS, e.g. DTS41AB2C90, and the payer's phone number (09XXXXXXXX, 07XXXXXXXX or 251XXXXXXXXX)",
       "cheki fetches the receipt PDF from CBE Birr's public endpoint and shows the payer, receiver, amount and date",
-      "An empty page back usually means the receipt number and phone don't match: check both"
+      "An empty page back means not confirmed: usually the receipt number and phone don't match, so check both"
     ],
     "useCases": [
       "Merchants verifying CBE Birr payments",
@@ -894,11 +894,11 @@
     "faq": [
       {
         "q": "Can I verify a CBE Birr receipt online?",
-        "a": "Yes. Enter the receipt number (TID) from the CBE Birr SMS and the payer's phone number. cheki fetches the receipt PDF from CBE Birr's own server and shows the payer, receiver, amount, fees, date and status. CBE Birr support is in beta."
+        "a": "Yes. Scan the QR code on the CBE Birr receipt or paste its receipt link: both carry the receipt number (TID) and the payer's phone number. Without them, enter the receipt number from the CBE Birr SMS and the payer's phone number. cheki fetches the receipt PDF from CBE Birr's own server and shows the payer, receiver, amount, fees, date and status. CBE Birr support is in beta."
       },
       {
         "q": "Why does CBE Birr need a phone number?",
-        "a": "CBE Birr's receipt endpoint only returns a receipt when the receipt number and the payer's phone number match. This prevents unauthorized receipt enumeration."
+        "a": "CBE Birr's receipt endpoint only returns a receipt when the receipt number and the payer's phone number match, so a receipt number on its own is not enough. The receipt QR code and link carry the payer's phone number, so share them only privately."
       },
       {
         "q": "What does it mean when cheki could not confirm a CBE Birr receipt?",
