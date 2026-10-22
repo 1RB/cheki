@@ -17,7 +17,7 @@ import { compareFaqs } from "@/lib/compare-content";
 import { docsFaqs, developersFaqs } from "@/lib/api-faq";
 import { articles } from "@/lib/guides";
 import { getAllBanks } from "@/lib/manifest/loader";
-import { LIVE_BANK_COUNT, TOTAL_BANK_COUNT, IN_DEVELOPMENT_BANK_COUNT, liveBankList, liveProviders } from "@/lib/bank-counts";
+import { LIVE_BANK_COUNT, TOTAL_BANK_COUNT, IN_DEVELOPMENT_BANK_COUNT, directBankList, linkOutNote, liveProviders } from "@/lib/bank-counts";
 import { metadata as rootMetadata } from "@/app/layout";
 import { metadata as docsMetadata } from "@/app/docs/layout";
 import { metadata as developersMetadata } from "@/app/developers/layout";
@@ -117,7 +117,10 @@ describe("live bank counts match the manifest", () => {
     );
     expect(supportFaqs.length).toBeGreaterThan(0);
     for (const f of supportFaqs) {
-      expect(f.a).toContain(liveBankList());
+      // Direct banks are listed by name; Telebirr and M-Pesa get the link-out
+      // sentence, never a place in the "checked" list.
+      expect(f.a).toContain(directBankList());
+      expect(f.a).toContain(linkOutNote());
       for (const b of inDev) expect(f.a, `${f.q} lists ${b.name}`).not.toContain(b.name);
     }
   });

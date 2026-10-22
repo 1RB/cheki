@@ -65,6 +65,16 @@ function whatItShows(b: Bank): string {
 }
 
 /**
+ * Telebirr and M-Pesa (geoBlocked) block cloud servers, cheki.et's included,
+ * so the hosted checker opens their official receipt page instead of checking
+ * it. Their copy must not say cheki confirms them until a local relay exists.
+ */
+export function linkOutLine(short: string): string {
+  return `${short} blocks cloud servers, so cheki opens the official receipt page for you to check the amount and receiver yourself. Direct checks return once a local relay is live.`;
+}
+const LINK_OUT_CHECK = "On that page, check that the amount, the receiver's name and the date are the ones you expected.";
+
+/**
  * The line under "What you need to verify X receipt": where the inputs come
  * from, and whether an account number is needed. It replaces the "What
  * information you need" section the check-payment page brought, which listed
@@ -111,10 +121,10 @@ const VERIFY_BY_HAND: Record<string, { sections: BankSection[]; faq: BankFaq[] }
   },
   telebirr: {
     faq: [
-      { q: "How do I verify a Telebirr receipt?", a: "Select Telebirr, paste your transaction reference number, and click Verify. cheki fetches the receipt from Telebirr's public endpoint and shows you the result instantly." },
-      { q: "Why does Telebirr verification sometimes fail?", a: "Telebirr's endpoint (transactioninfo.ethiotelecom.et) blocks requests from non-Ethiopian IP addresses. If cheki's server can't reach it, we provide a direct link for you to open the receipt yourself. Self-hosting cheki on an Ethiopian IP bypasses this restriction." },
+      { q: "How do I verify a Telebirr receipt?", a: `Paste the transaction number into cheki, or scan the Payment QR Code on the receipt. ${linkOutLine("Telebirr")} ${LINK_OUT_CHECK}` },
+      { q: "Why doesn't cheki.et check Telebirr receipts itself?", a: "Telebirr's receipt page (transactioninfo.ethiotelecom.et) only answers Ethiopian networks and blocks cloud servers, cheki.et's included. So cheki.et opens the official receipt page for you instead of checking it. A cheki server self-hosted on an Ethiopian network checks Telebirr directly." },
       { q: "Do I need an account number for Telebirr?", a: "No. Telebirr only requires the transaction reference number. The receipt is returned as an HTML page with payer name, receiver name, amount, and date." },
-      { q: "Is Telebirr receipt verification free?", a: `Yes. cheki verifies Telebirr receipts for free. ${NO_SIGNUP_SENTENCE} check.et uses the same endpoint. ${competitorPrices(["check.et"])}` },
+      { q: "Is Telebirr receipt verification free?", a: `Yes. cheki is free for Telebirr too. ${NO_SIGNUP_SENTENCE} check.et uses the same endpoint. ${competitorPrices(["check.et"])}` },
     ],
     sections: [
       {
@@ -123,7 +133,7 @@ const VERIFY_BY_HAND: Record<string, { sections: BankSection[]; faq: BankFaq[] }
         // when this section is there (hasGeoSection).
         id: BANK_HEADING.geoBlocking.id,
         heading: BANK_HEADING.geoBlocking.text("Telebirr"),
-        body: "Telebirr's receipt endpoint (transactioninfo.ethiotelecom.et) only answers Ethiopian IP addresses. When cheki's server cannot reach it, cheki gives you the fallback: a direct link to open the receipt yourself in a browser on an Ethiopian network. For reliable verification, self-host cheki on a server with an Ethiopian IP address.",
+        body: `Telebirr's receipt page (transactioninfo.ethiotelecom.et) only answers Ethiopian networks. ${linkOutLine("Telebirr")} The page opens on a phone or computer on an Ethiopian network. A result read from that page is never shown as verified. To check Telebirr directly today, self-host cheki on an Ethiopian network.`,
       },
     ],
   },
@@ -144,15 +154,15 @@ const VERIFY_BY_HAND: Record<string, { sections: BankSection[]; faq: BankFaq[] }
   },
   mpesa: {
     faq: [
-      { q: "How do I verify an M-Pesa Ethiopia receipt?", a: "Select M-Pesa Ethiopia, paste your transaction number, and click Verify. cheki fetches the receipt from Safaricom's API and returns the result." },
-      { q: "Why does M-Pesa verification sometimes fail?", a: "M-Pesa's endpoint (m-pesabusiness.safaricom.et) blocks requests from non-Kenyan/Ethiopian IPs. When our server can't reach it, cheki gives you the receipt link to open on your own phone instead." },
+      { q: "How do I verify an M-Pesa Ethiopia receipt?", a: `Paste the transaction number into cheki. ${linkOutLine("M-Pesa")} ${LINK_OUT_CHECK}` },
+      { q: "Why doesn't cheki.et check M-Pesa receipts itself?", a: "M-Pesa's receipt API (m-pesabusiness.safaricom.et) only answers Ethiopian networks and blocks cloud servers, cheki.et's included. So cheki.et gives you the official receipt link to open on your own phone instead of checking it. A cheki server self-hosted on an Ethiopian network checks M-Pesa directly." },
       { q: "Do I need an account number for M-Pesa?", a: "No. M-Pesa only requires the transaction number (trxNo). The API returns the receipt as a PDF (inside a JSON response) with the payer, receiver, amount and date. M-Pesa support is in beta until a real receipt confirms cheki's parser." },
     ],
     sections: [
       {
         id: BANK_HEADING.geoBlocking.id,
         heading: BANK_HEADING.geoBlocking.text("M-Pesa"),
-        body: "Like Telebirr, M-Pesa's endpoint restricts access to Ethiopian and Kenyan IP addresses. cheki does not try to get around the block: when the endpoint won't answer, it hands you the receipt link to open yourself. For reliable verification, self-host cheki on an Ethiopian server.",
+        body: `Like Telebirr, M-Pesa's receipt API only answers Ethiopian networks. ${linkOutLine("M-Pesa")} The link answers with the receipt as a PDF inside JSON rather than a readable page, so paste what it shows back into cheki (or use the bookmarklet) and cheki reads the PDF for you, marked as not confirmed. cheki does not try to get around the block. To check M-Pesa directly today, self-host cheki on an Ethiopian network.`,
       },
     ],
   },
@@ -180,9 +190,9 @@ function generatedVerify(b: Bank): { sections: BankSection[]; faq: BankFaq[] } {
           : `No. ${b.shortName} only requires the transaction reference number. The receipt is returned as ${withArticle(receiptTypeLabel(b))} with payer name, receiver name, amount, and date.`,
       },
       {
-        q: b.geoBlocked ? `Why does ${b.shortName} verification sometimes fail from outside Ethiopia?` : `Is ${b.shortName} receipt verification free?`,
+        q: b.geoBlocked ? `Why doesn't cheki.et check ${b.shortName} receipts itself?` : `Is ${b.shortName} receipt verification free?`,
         a: b.geoBlocked
-          ? `${b.shortName}'s endpoint (${b.endpoint}) blocks requests from non-Ethiopian IP addresses. If cheki's server can't reach it, we provide a direct link for you to open the receipt yourself. Self-hosting cheki on an Ethiopian IP bypasses this restriction.`
+          ? `${b.shortName}'s receipt endpoint only answers Ethiopian networks. ${linkOutLine(b.shortName)} A cheki server self-hosted on an Ethiopian network checks it directly.`
           : `Yes. cheki is free. ${NO_SIGNUP_SENTENCE} ${competitorPrices(["check.et"])} cheki uses the same public ${b.shortName} endpoint but charges nothing.`,
       },
     ],
@@ -203,7 +213,9 @@ function checkPayment(b: Bank): { sections: BankSection[]; faq: BankFaq[] } {
     faq: [
       {
         q: `How do I check if ${withArticle(b.shortName)} payment was successful?`,
-        a: `Select ${b.name} on cheki, enter the ${ref}${b.requiresAccount ? ` and the last ${b.accountDigits} digits of the account on the receipt` : ``}, and click Verify. If the payment exists, cheki shows you ${whatItShows(b)}. If it doesn't exist, the payment was not completed or the receipt is fake.`,
+        a: b.geoBlocked
+          ? `Enter the ${ref} on cheki and open the official ${b.shortName} receipt page it gives you. ${LINK_OUT_CHECK} If ${b.shortName}'s page has no receipt for that number, the payment was not completed or the receipt is fake.`
+          : `Select ${b.name} on cheki, enter the ${ref}${b.requiresAccount ? ` and the last ${b.accountDigits} digits of the account on the receipt` : ``}, and click Verify. If the payment exists, cheki shows you ${whatItShows(b)}. If it doesn't exist, the payment was not completed or the receipt is fake.`,
       },
       {
         q: `Can I check ${withArticle(b.shortName)} payment without the receipt?`,
@@ -213,13 +225,17 @@ function checkPayment(b: Bank): { sections: BankSection[]; faq: BankFaq[] } {
       },
       {
         q: `Is checking ${b.shortName} payments free?`,
-        a: `Yes. cheki checks ${b.shortName} payments for free. ${NO_SIGNUP_SENTENCE} ${competitorPrices(["check.et"])} cheki uses the same public ${b.shortName} endpoint.`,
+        a: b.geoBlocked
+          ? `Yes. cheki is free for ${b.shortName} too. ${NO_SIGNUP_SENTENCE} ${competitorPrices(["check.et"])} cheki uses the same public ${b.shortName} endpoint.`
+          : `Yes. cheki checks ${b.shortName} payments for free. ${NO_SIGNUP_SENTENCE} ${competitorPrices(["check.et"])} cheki uses the same public ${b.shortName} endpoint.`,
       },
     ],
     sections: [
       {
         heading: `Checking ${b.shortName} payment status`,
-        body: `${b.name} publishes transaction data at ${b.endpointFormat}. When someone sends you a payment via ${b.shortName}, a receipt is generated at this URL. cheki fetches the receipt, parses it, and tells you whether ${b.shortName} has the record and what it shows: ${whatItShows(b)}. This takes 2 to 10 seconds.`,
+        body: b.geoBlocked
+          ? `${b.name} publishes transaction data at ${b.endpointFormat}. When someone sends you a payment via ${b.shortName}, a receipt is generated at this URL. ${linkOutLine(b.shortName)} ${LINK_OUT_CHECK}`
+          : `${b.name} publishes transaction data at ${b.endpointFormat}. When someone sends you a payment via ${b.shortName}, a receipt is generated at this URL. cheki fetches the receipt, parses it, and tells you whether ${b.shortName} has the record and what it shows: ${whatItShows(b)}. This takes 2 to 10 seconds.`,
       },
       // No "What information you need" section: it listed the inputs a second
       // time under "What you need to verify X receipt" (requiredInfoIntro).
@@ -283,11 +299,11 @@ const HOWTO_EXTRA: Record<string, { sections: BankSection[]; faq: BankFaq[] }> =
       },
       {
         heading: "Verify from the Telebirr receipt QR code",
-        body: "The receipt in the Telebirr app shows a Payment QR Code. It holds the transaction number and nothing else cheki uses: no amount and no names. Anyone who knows a transaction number can make a valid QR for it, so cheki reads the number out of the QR and checks it with Telebirr; a result is verified only when Telebirr's own receipt page confirms it.",
+        body: "The receipt in the Telebirr app shows a Payment QR Code. It holds the transaction number and nothing else cheki uses: no amount and no names. Anyone who knows a transaction number can make a valid QR for it, so the QR is never proof on its own: a receipt is verified only when Telebirr's own receipt page confirms it.",
         steps: [
           "Ask the customer for a screenshot of the Telebirr receipt, or have them show it on their phone.",
           "On cheki, upload or paste the screenshot, scan the QR with the camera, or paste the QR text into the receipt field. cheki reads the transaction number in your browser and selects Telebirr.",
-          "cheki checks that number with Telebirr exactly as if you had typed it. Telebirr only answers Ethiopian networks, so you may get an 'Open the Telebirr receipt' link to open on your phone instead.",
+          "cheki treats that number exactly as if you had typed it. Telebirr blocks cloud servers, so cheki opens Telebirr's official receipt page for it: check the amount, the receiver's name and the date there.",
         ],
       },
       {
@@ -337,7 +353,7 @@ const RECEIPT_DOWNLOAD: Record<string, { section: (b: Bank) => BankSection; faq:
     }),
     faq: [
       { q: "How do I download a Telebirr receipt as a PDF?", a: "Open the receipt page from the SMS link (transactioninfo.ethiotelecom.et/receipt/ followed by the transaction number) on an Ethiopian network, then use the browser's Share or Print option and choose Save as PDF. Telebirr has no separate PDF download site: the web page is the official receipt." },
-      { q: "How do I get a Telebirr receipt from a transaction number?", a: "Add the transaction number to the end of transactioninfo.ethiotelecom.et/receipt/ and open it on an Ethiopian network, or paste the number into cheki, which reads that same page. Then check that the receiver and the amount are the ones you expected: anyone who has the number can open the receipt." },
+      { q: "How do I get a Telebirr receipt from a transaction number?", a: "Add the transaction number to the end of transactioninfo.ethiotelecom.et/receipt/ and open it on an Ethiopian network, or paste the number into cheki, which opens that same page for you. Then check that the receiver and the amount are the ones you expected: anyone who has the number can open the receipt." },
     ],
   },
   cbe: {
@@ -377,7 +393,7 @@ const RECEIPT_FORMAT: Record<string, { body: (b: Bank) => string; fields: string
   },
   telebirr: {
     body: (b) =>
-      `Telebirr receipts are HTML pages at ${b.endpointFormat}, in English and Amharic. cheki reads the fields out of the page and returns the same JSON shape as every other bank.`,
+      `Telebirr receipts are HTML pages at ${b.endpointFormat}, in English and Amharic. A cheki server on an Ethiopian network reads the fields out of the page and returns the same JSON shape as every other bank. cheki.et cannot reach the page, so it opens it for you instead.`,
     fields: [
       "Payer name",
       "Payer Telebirr number",
@@ -404,7 +420,7 @@ const RECEIPT_FORMAT: Record<string, { body: (b: Bank) => string; fields: string
   },
   mpesa: {
     body: (b) =>
-      `M-Pesa Ethiopia answers ${b.endpointFormat} with a small JSON envelope, {responseCode, responseDescription, base64Data}, whose base64Data is the receipt PDF. cheki checks the base64, caps the decoded PDF at 5 MB, extracts its text and maps the labelled fields.${b.beta ? " This shape is inferred from other open-source verifiers and is in beta until a real receipt confirms it." : ""}`,
+      `M-Pesa Ethiopia answers ${b.endpointFormat} with a small JSON envelope, {responseCode, responseDescription, base64Data}, whose base64Data is the receipt PDF. A cheki server on an Ethiopian network checks the base64, caps the decoded PDF at 5 MB, extracts its text and maps the labelled fields; cheki.et cannot reach the API, so it gives you the receipt link instead.${b.beta ? " This shape is inferred from other open-source verifiers and is in beta until a real receipt confirms it." : ""}`,
     fields: [
       "Transaction ID and receipt number",
       "Payer name and number",
@@ -434,7 +450,7 @@ function fakeReceipt(b: Bank): { section: BankSection; faq: BankFaq[] } {
     section: {
       id: BANK_HEADING.fake.id,
       heading: BANK_HEADING.fake.text(s),
-      body: `A fake ${s} receipt is one of three things: a receipt ${s} has no record of (a made-up reference on a forged ${b.responseType === "pdf" || b.responseType === "pdf-in-json" ? "PDF" : "receipt page"}), a real receipt with the amount, name or date edited, or a genuine receipt from an earlier payment. Looking at it is not enough. cheki asks ${b.name}'s own receipt record and calls a receipt verified only when ${s} confirms it; then compare what ${s} shows with what you were told. Before you even check, these are warning signs:`,
+      body: `A fake ${s} receipt is one of three things: a receipt ${s} has no record of (a made-up reference on a forged ${b.responseType === "pdf" || b.responseType === "pdf-in-json" ? "PDF" : "receipt page"}), a real receipt with the amount, name or date edited, or a genuine receipt from an earlier payment. Looking at it is not enough. ${b.geoBlocked ? `Open ${s}'s official receipt page from cheki and compare what it shows with what you were told; cheki.et cannot confirm ${s} receipts itself until a local relay is live, and a receipt is verified only when ${s} itself confirms it.` : `cheki asks ${b.name}'s own receipt record and calls a receipt verified only when ${s} confirms it; then compare what ${s} shows with what you were told.`} Before you even check, these are warning signs:`,
       bullets: [
         `The reference does not fit ${s}'s format (see Reference number format above)`,
         `The amount, sender or receiver on the screenshot differs from what ${s}'s record shows: the screenshot was edited`,
@@ -447,7 +463,7 @@ function fakeReceipt(b: Bank): { section: BankSection; faq: BankFaq[] } {
     faq: [
       {
         q: `How do I know if ${withArticle(s)} receipt is fake?`,
-        a: `Check it against ${s}'s own record. Paste the ${refNoun(b)} into cheki: if ${s} has no record of it, do not accept it. If the record exists but the amount, sender or date differs from what you were shown, the screenshot was edited or the receipt belongs to another payment.`,
+        a: `Check it against ${s}'s own record. ${b.geoBlocked ? `Paste the ${refNoun(b)} into cheki and open the official receipt page it gives you` : `Paste the ${refNoun(b)} into cheki`}: if ${s} has no record of it, do not accept it. If the record exists but the amount, sender or date differs from what you were shown, the screenshot was edited or the receipt belongs to another payment.`,
       },
       {
         q: `Can someone edit ${withArticle(s)} receipt screenshot?`,
@@ -477,7 +493,7 @@ const normQ = (q: string) => q.toLowerCase().replace(/[^a-z0-9]/g, "");
 export function faqTopic(q: string): string {
   if (/^(?:is|does)\b.*\b(?:free|charge)\b/i.test(q)) return "topic:free";
   if (/^(?:do i need|does .+ (?:verification )?require) (?:an|the) account number\b/i.test(q)) return "topic:account-number";
-  if (/^why does .+ verification (?:sometimes )?fail\b/i.test(q)) return "topic:fails";
+  if (/^why does .+ verification (?:sometimes )?fail\b/i.test(q) || /^why doesn't cheki(?:\.et)? check .+ receipts itself\b/i.test(q)) return "topic:fails";
   return normQ(q);
 }
 

@@ -8,8 +8,23 @@ Every cheki SDK ships the same version: npm `cheki-verify` (and `@1rb/cheki-veri
 - A path with a capital letter (`/Guides`, which Google had indexed as a 404) now answers one 301 to its lowercase form, query kept (`src/proxy.ts`). API, assets and files are untouched.
 - eBirr page: a USSD code section per partner (Nib *617#/*635#, COOPay-Ebirr *841#, Kaafi and Wegagen *602#) and FAQs for the dial code and receipt.ebirr.com. "ebirr code" was the page's top query with no clicks.
 - CBE page: an FAQ confirming mbreciept.cbe.com.et (spelled "reciept") is CBE's own receipt address.
-- Fraud guide: section 6 is now "Fake Telebirr receipts and SMS spoofing" and covers edited screenshots as well as fake SMS, so the page answers "fake telebirr receipt" again.
-- README: the heading names the product ("Ethiopian bank receipt verifier") and the banks it checks, which become the GitHub page's heading and description text.
+- Fraud guide: section 6 is now "Fake Telebirr receipts and SMS spoofing" and covers edited screenshots as well as fake SMS, so the page answers "fake telebirr receipt" again. It says to scan the receipt QR first (link second, typed number as the fallback); cheki opens the official ethiotelecom receipt page, where the amount, receiver name and date are checked.
+- README: the heading names the product ("Ethiopian bank receipt verifier") and the banks it checks (8 directly, Telebirr and M-Pesa through their official receipt pages), which become the GitHub page's heading and description text.
+
+**Homepage on phones**
+- The endpoint list no longer cuts receipt URLs off: on a phone each URL has its own line under the bank name and badge, and wraps at its slashes and dots. Rows keep a wider right margin so a browser's floating page button doesn't sit on the text. Desktop is unchanged.
+- "Let your agent integrate it" now sits where it does on desktop: right after the checker, before the endpoint list, instead of after the FAQ at the very bottom.
+- The "Official page" badge on the Telebirr and M-Pesa tiles drops below the name on narrow tiles instead of cutting the name to "T…".
+
+**Telebirr and M-Pesa are link-out until a local relay exists**
+- Telebirr and M-Pesa block cloud servers, so cheki.et cannot check them: `POST /api/verify` answers 502 with `fallbackUrl`, the official receipt page. The site now says so instead of counting them as checked live. Copy reads "8 banks and wallets checked directly, plus Telebirr and M-Pesa through their official receipt pages" on the homepage, `/banks`, the Telebirr and M-Pesa pages, `/compare`, `/about`, the guides, the FAQ and its structured data, the meta and web manifest descriptions, the Open Graph cards, `llms.txt`, the README and the SDK READMEs. Direct checks return once a local relay is live.
+- The verify card for these banks is titled "Not checked: {bank} blocks cheki's server", stays neutral (never green), keeps "Open the official receipt" as its one primary action, and adds one line: check the amount, the receiver's name and the date before releasing goods. The browser-first panel says the same.
+- The Telebirr and M-Pesa Open Graph cards no longer show a "Verified with" result.
+- The 502 error text no longer reads "Open the receipt directly: Try the new receipt format: <link>"; it ends "Open the receipt directly: <link>". The response shape and `/api/banks` (both stay `status: "live"`; a self-hosted server on an Ethiopian network checks them) are unchanged.
+
+**Re-check links for shared results**
+- A verdict now has a "Copy re-check link" button, and Share and Copy result include the link. Opening it fills the form and asks the bank again in the recipient's browser, so the person receiving it gets the bank's answer, not the sender's.
+- The link carries only what was entered (receipt link or reference, bank, and the account digits or phone the bank needs) and nothing about the result. It sits in the URL fragment, so it never reaches the server, logs or analytics, and search engines don't index it. Nothing is stored.
 
 ## 1.6.0
 

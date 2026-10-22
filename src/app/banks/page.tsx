@@ -7,6 +7,7 @@ import { useTranslation } from "@/lib/i18n/use-translation";
 import { Icon, ChevronDownIcon, ChevronUpIcon } from "@/components/Icon";
 import { brandTileBg } from "@/lib/utils";
 import { NEW_BANK_ISSUE_URL } from "@/lib/trust-pages";
+import { linkOutNote } from "@/lib/bank-counts";
 
 export default function BanksPage() {
   const { t } = useTranslation();
@@ -72,9 +73,14 @@ export default function BanksPage() {
         <h1 style={{ fontSize: "clamp(28px, 5vw, 40px)", fontWeight: 800, letterSpacing: "-0.03em", marginBottom: "12px" }}>
           {t("banks.title")}
         </h1>
-        <p style={{ color: "var(--ink-2)", fontSize: "17px", maxWidth: "600px", marginBottom: "40px" }}>
+        <p style={{ color: "var(--ink-2)", fontSize: "17px", maxWidth: "600px", marginBottom: linkOutNote() ? "12px" : "40px" }}>
           {t("banks.subtitle", { count: banks.length })}
         </p>
+        {linkOutNote() && (
+          <p style={{ color: "var(--ink-3)", fontSize: "15px", lineHeight: 1.6, maxWidth: "600px", marginBottom: "40px" }}>
+            {linkOutNote()}
+          </p>
+        )}
 
         <div className="grid-3" style={{ gap: "20px" }}>
           {live.map((b) => <BankCard key={b.code} b={b} />)}

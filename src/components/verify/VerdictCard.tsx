@@ -20,6 +20,7 @@ import {
   Copy01Icon,
   CopyCheckIcon,
   Share08Icon,
+  Link01Icon,
   PrinterIcon,
   RefreshIcon,
   ArrowUpRight01Icon,
@@ -33,6 +34,8 @@ interface Props {
   t: Translate;
   onAnother: () => void;
   onRetry?: () => void;
+  /** Re-check link for this result: opening it asks the bank again. */
+  shareUrl?: string;
 }
 
 const noop = () => () => {};
@@ -64,15 +67,20 @@ function Countdown({ seconds, t, onRetry }: { seconds: number; t: Translate; onR
   );
 }
 
-export function VerdictCard({ verdict, result, checkedAt, t, onAnother, onRetry }: Props) {
-  const [copied, setCopied] = useState<"text" | "json" | null>(null);
+export function VerdictCard({ verdict, result, checkedAt, t, onAnother, onRetry, shareUrl }: Props) {
+  const [copied, setCopied] = useState<"text" | "json" | "link" | null>(null);
   const canShare = useCanShare();
   const v = verdict;
   const isJudgement = v.tone !== "neutral";
-  const text = () => resultText(v, { checkedAt, t });
+  // Shared text is only as trustworthy as its sender, so it ends with the
+  // re-check link: the recipient opens it and gets the bank's own answer.
+  const text = () => {
+    const body = resultText(v, { checkedAt, t });
+    return shareUrl ? `${body}\n${t("verify.shared.recheck")}: ${shareUrl}` : body;
+  };
 
-  const copy = async (what: "text" | "json") => {
-    const value = what === "text" ? text() : JSON.stringify(result ? publicJson(result, v) : {}, null, 2);
+  const copy = async (what: "text" | "json" | "link") => {
+    const value = what === "text" ? text() : what === "link" ? (shareUrl ?? "") : JSON.stringify(result ? publicJson(result, v) : {}, null, 2);
     try {
       await navigator.clipboard.writeText(value);
       setCopied(what);
@@ -84,7 +92,8 @@ export function VerdictCard({ verdict, result, checkedAt, t, onAnother, onRetry 
 
   const share = async () => {
     try {
-      await navigator.share({ title: v.title, text: text() });
+      // The link goes in `url` only: most targets append it to the text.
+      await navigator.share({ title: v.title, text: resultText(v, { checkedAt, t }), ...(shareUrl ? { url: shareUrl } : {}) });
     } catch {
       /* dismissed */
     }
@@ -218,6 +227,17 @@ export function VerdictCard({ verdict, result, checkedAt, t, onAnother, onRetry 
             <Icon icon={copied === "text" ? CopyCheckIcon : Copy01Icon} size={18} />
           </button>
         )}
+        {isJudgement && shareUrl && (
+          <button
+            type="button"
+            className="vc-btn vc-btn--quiet vc-btn--icon"
+            onClick={() => copy("link")}
+            aria-label={copied === "link" ? t("verify.actions.linkCopied") : t("verify.actions.copyLink")}
+            title={t("verify.actions.copyLink")}
+          >
+            <Icon icon={copied === "link" ? CopyCheckIcon : Link01Icon} size={18} />
+          </button>
+        )}
         {isJudgement && canShare && (
           <button type="button" className="vc-btn vc-btn--quiet vc-btn--icon" onClick={share} aria-label={t("verify.actions.share")} title={t("verify.actions.share")}>
             <Icon icon={Share08Icon} size={18} />
@@ -228,7 +248,7 @@ export function VerdictCard({ verdict, result, checkedAt, t, onAnother, onRetry 
             <Icon icon={PrinterIcon} size={18} />
           </button>
         )}
-        <span className="sr-only" aria-live="polite">{copied ? t("verify.actions.copied") : ""}</span>
+        <span className="sr-only" aria-live="polite">{copied === "link" ? t("verify.actions.linkCopied") : copied ? t("verify.actions.copied") : ""}</span>
         {hasOwnPrimary && (
           <button type="button" className="vc-btn vc-btn--text" onClick={onAnother}>
             {t("verify.actions.another")}

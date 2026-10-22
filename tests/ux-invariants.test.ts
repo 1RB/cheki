@@ -206,3 +206,30 @@ describe("wide tables", () => {
     expect(tableRule).toMatch(/scrollbar-width:\s*thin/);
   });
 });
+
+describe("homepage on a phone", () => {
+  const home = read("src/components/HomePage.tsx");
+  const homeCss = read("src/components/home/home.css");
+
+  it("puts the agent prompt where desktop has it: in the hero, before the endpoint list", () => {
+    const hero = home.slice(home.indexOf('className="container hp-hero"'), home.indexOf("</section>"));
+    expect(hero).toContain('className="hp-hero-desktop-extra"');
+    expect(hero).toContain('className="hp-agent-mobile"');
+    expect(home.match(/<AgentPrompt \/>/g)).toHaveLength(2);
+    expect(home.indexOf('className="hp-agent-mobile"')).toBeLessThan(home.indexOf('className="hp-endpoints"'));
+  });
+
+  it("wraps endpoint URLs on a phone instead of cutting them off", () => {
+    // Mobile-first base rule: no ellipsis. The one-line, ellipsised URL is a
+    // desktop (min-width: 720px) treatment only.
+    const base = homeCss.match(/\n\.hp-endpoint-url \{([^}]*)\}/)?.[1] ?? "";
+    expect(base).toContain("overflow-wrap: anywhere");
+    expect(base).not.toContain("text-overflow");
+    expect(home).toContain("breakableUrl(b.endpointFormat)");
+  });
+
+  it("lets a bank tile's badge drop below the name instead of truncating it", () => {
+    expect(homeCss).toMatch(/\.hp-bank-text \{[^}]*flex-wrap: wrap/);
+    expect(home).toMatch(/<span className="hp-bank-text">\s*<span className="hp-bank-name">/);
+  });
+});
