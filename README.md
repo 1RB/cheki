@@ -2,9 +2,11 @@
   <a href="https://cheki.et"><img src="docs/assets/readme-header.png" width="100%" alt="cheki: Screenshots are just pixels. Anyone can fake one. cheki checks it with the bank, in seconds. A dithered hand holds a phone showing a green check and 25,000."></a>
 </p>
 
-# cheki
+# cheki: Ethiopian bank receipt verifier
 
 **Check an Ethiopian bank or mobile money receipt with the bank that issued it. Free, open source, no signup, no API key.**
+
+Checks CBE, Bank of Abyssinia (BOA), Dashen, Awash, CBE Birr, Siinqee, eBirr and ZamZam receipts directly with the bank, and opens the official receipt page for Telebirr and M-Pesa.
 
 [![CI](https://img.shields.io/github/actions/workflow/status/1RB/cheki/ci.yml?branch=main&style=flat&label=CI&logo=github)](https://github.com/1RB/cheki/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/cheki-verify?style=flat&label=npm&logo=npm&color=CB383D)](https://www.npmjs.com/package/cheki-verify)

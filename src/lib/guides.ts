@@ -332,10 +332,11 @@ export const articles: Article[] = [
       { type: "text", text: "The fraudster creates urgency. They claim they're in a hurry, the transfer is processing, or they'll lose a flight. They pressure staff into releasing goods before verification is complete." },
       { type: "text", text: "Detection: Never release goods under time pressure. If a customer is genuinely in a hurry, verify the payment first and release goods after. A real payment can be verified in 1-3 seconds with cheki." },
 
-      { type: "heading", id: "telebirr-sms-spoofing", text: "6. Telebirr SMS spoofing fraud" },
+      { type: "heading", id: "telebirr-sms-spoofing", text: "6. Fake Telebirr receipts and SMS spoofing" },
+      { type: "text", text: "A fake Telebirr payment comes in two forms: an edited screenshot of a Telebirr receipt, or a text message made to look like Telebirr's notification. Neither proves anything on its own. cheki does not check Telebirr itself: it opens Telebirr's official receipt page on ethiotelecom, and you compare the amount, the receiver's name and the date there with what you were told." },
       { type: "text", text: "A text arrives that looks exactly like Telebirr's payment notification, apparently from Telebirr's own short code, with a made-up transaction number and amount. No money moved." },
       { type: "callout", variant: "danger", title: "Why it works", text: "SMS sender names are not authenticated on most networks. SMS gateways and SIM boxes can send under any sender ID, so the fake lands in the same thread as real Telebirr messages." },
-      { type: "text", text: "Detection: Never release goods on an SMS alone. Open the transaction number on Telebirr's official receipt page (cheki opens it for you), or check it in the Telebirr app under Accounts, then Verify Payment. If Telebirr has no record of it, the SMS was fake. Train delivery staff and cashiers to check during busy hours too, when skipping it is most tempting." },
+      { type: "text", text: "Detection: Never release goods on an SMS or a screenshot alone. Scan the QR code on the Telebirr receipt with cheki first, paste the receipt link if there is no QR, and type the transaction number only as a fallback. cheki then opens the official ethiotelecom receipt page; check the amount, the receiver's name and the date there. You can also check in the Telebirr app under Accounts, then Verify Payment. If Telebirr's page shows no such receipt, or the amount, name or date differ, the payment was fake. Train delivery staff and cashiers to check during busy hours too, when skipping it is most tempting." },
 
       ...REDACT_BEFORE_SHARING,
 
@@ -349,7 +350,7 @@ export const articles: Article[] = [
           ["Wrong account", "Receiver name and account match yours", "cheki returns receiver name and account number"],
           ["Fabricated receipt", "Does the reference exist on the bank system?", "cheki returns 404 if the receipt doesn't exist"],
           ["Social engineering", "Never skip verification under pressure", "cheki verifies in 1-3 seconds, no excuse to skip"],
-          ["Telebirr SMS spoofing", "Does the transaction number exist at Telebirr?", "Telebirr's own receipt page (cheki opens it) or the Telebirr app, not the SMS"],
+          ["Fake Telebirr receipt or SMS", "Amount, receiver name and date on Telebirr's own receipt page", "Scan the receipt QR (or paste the link) and cheki opens the official ethiotelecom receipt page; not the SMS"],
         ],
       },
 
@@ -366,7 +367,7 @@ export const articles: Article[] = [
       { q: "Can I spot an edited screenshot by looking at it?", a: "Sometimes: uneven fonts, misaligned text or blurry patches around the amount can give it away. A careful edit leaves none of that, so the reliable test is the bank's own record of the reference." },
       { q: "Can someone reuse a receipt from the same day?", a: "Yes. A genuine morning payment can be shown again to a different staff member in the afternoon. Log every reference you accept and refuse one you have already seen." },
       { q: "Can I tell a fake reference number by its format?", a: "No. Fakes are usually made to match the format, so a reference that looks right proves nothing on its own. Paste it into cheki: only the bank's own record can say whether that payment exists." },
-      { q: "How can I tell if a Telebirr SMS is fake?", a: "Not from the SMS itself: the sender name can be spoofed. Open the transaction number on Telebirr's official receipt page (cheki opens it for you) or check it in the Telebirr app. If Telebirr has no record of it, the SMS was fake." },
+      { q: "How can I tell if a Telebirr SMS is fake?", a: "Not from the SMS itself: the sender name can be spoofed. Scan the receipt's QR code with cheki or paste its link (type the transaction number only as a fallback), and cheki opens the official ethiotelecom receipt page. Check the amount, the receiver's name and the date there, or check it in the Telebirr app. If Telebirr has no record of it, the SMS was fake." },
       { q: "What should I do if a receipt is fake?", a: "Do not release the goods. Ask the sender to complete the payment, keep the fake receipt as evidence, and report intentional fraud to the bank and the police." },
     ],
     related: ["cbe-receipt-qr-code", "free-receipt-verification-no-api-key", "self-hosting-docker-guide"],

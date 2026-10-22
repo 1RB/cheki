@@ -8,6 +8,13 @@ Every cheki SDK ships the same version: npm `cheki-verify` (and `@1rb/cheki-veri
 - New guide at /guides/telebirr-receipt-qr-code: how the Payment QR Code on a Telebirr receipt was decoded (base64, an EMVCo-style TLV over hex characters, a byte TLV holding the transaction number, a case-sensitive CRC-16/CCITT-FALSE), a Python decoder, and why a valid QR is not proof of payment. Synthetic examples only. It follows the link-out copy: cheki.et opens Telebirr's official ethiotelecom receipt page (QR first, link second, typed number as the fallback), and the amount, receiver name and date are checked there.
 - Linked from the Telebirr bank page's QR section, the CBE, BOA and receipt-formats guides, the /guides index (For developers) and llms.txt.
 
+**Search fixes from the October Search Console review**
+- A path with a capital letter (`/Guides`, which Google had indexed as a 404) now answers one 301 to its lowercase form, query kept (`src/proxy.ts`). API, assets and files are untouched.
+- eBirr page: a USSD code section per partner (Nib *617#/*635#, COOPay-Ebirr *841#, Kaafi and Wegagen *602#) and FAQs for the dial code and receipt.ebirr.com. "ebirr code" was the page's top query with no clicks.
+- CBE page: an FAQ confirming mbreciept.cbe.com.et (spelled "reciept") is CBE's own receipt address.
+- Fraud guide: section 6 is now "Fake Telebirr receipts and SMS spoofing" and covers edited screenshots as well as fake SMS, so the page answers "fake telebirr receipt" again. It says to scan the receipt QR first (link second, typed number as the fallback); cheki opens the official ethiotelecom receipt page, where the amount, receiver name and date are checked.
+- README: the heading names the product ("Ethiopian bank receipt verifier") and the banks it checks (8 directly, Telebirr and M-Pesa through their official receipt pages), which become the GitHub page's heading and description text.
+
 **Homepage on phones**
 - The endpoint list no longer cuts receipt URLs off: on a phone each URL has its own line under the bank name and badge, and wraps at its slashes and dots. Rows keep a wider right margin so a browser's floating page button doesn't sit on the text. Desktop is unchanged.
 - "Let your agent integrate it" now sits where it does on desktop: right after the checker, before the endpoint list, instead of after the FAQ at the very bottom.
