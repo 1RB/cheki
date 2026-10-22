@@ -85,7 +85,7 @@ $url = $client->getReceiptUrl('cbe', 'fHCxExampleRcpt01');
 // https://cheki.et/api/receipt?bank=cbe&reference=fHCxExampleRcpt01
 ```
 
-Only `cbe`, `zemen`, `dashen` and `zamzam`; anything else throws `InvalidArgumentException`, and so does a ZamZam receipt id that is not digits only. CBE, Dashen and ZamZam links redirect to the bank's own receipt page; Zemen (and older CBE receipts) are served as the bank's PDF.
+Only `cbe`, `zemen`, `dashen` and `zamzam`; anything else throws `InvalidArgumentException`, and so does a ZamZam receipt id that is not digits only. CBE, Dashen and ZamZam links redirect to the bank's own receipt page; Zemen (and older CBE receipts) are served as the bank's PDF. A CBE FT reference or Dashen FT Ref typed in lowercase or with spaces is sent the way the bank prints it (`ft26 sample01` becomes `FT26SAMPLE01`); a CBE Receipt ID keeps its case. `verify` sends the reference as given and the server does the same.
 
 ### Older receipts
 

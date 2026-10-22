@@ -79,6 +79,8 @@ Confirmed results are cached in memory for 6 hours, so checking the same receipt
 | ZamZam Bank | `zamzam` | Receipt link (`receipt.zamzambank.com.et/receipt/…`) or its numeric id | Beta |
 | CBE Birr | `cbebirr` | Receipt number (TID, e.g. `DTS41AB2C90`) + the payer's phone number, or the receipt QR (it carries both) | Beta. An empty page back usually means the number and phone don't match |
 
+References are not case-sensitive for CBE FT references, BOA, Telebirr, M-Pesa, Dashen and CBE Birr, whose receipts print them in capitals: `det0sample` is checked as `DET0SAMPLE`, and spaces or dashes typed inside are dropped. CBE Receipt IDs, Awash and eBirr links and ZamZam ids are used exactly as given.
+
 Beta means the bank is live but not yet confirmed with enough real receipts. [cheki.et/endpoints](https://cheki.et/endpoints) shows every format with a dated changelog, and [cheki.et/status](https://cheki.et/status) shows the daily endpoint health check.
 
 <details>
