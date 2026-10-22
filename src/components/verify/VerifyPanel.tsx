@@ -441,10 +441,6 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
   const summaryBank = outcome?.bankCode ? liveBanks.find((b) => b.code === outcome.bankCode) : undefined;
   const summaryRef =
     detection.kind === "boaQr" ? t("verify.detect.boaQr") : (outcome?.reference || input.trim().replace(/^https?:\/\//i, ""));
-  const idleBanks = useMemo(() => {
-    const names = liveBanks.map((b) => b.shortName);
-    return names.length > 3 ? `${names.slice(0, 3).join(", ")} +${names.length - 3} more` : names.join(", ");
-  }, []);
 
   return (
     <div className="vp" data-phase={phase}>
@@ -453,7 +449,8 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
         <div>
           <div className="vp-summary">
             {summaryBank && <BankLogoByName code={summaryBank.code} size={20} />}
-            <span className="vp-summary-label">{t("verify.summary.checked")}</span>
+            {/* The logo, the reference and Edit say it; the word is for screen readers. */}
+            <span className="sr-only">{t("verify.summary.checked")}</span>
             <span className="vp-summary-ref" data-plain={detection.kind === "boaQr" || undefined}>{summaryRef}</span>
             <button
               type="button"
@@ -528,7 +525,6 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
           inputRef={inputRef}
           extraRef={extraRef}
           t={t}
-          idleBanks={idleBanks}
         />
 
         {notice && <p className="vp-notice" role="status">{notice}</p>}
@@ -560,7 +556,6 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
             <button type="button" className="vp-server" onClick={() => runCheck(input, { force: true })}>
               {t("verify.browser.server")}
             </button>
-            <p className="vp-server-hint">{t("verify.browser.serverHint")}</p>
           </div>
         ) : hideSubmit ? null : (
           <button type="submit" className="vp-submit" aria-busy={busy || undefined} disabled={busy}>

@@ -6,6 +6,10 @@
  * was detected, with the bank chooser (BankSelect) to override it. The extra field
  * (account suffix or phone) opens only when the detected format needs it.
  *
+ * No clutter (CONTRIBUTING.md, "No clutter"): the visible label is the only
+ * prompt (no placeholder repeating it), the status row is empty until there is
+ * something to say, and the extra field shows a hint only for an error.
+ *
  * Presentational: the panel owns the state. No refs are read during render.
  */
 import { useRef, useState, type ChangeEvent, type ClipboardEvent, type DragEvent, type RefObject } from "react";
@@ -38,8 +42,6 @@ interface Props {
   inputRef: RefObject<HTMLInputElement | null>;
   extraRef: RefObject<HTMLInputElement | null>;
   t: Translate;
-  /** Banks listed in the idle hint. */
-  idleBanks: string;
 }
 
 export function VerifyInput({
@@ -60,7 +62,6 @@ export function VerifyInput({
   inputRef,
   extraRef,
   t,
-  idleBanks,
 }: Props) {
   const [dragging, setDragging] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -100,8 +101,9 @@ export function VerifyInput({
       </>
     );
   } else if (d.kind === "empty") {
+    // Nothing typed yet: the label says what goes in, the row stays quiet.
     tone = "quiet";
-    status = <span className="vi-status-text">{lockedName ? t("verify.inputHint") : t("verify.detect.idle", { banks: idleBanks })}</span>;
+    status = null;
   } else if (d.kind === "unknownUrl") {
     tone = "warn";
     status = (
@@ -169,7 +171,6 @@ export function VerifyInput({
           onChange={(e) => onChange(e.target.value)}
           onBlur={onBlur}
           onPaste={onPaste}
-          placeholder={lockedName ? t("verify.inputPlaceholderBank", { bank: lockedName }) : t("verify.inputPlaceholder")}
           autoComplete="off"
           autoCorrect="off"
           autoCapitalize="off"
@@ -188,7 +189,9 @@ export function VerifyInput({
         {dragging && <div className="vi-drop" aria-hidden="true">{t("verify.dropHere")}</div>}
       </div>
 
-      <div className="vi-row">
+      {/* A bank page has no chooser, so with nothing detected yet the row
+          folds away instead of leaving an empty band under the field. */}
+      <div className="vi-row" data-collapsed={(lockedBank && status === null) || undefined}>
         <p id={`${id}-status`} className="vi-status" data-tone={tone} role="status">
           {/* Keyed on what was detected: a new reading cross-fades in instead
               of jumping; the idle hint (first paint) never animates. */}
@@ -222,16 +225,16 @@ export function VerifyInput({
             autoComplete="off"
             value={extra}
             onChange={(e) => onExtraChange(e.target.value)}
-            placeholder={d.needsPhone ? "09XXXXXXXX" : t("verify.extra.accountPlaceholder", { digits: d.accountDigits ?? d.bank?.accountDigits ?? 8 })}
+            // The phone format is an input affordance, not a second label.
+            placeholder={d.needsPhone ? "09XXXXXXXX" : undefined}
             aria-invalid={extraError ? true : undefined}
-            aria-describedby={`${id}-extra-hint`}
+            aria-describedby={extraError ? `${id}-extra-hint` : undefined}
           />
-          <p id={`${id}-extra-hint`} className="vi-hint" data-error={extraError ? true : undefined}>
-            {extraError ??
-              (d.needsPhone
-                ? t("verify.extra.phoneHint", { bank: d.bank?.shortName ?? "" })
-                : t("verify.extra.accountHint", { bank: d.bank?.shortName ?? "" }))}
-          </p>
+          {extraError && (
+            <p id={`${id}-extra-hint`} className="vi-hint" data-error>
+              {extraError}
+            </p>
+          )}
         </div>
       </div>
     </div>
