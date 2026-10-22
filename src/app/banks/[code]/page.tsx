@@ -114,28 +114,18 @@ export default async function BankPage({ params }: { params: Promise<{ code: str
           <div aria-hidden="true" style={{ width: "48px", height: "48px", borderRadius: "12px", background: brandTileBg(bank.color), display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700, fontSize: "18px" }}>
             {bank.shortName.slice(0, 3)}
           </div>
-          <div>
-            <p style={{ fontSize: "13px", fontWeight: 500, color: "var(--ink-3)" }}>
-              {bank.type === "mobile" ? "Mobile wallet" : bank.type === "wallet" ? "Wallet" : "Bank verification"}
-            </p>
-            <h1 style={{ fontSize: "clamp(24px, 4vw, 32px)", fontWeight: 700, letterSpacing: "-0.03em", lineHeight: 1.15 }}>
-              {bank.shortName} Receipt Check
-            </h1>
-          </div>
+          <h1 style={{ fontSize: "clamp(24px, 4vw, 32px)", fontWeight: 700, letterSpacing: "-0.03em", lineHeight: 1.15 }}>
+            {bank.shortName} Receipt Check
+          </h1>
         </div>
 
         {isLive && (
           <section id="check" aria-label={`${bank.shortName} receipt checker`} className="bank-check">
             <VerifyPanel lockedBank={bank.code} />
-            <p className="bank-check-foot">
-              {bank.geoBlocked
-                ? `Free, no signup. ${linkOutLine(bank.shortName)}`
-                : `Free, no signup. Checked against ${bank.shortName}'s own receipt record.`}
-            </p>
           </section>
         )}
 
-        <p style={{ color: "var(--ink-2)", fontSize: "17px", lineHeight: 1.6, maxWidth: "680px", marginBottom: "32px" }}>
+        <p style={{ color: "var(--ink-2)", fontSize: "17px", lineHeight: 1.6, maxWidth: "680px", marginBottom: "40px" }}>
           {bank.description}
         </p>
 
@@ -152,19 +142,9 @@ export default async function BankPage({ params }: { params: Promise<{ code: str
           />
         )}
 
-        <div style={{ display: "flex", gap: "12px", marginBottom: "40px", flexWrap: "wrap" }}>
-          <span style={{
-            padding: "12px 16px", borderRadius: "8px", border: "1px solid var(--border)", fontSize: "14px", fontWeight: 500,
-            color: bank.status === "live" && !bank.geoBlocked ? "var(--green-dark)" : "var(--ink-3)", background: "var(--surface)",
-          }}>
-            {bank.status === "live" ? (bank.geoBlocked ? "Opens the official receipt page" : "Live and working") : "In development"}
-          </span>
-          {bank.geoBlocked && (
-            <span style={{ padding: "12px 16px", borderRadius: "8px", border: "1px solid color-mix(in srgb, var(--amber) 30%, transparent)", fontSize: "14px", fontWeight: 500, color: "var(--amber-text)", background: "var(--amber-light)" }}>
-              Ethiopia only
-            </span>
-          )}
-        </div>
+        {/* No status chips: the checker above (or the contribute box for a bank
+            in development) already shows what works, and the geo-blocked
+            wallets explain themselves in the checker and in their own section. */}
 
         <div className="two-col" style={{ gap: "48px" }}>
           <div className="prose">
@@ -173,19 +153,19 @@ export default async function BankPage({ params }: { params: Promise<{ code: str
               <ul>
                 {primary.inputs.map((i) => (
                   <li key={i.name}>
-                    <strong>{i.label}</strong> (required)
+                    <strong>{i.label}</strong>
                     {i.digits ? `, last ${i.digits} digits minimum` : i.example ? <>, e.g. <code>{i.example}</code></> : null}
                   </li>
                 ))}
               </ul>
             ) : (
               <ul>
-                <li><strong>Transaction reference</strong> (required), e.g. {bank.referenceExample}</li>
+                <li><strong>Transaction reference</strong>, e.g. {bank.referenceExample}</li>
                 {bank.requiresAccount && (
-                  <li><strong>{bank.accountLabel || "Account number"}</strong> (required), last {bank.accountDigits} digits minimum</li>
+                  <li><strong>{bank.accountLabel || "Account number"}</strong>, last {bank.accountDigits} digits minimum</li>
                 )}
                 {bank.requiresPhone && (
-                  <li><strong>Payer phone number</strong> (required), e.g. 09XXXXXXXX or 2519XXXXXXXX</li>
+                  <li><strong>Payer phone number</strong>, e.g. 09XXXXXXXX or 2519XXXXXXXX</li>
                 )}
               </ul>
             )}
@@ -313,7 +293,6 @@ export default async function BankPage({ params }: { params: Promise<{ code: str
                       {b.shortName.slice(0, 3)}
                     </div>
                     <span style={{ fontSize: "14px", fontWeight: 500, color: "var(--ink-2)" }}>{b.shortName}</span>
-                    {b.status === "soon" && <span style={{ fontSize: "11px", color: "var(--ink-3)" }}>soon</span>}
                   </a>
                 ))}
               </div>

@@ -61,13 +61,21 @@ const services = [
   { key: "tally", name: "tally", href: "https://tally.com.et" },
 ];
 
+/**
+ * The feature column stays put while the services scroll sideways on a phone,
+ * so the half-visible next column is the cue to swipe (no "swipe" caption).
+ * overflow: clip, not hidden: a hidden table would become the scroll container
+ * and the sticky column would never stick.
+ */
+const stickyCol = { position: "sticky", left: 0, zIndex: 1, background: "inherit", boxShadow: "1px 0 0 var(--border)" } as const;
+
 function Table({ rows, noted }: { rows: Row[]; noted?: boolean }) {
   return (
     <div className="table-wrap" style={{ marginBottom: noted ? "12px" : "32px" }}>
-      <table style={{ borderCollapse: "collapse", fontSize: "13px", background: "var(--surface)", borderRadius: "12px", overflow: "hidden", width: "100%" }}>
+      <table style={{ borderCollapse: "collapse", fontSize: "13px", background: "var(--surface)", borderRadius: "12px", overflow: "clip", width: "100%" }}>
         <thead>
-          <tr style={{ borderBottom: "2px solid var(--border)" }}>
-            <th style={{ textAlign: "left", padding: "12px 14px", fontWeight: 700, whiteSpace: "nowrap" }}>Feature</th>
+          <tr style={{ borderBottom: "2px solid var(--border)", background: "var(--surface)" }}>
+            <th style={{ textAlign: "left", padding: "12px 14px", fontWeight: 700, whiteSpace: "nowrap", ...stickyCol }}>Feature</th>
             {services.map((s) => (
               <th key={s.key} style={{ textAlign: "left", padding: "12px 14px", fontWeight: 700, whiteSpace: "nowrap", color: s.color || "var(--ink)" }}>
                 <a href={s.href} target="_blank" rel="noopener noreferrer nofollow" style={{ color: "inherit", textDecoration: "none" }}>{s.name}</a>
@@ -78,7 +86,7 @@ function Table({ rows, noted }: { rows: Row[]; noted?: boolean }) {
         <tbody>
           {rows.map((row, i) => (
             <tr key={row.feature} style={{ borderBottom: "1px solid var(--border)", background: i % 2 === 0 ? "var(--surface)" : "var(--surface-alt)" }}>
-              <td style={{ padding: "11px 14px", fontWeight: 600, color: "var(--ink)", whiteSpace: "nowrap" }}>{row.feature}</td>
+              <td style={{ padding: "11px 14px", fontWeight: 600, color: "var(--ink)", whiteSpace: "nowrap", ...stickyCol }}>{row.feature}</td>
               {services.map((s) => (
                 <td key={s.key} style={{ padding: "11px 14px", verticalAlign: "top" }}>
                   {/* Values wrap at a fixed width (a td ignores max-width) so a long
@@ -140,7 +148,6 @@ export default function ComparePage() {
   const competitors = [
     {
       name: "check.et",
-      tagline: "The established player",
       url: "https://check.et",
       banks: banksListed("check.et"),
       pricing: COMPETITOR_PRICING["check.et"].sentence,
@@ -150,7 +157,6 @@ export default function ComparePage() {
     },
     {
       name: "verify.et",
-      tagline: "Suba Software's offering",
       url: "https://verify.et",
       banks: banksListed("verify.et"),
       pricing: COMPETITOR_PRICING["verify.et"].sentence,
@@ -160,7 +166,6 @@ export default function ComparePage() {
     },
     {
       name: "qbirr",
-      tagline: "Developer-first API (launched June 2026)",
       url: "https://qbirr.com",
       banks: banksListed("qbirr"),
       pricing: COMPETITOR_PRICING.qbirr.sentence,
@@ -170,7 +175,6 @@ export default function ComparePage() {
     },
     {
       name: "tinaverify",
-      tagline: "Mobile-first for cashiers",
       url: "https://tinaverify.com",
       banks: banksListed("tinaverify"),
       pricing: COMPETITOR_PRICING.tinaverify.sentence,
@@ -180,7 +184,6 @@ export default function ComparePage() {
     },
     {
       name: "tally",
-      tagline: "Telegram bot by Sabi LLC",
       url: "https://tally.com.et",
       banks: banksListed("tally"),
       pricing: COMPETITOR_PRICING.tally.sentence,
@@ -217,12 +220,9 @@ export default function ComparePage() {
           <span style={{ margin: "0 6px"}}>/</span>
           <span style={{ color: "var(--ink)" }}>{t("nav.compare")}</span>
         </nav>
-        <h1 style={{ fontSize: "clamp(28px, 5vw, 40px)", fontWeight: 800, letterSpacing: "-0.03em", marginBottom: "16px" }}>
+        <h1 style={{ fontSize: "clamp(28px, 5vw, 40px)", fontWeight: 800, letterSpacing: "-0.03em", marginBottom: "24px" }}>
           {t("compare.title")}
         </h1>
-        <p style={{ color: "var(--ink-2)", fontSize: "17px", maxWidth: "640px", marginBottom: "24px" }}>
-          {t("compare.subtitle")}
-        </p>
 
         <div style={{
           padding: "20px", borderRadius: "12px", background: "var(--surface)", border: "1px solid var(--border)", marginBottom: "32px",
@@ -262,10 +262,6 @@ export default function ComparePage() {
           </table>
         </div>
         <p style={noteStyle}>{chekiShortfalls()}</p>
-
-        {/* The table scrolls sideways on narrow screens and its scrollbar is
-            the only in-flow signal that more columns exist past the edge. */}
-        <p className="table-scroll-hint">Swipe the table sideways to compare every service →</p>
 
         {/* Pricing */}
         <h2 style={{ fontSize: "20px", fontWeight: 800, marginBottom: "16px" }}>{t("compare.pricing")}</h2>
@@ -314,11 +310,10 @@ export default function ComparePage() {
             <div key={c.name} style={{
               padding: "24px", borderRadius: "12px", background: "var(--surface)", border: "1px solid var(--border)",
             }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "4px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "12px" }}>
                 <a href={c.url} target="_blank" rel="noopener noreferrer nofollow" style={{ fontSize: "17px", fontWeight: 700, color: "var(--ink)" }}>{c.name}</a>
                 <span style={{ fontSize: "12px", color: "var(--ink-3)" }}>{c.banks}</span>
               </div>
-              <p style={{ fontSize: "13px", color: "var(--ink-3)", marginBottom: "16px" }}>{c.tagline}</p>
               <p style={{ fontSize: "13px", color: "var(--ink-2)", marginBottom: "16px" }}>{c.pricing}</p>
               <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: "16px" }}>
                 <div>

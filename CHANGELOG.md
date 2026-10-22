@@ -4,6 +4,14 @@ Every cheki SDK ships the same version: npm `cheki-verify` (and `@1rb/cheki-veri
 
 ## Unreleased
 
+**Less clutter on every screen**
+- New design rule (CONTRIBUTING.md, "No clutter"): taglines, helper text and secondary labels are cut; where a screen needed them, the layout changes instead.
+- Checker: no placeholder repeating the field's label, no bank list under an empty field, no hint under the account field (only an error shows there), no "Reads the bank from…" line in the bank chooser. On a bank page the empty status row folds away. The re-check notice is one shorter sentence. Accessible names, error and recovery messages (including the reference-case hint) are unchanged.
+- Home: the hero subtitle and trust line are gone and "for free" moved into the H1; the endpoint list labels only the two link-out wallets; guide cards drop their category and read-time line; the agent-prompt button says what it does ("Copy a prompt for your coding agent") instead of carrying a hint. Footer: the tagline is gone (the legal line stays).
+- /banks: grouped under "Checked with the bank" and "Opened on the official receipt page" instead of a chip on every card; cards show the name and, only when it applies, "Account required". The duplicate in-development pill list and the green "Open source" eyebrow are gone.
+- Bank pages: no eyebrow over the H1, no caption under the checker, no status chips, no "(required)" on every input. /compare: no subtitle or per-service tagline; the feature column stays put while the table scrolls sideways, replacing the "Swipe the table" caption. /endpoints: the lede is gone and the H1 says "Ethiopian bank receipt endpoints".
+- API, SDKs, CLI, llms.txt, class names and the checker's field labels are unchanged.
+
 **Security updates**
 - Next.js and eslint-config-next 16.4.1 (GHSA-673q-mjm6-r5xr, CVE-2026-96889 / GHSA-2464-fhr4-w9xw, GHSA-p3m5-59mp-jv5r), sharp resolves 0.35.5 or later, undici resolves 7.30.1 or later (GHSA-qrxm-fqhp-jwvm). Dev only: vitest 4.1.12 with vite 8.1.6 or later. Python SDK: requires `certifi>=2026.10.19` (GHSA-6q48-6c7w-9gw2).
 

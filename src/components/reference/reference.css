@@ -14,10 +14,10 @@
 .ref-crumbs [aria-current] { color: var(--ink); }
 
 .ref-h1 { font-size: clamp(28px, 6vw, 40px); line-height: 1.1; font-weight: 700; letter-spacing: -0.03em; color: var(--ink); }
-.ref-lede { margin-top: 12px; font-size: 17px; line-height: 1.55; color: var(--ink-2); max-width: 60ch; text-wrap: pretty; }
+.ref-h1 + .ref-small { margin-top: 16px; }
 .ref-small { margin-top: 10px; font-size: 14px; line-height: 1.6; color: var(--ink-2); max-width: 68ch; }
-.ref-small a, .ref-lede a, .ref-link { color: var(--ink); font-weight: 550; text-decoration: underline; text-decoration-color: var(--border-strong); text-underline-offset: 3px; }
-@media (hover: hover) { .ref-small a:hover, .ref-lede a:hover, .ref-link:hover { text-decoration-color: currentColor; } }
+.ref-small a, .ref-link { color: var(--ink); font-weight: 550; text-decoration: underline; text-decoration-color: var(--border-strong); text-underline-offset: 3px; }
+@media (hover: hover) { .ref-small a:hover, .ref-link:hover { text-decoration-color: currentColor; } }
 .ref code, .ref-code { font-family: var(--mono); font-size: 0.88em; color: var(--ink); overflow-wrap: anywhere; }
 .ref-h2 { font-size: 20px; line-height: 1.25; font-weight: 700; letter-spacing: -0.02em; color: var(--ink); }
 
