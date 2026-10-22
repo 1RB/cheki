@@ -131,6 +131,26 @@ _LEGACY_CBE_REFERENCE = re.compile(r"FT[A-Za-z0-9]{8,12}", re.IGNORECASE)
 
 _SAFE_REFERENCE = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,63}")
 
+#: The shape of an uppercase-only reference per receipt-download bank (an
+#: older CBE FT reference, a Dashen FT Ref, a ZamZam id). A reference that only
+#: differs from it by case, spaces or dashes is sent in that shape, as the
+#: server reads it. A CBE Receipt ID is case-sensitive and never changed.
+_RECEIPT_REFERENCE_SHAPES: dict[str, re.Pattern[str]] = {
+    "cbe": re.compile(r"FT[A-Z0-9]{8,12}"),
+    "dashen": re.compile(r"[A-Z0-9]{16}"),
+    "zamzam": re.compile(r"[0-9]+"),
+}
+
+_REFERENCE_SEPARATORS = re.compile(r"[\s\-\u2010-\u2015\u2212]")
+
+
+def _canonical_receipt_reference(bank_id: str, reference: str) -> str:
+    shape = _RECEIPT_REFERENCE_SHAPES.get(bank_id)
+    if shape is None:
+        return reference
+    compact = _REFERENCE_SEPARATORS.sub("", reference).upper()
+    return compact if shape.fullmatch(compact) else reference
+
 
 class ChekiClient:
     """Typed client for the cheki receipt-verification REST API.
@@ -328,7 +348,7 @@ class ChekiClient:
         bank_id = bank.strip().lower()
         if bank_id not in RECEIPT_DOWNLOAD_BANKS:
             raise ValueError("Receipt download is only supported for: cbe, zemen, dashen, zamzam.")
-        ref = reference.strip()
+        ref = _canonical_receipt_reference(bank_id, reference.strip())
         if not _SAFE_REFERENCE.fullmatch(ref) or ".." in ref:
             raise ValueError("reference must be 1-64 letters, digits, dots, dashes or underscores.")
         rule = _RECEIPT_REFERENCE_RULES.get(bank_id)

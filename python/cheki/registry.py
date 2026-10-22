@@ -87,6 +87,38 @@ def _status_text(result: VerificationResult) -> str | None:
     return None
 
 
+# Same rule as src/lib/reference-case.ts: banks whose references are capitals
+# and digits, so a reference typed in lowercase is the same reference. CBE
+# Receipt IDs, Awash and eBirr tokens are case-sensitive and never changed.
+_UPPERCASE_REFERENCE_SHAPES: dict[str, re.Pattern[str]] = {
+    "cbe": re.compile(r"FT[A-Z0-9]{8,12}"),
+    "boa": re.compile(r"[A-Z]{2}[A-Z0-9]{4,30}"),
+    "telebirr": re.compile(r"[A-Z0-9]{10}"),
+    "mpesa": re.compile(r"[A-Z0-9]{6,20}"),
+    "dashen": re.compile(r"[A-Z0-9]{16}"),
+    "cbebirr": re.compile(r"[A-Z0-9]{10,11}"),
+}
+_REFERENCE_SEPARATORS = re.compile(r"[\s\-\u2010-\u2015\u2212]")
+
+
+def canonical_reference(bank: str, reference: str) -> str:
+    """The form of a typed reference ``bank`` prints: trimmed, and for banks
+    whose references are capitals and digits, uppercased (spaces and dashes
+    dropped when that gives the bank's shape). Anything else is only trimmed."""
+    ref = reference.strip()
+    shape = _UPPERCASE_REFERENCE_SHAPES.get(bank.lower().strip())
+    if shape is None or not ref:
+        return ref
+    compact = _REFERENCE_SEPARATORS.sub("", ref).upper()
+    if compact != ref.upper() and shape.fullmatch(compact):
+        return compact
+    if not re.fullmatch(r"[A-Za-z0-9]+", ref):
+        return ref
+    if bank.lower().strip() == "cbe" and not shape.fullmatch(ref.upper()):
+        return ref  # a CBE Receipt ID: case-sensitive
+    return ref.upper()
+
+
 def _normalize_reference(ref: object) -> str:
     return re.sub(r"\s+", "", ref).upper() if isinstance(ref, str) else ""
 
@@ -154,7 +186,7 @@ def verify(bank: str, reference: str, **kwargs: object) -> VerificationResult:
     bank = bank.lower().strip()
     if bank not in verifiers:
         raise ValueError(f"Unsupported bank '{bank}'. Supported: {', '.join(verifiers)}")
-    ref = (reference or "").strip()
+    ref = canonical_reference(bank, reference or "")
     if not _SAFE_REFERENCE.fullmatch(ref) or ".." in ref:
         raise ValueError(
             "A reference can only contain letters, digits, dots, dashes and underscores "

@@ -52,6 +52,18 @@ class ChekiClient
     /** An older CBE FT reference (legacy format, needs the account). A Receipt ID does not. */
     public const LEGACY_CBE_REFERENCE = '/^FT[A-Za-z0-9]{8,12}$/i';
 
+    /**
+     * The shape of an uppercase-only reference per receipt-download bank (an
+     * older CBE FT reference, a Dashen FT Ref, a ZamZam id). A reference that
+     * only differs from it by case, spaces or dashes is sent in that shape, as
+     * the server reads it. A CBE Receipt ID is case-sensitive and never changed.
+     */
+    private const RECEIPT_REFERENCE_SHAPES = [
+        'cbe' => '/^FT[A-Z0-9]{8,12}$/',
+        'dashen' => '/^[A-Z0-9]{16}$/',
+        'zamzam' => '/^[0-9]+$/',
+    ];
+
     /** A Retry-After longer than this (seconds) is not waited out. */
     private const MAX_RETRY_AFTER = 60;
 
@@ -205,7 +217,7 @@ class ChekiClient
         if (!array_key_exists($id, self::RECEIPT_DOWNLOAD_BANKS)) {
             throw new \InvalidArgumentException('Receipt download is only supported for: cbe, zemen, dashen, zamzam.');
         }
-        $ref = trim($reference);
+        $ref = self::canonicalReceiptReference($id, trim($reference));
         if (!preg_match('/^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$/', $ref) || str_contains($ref, '..')) {
             throw new \InvalidArgumentException('reference must be 1-64 letters, digits, dots, dashes or underscores.');
         }
@@ -223,6 +235,19 @@ class ChekiClient
             $params['account'] = $acct;
         }
         return $this->options->baseUrl . '/api/receipt?' . http_build_query($params, '', '&', PHP_QUERY_RFC3986);
+    }
+
+    private static function canonicalReceiptReference(string $bank, string $reference): string
+    {
+        if (!isset(self::RECEIPT_REFERENCE_SHAPES[$bank])) {
+            return $reference;
+        }
+        $compact = preg_replace('/[\s\-\x{2010}-\x{2015}\x{2212}]/u', '', $reference);
+        if (!is_string($compact)) {
+            return $reference; // not valid UTF-8: left for the validator to reject
+        }
+        $compact = strtoupper($compact);
+        return preg_match(self::RECEIPT_REFERENCE_SHAPES[$bank], $compact) === 1 ? $compact : $reference;
     }
 
     // ─── Internal HTTP layer ──────────────────────────────────────
