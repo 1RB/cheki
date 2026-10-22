@@ -76,7 +76,7 @@ export const CONSOLIDATED_URLS: ConsolidatedUrl[] = [
   { source: "/verify/edited-screenshot-receipt-fraud", path: FRAUD, headingId: "edited-screenshots", heading: "1. Edited screenshot receipt fraud", anchor: true, faq: "Can I spot an edited screenshot by looking at it?" },
   { source: "/verify/old-receipt-reuse-fraud", path: FRAUD, headingId: "old-receipt-reuse", heading: "2. Old receipt reuse fraud", anchor: true, faq: "Can someone reuse a receipt from the same day?" },
   { source: "/verify/reference-number-fraud-ethiopia", path: FRAUD, headingId: "reference-number-fraud", heading: "4. Fabricated receipts and reference number fraud", anchor: true, faq: "Can I tell a fake reference number by its format?" },
-  { source: "/verify/telebirr-sms-spoofing-fraud", path: FRAUD, headingId: "telebirr-sms-spoofing", heading: "6. Telebirr SMS spoofing fraud", anchor: true, faq: "How can I tell if a Telebirr SMS is fake?" },
+  { source: "/verify/telebirr-sms-spoofing-fraud", path: FRAUD, headingId: "telebirr-sms-spoofing", heading: "6. Fake Telebirr receipts and SMS spoofing", anchor: true, faq: "How can I tell if a Telebirr SMS is fake?" },
 
   // Receipt formats reference
   { source: "/verify/ethiopian-bank-receipt-formats", path: "/guides/ethiopian-bank-receipt-formats", headingId: "at-a-glance", heading: "Ethiopian bank receipt formats at a glance", faq: "What format does CBE use for receipts?" },
