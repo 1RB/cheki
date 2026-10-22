@@ -266,10 +266,8 @@ export const translations = {
     },
     banks: {
       title: "Supported Ethiopian banks and wallets",
-      live: "Live",
       checkedDirectly: "Checked with the bank",
       officialPage: "Opened on the official receipt page",
-      inDevelopment: "In development",
       accountRequired: "Account required",
       showInDevelopment: "Show {count} banks in development",
       hideInDevelopment: "Hide banks in development",
@@ -381,10 +379,8 @@ export const translations = {
     },
     banks: {
       title: "የሚደገፉ ባንኮች እና ዋላቶች",
-      live: "በስራ ላይ",
       checkedDirectly: "ከባንኩ ጋር የሚረጋገጡ",
       officialPage: "በይፋዊ የደረሰኝ ገጽ የሚከፈቱ",
-      inDevelopment: "በልማት ላይ",
       accountRequired: "የሂሳብ ቁጥር ያስፈልጋል",
       showInDevelopment: "{count} በልማት ላይ ያሉ ባንኮችን አሳይ",
       hideInDevelopment: "በልማት ላይ ያሉ ባንኮችን ሰውረኝ",

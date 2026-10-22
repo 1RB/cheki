@@ -21,32 +21,20 @@ export default function BanksPage() {
   const linkOut = live.filter((b) => b.geoBlocked);
   const inDev = banks.filter((b) => b.status === "soon");
 
+  // One row per card, so every card in the grid is the same height. The group
+  // (or the in-development toggle) says the status; the only label on a card
+  // is the exception that decides whether the reader can act: "Account required".
   const BankCard = ({ b }: { b: (typeof banks)[0] }) => (
     <a key={b.code} href={`/banks/${b.code}`} style={{
-      padding: "24px", borderRadius: "12px", background: "var(--surface)", border: "1px solid var(--border)",
-      display: "flex", flexDirection: "column", gap: "12px",
+      padding: "20px 24px", borderRadius: "12px", background: "var(--surface)", border: "1px solid var(--border)",
+      display: "flex", alignItems: "center", gap: "12px", minWidth: 0,
     }}>
-      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-        <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: brandTileBg(b.color), display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700, fontSize: "15px" }}>
-          {b.shortName.slice(0, 3)}
-        </div>
-        <p style={{ fontSize: "16px", fontWeight: 700 }}>{b.shortName}</p>
-        {/* The grid already says which status it holds, so a "Live" pill on
-            every default card carried no information. Keep the pill for the
-            exceptional state only. */}
-        {b.status !== "live" && (
-          <span style={{
-            marginLeft: "auto", fontSize: "11px", fontWeight: 600, padding: "3px 10px", borderRadius: "4px",
-            background: "var(--surface-alt)", border: "1px solid var(--border)", color: "var(--ink-2)",
-          }}>{t("banks.inDevelopment")}</span>
-        )}
+      <div style={{ width: "40px", height: "40px", flexShrink: 0, borderRadius: "10px", background: brandTileBg(b.color), display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700, fontSize: "15px" }}>
+        {b.shortName.slice(0, 3)}
       </div>
-      {/* Label the exception only: "Account required" decides whether the
-          reader can act at all. A reference is all the other banks need. */}
+      <p style={{ fontSize: "16px", fontWeight: 700, minWidth: 0 }}>{b.shortName}</p>
       {b.requiresAccount && (
-        <div className="bank-meta">
-          <span className="bank-meta__chip">{t("banks.accountRequired")}</span>
-        </div>
+        <span className="bank-meta__chip" style={{ marginLeft: "auto", flexShrink: 0 }}>{t("banks.accountRequired")}</span>
       )}
     </a>
   );
