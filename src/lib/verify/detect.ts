@@ -13,6 +13,7 @@ import { formatAccountDigits, formatNeeds, matchesFormat, primaryFormat, support
 import type { ReceiptFormat } from "@/lib/core/types";
 import { isBoaQrPayload } from "@/lib/qr/decode";
 import { parseTelebirrQr } from "@/lib/qr/telebirr";
+import { canonicalReference } from "@/lib/reference-case";
 
 /**
  * "telebirrQr": a Telebirr receipt QR payload. Only its transaction number is
@@ -22,7 +23,11 @@ export type InputKind = "empty" | "url" | "unknownUrl" | "reference" | "boaQr" |
 
 export interface Detection {
   kind: InputKind;
-  /** The trimmed input. For a Telebirr receipt QR: the transaction number read out of it. */
+  /**
+   * The trimmed input. For a typed reference: the bank's canonical form of it
+   * ("ft26sample01" -> "FT26SAMPLE01", see src/lib/reference-case.ts). For a
+   * Telebirr receipt QR: the transaction number read out of it.
+   */
   value: string;
   /** The bank the check will go to (locked, chosen, or detected). */
   bank?: Bank;
@@ -164,13 +169,17 @@ export function detectInput(raw: string, opts: { lockedBank?: string; overrideBa
   const candidates = referenceCandidates(value);
   const bank = chosen ?? candidates[0];
   if (!bank) return finish({ ...base, kind: "reference", candidates });
+  // The form of the reference the bank prints (and cheki sends): capitals,
+  // no spaces or dashes, for banks whose references are uppercase-only.
+  const reference = canonicalReference(bank.code, value);
   const primary = primaryFormat(bank);
-  const format = supportedFormats(bank).find((f) => matchesFormat(f, value)) ?? primary;
+  const format = supportedFormats(bank).find((f) => matchesFormat(f, reference)) ?? primary;
   const needsAccount = format ? formatNeeds(format, "account") : bank.requiresAccount;
   const needsPhone = format ? formatNeeds(format, "phone") : Boolean(bank.requiresPhone);
   return finish({
     ...base,
     kind: "reference",
+    value: reference,
     bank,
     candidates,
     format,
@@ -179,6 +188,20 @@ export function detectInput(raw: string, opts: { lockedBank?: string; overrideBa
     needsPhone,
     accountDigits: formatAccountDigits(format) ?? bank.accountDigits,
   });
+}
+
+/**
+ * Whether the field should be rewritten to the reference as the bank prints
+ * it. Only for a typed reference whose bank was chosen (locked page or the
+ * chooser), or for input that is not mixed case: a detected bank can be wrong
+ * for a mixed-case token (a CBE Receipt ID that starts like a Telebirr
+ * number), and rewriting the field would lose the user's casing.
+ */
+export function shouldShowCanonical(d: Pick<Detection, "kind" | "value" | "overridden">, typed: string, locked: boolean): boolean {
+  const raw = typed.trim();
+  if (d.kind !== "reference" || !d.value || d.value === raw) return false;
+  const mixedCase = /[a-z]/.test(raw) && /[A-Z]/.test(raw);
+  return locked || d.overridden || !mixedCase;
 }
 
 /**

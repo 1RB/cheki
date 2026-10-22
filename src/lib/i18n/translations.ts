@@ -145,6 +145,7 @@ export const translations = {
           next: "Read the reference off the original receipt again. A fabricated screenshot looks exactly like this.",
           nextBoa: "BOA files some receipts under the payer's account. If you entered the receiving account, try the last 5 digits of the source account. If neither works, treat the receipt as unconfirmed.",
         },
+        referenceHint: "References are usually capital letters and digits (like {example}). Scan the receipt's QR code or paste its link, or copy the reference exactly as printed.",
         notCompleted: {
           title: "Payment not completed",
           subtitle: "{bank} lists this transaction as {status}.",

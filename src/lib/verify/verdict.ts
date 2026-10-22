@@ -22,6 +22,7 @@ import { banks, verificationState, type Bank, type VerifyResult } from "@/lib/ba
 import { classifyStatus } from "@/lib/core/status";
 import { tEn, type Translate } from "@/lib/i18n/translate";
 import { formatAgeDays, parseTimestamp } from "@/lib/time/relative";
+import { referenceExample } from "@/lib/reference-case";
 
 /** "info" is a neutral note (grey dot): worth reading, not a warning. */
 export type FraudCheckState = "pass" | "warn" | "mismatch" | "unknown" | "info";
@@ -74,6 +75,12 @@ export interface Verdict {
   /** The bank page cheki asked when the bank did not confirm the receipt. https only. */
   checkedUrl?: string;
   nextStep?: string;
+  /**
+   * How references look, shown when the bank found nothing (or the reference
+   * was rejected) and the typed reference had lowercase letters, spaces or
+   * dashes, or not the bank's usual shape.
+   */
+  referenceHint?: string;
   guideHref?: string;
   retryAfter?: number;
   checks: FraudCheck[];
@@ -117,6 +124,12 @@ export interface PresentOptions {
   checks?: FraudCheck[];
   /** What the user entered, shown when the response carries no reference. */
   reference?: string;
+  /**
+   * The typed reference looked off (src/lib/reference-case.ts,
+   * referenceLooksOff). A "not found" or a rejected reference then carries
+   * the line on how references look.
+   */
+  referenceHint?: boolean;
   t?: Translate;
 }
 
@@ -167,6 +180,8 @@ export function presentVerdict(result: VerifyResult | null | undefined, opts: Pr
   const fallbackUrl = str(result?.fallbackUrl) && HTTPS.test(result!.fallbackUrl!) ? result!.fallbackUrl : undefined;
   const checkedUrl = str(result?.checkedUrl) && HTTPS.test(result!.checkedUrl!) ? result!.checkedUrl : undefined;
   const base = { bank, checks, reference, showDetails: false } as const;
+  const example = opts.referenceHint ? referenceExample(bank?.code) : undefined;
+  const referenceHint = example ? t("verify.verdict.referenceHint", { example }) : undefined;
 
   const details = (r: VerifyResult) => ({
     amount: finiteAmount(r.amount) !== undefined ? { value: r.amount as number, currency: str(r.currency) ?? "ETB" } : undefined,
@@ -247,10 +262,14 @@ export function presentVerdict(result: VerifyResult | null | undefined, opts: Pr
       // BOA files some receipts under the payer's account; the API says so
       // when a typed account found nothing.
       const next = /try the last 5 digits of the source account/i.test(message) ? t("verify.verdict.notFound.nextBoa") : t("verify.verdict.notFound.next");
-      return red("notFound", t("verify.verdict.notFound.title"), t("verify.verdict.notFound.subtitle", { bank: short }), next, { checkedUrl });
+      return red("notFound", t("verify.verdict.notFound.title"), t("verify.verdict.notFound.subtitle", { bank: short }), next, { checkedUrl, referenceHint });
     }
     if (status === 400 || status === 404) {
-      return neutral("invalidInput", t("verify.verdict.invalidInput.title"), message || t("verify.verdict.invalidInput.subtitle"));
+      // The hint is about the reference: not for a missing account or phone.
+      const aboutReference = !/\b(account|phone)\b/i.test(message);
+      return neutral("invalidInput", t("verify.verdict.invalidInput.title"), message || t("verify.verdict.invalidInput.subtitle"), {
+        referenceHint: aboutReference ? referenceHint : undefined,
+      });
     }
     return neutral("unavailable", t("verify.verdict.unavailable.title"), t("verify.verdict.unavailable.subtitle"));
   }

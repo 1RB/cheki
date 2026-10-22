@@ -21,6 +21,8 @@ interface Props {
   id: string;
   value: string;
   onChange: (v: string) => void;
+  /** Leaving the field: a typed reference is shown in the form the bank prints it. */
+  onBlur?: () => void;
   /** A link, QR payload or image pasted into the field is checked right away. */
   onPaste: (e: ClipboardEvent<HTMLInputElement>) => void;
   onFiles: (files: File[]) => void;
@@ -44,6 +46,7 @@ export function VerifyInput({
   id,
   value,
   onChange,
+  onBlur,
   onPaste,
   onFiles,
   onCamera,
@@ -164,6 +167,7 @@ export function VerifyInput({
           enterKeyHint="go"
           value={value}
           onChange={(e) => onChange(e.target.value)}
+          onBlur={onBlur}
           onPaste={onPaste}
           placeholder={lockedName ? t("verify.inputPlaceholderBank", { bank: lockedName }) : t("verify.inputPlaceholder")}
           autoComplete="off"

@@ -95,7 +95,8 @@ export function detectBankFromUrl(input: string): DetectedReceipt | null {
     // CBE legacy: https://apps.cbe.com.et:100/?id=FT26SAMPLE0100006171
     if (hostIs(host, "apps.cbe.com.et")) {
       const id = url.searchParams.get("id");
-      if (id && id.startsWith("FT")) {
+      // "ft…" too: the reference is uppercased later (src/lib/reference-case.ts).
+      if (id && /^FT/i.test(id)) {
         // id = FT reference + last 8 digits of account
         const accountSuffix = id.slice(-8);
         const ref = id.slice(0, -8);
