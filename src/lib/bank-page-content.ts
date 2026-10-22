@@ -139,16 +139,16 @@ const VERIFY_BY_HAND: Record<string, { sections: BankSection[]; faq: BankFaq[] }
   },
   boa: {
     faq: [
-      { q: "How do I verify a Bank of Abyssinia receipt?", a: "Paste the BOA slip link and click Verify; when the link carries the 5 account digits, cheki reads both parts from it. Otherwise, select Bank of Abyssinia, paste the transaction reference number and enter the last 5 digits of the account on the receipt. cheki fetches the receipt from BOA's public API and returns structured JSON." },
-      { q: "Do I need an account number for BOA?", a: "Not if your BOA slip link carries the 5 account digits after the reference. Otherwise, yes: BOA needs the transaction reference plus the last 5 digits of the account on the receipt. That is not always the receiving account (a fee receipt with no receiver uses the source account). For inter-bank transfers, you can use the QR code payload instead." },
-      { q: "Does BOA use an API or PDF?", a: "Bank of Abyssinia uses a JSON API at cs.bankofabyssinia.com. This is faster than CBE's PDF system and returns structured data directly, making it more reliable for automated verification." },
-      { q: "What if BOA's API returns 'Invalid reference number'?", a: "Inter-bank transfers (e.g., FT... references sent to CBE) are not exposed in BOA's API. In that case, scan the QR code on the receipt and paste the payload into cheki. cheki decrypts it with the key embedded in BOA's public receipt web app." },
+      { q: "How do I verify a Bank of Abyssinia receipt?", a: "Scan the QR code on the receipt, or paste the BOA slip link, and click Verify. cheki reads the reference and the account digits from either and asks BOA's own record. As a fallback, select Bank of Abyssinia, type the reference and enter the last 5 digits of the account on the receipt." },
+      { q: "Do I need an account number for BOA?", a: "Not to type, if you scan the QR code or paste a slip link that carries the 5 account digits after the reference. Otherwise, yes: BOA needs the reference plus the last 5 digits of the account on the receipt. That is not always the receiving account (a fee receipt with no receiver uses the source account)." },
+      { q: "Does BOA use an API or PDF?", a: "Bank of Abyssinia's online slip endpoint at cs.bankofabyssinia.com returns JSON, so cheki reads structured fields directly with no PDF to parse." },
+      { q: "What if BOA's API returns 'Invalid reference number'?", a: "That is BOA saying it has no receipt for that reference under those account digits, so the payment is not confirmed. Check the reference, and try the other account on the receipt: BOA files some slips under the payer's account. A scanned QR code does this for you. If BOA still has no record, do not hand anything over until the payment is confirmed another way." },
     ],
     sections: [
       {
-        heading: "QR code verification for inter-bank transfers",
-        body: "BOA's JSON API does not recognize inter-bank transfer references. However, the QR code on the receipt is an AES-256-CBC encrypted payload that carries the reference and both account numbers (some apps mask part of one). cheki decrypts it server-side using the key exposed in BOA's receipt web app and confirms the receipt with BOA under the receiving account first. If BOA has no record there and the QR carries a full source account, cheki asks once more under that, since BOA files some receipts under either. If BOA cannot be reached, the result is marked as decoded only, not verified.",
-        link: { href: "/guides/boa-qr-code-receipts", text: "BOA QR codes: how the decryption works" },
+        heading: "BOA receipt QR codes",
+        body: "The QR code on a BOA receipt is an AES-256-CBC encrypted payload that carries the reference and both account numbers (some apps mask part of one). The key ships in BOA's public receipt web app, so anyone can make a QR that decrypts cleanly, and a decoded QR is never proof. cheki decrypts it server-side only to ask BOA for the receipt: under the receiving account first and, if BOA has no record there and the QR carries a full source account, once more under that. A QR whose amount disagrees with BOA's record fails. If BOA has no record, the receipt is not confirmed. If BOA cannot be reached, the result is marked as decoded only, not verified. Whether BOA's endpoint returns transfers to other banks is not yet confirmed.",
+        link: { href: "/guides/boa-qr-code-receipts", text: "BOA QR codes: what decryption does and doesn't prove" },
       },
     ],
   },
@@ -324,7 +324,7 @@ const HOWTO_EXTRA: Record<string, { sections: BankSection[]; faq: BankFaq[] }> =
   boa: {
     sections: [],
     faq: [
-      { q: "Can I verify inter-bank BOA transfers without the QR code?", a: "No. BOA's JSON API does not recognize inter-bank transfer references, so the QR code is the only way cheki can look these up. Without it, ask the sender for a screenshot of the receipt, or check your bank statement for the incoming transfer." },
+      { q: "Can I verify inter-bank BOA transfers without the QR code?", a: "cheki asks BOA the same way for every BOA receipt: from the QR code, a slip link, or a typed reference with the last 5 digits of an account on the receipt. The QR is easiest, because cheki tries both accounts it names. We have not confirmed whether BOA's endpoint returns transfers to other banks. If BOA has no record, cheki shows that the receipt was not confirmed: check the incoming transfer on the receiving account before you hand anything over." },
     ],
   },
 };
