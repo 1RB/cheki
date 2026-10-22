@@ -44,6 +44,7 @@ describe("guide sections", () => {
       "self-hosting-docker-guide",
       "ethiopian-bank-receipt-formats",
       "boa-qr-code-receipts",
+      "telebirr-receipt-qr-code",
     ]);
   });
 
