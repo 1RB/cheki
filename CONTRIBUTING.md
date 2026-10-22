@@ -319,6 +319,10 @@ Tests are in `tests/` and cover:
 - Guides (`tests/guides`): no "no quota", no hardcoded bank counts, dated competitor claims, the index grouping, and the JSON-LD
 - Site copy (`tests/content`): the same rules for /compare, the SEO pages, the home FAQ, translations, README, llms.txt and the SDK READMEs and manifests
 
+### No clutter
+
+Cut taglines, helper text and secondary labels. If a screen needs them to make sense, fix the layout: a clearer primary label, better ordering (the QR first), grouping under a heading that carries the meaning, a sensible default. Label the exception, not the default state (an "Official page" badge on the two link-out wallets, nothing on the rest). A placeholder never repeats its label, and a placeholder is never the only label. What stays: error and recovery messages, accessible names, accurate privacy and provenance notes, and SEO content (H1s, guide prose, FAQ, JSON-LD). If cutting a tagline drops a keyword, put it in the H1 or title.
+
 ### UI changes on phones
 
 Check new UI at 360, 390 and 430px wide, light and dark, with touch emulation. The rules below are enforced by `tests/ui/mobile-invariants.test.ts`; the rest is a checklist.

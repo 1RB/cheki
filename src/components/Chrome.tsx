@@ -233,9 +233,7 @@ export function Footer() {
             <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
               <span style={{ fontWeight: 750, fontSize: "18px", letterSpacing: "-0.035em" }}>cheki</span>
             </div>
-            <p style={{ fontSize: "13px", color: "var(--ink-3)", lineHeight: 1.6, maxWidth: "280px" }}>
-              {t("footer.tagline")}
-            </p>
+            {/* No tagline: the legal line below already says what cheki is and isn't. */}
             <Link href="/guides/contribute-translations" prefetch={false} className="footer-link footer-link--more footer-translate">
               {t("language.contribute")}
             </Link>

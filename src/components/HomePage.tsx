@@ -74,12 +74,6 @@ export function HomePage() {
               <h1 className="hp-title">
                 <T k="hero.titleLead" /> <span className="hp-title-rest"><T k="hero.titleRest" /></span>
               </h1>
-              <p className="hp-lede"><T k="hero.subtitle" /></p>
-              <ul className="hp-trust" aria-label="Why cheki">
-                <li>{direct.length} banks and wallets checked directly</li>
-                <li>Answers in seconds</li>
-                <li>Open source</li>
-              </ul>
               <div className="hp-hero-desktop-extra">
                 <AgentPrompt />
               </div>
@@ -117,7 +111,8 @@ export function HomePage() {
                       {b.shortName}
                     </span>
                     <span className="hp-endpoint-url">{breakableUrl(b.endpointFormat)}</span>
-                    <span className="hp-badge" data-tone={b.geoBlocked ? "amber" : "green"}>{b.geoBlocked ? "Official page" : "Checked directly"}</span>
+                    {/* Label the exception only: the two link-out wallets. */}
+                    {b.geoBlocked && <span className="hp-badge" data-tone="amber">Official page</span>}
                   </Link>
                 </li>
               ))}
@@ -128,7 +123,6 @@ export function HomePage() {
         <section className="container hp-section hp-features">
           <div>
             <h2 className="hp-h2">Everything you need, nothing you don&apos;t</h2>
-            <p className="hp-p">A single-purpose tool. No dashboards, no accounts, no billing portal.</p>
           </div>
           <ol className="hp-feature-list">
             {FEATURES.map((f) => (
@@ -163,10 +157,6 @@ export function HomePage() {
           <div className="hp-guides">
             {featured.map((a, i) => (
               <Link key={a.slug} href={`/guides/${a.slug}`} prefetch={false} className="hp-guide" data-featured={i === 0 || undefined}>
-                <span className="hp-guide-meta">
-                  <span>{a.category.replace("-", " ")}</span>
-                  <span>{a.readTime}</span>
-                </span>
                 <h3>{a.title}</h3>
                 <p>{a.excerpt}</p>
               </Link>
@@ -178,7 +168,7 @@ export function HomePage() {
           <h2 className="hp-h2">{direct.length} banks and wallets checked directly</h2>
           <p className="hp-p">
             {linkOut > 0 && <>Plus {linkOutBankList()} through their official receipt pages. </>}
-            {research} more in research. All use public receipt pages.
+            <Link href="/banks" prefetch={false}>{research} more in research</Link>. All use public receipt pages.
           </p>
           <ul className="hp-banks">
             {live.map((b) => (
@@ -193,9 +183,6 @@ export function HomePage() {
               </li>
             ))}
           </ul>
-          <p className="hp-small">
-            {research} banks are still in research. <Link href="/banks" prefetch={false}>Help us add them</Link>
-          </p>
         </section>
 
         <section className="container hp-section">
@@ -228,10 +215,6 @@ export function HomePage() {
         {/* The FAQPage JSON-LD on this route is generated from these exact strings. */}
         <section className="container hp-section hp-faq" id="faq">
           <h2 className="hp-h2">Questions people actually ask</h2>
-          <p className="hp-p">
-            If yours is not here,{" "}
-            <a href="https://github.com/1RB/cheki/issues" target="_blank" rel="noopener noreferrer">open an issue</a>. The answers stay in public.
-          </p>
           <div className="hp-faq-list">
             {homeFaqs.map((f) => (
               <details key={f.q}>

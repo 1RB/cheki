@@ -360,10 +360,9 @@ export function BankSelect({ id, value, onChange, banks, detected, t }: Props) {
             ) : null}
             <span className="bs-opt-text">
               <span className="bs-opt-label">{o.label}</span>
-              {o.code === "" && (
-                <span className="bs-opt-sub">
-                  {detected ? t("verify.bankPicker.autoDetected", { bank: detected.shortName }) : t("verify.bankPicker.autoSub")}
-                </span>
+              {/* Only when there is something to report: "Auto-detect" explains itself. */}
+              {o.code === "" && detected && (
+                <span className="bs-opt-sub">{t("verify.bankPicker.autoDetected", { bank: detected.shortName })}</span>
               )}
             </span>
             {o.beta && (
