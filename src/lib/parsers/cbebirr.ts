@@ -39,6 +39,7 @@
 import { BaseParser } from "./base";
 import type { ParsedReceipt } from "../core/types";
 import { removeScriptsAndStyles, TAG_RE } from "../core/html";
+import { canonicalReference } from "../reference-case";
 import { parseMoney } from "../core/money";
 import { checkReference, type Checked } from "../security/reference";
 
@@ -216,7 +217,8 @@ export class CBEBirrParser extends BaseParser {
   readonly binaryResponse = true;
 
   normalizeReference(ref: string): Checked<string> {
-    const checked = checkReference(ref);
+    // TIDs are capitals and digits (DTS41AB2C90), so "dts41ab2c90" is the same TID.
+    const checked = checkReference(canonicalReference(this.bankId, ref, { compact: false }));
     if (!checked.ok) return checked;
     if (!TID_RE.test(checked.value)) {
       return { ok: false, message: "A CBE Birr receipt number is 10 or 11 letters and digits, as in the SMS." };

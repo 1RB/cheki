@@ -35,6 +35,7 @@ import { verificationGate, gateFailureMessage } from "./gate";
 import { checkAccountSuffix, checkPhone, checkReference } from "../security/reference";
 import { parseTelebirrQr } from "../qr/telebirr";
 import { selectFormat, formatNeeds, formatAccountDigits, fillTemplate } from "../manifest/formats";
+import { canonicalReference } from "../reference-case";
 
 /** Receipts verified at the same time in one batch. */
 export const BATCH_CONCURRENCY = 5;
@@ -107,7 +108,11 @@ export class Verifier {
 
   // ─── Input resolution ─────────────────────────────────────────────
 
-  private async resolve(request: VerifyRequest, startTime: number, depth: number): Promise<Result<Receipt, ChekiError>> {
+  /**
+   * `fromLink`: the reference was read out of a receipt link or QR, so it is
+   * case-normalised but never compacted (see canonicalReference).
+   */
+  private async resolve(request: VerifyRequest, startTime: number, depth: number, fromLink = false): Promise<Result<Receipt, ChekiError>> {
     if (depth > 2) {
       return err({ kind: "MISSING_INPUT", field: "reference", message: "Could not resolve this receipt." });
     }
@@ -142,7 +147,7 @@ export class Verifier {
             message: "This QR code is from a Telebirr receipt. Check it with bank \"telebirr\".",
           });
         }
-        return this.resolve({ bank: "telebirr", reference: telebirr.reference }, startTime, depth + 1);
+        return this.resolve({ bank: "telebirr", reference: telebirr.reference }, startTime, depth + 1, true);
       }
       if ((bank || "").toLowerCase() === "boa") {
         return this.verifyBoaQr(qrData, startTime, depth);
@@ -174,19 +179,21 @@ export class Verifier {
           return this.resolve(
             { bank: "cbebirr", reference: detected.reference, phoneNumber: detected.phoneNumber ?? phoneNumber },
             startTime,
-            depth + 1
+            depth + 1,
+            true
           );
         }
         return this.resolve({ bank: bank ?? "", reference: qrData, accountNumber, phoneNumber }, startTime, depth + 1);
       }
       // Plain reference inside the QR, for the bank the caller named.
-      return this.resolve({ bank: bank ?? "", reference: qrData, accountNumber, phoneNumber }, startTime, depth + 1);
+      return this.resolve({ bank: bank ?? "", reference: qrData, accountNumber, phoneNumber }, startTime, depth + 1, true);
     }
 
     let resolvedBank = bank;
     let resolvedRef = reference!;
     let resolvedAccount = accountNumber;
     let resolvedPhone = phoneNumber;
+    let resolvedFromLink = fromLink;
 
     // Receipt links. Anything with URL syntax must be a proper http(s) link
     // to a known bank host; "http:/x", "http:evil.com", "//x" are rejected.
@@ -201,12 +208,13 @@ export class Verifier {
       }
       resolvedBank = detected.bank;
       resolvedRef = detected.reference;
+      resolvedFromLink = true;
       if (detected.accountNumber && !resolvedAccount) resolvedAccount = detected.accountNumber;
       if (detected.phoneNumber && !resolvedPhone) resolvedPhone = detected.phoneNumber;
     }
 
     return this.verifyReference(
-      { bank: resolvedBank, reference: resolvedRef, accountNumber: resolvedAccount, phoneNumber: resolvedPhone },
+      { bank: resolvedBank, reference: resolvedRef, accountNumber: resolvedAccount, phoneNumber: resolvedPhone, fromLink: resolvedFromLink },
       startTime
     );
   }
@@ -214,10 +222,10 @@ export class Verifier {
   // ─── Bank + input gates, fetch, parse, verification gate ─────────────
 
   private async verifyReference(
-    input: { bank?: string; reference: string; accountNumber?: string; phoneNumber?: string },
+    rawInput: { bank?: string; reference: string; accountNumber?: string; phoneNumber?: string; fromLink?: boolean },
     startTime: number
   ): Promise<Result<Receipt, ChekiError>> {
-    const bank = input.bank;
+    const bank = rawInput.bank;
     if (!bank) {
       return err({ kind: "MISSING_INPUT", field: "bank", message: "Bank is required." });
     }
@@ -245,6 +253,17 @@ export class Verifier {
         message: `${manifestEntry.name} is in development and not yet supported.`,
       });
     }
+
+    // The bank's canonical form of the reference: "ft26sample01" and a typed
+    // "FT26 SAMPLE01" are FT26SAMPLE01 for a bank whose references are
+    // uppercase-only. A reference read out of a link or QR is only uppercased,
+    // never compacted. Case-sensitive tokens (CBE Receipt IDs, Awash and eBirr
+    // share tokens) are only trimmed. Done before the format is picked, so a
+    // spaced FT reference still goes to the FT format.
+    const input = {
+      ...rawInput,
+      reference: canonicalReference(manifestEntry.id, rawInput.reference, { compact: !rawInput.fromLink }),
+    };
 
     // Pick the receipt format from the input's shape (current formats first).
     // This never costs a bank request: exactly one format is fetched.
@@ -570,7 +589,8 @@ export class Verifier {
     let lookup = await this.resolve(
       { bank: "boa", reference: refCheck.value, accountNumber: decoded.receiverAccount },
       startTime,
-      depth + 1
+      depth + 1,
+      true
     );
 
     // BOA files some receipts under the source account's suffix instead of
@@ -590,7 +610,8 @@ export class Verifier {
       const bySender = await this.resolve(
         { bank: "boa", reference: refCheck.value, accountNumber: decoded.senderAccount },
         startTime,
-        depth + 1
+        depth + 1,
+        true
       );
       // Only a found receipt replaces the first answer. If this second request
       // fails, BOA's "no record" under the receiver stands, so a QR is never

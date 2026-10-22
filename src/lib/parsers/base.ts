@@ -17,6 +17,7 @@
 import type { ParsedReceipt, HttpResult, Result, ChekiError } from "../core/types";
 import { ok, err } from "../core/types";
 import { checkReference, type Checked } from "../security/reference";
+import { canonicalReference } from "../reference-case";
 import { assertAllowedUrl } from "../security/hosts";
 import {
   safeFetch,
@@ -71,11 +72,15 @@ export abstract class BaseParser {
   // Note: parse is sync for simple HTML/JSON parsers. PDF banks use a static async extractPdfText.
 
   /**
-   * Validate and canonicalise a reference before it goes into a URL.
-   * Override for banks whose reference is not a plain receipt number.
+   * Validate and canonicalise a reference before it goes into a URL: capitals
+   * for banks whose references are uppercase-only (src/lib/reference-case.ts),
+   * then the strict charset check. Separators are not dropped here: the
+   * verifier compacts typed input before this, and a reference read out of a
+   * bank link keeps whatever the link had. Override for banks whose reference
+   * is not a plain receipt number.
    */
   normalizeReference(ref: string): Checked<string> {
-    return checkReference(ref);
+    return checkReference(canonicalReference(this.bankId, ref, { compact: false }));
   }
 
   protected get maxBytes(): number {
