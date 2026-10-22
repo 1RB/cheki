@@ -511,3 +511,32 @@ def test_cbebirr_rejects_bad_phone(phone):
 def test_cbebirr_rejects_bad_reference():
     with pytest.raises(ValueError):
         verify("cbebirr", "DTS41AB2C90&PH=1", phone_number="0911223344")
+
+
+# ── Typed references in lowercase (same rule as src/lib/reference-case.ts) ──
+
+
+@pytest.mark.parametrize(
+    ("bank", "typed", "expected"),
+    [
+        ("cbe", "ft26sample01", "FT26SAMPLE01"),
+        ("cbe", "FT26 sample01", "FT26SAMPLE01"),
+        ("boa", "ft25sample06", "FT25SAMPLE06"),
+        ("telebirr", "det0sample", "DET0SAMPLE"),
+        ("telebirr", "DET 0SAMPLE", "DET0SAMPLE"),
+        ("mpesa", "se12345678", "SE12345678"),
+        ("dashen", "b22wdti00sample1", "B22WDTI00SAMPLE1"),
+        ("cbebirr", "dts41-ab2c90", "DTS41AB2C90"),
+        # Case-sensitive: CBE Receipt IDs, Awash and eBirr tokens.
+        ("cbe", "fHCxExampleRcpt01", "fHCxExampleRcpt01"),
+        ("awash", "2kdl95xe81-4u0000", "2kdl95xe81-4u0000"),
+        ("siinqee", "AbCdEf123456", "AbCdEf123456"),
+        # Not letters and digits: left for the validator.
+        ("telebirr", "a b", "a b"),
+        ("telebirr", "../x", "../x"),
+    ],
+)
+def test_canonical_reference(bank: str, typed: str, expected: str) -> None:
+    from cheki.registry import canonical_reference
+
+    assert canonical_reference(bank, typed) == expected

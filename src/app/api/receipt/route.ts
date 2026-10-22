@@ -5,6 +5,7 @@ import { limiters, rateLimited } from "@/lib/rate-limit";
 import { getBank } from "@/lib/manifest/loader";
 import { fillTemplate, formatAccountDigits, formatNeeds, selectFormat, templateHost } from "@/lib/manifest/formats";
 import { getParser } from "@/lib/parsers/registry";
+import { canonicalReference } from "@/lib/reference-case";
 import "@/lib/parsers";
 
 export const runtime = "nodejs";
@@ -59,10 +60,13 @@ export async function GET(request: NextRequest) {
     return fail(`Receipt download is only supported for: ${Array.from(RECEIPT_BANKS.keys()).join(", ")}.`, 400);
   }
 
-  const ref = checkReference(reference);
-  if (!ref.ok) return fail(ref.message, 400);
+  // Same canonical form as POST /api/verify: an older CBE FT reference or a
+  // Dashen FT Ref typed in lowercase is the same reference in capitals. A
+  // CBE Receipt ID is case-sensitive and is only trimmed.
+  const typed = checkReference(canonicalReference(bank.id, reference));
+  if (!typed.ok) return fail(typed.message, 400);
 
-  const selection = selectFormat(bank, { reference: ref.value, accountNumber });
+  const selection = selectFormat(bank, { reference: typed.value, accountNumber });
   if (!selection.ok) return fail(selection.message, 400);
   const format = selection.format;
   if (!format?.receiptPage) {
@@ -73,7 +77,7 @@ export async function GET(request: NextRequest) {
   // only) applies it here too, before any redirect is built.
   const formatParser = format.parser ? getParser(format.parser) : undefined;
   if (formatParser) {
-    const strict = formatParser.normalizeReference(ref.value);
+    const strict = formatParser.normalizeReference(typed.value);
     if (!strict.ok) return fail(strict.message, 400);
   }
 
@@ -86,7 +90,7 @@ export async function GET(request: NextRequest) {
   }
 
   if (format.receiptPage === "redirect") {
-    const target = format.link ? fillTemplate(format.link, { ref: ref.value, account }) : "";
+    const target = format.link ? fillTemplate(format.link, { ref: typed.value, account }) : "";
     // Only the template's own host, over https, with nothing left unfilled.
     let targetUrl: URL | null = null;
     try {
@@ -108,7 +112,7 @@ export async function GET(request: NextRequest) {
   if (!parser) return fail("Receipt download is not available for this format.", 400);
 
   try {
-    const resp = await safeFetch(parser.buildUrl(ref.value, account), {
+    const resp = await safeFetch(parser.buildUrl(typed.value, account), {
       headers: { "User-Agent": "Mozilla/5.0 (compatible; cheki)" },
       timeoutMs: 15000,
       maxBytes: MAX_PDF_BYTES,

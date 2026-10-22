@@ -105,7 +105,7 @@ cheki.getReceiptUrl("dashen", "B22WDTI00SAMPLE1");
 // https://cheki.et/api/receipt?bank=dashen&reference=B22WDTI00SAMPLE1 (redirects to Dashen's own receipt page)
 ```
 
-Only `cbe`, `zemen`, `dashen` and `zamzam` are supported; anything else throws `ChekiValidationError`, and so does a ZamZam receipt id that is not digits only. CBE, Dashen and ZamZam links redirect to the bank's own page; Zemen (and older CBE receipts) are served as the bank's PDF.
+Only `cbe`, `zemen`, `dashen` and `zamzam` are supported; anything else throws `ChekiValidationError`, and so does a ZamZam receipt id that is not digits only. CBE, Dashen and ZamZam links redirect to the bank's own page; Zemen (and older CBE receipts) are served as the bank's PDF. A CBE FT reference or Dashen FT Ref typed in lowercase or with spaces is sent the way the bank prints it (`ft26 sample01` becomes `FT26SAMPLE01`); a CBE Receipt ID keeps its case. `verify` sends the reference as given and the server does the same.
 
 ### Older receipts
 

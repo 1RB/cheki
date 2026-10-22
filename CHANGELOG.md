@@ -4,6 +4,12 @@ Every cheki SDK ships the same version: npm `cheki-verify` (and `@1rb/cheki-veri
 
 ## Unreleased
 
+**References typed in lowercase**
+- A reference typed in lowercase now works. For the banks whose receipts print references in capitals (CBE FT references, BOA, Telebirr, M-Pesa, Dashen, CBE Birr), cheki trims it, drops spaces and dashes typed inside when that gives the bank's format, and uppercases it: `det0sample` is checked as `DET0SAMPLE`. One shared rule (`src/lib/reference-case.ts`) is used by `POST /api/verify` (so the batch route, the CLI and every SDK get it), `GET /api/receipt`, the cache key and the form.
+- Left exactly as given: CBE Receipt IDs (`fHCx…`, `v2-…`), Awash and eBirr/Siinqee share tokens, ZamZam ids (spaces between digits are dropped) and the Telebirr receipt QR payload, whose CRC covers its raw characters. A reference read out of a receipt link or QR is uppercased but never compacted.
+- The form shows the reference in capitals when you leave the field or check it. If the bank still has no such receipt, or rejects the reference, and what was typed had lowercase letters, spaces or dashes or not the bank's usual shape, the card adds: "References are usually capital letters and digits (like FT25…). Scan the receipt's QR code or paste its link, or copy the reference exactly as printed."
+- SDKs: `getReceiptUrl` / `get_receipt_url` / `GetReceiptURL` send a lowercase or spaced CBE FT reference, Dashen FT Ref or ZamZam id in the bank's form (shared `receiptUrlCases` fixture). Python's deprecated direct mode applies the same rule as the server.
+
 **Guide: the Telebirr receipt QR code**
 - New guide at /guides/telebirr-receipt-qr-code: how the Payment QR Code on a Telebirr receipt was decoded (base64, an EMVCo-style TLV over hex characters, a byte TLV holding the transaction number, a case-sensitive CRC-16/CCITT-FALSE), a Python decoder, and why a valid QR is not proof of payment. Synthetic examples only. It follows the link-out copy: cheki.et opens Telebirr's official ethiotelecom receipt page (QR first, link second, typed number as the fallback), and the amount, receiver name and date are checked there.
 - Linked from the Telebirr bank page's QR section, the CBE, BOA and receipt-formats guides, the /guides index (For developers) and llms.txt.

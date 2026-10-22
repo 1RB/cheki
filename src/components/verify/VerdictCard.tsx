@@ -197,6 +197,8 @@ export function VerdictCard({ verdict, result, checkedAt, t, onAnother, onRetry,
         </p>
       )}
 
+      {v.referenceHint && <p className="vc-note">{v.referenceHint}</p>}
+
       <div className="vc-actions vc-no-print">
         {v.kind === "rateLimited" && <Countdown seconds={v.retryAfter ?? 60} t={t} onRetry={onRetry} />}
         {(v.kind === "unavailable" || v.kind === "offline") && onRetry && (

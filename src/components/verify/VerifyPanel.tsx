@@ -25,11 +25,12 @@ import { useTranslation } from "@/lib/i18n/use-translation";
 import { detectBankFromUrl, isUrl } from "@/lib/adapters/url-detector";
 import { isBoaQrPayload } from "@/lib/qr/decode";
 import { isTelebirrQrPayload, parseTelebirrQr } from "@/lib/qr/telebirr";
-import { accountFieldKeys, browserReceiptUrl, detectInput, liveBanks, type Detection } from "@/lib/verify/detect";
+import { accountFieldKeys, browserReceiptUrl, detectInput, liveBanks, shouldShowCanonical, type Detection } from "@/lib/verify/detect";
 import { postJson } from "@/lib/verify/client";
 import { presentVerdict, type FraudCheck } from "@/lib/verify/verdict";
 import { addVerified, clearRecent, findPrevious, loadRecent, removeRecent, type RecentCheck } from "@/lib/verify/history";
 import { secondaryFormats } from "@/lib/manifest/formats";
+import { canonicalReference, referenceLooksOff } from "@/lib/reference-case";
 import { useReceiptDetection } from "./use-receipt-detection";
 import { VerifyInput } from "./VerifyInput";
 import { VerdictCard } from "./VerdictCard";
@@ -61,6 +62,8 @@ interface Outcome {
   reference?: string;
   /** What was entered, for the re-check link. */
   share?: ShareInput;
+  /** The typed reference had lowercase letters, spaces or dashes, or not the bank's usual shape. */
+  referenceHint?: boolean;
 }
 
 function isEditable(el: EventTarget | null): boolean {
@@ -104,6 +107,11 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
   const extraRef = useRef<HTMLInputElement>(null);
   const resultRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+  /**
+   * The field as the user last typed it, before it was shown in canonical
+   * form, so a "not found" can still tell that it was typed in lowercase.
+   */
+  const typedRef = useRef("");
 
   const { detection } = useReceiptDetection(input, { lockedBank, overrideBank, extra });
   const lockedName = lockedBank ? liveBanks.find((b) => b.code === lockedBank)?.shortName : undefined;
@@ -123,7 +131,14 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
   const verdict = useMemo(
     () =>
       outcome
-        ? presentVerdict(outcome.result, { bankCode: outcome.bankCode, checkedAt: outcome.checkedAt, checks: outcome.checks, reference: outcome.reference, t })
+        ? presentVerdict(outcome.result, {
+            bankCode: outcome.bankCode,
+            checkedAt: outcome.checkedAt,
+            checks: outcome.checks,
+            reference: outcome.reference,
+            referenceHint: outcome.referenceHint,
+            t,
+          })
         : null,
     [outcome, t]
   );
@@ -180,6 +195,9 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
         inputRef.current?.focus();
         return;
       }
+      // Show a typed reference the way the bank prints it (FT26SAMPLE01 for
+      // "ft26 sample01"); detectInput already put it in that form.
+      if (shouldShowCanonical(d, value, Boolean(lockedBank))) setInput(d.value);
       if (d.browserFirst && !opts.force) {
         // Telebirr / M-Pesa: the panel below leads; nothing is sent.
         return;
@@ -242,7 +260,11 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
       setHistory(nextHistory);
       const enteredRef = d.kind === "url" ? d.urlReference : d.kind === "reference" || d.kind === "telebirrQr" ? d.value : undefined;
       const share: ShareInput = { input: d.value, bank: bankCode, ...(d.needsAccount || d.needsPhone ? { extra: extraValue } : {}) };
-      setOutcome({ result, checks, checkedAt, bankCode, reference: enteredRef, share });
+      // What the user typed, if it is still the reference being checked (the
+      // field may have been changed since by a scan, a recent check or a link).
+      const typed = typedRef.current.trim() && canonicalReference(bankCode, typedRef.current) === d.value ? typedRef.current : value;
+      const referenceHint = d.kind === "reference" && referenceLooksOff(bankCode, typed);
+      setOutcome({ result, checks, checkedAt, bankCode, reference: enteredRef, share, referenceHint });
       setPhase("done");
     },
     [extra, lockedBank, overrideBank, t]
@@ -368,6 +390,7 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
       window.history.replaceState(null, "", window.location.pathname + window.location.search);
     }
     setInput("");
+    typedRef.current = "";
     setExtra("");
     setOverrideBank("");
     setOutcome(null);
@@ -476,9 +499,15 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
           value={input}
           onChange={(v) => {
             setInput(v);
+            typedRef.current = v;
             setNotice(null);
             setForced(false);
             if (phase === "done") setPhase("idle");
+          }}
+          onBlur={() => {
+            // Detected afresh: the live detection runs on a deferred copy of the input.
+            const d = detectInput(input, { lockedBank, overrideBank });
+            if (shouldShowCanonical(d, input, Boolean(lockedBank))) setInput(d.value);
           }}
           onPaste={onInputPaste}
           onFiles={handleFiles}

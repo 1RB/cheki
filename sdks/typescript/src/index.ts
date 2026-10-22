@@ -85,6 +85,26 @@ export const RECEIPT_DOWNLOAD_BANKS: Readonly<
 
 const SAFE_REFERENCE_RE = /^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$/;
 
+/**
+ * The shape of an uppercase-only reference per receipt-download bank: an
+ * older CBE FT reference, a Dashen FT Ref, a ZamZam id. A reference that only
+ * differs from it by case, spaces or dashes is sent in that shape, as the
+ * server would read it ("ft26 sample01" -> "FT26SAMPLE01"). A CBE Receipt ID
+ * is case-sensitive and is never changed.
+ */
+const RECEIPT_REFERENCE_SHAPES: Readonly<Record<string, RegExp>> = Object.freeze({
+  cbe: /^FT[A-Z0-9]{8,12}$/,
+  dashen: /^[A-Z0-9]{16}$/,
+  zamzam: /^\d+$/,
+});
+
+function canonicalReceiptReference(bank: string, reference: string): string {
+  const shape = Object.prototype.hasOwnProperty.call(RECEIPT_REFERENCE_SHAPES, bank) ? RECEIPT_REFERENCE_SHAPES[bank] : undefined;
+  if (!shape) return reference;
+  const compact = reference.replace(/[\s\-\u2010-\u2015\u2212]/g, "").toUpperCase();
+  return shape.test(compact) ? compact : reference;
+}
+
 const BATCH_PATH = "/api/verify/batch";
 
 // ============================================================================
@@ -602,7 +622,7 @@ export class Cheki {
         `Receipt download is only supported for: ${Object.keys(RECEIPT_DOWNLOAD_BANKS).join(", ")}.`,
       );
     }
-    const ref = String(reference ?? "").trim();
+    const ref = canonicalReceiptReference(id, String(reference ?? "").trim());
     if (!SAFE_REFERENCE_RE.test(ref) || ref.includes("..")) {
       throw new ChekiValidationError("reference must be 1-64 letters, digits, dots, dashes or underscores.");
     }

@@ -37,7 +37,7 @@ curl -X POST https://cheki.et/api/verify \
   -d '{"bank":"cbe","reference":"https://mbreciept.cbe.com.et/fHCxExampleRcpt01"}'
 ```
 
-Body fields: `bank` (an id above), `reference` or `qrData`, `accountNumber` for BOA and legacy CBE, `phoneNumber` for CBE Birr. A verified response (illustrative values from the shared SDK test fixtures):
+Body fields: `bank` (an id above), `reference` or `qrData`, `accountNumber` for BOA and legacy CBE, `phoneNumber` for CBE Birr. References are not case-sensitive for `cbe` FT references, `boa`, `telebirr`, `mpesa`, `dashen` and `cbebirr`: the server uppercases them and drops spaces and dashes typed inside (`det0sample` is `DET0SAMPLE`). CBE Receipt IDs, Awash and eBirr links and ZamZam ids are used exactly as sent. A verified response (illustrative values from the shared SDK test fixtures):
 
 ```json
 {"success": true, "verified": true, "bank": "Commercial Bank of Ethiopia", "bankCode": "cbe", "reference": "FT26SAMPLE01", "amount": 1250.5, "currency": "ETB", "senderName": "ABEBE KEBEDE", "senderAccount": "1****4321", "receiverName": "TIGIST ALEMU", "receiverAccount": "1****6171", "date": "2026-10-01", "reason": "Invoice 42", "sourceUrl": "https://mbreciept.cbe.com.et/fHCxExampleRcpt01", "cached": false}

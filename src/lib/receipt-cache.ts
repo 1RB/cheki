@@ -17,6 +17,8 @@
  */
 
 import { detectBankFromUrl, isUrl } from "./adapters/url-detector";
+import { getBank } from "./manifest/loader";
+import { canonicalReference } from "./reference-case";
 
 export const DEFAULT_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours, one business day
 export const DEFAULT_MAX_ENTRIES = 1000;
@@ -102,9 +104,11 @@ export function verificationCacheKey(input: {
 }): string {
   const normalized = { ...input };
   const ref = (input.reference ?? "").trim();
+  let fromUrl = false;
   if (ref && isUrl(ref)) {
     const detected = detectBankFromUrl(ref);
     if (detected) {
+      fromUrl = true;
       normalized.bank = detected.bank;
       normalized.reference = detected.reference;
       if (detected.accountNumber && !input.accountNumber) {
@@ -114,6 +118,14 @@ export function verificationCacheKey(input: {
         normalized.phoneNumber = detected.phoneNumber;
       }
     }
+  }
+  // The verifier asks the bank with the canonical reference, so "ft26sample01"
+  // and "FT26SAMPLE01" are one receipt and one cache entry. Case-sensitive
+  // tokens stay as typed (src/lib/reference-case.ts).
+  if (normalized.reference && !isUrl(normalized.reference)) {
+    const bankId = getBank(normalized.bank ?? "")?.id ?? normalized.bank;
+    // A reference read out of a link is uppercased only, as in the verifier.
+    normalized.reference = canonicalReference(bankId, normalized.reference, { compact: !fromUrl });
   }
   return cacheKeyFor(normalized);
 }

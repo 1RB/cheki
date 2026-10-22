@@ -79,6 +79,25 @@ class ChekiClient {
 
   static final RegExp _legacyCbeReference = RegExp(r'^FT[A-Za-z0-9]{8,12}$', caseSensitive: false);
 
+  /// The shape of an uppercase-only reference per receipt-download bank (an
+  /// older CBE FT reference, a Dashen FT Ref, a ZamZam id). A reference that
+  /// only differs from it by case, spaces or dashes is sent in that shape, as
+  /// the server reads it. A CBE Receipt ID is case-sensitive and never changed.
+  static final Map<String, RegExp> _receiptReferenceShapes = {
+    'cbe': RegExp(r'^FT[A-Z0-9]{8,12}$'),
+    'dashen': RegExp(r'^[A-Z0-9]{16}$'),
+    'zamzam': RegExp(r'^[0-9]+$'),
+  };
+
+  static final RegExp _referenceSeparators = RegExp(r'[\s\-\u2010-\u2015\u2212]');
+
+  static String _canonicalReceiptReference(String bank, String reference) {
+    final shape = _receiptReferenceShapes[bank];
+    if (shape == null) return reference;
+    final compact = reference.replaceAll(_referenceSeparators, '').toUpperCase();
+    return shape.hasMatch(compact) ? compact : reference;
+  }
+
   static const Duration _maxRetryAfter = Duration(seconds: 60);
   static final RegExp _safeReference = RegExp(r'^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$');
 
@@ -200,7 +219,7 @@ class ChekiClient {
     if (digits == null) {
       throw const ChekiValidationException('Receipt download is only supported for: cbe, zemen, dashen, zamzam.');
     }
-    final ref = reference.trim();
+    final ref = _canonicalReceiptReference(id, reference.trim());
     if (!_safeReference.hasMatch(ref) || ref.contains('..')) {
       throw const ChekiValidationException('reference must be 1-64 letters, digits, dots, dashes or underscores.');
     }

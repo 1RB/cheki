@@ -89,6 +89,31 @@ var legacyCBEReference = regexp.MustCompile(`(?i)^FT[A-Za-z0-9]{8,12}$`)
 
 var safeReference = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$`)
 
+// receiptReferenceShapes is the shape of an uppercase-only reference per
+// receipt-download bank (an older CBE FT reference, a Dashen FT Ref, a ZamZam
+// id). A reference that only differs from it by case, spaces or dashes is
+// sent in that shape, as the server reads it. A CBE Receipt ID is
+// case-sensitive and never changed.
+var receiptReferenceShapes = map[string]*regexp.Regexp{
+	"cbe":    regexp.MustCompile(`^FT[A-Z0-9]{8,12}$`),
+	"dashen": regexp.MustCompile(`^[A-Z0-9]{16}$`),
+	"zamzam": regexp.MustCompile(`^[0-9]+$`),
+}
+
+var referenceSeparators = regexp.MustCompile(`[\s\-\x{2010}-\x{2015}\x{2212}]`)
+
+func canonicalReceiptReference(bank, reference string) string {
+	shape, ok := receiptReferenceShapes[bank]
+	if !ok {
+		return reference
+	}
+	compact := strings.ToUpper(referenceSeparators.ReplaceAllString(reference, ""))
+	if shape.MatchString(compact) {
+		return compact
+	}
+	return reference
+}
+
 // Sentinel errors, usable with errors.Is.
 var (
 	// ErrRateLimited matches an *APIError with status 429.
@@ -273,7 +298,7 @@ func (c *Client) GetReceiptURL(bank, reference, accountNumber string) (string, e
 	if !ok {
 		return "", fmt.Errorf("%w: receipt download is only supported for cbe, zemen, dashen and zamzam", ErrInvalidInput)
 	}
-	ref := strings.TrimSpace(reference)
+	ref := canonicalReceiptReference(id, strings.TrimSpace(reference))
 	if !safeReference.MatchString(ref) || strings.Contains(ref, "..") {
 		return "", fmt.Errorf("%w: reference must be 1-64 letters, digits, dots, dashes or underscores", ErrInvalidInput)
 	}
