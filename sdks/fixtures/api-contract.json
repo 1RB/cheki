@@ -377,7 +377,7 @@
       "headers": {},
       "body": {
         "success": false,
-        "error": "[Telebirr] Our server can't reach this bank (it blocks cloud IPs). Open the receipt directly: Try the new receipt format: https://transactioninfo.ethiotelecom.et/receipt/CHQ0SAMPLE",
+        "error": "[Telebirr] Our server can't reach this bank (it blocks cloud IPs). Open the receipt directly: https://transactioninfo.ethiotelecom.et/receipt/CHQ0SAMPLE",
         "fallbackUrl": "https://transactioninfo.ethiotelecom.et/receipt/CHQ0SAMPLE"
       }
     },

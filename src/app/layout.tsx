@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
-import { LIVE_BANK_COUNT, liveBankList } from "@/lib/bank-counts";
+import { DIRECT_BANK_COUNT, directBankList, linkOutBankList } from "@/lib/bank-counts";
 import { I18nProvider } from "@/lib/i18n/context";
 import { THEME_INIT_SCRIPT } from "@/lib/theme";
 import { LOCALE_INIT_SCRIPT } from "@/lib/i18n/locale-store";
@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     template: "%s | cheki",
   },
   description:
-    `Check ${liveBankList("short")} receipts in seconds against each bank's own record. Free, no signup, open-source API.`,
+    `Check ${directBankList("short")} receipts against each bank's own record. ${linkOutBankList()} open on their official receipt pages. Free, no signup, open source.`,
   applicationName: "cheki",
   category: "finance",
   creator: "cheki open source",
@@ -57,7 +57,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Check Ethiopian Bank Receipts Free | cheki",
     description:
-      `Check CBE, Telebirr and ${LIVE_BANK_COUNT - 2} more Ethiopian bank and wallet receipts in seconds. Free, no signup, open source.`,
+      `Check CBE, BOA and ${DIRECT_BANK_COUNT - 2} more Ethiopian bank and wallet receipts against the bank's own record. ${linkOutBankList()} open on their official receipt pages. Free, open source.`,
     type: "website",
     siteName: "cheki",
     locale: "en_US",
@@ -67,7 +67,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Check Ethiopian Bank Receipts Free | cheki",
     description:
-      `Check CBE, Telebirr and ${LIVE_BANK_COUNT - 2} more Ethiopian bank and wallet receipts in seconds. Free, no signup, open source.`,
+      `Check CBE, BOA and ${DIRECT_BANK_COUNT - 2} more Ethiopian bank and wallet receipts against the bank's own record. ${linkOutBankList()} open on their official receipt pages. Free, open source.`,
   },
   robots: {
     index: true,
@@ -105,7 +105,7 @@ const ldWebapp = {
     priceCurrency: "ETB",
   },
   description:
-    "Free, open-source Ethiopian bank receipt verification. Verify CBE, Telebirr, BOA, M-Pesa, and more. No signup, no API key required.",
+    "Free, open-source Ethiopian bank receipt verification. Checks CBE, BOA, Dashen and more against each bank's own record; Telebirr and M-Pesa receipts open on their official pages. No signup, no API key required.",
   featureList: [
     "Real-time receipt verification",
     "QR code scanning",

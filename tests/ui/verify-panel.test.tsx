@@ -101,7 +101,12 @@ describe("VerifyPanel", () => {
     fetchMock.mockResolvedValue(json({ success: false, error: "[Telebirr] blocked", fallbackUrl: "https://transactioninfo.ethiotelecom.et/receipt/DET0SAMPLE" }, 502));
     await act(async () => { screen.getByRole("button", { name: "Check from cheki's server anyway" }).click(); });
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    await waitFor(() => expect(screen.getByRole("heading", { name: /didn't answer cheki's server/ })).toBeTruthy());
+    await waitFor(() => expect(screen.getByRole("heading", { name: /Not checked: Telebirr blocks cheki's server/ })).toBeTruthy());
+    // Never green; one primary to the official page; one line on what to check.
+    const card = document.querySelector(".vc")!;
+    expect(card.getAttribute("data-tone")).toBe("neutral");
+    expect(screen.getByRole("link", { name: /Open the official receipt/ }).getAttribute("href")).toBe("https://transactioninfo.ethiotelecom.et/receipt/DET0SAMPLE");
+    expect(card.querySelector(".vc-next")?.textContent).toMatch(/check the amount, the receiver's name and the date/);
   });
 
   it("a legacy FT reference opens the account field and waits for it", async () => {

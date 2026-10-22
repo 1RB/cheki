@@ -9,7 +9,7 @@ import { ContributeBox } from "@/components/ContributeBox";
 import { getEndpointDoc } from "@/lib/manifest/endpoints";
 import { formatNeeds, primaryFormat, secondaryFormats } from "@/lib/manifest/formats";
 import { contributeLeadMode } from "@/lib/contribute";
-import { bankPageContent, hasGeoSection, receiptTypeLabel, requiredInfoIntro } from "@/lib/bank-page-content";
+import { bankPageContent, hasGeoSection, linkOutLine, receiptTypeLabel, requiredInfoIntro } from "@/lib/bank-page-content";
 import { articles } from "@/lib/guides";
 import { BANK_HEADING } from "@/lib/seo-redirects";
 import { withArticle } from "@/lib/indefinite-article";
@@ -128,8 +128,9 @@ export default async function BankPage({ params }: { params: Promise<{ code: str
           <section id="check" aria-label={`${bank.shortName} receipt checker`} className="bank-check">
             <VerifyPanel lockedBank={bank.code} />
             <p className="bank-check-foot">
-              Free, no signup. Checked against {bank.shortName}&apos;s own receipt record
-              {bank.geoBlocked ? ", which only answers Ethiopian networks" : ""}.
+              {bank.geoBlocked
+                ? `Free, no signup. ${linkOutLine(bank.shortName)}`
+                : `Free, no signup. Checked against ${bank.shortName}'s own receipt record.`}
             </p>
           </section>
         )}
@@ -154,9 +155,9 @@ export default async function BankPage({ params }: { params: Promise<{ code: str
         <div style={{ display: "flex", gap: "12px", marginBottom: "40px", flexWrap: "wrap" }}>
           <span style={{
             padding: "12px 16px", borderRadius: "8px", border: "1px solid var(--border)", fontSize: "14px", fontWeight: 500,
-            color: bank.status === "live" ? "var(--green-dark)" : "var(--ink-3)", background: "var(--surface)",
+            color: bank.status === "live" && !bank.geoBlocked ? "var(--green-dark)" : "var(--ink-3)", background: "var(--surface)",
           }}>
-            {bank.status === "live" ? (bank.geoBlocked ? "Live on Ethiopian networks" : "Live and working") : "In development"}
+            {bank.status === "live" ? (bank.geoBlocked ? "Opens the official receipt page" : "Live and working") : "In development"}
           </span>
           {bank.geoBlocked && (
             <span style={{ padding: "12px 16px", borderRadius: "8px", border: "1px solid color-mix(in srgb, var(--amber) 30%, transparent)", fontSize: "14px", fontWeight: 500, color: "var(--amber-text)", background: "var(--amber-light)" }}>
@@ -222,7 +223,7 @@ export default async function BankPage({ params }: { params: Promise<{ code: str
             <p>Placeholders, error shapes and gotchas are in the <Link href={`/endpoints#${bank.code}`}>{bank.shortName} endpoint reference</Link>.</p>
             <p>This is a public URL that returns {withArticle(receiptTypeLabel(bank))} containing the official transaction data. {bank.endpointAuth ?? "No authentication is required."}</p>
             {geoNote && (
-              <p><strong>Note:</strong> This endpoint is geo-blocked to Ethiopian IP addresses. If cheki&apos;s server cannot reach it, use the fallback URL or self-host on an Ethiopian network.</p>
+              <p><strong>Note:</strong> {linkOutLine(bank.shortName)} A cheki server self-hosted on an Ethiopian network checks it directly.</p>
             )}
 
             <h2>Who uses {bank.shortName} verification</h2>
@@ -245,6 +246,9 @@ export default async function BankPage({ params }: { params: Promise<{ code: str
                     <code key={f.id}>{`{ "bank": "${bank.code}", "reference": "${f.inputs[0]?.example ?? "REFERENCE"}"${formatNeeds(f, "account") ? `, "accountNumber": "1000XXXXXXX"` : ""} }`}</code>
                   ))}
               </p>
+            )}
+            {bank.geoBlocked && (
+              <p>From cheki.et this returns <code>success: false</code> with a <code>fallbackUrl</code>: the official receipt page, to open in the user&apos;s browser. A self-hosted server on an Ethiopian network returns the parsed receipt.</p>
             )}
             <p>See the <Link href="/docs">API documentation</Link> for full details.</p>
 

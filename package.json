@@ -1,7 +1,7 @@
 {
   "name": "cheki",
   "version": "1.6.0",
-  "description": "Verify Ethiopian bank payment receipts. Free, open source, no API key. 10 live banks and wallets: CBE, Telebirr, BOA, M-Pesa, Dashen, Awash, Siinqee, eBirr, ZamZam, and CBE Birr.",
+  "description": "Verify Ethiopian bank payment receipts. Free, open source, no API key. 8 banks and wallets checked directly (CBE, BOA, Dashen, Awash, Siinqee, eBirr, ZamZam, CBE Birr), plus Telebirr and M-Pesa through their official receipt pages.",
   "license": "MIT",
   "private": true,
   "repository": {
