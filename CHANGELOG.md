@@ -4,6 +4,9 @@ Every cheki SDK ships the same version: npm `cheki-verify` (and `@1rb/cheki-veri
 
 ## Unreleased
 
+**Security updates**
+- Next.js and eslint-config-next 16.4.1 (GHSA-673q-mjm6-r5xr, CVE-2026-96889 / GHSA-2464-fhr4-w9xw, GHSA-p3m5-59mp-jv5r), sharp resolves 0.35.5 or later, undici resolves 7.30.1 or later (GHSA-qrxm-fqhp-jwvm). Dev only: vitest 4.1.12 with vite 8.1.6 or later. Python SDK: requires `certifi>=2026.10.19` (GHSA-6q48-6c7w-9gw2).
+
 **References typed in lowercase**
 - A reference typed in lowercase now works. For the banks whose receipts print references in capitals (CBE FT references, BOA, Telebirr, M-Pesa, Dashen, CBE Birr), cheki trims it, drops spaces and dashes typed inside when that gives the bank's format, and uppercases it: `det0sample` is checked as `DET0SAMPLE`. One shared rule (`src/lib/reference-case.ts`) is used by `POST /api/verify` (so the batch route, the CLI and every SDK get it), `GET /api/receipt`, the cache key and the form.
 - Left exactly as given: CBE Receipt IDs (`fHCx…`, `v2-…`), Awash and eBirr/Siinqee share tokens, ZamZam ids (spaces between digits are dropped) and the Telebirr receipt QR payload, whose CRC covers its raw characters. A reference read out of a receipt link or QR is uppercased but never compacted.

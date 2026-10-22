@@ -25,10 +25,12 @@ classifiers = [
     "Programming Language :: Python :: 3.14",
 ]
 # The API client (ChekiClient, the CLI) needs only requests. Floors skip
-# releases with published advisories (requests < 2.33.0, urllib3 < 2.8.0).
+# releases with published advisories (requests < 2.33.0, urllib3 < 2.8.0,
+# certifi < 2026.10.19).
 dependencies = [
     "requests>=2.33.0",
     "urllib3>=2.8.0",
+    "certifi>=2026.10.19",
 ]
 
 [project.optional-dependencies]
