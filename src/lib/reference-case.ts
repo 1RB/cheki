@@ -16,6 +16,9 @@
  *   - eBirr white-label (Siinqee, Nib, Wegagen, Ahadu, Kaafi) {token} URL
  *     path segments are case-sensitive.
  *   - ZamZam receipt ids are digits; spaces are dropped, nothing else.
+ *   - Bunna receipt tokens are base64 from the link fragment (case-sensitive).
+ *     Only their encoding is made canonical (canonicalBunnaToken), so a link,
+ *     the receipt QR and a pasted token are one receipt and one cache entry.
  *   - The Telebirr receipt QR payload is never passed through here: its CRC
  *     covers the raw characters. Only the transaction number read out of it is.
  *   - URLs are never changed. A link is parsed first and only the reference
@@ -64,6 +67,28 @@ const CASE_RULES: Readonly<Record<string, CaseRule>> = Object.freeze({
 /** Banks whose receipt id is digits only: spaces are dropped, there is no case. */
 const DIGIT_BANKS = new Set(["zamzam"]);
 
+/**
+ * One spelling of a Bunna receipt token: URL-decoded once, "+" restored where
+ * it became a space, base64url mapped to standard base64, padding added.
+ * Anything that is not base64 after that comes back trimmed and unchanged, so
+ * the parser still sees it and gives its own error (it also checks the length).
+ */
+export function canonicalBunnaToken(value: string): string {
+  const trimmed = value.trim();
+  let s = trimmed;
+  if (s.includes("%")) {
+    try {
+      s = decodeURIComponent(s);
+    } catch {
+      return trimmed;
+    }
+  }
+  s = s.replace(/ /g, "+").replace(/-/g, "+").replace(/_/g, "/");
+  const m = /^([A-Za-z0-9+/]+)={0,2}$/.exec(s);
+  if (!m || m[1].length % 4 === 1) return trimmed;
+  return m[1] + "=".repeat((4 - (m[1].length % 4)) % 4);
+}
+
 /** The manifest id a UI or API code maps to for these rules ("cbe-new" is CBE's current format). */
 function ruleKey(bank: string | undefined | null): string {
   const id = String(bank ?? "").trim().toLowerCase();
@@ -111,6 +136,7 @@ export function canonicalReference(bank: string | undefined | null, reference: s
   if (!trimmed) return trimmed;
   const key = ruleKey(bank);
   const doCompact = opts.compact !== false;
+  if (key === "bunna") return canonicalBunnaToken(trimmed);
   if (DIGIT_BANKS.has(key)) {
     if (!doCompact) return trimmed;
     const c = compact(trimmed);

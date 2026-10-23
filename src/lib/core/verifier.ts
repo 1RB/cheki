@@ -31,6 +31,7 @@ import { ZemenParser } from "../parsers/zemen";
 import { CBEBirrParser } from "../parsers/cbebirr";
 import { MpesaParser } from "../parsers/mpesa";
 import { ZamZamParser } from "../parsers/zamzam";
+import { BunnaParser } from "../parsers/bunna";
 import { verificationGate, gateFailureMessage } from "./gate";
 import { checkAccountSuffix, checkPhone, checkReference } from "../security/reference";
 import { parseTelebirrQr } from "../qr/telebirr";
@@ -490,6 +491,23 @@ export class Verifier {
           message: notFound
             ? "ZamZam Bank has no receipt with this id. Check the number at the end of the receipt link."
             : "Could not read the ZamZam Bank receipt.",
+        });
+      }
+      return ok(parsed);
+    }
+
+    // Bunna: one JSON envelope either way. FAILURE ("Something went wrong!")
+    // is what Bunna says for an unknown token, a malformed one and its own
+    // errors alike, so it is "not confirmed", with the receipt page to open.
+    if (id === "bunna") {
+      const { parsed, notFound } = BunnaParser.parseAdvice(data);
+      if (!parsed.verified) {
+        return err({
+          kind: "EXTRACTION_ERROR",
+          bank: manifestEntry.name,
+          message: notFound
+            ? "Bunna Bank did not return a receipt for this link. Check that the whole link was copied, or scan the receipt QR."
+            : "Could not read the Bunna Bank receipt.",
         });
       }
       return ok(parsed);
