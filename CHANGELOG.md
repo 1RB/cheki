@@ -9,6 +9,7 @@ Every cheki SDK ships the same version: npm `cheki-verify` (and `@1rb/cheki-veri
 - The token is opaque base64 and case-sensitive. Only its URL encoding is normalised (`%2B`, a `+` that became a space, base64url, missing padding), so a link, the QR and a pasted token share one cache entry. A typed transaction number (`BB…`) is rejected before any request: Bunna does not look receipts up by it.
 - Bunna answers `{"status":"FAILURE","message":"Something went wrong!"}` for an unknown token, a cut-off link and its own errors alike, so cheki reports that as not confirmed (422 with `checkedUrl`, Bunna's receipt page), never as fake. The daily health check probes an all-zero token and expects that envelope.
 - SWIFT code BUNAETAA was already on the bank page (from Bunna's correspondent-banking page). Copy, llms.txt, README, the formats guide and SDK descriptions now count 11 live banks, 9 checked directly. No SDK code change: `verify` takes the link as `reference`.
+- Account numbers are kept only in Bunna's own mask (at most 4 characters either side of one run of stars). Anything else, unmasked or partly masked, is remasked to its first character and last 4 before it is returned or cached.
 
 **Security updates**
 - Next.js and eslint-config-next 16.4.1 (GHSA-673q-mjm6-r5xr, CVE-2026-96889 / GHSA-2464-fhr4-w9xw, GHSA-p3m5-59mp-jv5r), sharp resolves 0.35.5 or later, undici resolves 7.30.1 or later (GHSA-qrxm-fqhp-jwvm). Dev only: vitest 4.1.12 with vite 8.1.6 or later. Python SDK: requires `certifi>=2026.10.19` (GHSA-6q48-6c7w-9gw2).
