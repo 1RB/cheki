@@ -1746,39 +1746,91 @@
       "registry": "not-checked"
     },
     "type": "bank",
-    "status": "in-development",
+    "status": "live",
+    "beta": true,
+    "betaNote": "Beta: cheki confirms the receipt exists in Bunna Bank's record and shows its amount, date, payer and receiver. Only one real receipt has been checked so far.",
     "parser": "bunna",
     "responseType": "json",
     "requiresAccount": false,
-    "endpoint": "Unknown",
-    "endpointFormat": "Researching public receipt endpoint",
+    "requiresPhone": false,
+    "endpoint": "https://online.bunnabanksc.com/st_backend/api/v1/advice?data={ref}",
+    "endpointFormat": "https://online.bunnabanksc.com/st_backend/api/v1/advice?data={TOKEN}",
     "sslVerify": true,
     "color": "#9333ea",
     "initials": "Bunna",
-    "description": "Bunna International Bank was established in 2009. No public receipt verification endpoint has been identified yet.",
-    "referenceFormat": "Unknown, researching",
+    "notes": "Beta. The receipt link (online.bunnabanksc.com/receipt/#/{token}) opens an Angular app whose data comes from this JSON endpoint. The token sits in the URL fragment and is opaque base64. Bunna answers HTTP 200 either way: status SUCCESS with the receipt, or status FAILURE (\"Something went wrong!\") for an unknown or malformed token. Bunna masks the account numbers itself.",
+    "description": "Bunna International Bank (Bunna Bank) was established in 2009. Its receipt links (online.bunnabanksc.com/receipt/#/...) and the QR printed on its receipts are backed by a JSON service: cheki sends the receipt token there and confirms that Bunna has the record, with the amount, date, payer and receiver (account numbers masked by Bunna). Bunna support is in beta.",
+    "referenceFormat": "The token from the receipt link or receipt QR (base64, 44 characters on the receipts seen so far). Not the transaction number printed on the receipt.",
     "referenceExample": "",
     "howToVerify": [
-      "Researching receipt verification options for Bunna International Bank"
+      "Scan the QR on the Bunna receipt, or paste the receipt link (https://online.bunnabanksc.com/receipt/#/...)",
+      "cheki sends the receipt token to Bunna Bank's receipt service",
+      "If Bunna has the record, cheki shows the amount, the date, the payer and the receiver, with account numbers masked",
+      "Compare the amount, date and receiver with the payment you expected"
     ],
     "useCases": [
-      "Future support for Bunna International Bank receipt verification"
+      "Merchants confirming a Bunna Bank transfer before releasing goods",
+      "Businesses reconciling Bunna Bank receipts sent by customers",
+      "Apps checking Bunna Bank receipt links via the cheki API"
     ],
     "faq": [
       {
-        "q": "Can I verify Bunna International Bank receipts with cheki?",
-        "a": "Not yet. We are researching Bunna Bank's receipt system."
+        "q": "What does cheki confirm for a Bunna Bank receipt?",
+        "a": "That Bunna Bank's receipt service has a record for that receipt link, and what the record says: the amount, the date (Bunna gives no time), the payer and the receiver, with account numbers masked by Bunna. Compare these with the payment you expected. Bunna support is in beta: only one real receipt has been checked so far."
+      },
+      {
+        "q": "What do I need to verify a Bunna Bank receipt?",
+        "a": "The QR on the receipt or the receipt link (https://online.bunnabanksc.com/receipt/#/...). No account number is needed. The transaction number printed on the receipt does not work on its own, because Bunna looks receipts up by the token in the link."
+      },
+      {
+        "q": "What if cheki says Bunna did not return a receipt?",
+        "a": "Bunna answers the same way for a link that was cut short, a mistyped one and its own errors, so this is not proof that a receipt is fake. Copy the whole link again or scan the QR, then ask the sender for the original link if it still does not open."
       }
     ],
     "seo": {
-      "title": "Verify Bunna International Bank Receipts Online",
-      "description": "Bunna International Bank receipt verification is coming to cheki.",
+      "title": "Bunna Bank Receipt Check: Verify Bunna Payments",
+      "description": "Check a Bunna Bank receipt link or QR against Bunna's own record: cheki confirms the receipt exists and shows the amount, date, payer and receiver. Free, no signup.",
       "keywords": [
+        "Bunna Bank receipt",
         "Bunna International Bank receipt",
-        "verify Bunna Bank"
+        "verify Bunna Bank transfer",
+        "Bunna Bank receipt check",
+        "online.bunnabanksc.com receipt"
       ]
     },
-    "formats": []
+    "formats": [
+      {
+        "id": "bunna-advice-json",
+        "status": "current",
+        "label": "Receipt link or QR",
+        "parser": "bunna",
+        "endpoint": "https://online.bunnabanksc.com/st_backend/api/v1/advice?data={ref}",
+        "link": "https://online.bunnabanksc.com/receipt/#/{ref}",
+        "linkHosts": [
+          "online.bunnabanksc.com"
+        ],
+        "inputs": [
+          {
+            "name": "link",
+            "label": "Receipt link or receipt QR",
+            "example": "https://online.bunnabanksc.com/receipt/#/..."
+          }
+        ],
+        "responseType": "json",
+        "receiptPage": "redirect",
+        "confidence": "verified",
+        "evidence": "cheki, 2026-10-23: the receipt page's Angular app (online.bunnabanksc.com/receipt/main.*.js) reads the token from the URL fragment and fetches online.bunnabanksc.com/st_backend/api/v1/advice?data={token}. A real receipt (shared with consent through the cheki Telegram bot) answered status SUCCESS with drAccountName, drAccount (masked), crAccountName, crAccount (masked), currency, tranId, tranDate and amount in about 1 second from a cloud IP; random 16- and 32-byte tokens answered status FAILURE \"Something went wrong!\". The app draws the receipt QR as online.bunnabanksc.com/#/receipt-v2/{token}.",
+        "notes": "The token is opaque; cheki never decodes or derives one. serviceCharge, vat and totalAmount were all 0.0 on the receipt seen, so they are not mapped."
+      }
+    ],
+    "endpointHistory": [
+      {
+        "date": "2026-10-23",
+        "formatId": "bunna-advice-json",
+        "change": "cheki reads Bunna Bank receipts from the JSON service behind online.bunnabanksc.com/receipt (beta).",
+        "source": "cheki (Bunna's public receipt web app and one real receipt)"
+      }
+    ]
   },
   {
     "id": "enat",

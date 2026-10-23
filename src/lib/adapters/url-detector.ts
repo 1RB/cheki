@@ -15,12 +15,33 @@
  *   - cbepay1.cbe.com.et/aureceipt?TID=     → CBE Birr
  *   - receipt.ebirr.com/{tenant}/{token}    → eBirr white-label (Siinqee, …)
  *   - receipt.zamzambank.com.et/receipt/{id} → ZamZam (numeric receipt id)
+ *   - online.bunnabanksc.com/receipt/#/{token} → Bunna (token in the fragment;
+ *     the receipt QR is online.bunnabanksc.com/#/receipt-v2/{token})
  */
 export interface DetectedReceipt {
   bank: string;
   reference: string;
   accountNumber?: string;
   phoneNumber?: string;
+}
+
+/** Host of Bunna Bank's receipt page, receipt QR link and receipt JSON service. */
+export const BUNNA_HOST = "online.bunnabanksc.com";
+
+/**
+ * The token in a Bunna receipt link's fragment: "#/{token}",
+ * "#/receipt/{token}" or "#/receipt-v2/{token}", with the remaining segments
+ * joined by "/" the way Bunna's app joins them. Returns the raw (still
+ * URL-encoded) token, or null when the fragment holds none.
+ */
+export function bunnaTokenFromHash(hash: string): string | null {
+  const route = hash.replace(/^#/, "").split("?")[0];
+  const parts = route.split("/").filter(Boolean);
+  if (parts.length === 0) return null;
+  const first = parts[0].toLowerCase();
+  if (first === "receipt" || first === "receipt-v2") parts.shift();
+  else if (first === "feedback") return null;
+  return parts.length > 0 ? parts.join("/") : null;
 }
 
 /** eBirr white-label tenants that cheki recognises by name. */
@@ -207,6 +228,20 @@ export function detectBankFromUrl(input: string): DetectedReceipt | null {
       const parts = url.pathname.split("/").filter(Boolean);
       if (parts.length === 2 && parts[0].toLowerCase() === "receipt" && parts[1]) {
         return { bank: "zamzam", reference: parts[1] };
+      }
+    }
+
+    // Bunna: https://online.bunnabanksc.com/receipt/#/{token} (shared link)
+    //        https://online.bunnabanksc.com/#/receipt-v2/{token} (receipt QR)
+    // The token is in the fragment. Exactly that host; only the token is
+    // taken (the parser validates it and fetches from its own fixed URL), so
+    // the pasted link is never fetched. Other paths on the host (internet
+    // banking, feedback) are not receipts.
+    if (host === BUNNA_HOST) {
+      const path = url.pathname.replace(/\/+$/, "").toLowerCase();
+      if (path === "" || path === "/receipt") {
+        const token = bunnaTokenFromHash(url.hash);
+        if (token) return { bank: "bunna", reference: token };
       }
     }
 

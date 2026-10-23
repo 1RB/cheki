@@ -390,7 +390,7 @@ class ClientBankInfo:
     swift: str | None = None
     type: str | None = None
     status: str | None = None
-    #: Live, but not yet confirmed with enough real receipts (M-Pesa, ZamZam and CBE Birr today).
+    #: Live, but not yet confirmed with enough real receipts (M-Pesa, ZamZam, CBE Birr and Bunna today).
     beta: bool = False
     requires_account: bool = False
     account_digits: int | None = None

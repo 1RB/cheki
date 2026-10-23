@@ -1,6 +1,6 @@
 # cheki PHP SDK
 
-PHP client for the [cheki](https://cheki.et) receipt verification API: verify Ethiopian bank transfer receipts from CBE, Telebirr, BOA, Dashen, M-Pesa (beta: not yet confirmed with a real receipt), Awash, Siinqee, eBirr, ZamZam (beta: one receipt shape confirmed so far) and CBE Birr (beta: two real receipts confirmed so far) (the live banks; `getBanks()` lists the current set). Needs PHP 8.1+ with `ext-curl` and `ext-json` (the tests run on 8.1, 8.3 and 8.4).
+PHP client for the [cheki](https://cheki.et) receipt verification API: verify Ethiopian bank transfer receipts from CBE, Telebirr, BOA, Dashen, M-Pesa (beta: not yet confirmed with a real receipt), Awash, Siinqee, eBirr, ZamZam (beta: one receipt shape confirmed so far), CBE Birr (beta: two real receipts confirmed so far) and Bunna (beta: one real receipt confirmed so far) (the live banks; `getBanks()` lists the current set). Needs PHP 8.1+ with `ext-curl` and `ext-json` (the tests run on 8.1, 8.3 and 8.4).
 
 From the hosted API at cheki.et, Telebirr and M-Pesa come back as a 502 with `fallbackUrl` (the official receipt page), because they block cloud servers. Send the user there to check the amount and receiver; direct checks return once a local relay is live.
 
@@ -63,7 +63,7 @@ foreach (array_chunk($receipts, ChekiClient::RECOMMENDED_BATCH_CHUNK) as $chunk)
 }
 ```
 
-A failed item has `httpStatus` and `error`, plus `fallbackUrl` when the server sends one for a geo-blocked bank, or `checkedUrl` (the bank page cheki asked) on a 422. Results carry `orderId` when the receipt has one (CBE Birr), and `Bank::$beta` is true for M-Pesa, ZamZam and CBE Birr.
+A failed item has `httpStatus` and `error`, plus `fallbackUrl` when the server sends one for a geo-blocked bank, or `checkedUrl` (the bank page cheki asked) on a 422. Results carry `orderId` when the receipt has one (CBE Birr), and `Bank::$beta` is true for M-Pesa, ZamZam, CBE Birr and Bunna.
 
 ### Banks and health
 

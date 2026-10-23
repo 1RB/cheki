@@ -180,7 +180,7 @@ export interface BankInfo {
     swift?: string;
     type: "bank" | "mobile" | "wallet";
     status: "live" | "in-development";
-    /** Live, but the parser has not yet been confirmed with enough real receipts (M-Pesa, ZamZam and CBE Birr today). Always set by the SDK (false when the server omits it). */
+    /** Live, but the parser has not yet been confirmed with enough real receipts (M-Pesa, ZamZam, CBE Birr and Bunna today). Always set by the SDK (false when the server omits it). */
     beta: boolean;
     requiresAccount: boolean;
     /** How many trailing account digits the bank needs, when it needs an account. */

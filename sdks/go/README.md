@@ -1,6 +1,6 @@
 # cheki Go SDK
 
-Go client for the [cheki](https://cheki.et) receipt verification API: verify Ethiopian bank transfer receipts from CBE, Telebirr, BOA, Dashen, M-Pesa (beta: not yet confirmed with a real receipt), Awash, Siinqee, eBirr, ZamZam (beta: one receipt shape confirmed so far) and CBE Birr (beta: two real receipts confirmed so far) (the live banks; `GetBanks` lists the current set).
+Go client for the [cheki](https://cheki.et) receipt verification API: verify Ethiopian bank transfer receipts from CBE, Telebirr, BOA, Dashen, M-Pesa (beta: not yet confirmed with a real receipt), Awash, Siinqee, eBirr, ZamZam (beta: one receipt shape confirmed so far), CBE Birr (beta: two real receipts confirmed so far) and Bunna (beta: one real receipt confirmed so far) (the live banks; `GetBanks` lists the current set).
 
 From the hosted API at cheki.et, Telebirr and M-Pesa come back as a 502 with `FallbackURL` (the official receipt page), because they block cloud servers. Send the user there to check the amount and receiver; direct checks return once a local relay is live.
 
@@ -72,7 +72,7 @@ for _, item := range batch.Results {
 }
 ```
 
-More than 20 receipts returns `ErrBatchTooLarge` without a request. Each receipt also counts against the per-IP verify limit (30 per minute), and a batch is never retried after a 5xx or network error, so send long lists in chunks of `cheki.RecommendedBatchChunk` (15). A failed item has `Status` and `Error`, plus `FallbackURL` when the server sends one for a geo-blocked bank, or `CheckedURL` (the bank page cheki asked) on a 422. Results carry `OrderID` when the receipt has one (CBE Birr), and `BankInfo.Beta` is true for M-Pesa, ZamZam and CBE Birr.
+More than 20 receipts returns `ErrBatchTooLarge` without a request. Each receipt also counts against the per-IP verify limit (30 per minute), and a batch is never retried after a 5xx or network error, so send long lists in chunks of `cheki.RecommendedBatchChunk` (15). A failed item has `Status` and `Error`, plus `FallbackURL` when the server sends one for a geo-blocked bank, or `CheckedURL` (the bank page cheki asked) on a 422. Results carry `OrderID` when the receipt has one (CBE Birr), and `BankInfo.Beta` is true for M-Pesa, ZamZam, CBE Birr and Bunna.
 
 ### Banks and health
 

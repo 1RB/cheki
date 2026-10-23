@@ -6,7 +6,7 @@
 
 **Check an Ethiopian bank or mobile money receipt with the bank that issued it. Free, open source, no signup, no API key.**
 
-Checks CBE, Bank of Abyssinia (BOA), Dashen, Awash, CBE Birr, Siinqee, eBirr and ZamZam receipts directly with the bank, and opens the official receipt page for Telebirr and M-Pesa.
+Checks CBE, Bank of Abyssinia (BOA), Dashen, Awash, CBE Birr, Siinqee, eBirr, ZamZam and Bunna receipts directly with the bank, and opens the official receipt page for Telebirr and M-Pesa.
 
 [![CI](https://img.shields.io/github/actions/workflow/status/1RB/cheki/ci.yml?branch=main&style=flat&label=CI&logo=github)](https://github.com/1RB/cheki/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/cheki-verify?style=flat&label=npm&logo=npm&color=CB383D)](https://www.npmjs.com/package/cheki-verify)
@@ -64,7 +64,7 @@ Confirmed results are cached in memory for 6 hours, so checking the same receipt
 
 ## Supported banks
 
-**10 live banks** (three in beta) and 21 in research. From cheki.et, 8 are checked directly with the bank; Telebirr and M-Pesa go through their official receipt pages until a local relay exists. The source of truth is [`src/lib/manifest/banks.json`](src/lib/manifest/banks.json); `GET /api/banks` returns it, including each bank's receipt formats, current first.
+**11 live banks** (four in beta) and 20 in research. From cheki.et, 9 are checked directly with the bank; Telebirr and M-Pesa go through their official receipt pages until a local relay exists. The source of truth is [`src/lib/manifest/banks.json`](src/lib/manifest/banks.json); `GET /api/banks` returns it, including each bank's receipt formats, current first.
 
 | Bank | `id` | What to send | Notes |
 |------|------|--------------|-------|
@@ -78,15 +78,16 @@ Confirmed results are cached in memory for 6 hours, so checking the same receipt
 | eBirr | `ebirr` | Receipt link (`receipt.ebirr.com/{tenant}/{token}`) | Also reads eBirr links issued for Nib, Wegagen, Ahadu and KAAFI |
 | ZamZam Bank | `zamzam` | Receipt link (`receipt.zamzambank.com.et/receipt/…`) or its numeric id | Beta |
 | CBE Birr | `cbebirr` | Receipt number (TID, e.g. `DTS41AB2C90`) + the payer's phone number, or the receipt QR (it carries both) | Beta. An empty page back usually means the number and phone don't match |
+| Bunna Bank | `bunna` | Receipt link (`online.bunnabanksc.com/receipt/#/…`) or the receipt QR | Beta. The transaction number printed on the receipt does not work on its own |
 
-References are not case-sensitive for CBE FT references, BOA, Telebirr, M-Pesa, Dashen and CBE Birr, whose receipts print them in capitals: `det0sample` is checked as `DET0SAMPLE`, and spaces or dashes typed inside are dropped. CBE Receipt IDs, Awash and eBirr links and ZamZam ids are used exactly as given.
+References are not case-sensitive for CBE FT references, BOA, Telebirr, M-Pesa, Dashen and CBE Birr, whose receipts print them in capitals: `det0sample` is checked as `DET0SAMPLE`, and spaces or dashes typed inside are dropped. CBE Receipt IDs, Awash and eBirr links and ZamZam ids are used exactly as given; Bunna tokens keep their case (only their URL encoding is normalised).
 
 Beta means the bank is live but not yet confirmed with enough real receipts. [cheki.et/endpoints](https://cheki.et/endpoints) shows every format with a dated changelog, and [cheki.et/status](https://cheki.et/status) shows the daily endpoint health check.
 
 <details>
-<summary>In research (21)</summary>
+<summary>In research (20)</summary>
 
-Zemen Bank has a parser and is waiting on a confirmed real receipt. The others need a receipt and an endpoint: Nib, Wegagen, Ahadu, KAAFI, Abay, Addis International, Amhara, Berhan, Bunna, Enat, Global Bank Ethiopia, Lion International, Oromia International, Hibret, Hijra, Shabelle, Goh Betoch, Tsedey, Gadaa, Rammis.
+Zemen Bank has a parser and is waiting on a confirmed real receipt. The others need a receipt and an endpoint: Nib, Wegagen, Ahadu, KAAFI, Abay, Addis International, Amhara, Berhan, Enat, Global Bank Ethiopia, Lion International, Oromia International, Hibret, Hijra, Shabelle, Goh Betoch, Tsedey, Gadaa, Rammis.
 
 </details>
 
