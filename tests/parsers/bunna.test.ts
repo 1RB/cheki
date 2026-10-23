@@ -120,6 +120,10 @@ describe("maskBunnaAccount", () => {
     expect(maskBunnaAccount("1000*****0001")).toBe("1000*****0001");
     expect(maskBunnaAccount("1000123450001")).toBe("1********0001");
     expect(maskBunnaAccount("12345")).toBe("*****");
+    // Partly masked, or masked in a way that shows more than 4 a side: remasked.
+    expect(maskBunnaAccount("1000123*450001")).toBe("1*********0001");
+    expect(maskBunnaAccount("10001*****00012")).toBe("1**********0012");
+    expect(maskBunnaAccount("10*00*01")).toBe("1***0*01");
     expect(maskBunnaAccount(null)).toBeUndefined();
   });
 });
