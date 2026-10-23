@@ -9,7 +9,7 @@ import { ContributeBox } from "@/components/ContributeBox";
 import { getEndpointDoc } from "@/lib/manifest/endpoints";
 import { formatNeeds, primaryFormat, secondaryFormats } from "@/lib/manifest/formats";
 import { contributeLeadMode } from "@/lib/contribute";
-import { bankPageContent, hasGeoSection, linkOutLine, receiptTypeLabel, requiredInfoIntro } from "@/lib/bank-page-content";
+import { apiExampleBody, bankPageContent, hasGeoSection, linkOutLine, receiptTypeLabel, requiredInfoIntro } from "@/lib/bank-page-content";
 import { articles } from "@/lib/guides";
 import { BANK_HEADING } from "@/lib/seo-redirects";
 import { withArticle } from "@/lib/indefinite-article";
@@ -236,7 +236,7 @@ export default async function BankPage({ params }: { params: Promise<{ code: str
             <h2>Verifying {bank.shortName} via API</h2>
             <p>cheki provides a free REST API for {bank.shortName} verification:</p>
             <p><code>POST https://cheki.et/api/verify</code></p>
-            <p>Request body: <code>{`{ "bank": "${bank.code}", "reference": "${primary?.inputs[0]?.example ?? bank.referenceExample}"${bank.requiresAccount ? `, "accountNumber": "1000XXXXXXX"` : ""} }`}</code></p>
+            <p>Request body: <code>{apiExampleBody(bank)}</code></p>
             {olderFormats.some((f) => f.parser && f.status === "legacy" && formatNeeds(f, "account")) && (
               <p>
                 Older receipt (legacy format):{" "}

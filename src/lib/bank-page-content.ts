@@ -11,7 +11,7 @@
  * 301 here (next.config.ts, src/lib/seo-redirects.ts), and their distinct
  * content lives in this file.
  */
-import { formatNeeds, primaryFormat } from "./manifest/formats";
+import { formatAccountDigits, formatNeeds, primaryFormat } from "./manifest/formats";
 import type { Bank } from "./banks";
 import { NO_SIGNUP_SENTENCE, competitorPrices } from "./guides-facts";
 import { BANK_HEADING, BANKS_WITH_TOPIC_PAGES } from "./seo-redirects";
@@ -65,6 +65,30 @@ function whatItShows(b: Bank): string {
 }
 
 /**
+ * How to hand cheki a receipt, for copy: the QR code or the receipt link
+ * first, a typed reference only as the fallback, with whatever else the bank
+ * needs (account digits, payer phone). Never implies a bare number is enough
+ * when the bank needs more. Link-only banks (Awash, Siinqee, eBirr) get the
+ * link and nothing else.
+ */
+export function howToSubmit(b: Bank): string {
+  const primary = primaryFormat(b);
+  const first = primary?.inputs[0]?.name;
+  if (first === "link") return "Paste the full receipt link into cheki";
+  const lead = "Scan the receipt's QR code or paste the receipt link into cheki";
+  const ref = refNoun(b);
+  const needsAccount = primary ? formatNeeds(primary, "account") : Boolean(b.requiresAccount);
+  const needsPhone = primary ? formatNeeds(primary, "phone") : Boolean(b.requiresPhone);
+  if (needsAccount) {
+    const digits = formatAccountDigits(primary) ?? b.accountDigits;
+    return `${lead}. If you only have the ${ref}, select ${b.name} and add the last ${digits} digits of the account on the receipt`;
+  }
+  if (needsPhone) return `${lead}. If you only have the ${ref}, select ${b.name} and add the payer's phone number`;
+  if (first === "reference") return `${lead}. If you only have the ${ref}, select ${b.name} and type it`;
+  return lead;
+}
+
+/**
  * Telebirr and M-Pesa (geoBlocked) block cloud servers, cheki.et's included,
  * so the hosted checker opens their official receipt page instead of checking
  * it. Their copy must not say cheki confirms them until a local relay exists.
@@ -84,9 +108,24 @@ export function requiredInfoIntro(b: Bank): string | null {
   if (b.status !== "live") return null;
   const primary = primaryFormat(b);
   const needsAccount = primary ? formatNeeds(primary, "account") : Boolean(b.requiresAccount);
-  return needsAccount
-    ? `Ask the sender for the ${refNoun(b)} and the account digits from their receipt: ${b.shortName}'s receipt record needs both.`
-    : `Ask the sender for the ${refNoun(b)} from their receipt. No account number is needed.`;
+  const needsPhone = primary ? formatNeeds(primary, "phone") : Boolean(b.requiresPhone);
+  if (needsAccount) return `Ask the sender for the ${refNoun(b)} and the account digits from their receipt: ${b.shortName}'s receipt record needs both.`;
+  if (needsPhone) return `Ask the sender for the receipt QR code or link, which carries the ${refNoun(b)} and the payer's phone number. Without it, you need both: ${b.shortName} only answers for the pair.`;
+  return `Ask the sender for the ${refNoun(b)} from their receipt. No account number is needed.`;
+}
+
+/**
+ * The request body the "Verifying X via API" section shows for the bank's
+ * current format: the reference, plus the account digits or the payer phone
+ * when the format needs them (a CBE Birr example without the phone could
+ * never work).
+ */
+export function apiExampleBody(b: Bank): string {
+  const primary = primaryFormat(b);
+  const needsAccount = primary ? formatNeeds(primary, "account") : Boolean(b.requiresAccount);
+  const needsPhone = primary ? formatNeeds(primary, "phone") : Boolean(b.requiresPhone);
+  const ref = primary?.inputs[0]?.example ?? b.referenceExample;
+  return `{ "bank": "${b.code}", "reference": "${ref}"${needsAccount ? `, "accountNumber": "1000XXXXXXX"` : ""}${needsPhone ? `, "phoneNumber": "2519XXXXXXXX"` : ""} }`;
 }
 
 /** The headings the bank page renders itself; extra sections never repeat them. */
@@ -139,16 +178,16 @@ const VERIFY_BY_HAND: Record<string, { sections: BankSection[]; faq: BankFaq[] }
   },
   boa: {
     faq: [
-      { q: "How do I verify a Bank of Abyssinia receipt?", a: "Paste the BOA slip link and click Verify; when the link carries the 5 account digits, cheki reads both parts from it. Otherwise, select Bank of Abyssinia, paste the transaction reference number and enter the last 5 digits of the account on the receipt. cheki fetches the receipt from BOA's public API and returns structured JSON." },
-      { q: "Do I need an account number for BOA?", a: "Not if your BOA slip link carries the 5 account digits after the reference. Otherwise, yes: BOA needs the transaction reference plus the last 5 digits of the account on the receipt. That is not always the receiving account (a fee receipt with no receiver uses the source account). For inter-bank transfers, you can use the QR code payload instead." },
-      { q: "Does BOA use an API or PDF?", a: "Bank of Abyssinia uses a JSON API at cs.bankofabyssinia.com. This is faster than CBE's PDF system and returns structured data directly, making it more reliable for automated verification." },
-      { q: "What if BOA's API returns 'Invalid reference number'?", a: "Inter-bank transfers (e.g., FT... references sent to CBE) are not exposed in BOA's API. In that case, scan the QR code on the receipt and paste the payload into cheki. cheki decrypts it with the key embedded in BOA's public receipt web app." },
+      { q: "How do I verify a Bank of Abyssinia receipt?", a: "Scan the QR code on the receipt, or paste the BOA slip link, and click Verify. cheki reads the reference and the account digits from either and asks BOA's own record. As a fallback, select Bank of Abyssinia, type the reference and enter the last 5 digits of the account on the receipt." },
+      { q: "Do I need an account number for BOA?", a: "Not to type, if you scan the QR code or paste a slip link that carries the 5 account digits after the reference. Otherwise, yes: BOA needs the reference plus the last 5 digits of the account on the receipt. That is not always the receiving account (a fee receipt with no receiver uses the source account)." },
+      { q: "Does BOA use an API or PDF?", a: "Bank of Abyssinia's online slip endpoint at cs.bankofabyssinia.com returns JSON, so cheki reads structured fields directly with no PDF to parse." },
+      { q: "What if BOA's API returns 'Invalid reference number'?", a: "That is BOA saying it has no receipt for that reference under those account digits, so the payment is not confirmed. Check the reference, and try the other account on the receipt: BOA files some slips under the payer's account. A scanned QR code does this for you. If BOA still has no record, do not hand anything over until the payment is confirmed another way." },
     ],
     sections: [
       {
-        heading: "QR code verification for inter-bank transfers",
-        body: "BOA's JSON API does not recognize inter-bank transfer references. However, the QR code on the receipt is an AES-256-CBC encrypted payload that carries the reference and both account numbers (some apps mask part of one). cheki decrypts it server-side using the key exposed in BOA's receipt web app and confirms the receipt with BOA under the receiving account first. If BOA has no record there and the QR carries a full source account, cheki asks once more under that, since BOA files some receipts under either. If BOA cannot be reached, the result is marked as decoded only, not verified.",
-        link: { href: "/guides/boa-qr-code-receipts", text: "BOA QR codes: how the decryption works" },
+        heading: "BOA receipt QR codes",
+        body: "The QR code on a BOA receipt is an AES-256-CBC encrypted payload that carries the reference and both account numbers (some apps mask part of one). The key ships in BOA's public receipt web app, so anyone can make a QR that decrypts cleanly, and a decoded QR is never proof. cheki decrypts it server-side only to ask BOA for the receipt: under the receiving account first and, if BOA has no record there and the QR carries a full source account, once more under that. A QR whose amount disagrees with BOA's record fails. If BOA has no record, the receipt is not confirmed. If BOA cannot be reached, the result is marked as decoded only, not verified. Whether BOA's endpoint returns transfers to other banks is not yet confirmed.",
+        link: { href: "/guides/boa-qr-code-receipts", text: "BOA QR codes: what decryption does and doesn't prove" },
       },
     ],
   },
@@ -175,11 +214,7 @@ function generatedVerify(b: Bank): { sections: BankSection[]; faq: BankFaq[] } {
     faq: [
       {
         q: `How do I verify ${withArticle(b.shortName)} receipt?`,
-        a: b.requiresAccount
-          ? `Select ${b.name}, paste your transaction reference number, enter the last ${b.accountDigits} digits of the account on the receipt, and click Verify. cheki fetches the receipt from ${b.shortName}'s public endpoint and shows you the result in seconds.`
-          : b.requiresPhone
-          ? `Select ${b.name}, paste your transaction reference number and the payer's phone number (09XXXXXXXX or 2519XXXXXXXX), and click Verify. cheki fetches the receipt from ${b.shortName}'s public endpoint and shows you the result instantly.`
-          : `Select ${b.name}, paste your transaction reference number, and click Verify. cheki fetches the receipt from ${b.shortName}'s public endpoint and shows you the result instantly.`,
+        a: `${howToSubmit(b)}, and click Verify. cheki fetches the receipt from ${b.shortName}'s public endpoint and shows you what ${b.shortName}'s record says.`,
       },
       {
         q: `Do I need an account number to verify ${b.shortName}?`,
@@ -214,13 +249,15 @@ function checkPayment(b: Bank): { sections: BankSection[]; faq: BankFaq[] } {
       {
         q: `How do I check if ${withArticle(b.shortName)} payment was successful?`,
         a: b.geoBlocked
-          ? `Enter the ${ref} on cheki and open the official ${b.shortName} receipt page it gives you. ${LINK_OUT_CHECK} If ${b.shortName}'s page has no receipt for that number, the payment was not completed or the receipt is fake.`
-          : `Select ${b.name} on cheki, enter the ${ref}${b.requiresAccount ? ` and the last ${b.accountDigits} digits of the account on the receipt` : ``}, and click Verify. If the payment exists, cheki shows you ${whatItShows(b)}. If it doesn't exist, the payment was not completed or the receipt is fake.`,
+          ? `Enter the ${ref} on cheki and open the official ${b.shortName} receipt page it gives you. ${LINK_OUT_CHECK} If ${b.shortName}'s page has no receipt for that number, the payment is not confirmed: do not hand anything over until it is.`
+          : `${howToSubmit(b)}, and click Verify. If ${b.shortName}'s own record confirms the payment, cheki shows you ${whatItShows(b)}. If ${b.shortName} has no record, the payment is not confirmed: check the details, ask for the full receipt link again, and do not hand anything over until it checks out.`,
       },
       {
         q: `Can I check ${withArticle(b.shortName)} payment without the receipt?`,
         a: b.requiresAccount
           ? `You need the transaction reference number and the last ${b.accountDigits} digits of the account on the receipt. Both are shown on the receipt. Without them, there is no way to look up ${withArticle(b.shortName)} transaction through public endpoints.`
+          : b.requiresPhone
+          ? `You need the ${ref} and the payer's phone number, or the receipt QR code or link, which carries both. Without them, there is no way to look up ${withArticle(b.shortName)} transaction through public endpoints.`
           : `You need the ${ref}. This is shown on the receipt and in the ${b.shortName} app. Without it, there is no way to look up ${withArticle(b.shortName)} transaction through public endpoints.`,
       },
       {
@@ -235,7 +272,7 @@ function checkPayment(b: Bank): { sections: BankSection[]; faq: BankFaq[] } {
         heading: `Checking ${b.shortName} payment status`,
         body: b.geoBlocked
           ? `${b.name} publishes transaction data at ${b.endpointFormat}. When someone sends you a payment via ${b.shortName}, a receipt is generated at this URL. ${linkOutLine(b.shortName)} ${LINK_OUT_CHECK}`
-          : `${b.name} publishes transaction data at ${b.endpointFormat}. When someone sends you a payment via ${b.shortName}, a receipt is generated at this URL. cheki fetches the receipt, parses it, and tells you whether ${b.shortName} has the record and what it shows: ${whatItShows(b)}. This takes 2 to 10 seconds.`,
+          : `${b.name} publishes transaction data at ${b.endpointFormat}. When someone sends you a payment via ${b.shortName}, a receipt is generated at this URL. cheki fetches the receipt, parses it, and tells you whether ${b.shortName} has the record and what it shows: ${whatItShows(b)}.`,
       },
       // No "What information you need" section: it listed the inputs a second
       // time under "What you need to verify X receipt" (requiredInfoIntro).
@@ -324,7 +361,7 @@ const HOWTO_EXTRA: Record<string, { sections: BankSection[]; faq: BankFaq[] }> =
   boa: {
     sections: [],
     faq: [
-      { q: "Can I verify inter-bank BOA transfers without the QR code?", a: "No. BOA's JSON API does not recognize inter-bank transfer references, so the QR code is the only way cheki can look these up. Without it, ask the sender for a screenshot of the receipt, or check your bank statement for the incoming transfer." },
+      { q: "Can I verify inter-bank BOA transfers without the QR code?", a: "cheki asks BOA the same way for every BOA receipt: from the QR code, a slip link, or a typed reference with the last 5 digits of an account on the receipt. The QR is easiest, because cheki tries both accounts it names. We have not confirmed whether BOA's endpoint returns transfers to other banks. If BOA has no record, cheki shows that the receipt was not confirmed: check the incoming transfer on the receiving account before you hand anything over." },
     ],
   },
 };
@@ -464,7 +501,7 @@ function fakeReceipt(b: Bank): { section: BankSection; faq: BankFaq[] } {
     faq: [
       {
         q: `How do I know if ${withArticle(s)} receipt is fake?`,
-        a: `Check it against ${s}'s own record. ${b.geoBlocked ? `Paste the ${refNoun(b)} into cheki and open the official receipt page it gives you` : `Paste the ${refNoun(b)} into cheki`}: if ${s} has no record of it, do not accept it. If the record exists but the amount, sender or date differs from what you were shown, the screenshot was edited or the receipt belongs to another payment.`,
+        a: `Check it against ${s}'s own record. ${b.geoBlocked ? `Paste the ${refNoun(b)} into cheki and open the official receipt page it gives you` : howToSubmit(b)}. If ${s} has no record of it, it is not confirmed, so do not accept it. If the record exists but the amount, sender or date differs from what you were shown, the screenshot was edited or the receipt belongs to another payment.`,
       },
       {
         q: `Can someone edit ${withArticle(s)} receipt screenshot?`,

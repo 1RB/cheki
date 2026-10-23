@@ -4,6 +4,14 @@ Every cheki SDK ships the same version: npm `cheki-verify` (and `@1rb/cheki-veri
 
 ## Unreleased
 
+**Bank guides and pages say what cheki actually does**
+- BOA QR guide and /banks/boa: the QR's AES key and decryption parameters are no longer printed (the guide links `src/lib/parsers/boa.ts`). A decoded QR is never verified: the API example is BOA's record with masked accounts, next to the `decodedOnly` and not-found shapes. Removed: "the QR is the ONLY proof", "no server call", "offline", the ~8ms/~500ms timings and "no account needed". Transfers to other banks: cheki asks BOA (receiving account, then the QR's source account) and shows not confirmed when BOA has no record; whether BOA's endpoint returns them is stated as unconfirmed.
+- CBE QR guide: what is known about Receipt IDs is stated as observed (the `fHCx` header, nothing else decoded, HTTP 500 for an unknown ID), not as encryption fact. Adds what green means, dashed mbreciept links and FT case handling; drops unsourced timings. "The link doesn't work" now says the payment is not confirmed if retrying doesn't help.
+- Awash: the brute-force and counter-rate material is gone from /banks/awash, the manifest notes and the receipt-formats guide; the second part of the share link can't be derived, so cheki needs the full link. The sample link has the real 10+6 shape, and the /endpoints certificate note and `sslVerify` match the parser (TLS verified normally).
+- CBE Birr: the bank page's API example includes `phoneNumber` (any bank whose format needs a phone or account digits now shows it), and the page leads with the receipt QR code and link, which carry the receipt number and payer phone.
+- Every bank page: a record the bank doesn't have is "not confirmed", never "the receipt is fake"; the how-to FAQs lead with the QR code and link, with the typed reference (plus account digits or phone) as the fallback. The unsourced "2 to 10 seconds" is gone.
+- Receipt-formats guide: CBE Birr added to the at-a-glance table; Telebirr and M-Pesa rows say cheki.et opens the official page; unsourced Telebirr prefix meanings, the "definitive" and "same endpoints as check.et and verify.et" claims, and the BOA Selenium claim removed; Siinqee's endpoint corrected and its unconfirmed status stated; Zemen marked in development; the research table lists the in-development banks from the manifest; auto-detection rules match the code; contributions go to the Telegram bot or the private Help us add box, never a public issue with a real link.
+
 **Security updates**
 - Next.js and eslint-config-next 16.4.1 (GHSA-673q-mjm6-r5xr, CVE-2026-96889 / GHSA-2464-fhr4-w9xw, GHSA-p3m5-59mp-jv5r), sharp resolves 0.35.5 or later, undici resolves 7.30.1 or later (GHSA-qrxm-fqhp-jwvm). Dev only: vitest 4.1.12 with vite 8.1.6 or later. Python SDK: requires `certifi>=2026.10.19` (GHSA-6q48-6c7w-9gw2).
 

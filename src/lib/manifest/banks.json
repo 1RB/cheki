@@ -346,38 +346,38 @@
     "refPrefixes": [
       "Various"
     ],
-    "description": "Bank of Abyssinia (BOA) is one of Ethiopia's largest private banks. BOA publishes receipt data as JSON via a public API endpoint that requires the transaction reference and the last 5 digits of the account on the receipt. A full BOA slip link (cs.bankofabyssinia.com/slip/?trx=...) can carry both: cheki splits the reference and the 5 digits out of it. For inter-bank transfers (BOA to CBE, Dashen, etc.), the receipt QR code is AES-256-CBC encrypted: cheki decrypts it to read the reference and receiving account, then confirms the receipt with BOA. If BOA cannot be reached, the result is marked as decoded from the QR and not confirmed. No Selenium or headless browser required.",
+    "description": "Bank of Abyssinia (BOA) is one of Ethiopia's largest private banks. BOA publishes receipt data as JSON via a public API endpoint that requires the transaction reference and the last 5 digits of the account on the receipt. A full BOA slip link (cs.bankofabyssinia.com/slip/?trx=...) can carry both: cheki splits the reference and the 5 digits out of it. The receipt QR code is AES-256-CBC encrypted with a key that ships in BOA's own receipt app, so a decrypted QR proves nothing on its own: cheki reads the reference and account from it, then asks BOA for the receipt. If BOA cannot be reached, the result is marked as decoded from the QR and not confirmed.",
     "referenceFormat": "Alphanumeric reference starting with 2 letters (varies by transaction type). Inter-bank transfers use FT references (e.g., FT25SAMPLE06).",
     "referenceExample": "AB12345678",
     "howToVerify": [
-      "For BOA-to-BOA receipts: paste the BOA slip link, or enter the transaction reference and the last 5 digits of the account on the receipt",
-      "cheki calls BOA's public JSON API and returns structured payment data in 1-2 seconds",
-      "For inter-bank transfers (BOA to CBE/Dashen/etc.): scan the QR code on the receipt with cheki's camera scanner or upload a screenshot",
-      "cheki auto-detects BOA QR payloads and decrypts them server-side: the QR supplies the reference and both accounts, and BOA confirms the receipt (cheki asks under the receiving account first; if BOA has no record there and the QR carries a full, unmasked source account, it asks once more under that). No account number to type. If BOA cannot be reached, the result is shown as decoded only, not verified."
+      "Scan the QR code on the receipt with cheki's camera scanner, or upload a screenshot. No account number to type: the QR supplies the reference and the accounts",
+      "No QR? Paste the BOA slip link (cs.bankofabyssinia.com/slip/?trx=...). As a fallback, enter the reference and the last 5 digits of the account on the receipt",
+      "cheki asks BOA's own record for the receipt. From a QR it asks under the receiving account first and, if BOA has no record there and the QR carries a full, different source account, once more under that",
+      "Green means BOA's record confirmed it. No record means not confirmed. If BOA cannot be reached, a QR result is shown as decoded only, never verified"
     ],
     "useCases": [
       "Merchants verifying BOA transfers at checkout",
       "Businesses reconciling BOA deposits",
-      "Verifying inter-bank transfers (BOA to CBE, Dashen, etc.) via QR code decryption",
+      "Checking transfers to other banks (BOA to CBE, Dashen, etc.) from the receipt QR code",
       "Apps integrating BOA payment verification with QR code support",
       "Finance teams auditing BOA transactions"
     ],
     "faq": [
       {
         "q": "Does BOA verification require Selenium or a headless browser?",
-        "a": "No. Unlike the ethiobank_receipts library which requires Chrome WebDriver for BOA, cheki uses BOA's JSON API directly. This is faster, lighter, and works in serverless environments without browser dependencies."
+        "a": "No. cheki reads BOA's public JSON slip endpoint directly, so it works in serverless environments without a browser."
       },
       {
         "q": "What information do I need to verify a BOA transaction?",
-        "a": "For BOA-to-BOA receipts, paste the BOA slip link; when it carries the 5 account digits after the reference, nothing else is needed. Otherwise, enter the transaction reference and the last 5 digits of the account on the receipt. For inter-bank transfers (BOA to CBE, Dashen, etc.), scan the QR code on the receipt. No account number is needed for QR-based verification."
+        "a": "Scan the QR code on the receipt: it carries the reference and the accounts, so there is nothing to type. Otherwise paste the BOA slip link; when it carries the 5 account digits after the reference, nothing else is needed. As a fallback, enter the reference and the last 5 digits of the account on the receipt. A reference on its own is not enough."
       },
       {
         "q": "Can I verify inter-bank BOA transfers (sent to CBE or other banks)?",
-        "a": "Yes, but only via QR code. BOA's JSON API returns 'Invalid reference number' for inter-bank transfers (FT references). Scan the QR code on the receipt: cheki decrypts it (AES-256-CBC) to read the reference and receiving account, then confirms the receipt with BOA. If BOA cannot be reached, the result is marked as decoded only, not verified. See our BOA QR code guide for the technical breakdown."
+        "a": "cheki checks them like any BOA receipt: scan the QR code, and cheki asks BOA under the receiving account and then the source account the QR names. We have not confirmed whether BOA's slip endpoint returns inter-bank transfers. If BOA has no record, cheki shows that the receipt was not confirmed, so confirm the payment another way before you hand anything over. See our BOA QR code guide for details."
       },
       {
         "q": "How does BOA QR code verification work?",
-        "a": "BOA receipt QR codes contain the transaction data encrypted with AES-256-CBC using CryptoJS format. The encryption key is embedded in BOA's public receipt web app. cheki decrypts the QR payload server-side and returns structured JSON with sender, receiver, amount, date, and reference. See our BOA QR code breakdown for full details."
+        "a": "BOA receipt QR codes hold the transaction details, encrypted with AES-256-CBC. The key ships in BOA's public receipt web app, so anyone can make a QR that decrypts cleanly. cheki decrypts the QR server-side only to read the reference and account, then asks BOA for the receipt. Green comes only from BOA's record, and a QR whose amount disagrees with it fails. See our BOA QR code guide for details."
       },
       {
         "q": "Is the BOA receipt endpoint public?",
@@ -385,7 +385,7 @@
       },
       {
         "q": "Is BOA QR code verification secure?",
-        "a": "The AES key is public in BOA's web app JavaScript, so anyone can decrypt (and theoretically forge) QR codes. For high-value inter-bank transfers, request additional confirmation like a bank statement or SMS alert. See our BOA QR code guide for the full security analysis."
+        "a": "The QR on its own is not: the AES key is public in BOA's web app, so anyone can decrypt or forge a QR. That is why cheki never shows a decoded QR as verified. It asks BOA, and only BOA's record turns a result green. If BOA cannot be reached, the result is decoded only, which is not proof of payment."
       }
     ],
     "seo": {
@@ -432,7 +432,7 @@
         "responseType": "json",
         "confidence": "verified",
         "evidence": "Unknown reference answers HTTP 200 JSON 'Invalid reference number' (cheki, 2026-10-10). Another verifier reads the same endpoint. Slip links (cs.bankofabyssinia.com/slip/?trx=) carry the same id, {reference}{5 digits}. On a fee receipt with no receiver, the 5 digits were the source account's (cheki, 2026-10-12), so they are not always the receiving account.",
-        "notes": "Inter-bank transfers are checked from the receipt QR code, which names the reference and account.",
+        "notes": "The receipt QR code names the reference and the accounts, so cheki reads both from it and asks BOA. Whether BOA's endpoint returns inter-bank transfers is unconfirmed.",
         "missingHint": "This BOA receipt needs the last 5 digits of the account on the receipt. A full BOA slip link that ends with them also works."
       }
     ]
@@ -700,10 +700,10 @@
     "requiresAccount": false,
     "endpoint": "https://awashpay.awashbank.com:8225/-{ref}",
     "endpointFormat": "https://awashpay.awashbank.com:8225/-{BASE36_TRANSACTION_ID}-{COUNTER_TOKEN}",
-    "sslVerify": false,
+    "sslVerify": true,
     "color": "#E2231A",
     "initials": "AB",
-    "notes": "URL fully reverse engineered with 18 samples (Apr 2025-Jun 2026). URL format: -{base36(txID)}-{base36(counter)}. txID has YYMMDDHHMM+5-digit-seq structure (2026+). Counter is monotonically increasing with accelerating rate (4.4/sec in 2025 to 7.5/sec in Jun 2026). Share link sent via SMS automatically. 2 successful brute-force proofs (May 14, Apr 1). Backend: MoonlightMBanking (Java) behind F5 BIG-IP WAF. Need more samples from underrepresented periods.",
+    "notes": "Share link format: -{base36(Transaction ID)}-{second segment issued by Awash's server}. The Transaction ID has a YYMMDDHHMM + 5-digit sequence structure (2026+). The second segment rises over time but cannot be derived from the Transaction ID, so cheki needs the full link. Share link sent via SMS automatically. Backend behind an F5 BIG-IP WAF.",
     "description": "Awash Bank publishes transaction receipts as public HTML pages on awashpay.awashbank.com. The share link has a two-part token: the first part is the numeric Transaction ID encoded in base-36, and the second part is a server-side counter that increases with transaction time. The link is sent automatically via SMS after every transaction. You can also share it from the Awash app.",
     "referenceFormat": "Awash share link from SMS (e.g. https://awashpay.awashbank.com:8225/-2KDL95XE81-4U0000). The first segment is base-36 of the Transaction ID; the second segment is a server counter.",
     "referenceExample": "2KDL95XE81-4U0000",
@@ -725,15 +725,15 @@
       },
       {
         "q": "Where is the share link in the Awash app?",
-        "a": "After a transfer, open the transaction details in the Awash app and use the share option. The link will look like https://awashpay.awashbank.com:8225/-XXXXXXXX-XXXXXXXX."
+        "a": "After a transfer, open the transaction details in the Awash app and use the share option. The link looks like https://awashpay.awashbank.com:8225/-2KDLXXXXXX-4UXXXX: about 10 characters, a dash, then about 6 more."
       },
       {
         "q": "Can cheki generate the share link from the Transaction ID?",
-        "a": "We have proven it is possible. By converting the Transaction ID to base-36 (part 1) and brute-forcing the counter (part 2) around a time-based prediction, we successfully constructed valid share URLs from just the Transaction ID twice. With 18 samples spanning April 2025 to June 2026, our prediction model is accurate enough for nearby dates. With more community samples, brute-force time could drop to under 1 minute."
+        "a": "No. The first part of the link is the Transaction ID in base 36, but the second part is issued by Awash's server when the receipt is shared and cannot be derived from the Transaction ID. Ask the sender for the full share link, from the Awash SMS or the app, and paste it into cheki."
       },
       {
         "q": "Is the second part of the Awash URL random?",
-        "a": "It is a monotonically increasing counter, not random. From 18 analyzed samples, the counter rate is accelerating: 4.4/sec in mid-2025, 6.4/sec by January 2026, and 7.5/sec by June 2026. A quadratic model fits with R-squared = 0.9999. The share link is sent automatically via SMS after every transaction."
+        "a": "It is not random, and it is not a hash of the Transaction ID: it rises over time. It is still issued by Awash's server, so cheki cannot work it out and needs the full link. The share link is sent automatically via SMS after every transaction."
       },
       {
         "q": "What is the Transaction ID structure?",
@@ -881,10 +881,10 @@
     "referenceFormat": "10 or 11 letters and digits (the TID in the receipt link from the SMS)",
     "referenceExample": "DTS41AB2C90",
     "howToVerify": [
-      "Get the receipt number (TID) from the CBE Birr SMS or receipt link, e.g. DTS41AB2C90",
-      "Get the payer's phone number (09XXXXXXXX, 07XXXXXXXX or 251XXXXXXXXX)",
+      "Scan the QR code on the CBE Birr receipt, or paste the receipt link (cbepay1.cbe.com.et/aureceipt?TID=...): both carry the receipt number and the payer's phone number",
+      "No QR code or link? Enter the receipt number (TID) from the CBE Birr SMS, e.g. DTS41AB2C90, and the payer's phone number (09XXXXXXXX, 07XXXXXXXX or 251XXXXXXXXX)",
       "cheki fetches the receipt PDF from CBE Birr's public endpoint and shows the payer, receiver, amount and date",
-      "An empty page back usually means the receipt number and phone don't match: check both"
+      "An empty page back means not confirmed: usually the receipt number and phone don't match, so check both"
     ],
     "useCases": [
       "Merchants verifying CBE Birr payments",
@@ -894,11 +894,11 @@
     "faq": [
       {
         "q": "Can I verify a CBE Birr receipt online?",
-        "a": "Yes. Enter the receipt number (TID) from the CBE Birr SMS and the payer's phone number. cheki fetches the receipt PDF from CBE Birr's own server and shows the payer, receiver, amount, fees, date and status. CBE Birr support is in beta."
+        "a": "Yes. Scan the QR code on the CBE Birr receipt or paste its receipt link: both carry the receipt number (TID) and the payer's phone number. Without them, enter the receipt number from the CBE Birr SMS and the payer's phone number. cheki fetches the receipt PDF from CBE Birr's own server and shows the payer, receiver, amount, fees, date and status. CBE Birr support is in beta."
       },
       {
         "q": "Why does CBE Birr need a phone number?",
-        "a": "CBE Birr's receipt endpoint only returns a receipt when the receipt number and the payer's phone number match. This prevents unauthorized receipt enumeration."
+        "a": "CBE Birr's receipt endpoint only returns a receipt when the receipt number and the payer's phone number match, so a receipt number on its own is not enough. The receipt QR code and link carry the payer's phone number, so share them only privately."
       },
       {
         "q": "What does it mean when cheki could not confirm a CBE Birr receipt?",
