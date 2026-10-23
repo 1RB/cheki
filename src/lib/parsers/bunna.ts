@@ -102,14 +102,18 @@ function text(v: unknown): string | undefined {
 }
 
 /**
- * An account number as it may be shown. Bunna's own mask ("1000*****0001")
- * is kept. A number that arrives unmasked keeps its first digit and last 4.
+ * An account number as it may be shown. Bunna's own mask ("1000*****0001",
+ * at most 4 characters either side of one run of stars) is kept. Anything
+ * else, unmasked or partly masked ("1000123*450001"), keeps its first
+ * character and last 4.
  */
 export function maskBunnaAccount(v: unknown): string | undefined {
   const s = text(v)?.replace(/\s+/g, "");
   if (!s) return undefined;
-  if (s.includes("*")) return s;
+  // Bunna's own mask: at most 4 characters either side of the stars. Kept.
+  if (/^[^*]{0,4}\*+[^*]{0,4}$/.test(s)) return s;
   if (s.length <= 5) return "*".repeat(s.length);
+  // Unmasked, or masked some other way that may show more: first character and last 4.
   return `${s[0]}${"*".repeat(s.length - 5)}${s.slice(-4)}`;
 }
 
