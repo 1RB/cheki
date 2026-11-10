@@ -703,7 +703,7 @@
     "sslVerify": true,
     "color": "#E2231A",
     "initials": "AB",
-    "notes": "Share link format: -{base36(Transaction ID)}-{second segment issued by Awash's server}. The Transaction ID has a YYMMDDHHMM + 5-digit sequence structure (2026+). The second segment rises over time but cannot be derived from the Transaction ID, so cheki needs the full link. Share link sent via SMS automatically. Backend behind an F5 BIG-IP WAF.",
+    "notes": "Share link format: -{base36(Transaction ID)}-{second segment issued by Awash's server}. The Transaction ID has a YYMMDDHHMM + 5-digit sequence structure (2026+). The second segment is issued by Awash's server; cheki does not derive it and needs the full link. Share link sent via SMS automatically.",
     "description": "Awash Bank publishes transaction receipts as public HTML pages on awashpay.awashbank.com. The share link has a two-part token: the first part is the numeric Transaction ID encoded in base-36, and the second part is a server-side counter that increases with transaction time. The link is sent automatically via SMS after every transaction. You can also share it from the Awash app.",
     "referenceFormat": "Awash share link from SMS (e.g. https://awashpay.awashbank.com:8225/-2KDL95XE81-4U0000). The first segment is base-36 of the Transaction ID; the second segment is a server counter.",
     "referenceExample": "2KDL95XE81-4U0000",
@@ -729,7 +729,7 @@
       },
       {
         "q": "Can cheki generate the share link from the Transaction ID?",
-        "a": "No. The first part of the link is the Transaction ID in base 36, but the second part is issued by Awash's server when the receipt is shared and cannot be derived from the Transaction ID. Ask the sender for the full share link, from the Awash SMS or the app, and paste it into cheki."
+        "a": "No. The first part of the link is the Transaction ID in base 36, but the second part is issued by Awash's server when the receipt is shared, and cheki does not derive it from the Transaction ID. Ask the sender for the full share link, from the Awash SMS or the app, and paste it into cheki."
       },
       {
         "q": "Is the second part of the Awash URL random?",

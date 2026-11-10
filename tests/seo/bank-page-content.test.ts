@@ -81,7 +81,11 @@ describe("bank page content", () => {
 
   it("a record the bank does not have is 'not confirmed', never 'fake'", () => {
     for (const b of live) {
-      expect(text(b.code), b.code).not.toMatch(/(?:not completed|doesn't exist|has no receipt)[^.]*\breceipt is fake/i);
+      const t = text(b.code);
+      expect(t, b.code).not.toMatch(/(?:not completed|doesn't exist|has no receipt)[^.]*\breceipt is fake/i);
+      // Missing-record guidance says "not confirmed"; a fake is never defined as a receipt the bank has no record of.
+      expect(t, b.code).not.toMatch(/fake[^.]*\bone of three things: a receipt [^.]*has no record/i);
+      for (const m of t.matchAll(/has no record of[^.:]*[.:][^.]*/gi)) expect(m[0], b.code).toMatch(/not confirmed/i);
     }
   });
 
@@ -117,7 +121,7 @@ describe("bank page content", () => {
     const t = text("awash");
     expect(t).not.toMatch(/brute|R-squared|per sec|\/sec|proven it is possible/i);
     expect(t).toMatch(/awashpay\.awashbank\.com:8225\/-2KDLXXXXXX-4UXXXX/);
-    expect(t).toMatch(/cannot be derived from the Transaction ID/);
+    expect(t).toMatch(/does not derive it from the Transaction ID/);
     // The manifest (notes included) is public in the repo too.
     expect(readFileSync(join(__dirname, "..", "..", "src/lib/manifest/banks.json"), "utf8")).not.toMatch(/brute|\/sec\b/i);
   });

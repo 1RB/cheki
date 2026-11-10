@@ -292,7 +292,7 @@ export const articles: Article[] = [
           { title: "Record the reference", text: "Keep every reference you accept, so the same receipt cannot be used twice." },
         ],
       },
-      { type: "text", text: "If the bank has no record of the reference, treat the receipt as fake until the money shows up in your account. Telebirr and M-Pesa block cloud servers, so for those cheki opens the official receipt page instead: open it on a phone on an Ethiopian network and check the amount, the receiver and the date there rather than accepting the screenshot." },
+      { type: "text", text: "If the bank has no record of the reference, the payment is not confirmed: do not accept the receipt. Telebirr and M-Pesa block cloud servers, so for those cheki opens the official receipt page instead: open it on a phone on an Ethiopian network and check the amount, the receiver and the date there rather than accepting the screenshot." },
 
       { type: "heading", text: "The 6 most common fraud tactics in Ethiopia" },
 
@@ -351,7 +351,7 @@ export const articles: Article[] = [
           ["Edited screenshot", "Amount on official receipt vs claimed amount", "cheki returns the official amount from the bank"],
           ["Duplicate receipt", "Has this reference been used before?", "Store references in your DB, check before accepting"],
           ["Wrong account", "Receiver name and account match yours", "cheki returns receiver name and account number"],
-          ["Fabricated receipt", "Does the reference exist on the bank system?", "cheki returns 404 if the receipt doesn't exist"],
+          ["Fabricated receipt", "Does the reference exist on the bank system?", "The verifier returns 422 when the receipt is not found; treat it as not confirmed"],
           ["Social engineering", "Never skip verification under pressure", "cheki verifies in 1-3 seconds, no excuse to skip"],
           ["Fake Telebirr receipt or SMS", "Amount, receiver name and date on Telebirr's own receipt page", "Scan the receipt QR (or paste the link) and cheki opens the official ethiotelecom receipt page; not the SMS"],
         ],
@@ -509,19 +509,18 @@ export const articles: Article[] = [
       { type: "text", text: "Reference format: the 16-character FT Ref, labelled Transaction Reference on the web receipt. Not the app's longer Transaction Ref / Transfer Reference (WDTI..., OBTI...), which cheki rejects. Works for both within-Dashen and Other Bank Transfer (inter-bank) receipts." },
 
       { type: "heading", text: "Awash Bank" },
-      { type: "text", text: "Awash Bank receipts are public HTML pages on awashpay.awashbank.com, served by a Java backend called MoonlightMBanking behind an F5 BIG-IP WAF. We worked out the first part of the share link from real samples collected from SMS messages, GitHub repos, and community contributions. The share link is sent automatically via SMS after every transaction, and cheki needs the whole link." },
+      { type: "text", text: "Awash Bank receipts are public HTML pages on awashpay.awashbank.com. We worked out the first part of the share link from real samples collected from SMS messages, GitHub repos, and community contributions. The share link is sent automatically via SMS after every transaction, and cheki needs the whole link." },
       {
         type: "table",
         headers: ["Field", "Value"],
         rows: [
           ["URL format", "https://awashpay.awashbank.com:8225/-{TX_ID_BASE36}-{COUNTER_BASE36}"],
           ["Part 1 (TX_ID_BASE36)", "Numeric Transaction ID encoded in base-36 (case-insensitive)"],
-          ["Part 2 (COUNTER_BASE36)", "Issued by Awash's server when the receipt is shared, about 6 chars base-36, strictly validated, cannot be derived"],
+          ["Part 2 (COUNTER_BASE36)", "Issued by Awash's server when the receipt is shared, about 6 chars base-36, strictly validated. cheki does not derive it and needs the full link"],
           ["Response format", "HTML"],
           ["Input needed", "Full Awash share link (from SMS or app)"],
           ["Account number required", "No"],
           ["Geo-blocked", "No"],
-          ["Backend", "Java (MoonlightMBanking), nginx, F5 BIG-IP ASM WAF"],
           ["App package", "com.sc.awashpay (AwashBirr Pro)"],
           ["SMS delivery", "Share link sent automatically in SMS after every transaction"],
         ],
@@ -557,24 +556,6 @@ export const articles: Article[] = [
       { type: "heading", text: "The second part of the link" },
       { type: "text", text: "Part 2 is not random and not a hash of the Transaction ID: we ruled out common hashes and checksums (CRC32, Adler32, truncated MD5/SHA1/SHA256, Java hashCode, DJB2, FNV-1a, HMAC) and simple arithmetic on the ID. It rises over time. It is still issued by Awash's server, so cheki cannot work it out from a Transaction ID and needs the full link." },
       { type: "text", text: "The server strictly validates both segments. Replacing part 2 with a nearby value returns 'Mistmatch / invalid receipt id'. Omitting it returns 'Invalid receipt id'. Part 2 must be exactly 6 base-36 characters (5 or 7 chars returns mismatch). Extra dashes or special characters are rejected by the WAF." },
-
-      { type: "heading", text: "Server architecture" },
-      { type: "text", text: "The Awash receipt server runs a Java application called MoonlightMBanking (revealed by the JSESSIONID cookie path). It sits behind nginx and an F5 BIG-IP ASM WAF that blocks all paths except the /-{part1}-{part2} receipt URL pattern. A merchant API exists at /awashbirrpro/merchant-api/ but is also WAF-blocked. The receipt HTML contains no client-side token generation logic: the share URL is pre-baked in the HTML and only used to render a QR code." },
-      {
-        type: "table",
-        headers: ["Component", "Details"],
-        rows: [
-          ["Backend app", "MoonlightMBanking (Java, Jetty/Tomcat)"],
-          ["Web server", "nginx"],
-          ["WAF", "F5 BIG-IP ASM (blocks all non-receipt paths)"],
-          ["Load balancer", "F5 BIG-IP (TS01121d40 persistence cookie)"],
-          ["App name", "AwashBirr Pro (com.sc.awashpay)"],
-          ["Merchant API", "/awashbirrpro/merchant-api/DebitRequest/ (WAF-blocked)"],
-          ["Dev API", "/awashpaytest/Rest/ (separate endpoint)"],
-          ["Client-side JS", "Only QRCode generation, no token logic"],
-          ["SMS delivery", "Receipt link included in SMS automatically after transaction"],
-        ],
-      },
 
       { type: "heading", text: "What we still need to figure out" },
       { type: "ordered", items: [
