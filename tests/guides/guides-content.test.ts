@@ -166,3 +166,62 @@ describe("guides: the Telebirr receipt QR guide matches the decoder", () => {
     for (const r of refs) if (/\d/.test(r) && r.length === 10) expect(["ABC1D2E3F4", "XKJ0L9N8M7"], r).toContain(r);
   });
 });
+
+/**
+ * The canonical pages for the per-bank dev.to series must not contradict the
+ * posts or production: a QR code is an input, green is the bank's record,
+ * a missing record is "not confirmed", and no guide publishes forging
+ * parameters or enumeration recipes.
+ */
+describe("guides: canonical bank guides match what cheki does", () => {
+  const boa = corpus(getArticle("boa-qr-code-receipts")!);
+  const cbe = corpus(getArticle("cbe-receipt-qr-code")!);
+  const formats = corpus(getArticle("ethiopian-bank-receipt-formats")!);
+  const all = articles.map(corpus).join("\n");
+
+  it("BOA: no printed key or decryption parameters, the parser is linked instead", () => {
+    expect(all).not.toMatch(/ELqVy2g4|1234567890123456|PBKDF2|"salt"|Iterations/);
+    expect(boa).toContain("https://github.com/1RB/cheki/blob/main/src/lib/parsers/boa.ts");
+  });
+
+  it("BOA: a decoded QR is never verified, and verified examples come from BOA with masked accounts", () => {
+    expect(boa).toMatch(/A decoded QR is never verified/);
+    expect(boa).toMatch(/"decodedOnly": true/);
+    for (const m of boa.matchAll(/"(?:sender|receiver)Account": "([^"]+)"/g)) expect(m[1]).toMatch(/^\d\*{4}\d{4}$/);
+    const verifiedExample = boa.match(/\{\n {2}"success": true,\n {2}"verified": true[\s\S]*?\n\}/)?.[0] ?? "";
+    expect(verifiedExample).not.toContain("decodedOnly");
+    expect(boa).toMatch(/BOA has no receipt for the reference and accounts on this QR code\./);
+  });
+
+  it("BOA: no 'only proof', offline, no-server-call, timing or 'no account needed' claims", () => {
+    expect(boa).not.toMatch(/ONLY proof|only proof|only option|offline|Requires server call|~8ms|~500ms|No account number needed|contains everything|CryptoJS/i);
+    expect(boa).toMatch(/have not (?:yet )?confirmed whether BOA's slip endpoint returns inter-bank transfers/);
+  });
+
+  it("CBE: Receipt ID internals are stated as observed, green is explained, no unsourced timings", () => {
+    expect(cbe).not.toMatch(/keyed cipher|cryptographically|server-side secret|not guessable|per-token seeding|under 2 seconds|0\.5-2 seconds|2-4 seconds/);
+    expect(cbe).toMatch(/What green means/);
+    expect(cbe).toMatch(/not confirmed/);
+    expect(cbe).toMatch(/scan the QR first, paste the link second/);
+  });
+
+  it("formats guide: no brute-force recipe, no counter rates, no 'definitive' or 'complete technical reference'", () => {
+    expect(formats).not.toMatch(/brute|R-squared|req\/sec|\/sec\b|WAF blocks|can construct the share URL/i);
+    expect(formats).not.toMatch(/definitive|complete technical reference for every/i);
+    expect(formats).not.toMatch(/private form on the Awash|contact us on GitHub/);
+  });
+
+  it("formats guide: CBE Birr is in the table, Telebirr and M-Pesa say cheki.et opens the official page", () => {
+    expect(formats).toMatch(/CBE Birr \(beta\)/);
+    expect(formats).toMatch(/Ethiopian networks only; cheki\.et opens the official page/);
+    expect(formats).toMatch(/Ethiopian networks only; cheki\.et opens the official link/);
+    expect(formats).not.toMatch(/Transaction reference only/);
+    expect(formats).not.toMatch(/Person-to-person transfer|Cheque-related/);
+    expect(formats).not.toMatch(/siinqeebank\.com\/receipt\//);
+    expect(formats).toMatch(/Zemen Bank \(in development\)/);
+  });
+
+  it("no guide says a missing record means the receipt is fake", () => {
+    expect(all).not.toMatch(/doesn't exist on the bank's system, the receipt is fake/);
+  });
+});
