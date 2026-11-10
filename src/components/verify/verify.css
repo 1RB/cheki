@@ -52,7 +52,6 @@
   font-size: 14px; line-height: 20px; color: var(--ink-2);
 }
 .vp-summary > * { line-height: 20px; }
-.vp-summary-label { color: var(--ink-3); flex-shrink: 0; }
 .vp-summary-ref {
   flex: 1; min-width: 0; padding-top: 1px; font-family: var(--mono); font-size: 13px; color: var(--ink);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
@@ -114,7 +113,8 @@
 
 /* Detection row: one line, fixed height, so typing never shifts the layout.
    Each new reading cross-fades in (keyed), the idle hint never animates. */
-.vi-row { display: flex; align-items: center; gap: 8px; height: 32px; }
+.vi-row { display: flex; align-items: center; gap: 8px; height: 32px; transition: height var(--dur-base) var(--ease-out), margin var(--dur-base) var(--ease-out); }
+.vi-row[data-collapsed] { height: 0; margin-top: -8px; overflow: hidden; }
 .vi-status {
   flex: 1; min-width: 0; display: flex; align-items: center;
   font-size: 13px; color: var(--ink-2); white-space: nowrap; overflow: hidden;
@@ -182,7 +182,6 @@
   font-size: 13px; font-weight: 550; color: var(--ink-2); text-decoration: underline;
   text-decoration-color: var(--border-strong); text-underline-offset: 3px;
 }
-.vp-server-hint { font-size: 12px; color: var(--ink-3); margin-top: -14px; }
 
 .gf { display: flex; flex-direction: column; gap: 12px; }
 /* Segmented control instead of underlined tabs. */
@@ -410,7 +409,6 @@
 .rch, .bp { display: flex; flex-direction: column; gap: 8px; }
 .rch-head, .bp-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 4px; }
 .rch-title { font-size: 14px; font-weight: 600; color: var(--ink); }
-.rch-sub { font-size: 12px; color: var(--ink-3); }
 .rch-clear {
   min-height: 44px; padding: 0 8px; margin-right: -8px; border: none; border-radius: var(--radius-sm); background: none; cursor: pointer;
   font-size: 13px; font-weight: 550; color: var(--ink-2);
@@ -513,7 +511,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .vc, .vc-amount, .vi-status-inner, .vp-fold, .vi-extra, .vi-field, .vp-submit, .vc-btn, .vc-chev { animation: none !important; transition: none !important; }
+  .vc, .vc-amount, .vi-status-inner, .vi-row, .vp-fold, .vi-extra, .vi-field, .vp-submit, .vc-btn, .vc-chev { animation: none !important; transition: none !important; }
   .vc-skel .sk { animation: none !important; }
 }
 

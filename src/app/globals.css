@@ -826,50 +826,21 @@ html[data-nav] .t-page-enter {
   }
 }
 
-/* ── Wide-table scroll affordance ───────────────────────────────────── */
-/* Hiding the scrollbar on a 7-column comparison table removes the only
-   signal that more columns exist. The scrollbar is restored by the table
-   rule above; this is the written nudge for the first paint on touch. */
-.table-scroll-hint { display: none; }
-@media (max-width: 900px) {
-  .table-scroll-hint {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin: -4px 0 4px;
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--ink-3);
-  }
-}
 
-/* ── Bank card requirement chips ────────────────────────────────────── */
-/* "Account required" was 12px grey at the card's foot while a generic
-   marketing line got body weight — the decision datum lost. Chips in
-   --ink-2 on --surface-alt make it scannable at card level. */
-.bank-meta {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-top: auto;
-}
+/* ── Bank card requirement ──────────────────────────────────────────── */
+/* "Account required" is the one label a bank card carries (the exception that
+   decides whether the reader can act). Plain text at the end of the row, no pill. */
 .bank-meta__chip {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 9px;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  background: var(--surface-alt);
-  color: var(--ink-2);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
+  color: var(--ink-2);
+  white-space: nowrap;
 }
 
 /* ── Checker on /banks/[code] ── */
 /* The checker brings its own surfaces (input, then verdict); the section is
    only a measure. */
 .bank-check { max-width: 640px; margin-bottom: 40px; }
-.bank-check-foot { margin-top: 12px; padding: 0 4px; font-size: 13px; color: var(--ink-3); line-height: 1.5; }
 
 /* ── Mobile polish (touch) ─────────────────────────────────────────────
    44px targets without moving layout, 16px form text so iOS Safari never

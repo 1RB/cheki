@@ -27,10 +27,7 @@ export function RecentChecks({ items, t, onUse, onRemove, onClear }: Props) {
   return (
     <section className="rch" aria-labelledby="rch-title">
       <div className="rch-head">
-        <div>
-          <h3 id="rch-title" className="rch-title">{t("verify.recent.title")}</h3>
-          <p className="rch-sub">{t("verify.recent.sub")}</p>
-        </div>
+        <h3 id="rch-title" className="rch-title">{t("verify.recent.title")}</h3>
         <button type="button" className="rch-clear" onClick={onClear}>{t("verify.recent.clear")}</button>
       </div>
       <ul className="rch-list">

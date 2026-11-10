@@ -49,13 +49,9 @@ export function AgentPrompt() {
     <div className="hp-agent">
       <button type="button" onClick={copy} className="hp-agent-btn">
         <Icon icon={copied ? CopyCheckIcon : CodeIcon} size={16} color={copied ? "var(--green-dark)" : "var(--ink-2)"} />
-        <span aria-live="polite">{copied ? "Prompt copied" : "Let your agent integrate it"}</span>
+        {/* The label says what the click does; no hint line under it. */}
+        <span aria-live="polite">{copied ? "Copied: paste it into your coding agent" : "Copy a prompt for your coding agent"}</span>
       </button>
-      <p className="hp-agent-hint">
-        {copied
-          ? "Paste it into Claude Code, Cursor or any agent."
-          : "Copies a prompt for Claude Code, Cursor or any coding agent. It reads cheki's llms.txt and writes the integration."}
-      </p>
     </div>
   );
 }

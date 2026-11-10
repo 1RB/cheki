@@ -224,7 +224,6 @@ function EndpointPanel({ row }: { row: EndpointRow }) {
 
         {older.length > 0 && (
           <Disclosure title="Older receipts" meta={`${older.length} format${older.length === 1 ? "" : "s"}`}>
-            <p className="ep-note">Most receipts use the current format above.</p>
             {older.map((f) => <FormatSummary key={f.id} f={f} bankId={bank.id} />)}
             {(doc.legacy ?? []).map((l) => (
               <div key={l.formatId} style={{ marginTop: 8 }}>
@@ -330,10 +329,7 @@ export default function EndpointsPage() {
           <span aria-current="page">Endpoints</span>
         </nav>
         <div className="ep-intro">
-          <h1 className="ref-h1">Bank receipt endpoints</h1>
-          <p className="ref-lede">
-            The public receipt URL each bank serves, what goes into it and what comes back. Generated from the same manifest the verifier uses, so it changes when the code changes.
-          </p>
+          <h1 className="ref-h1">Ethiopian bank receipt endpoints</h1>
           <p className="ref-small">
             Only live banks are verified; in-development banks are documented here but cheki does not check their receipts yet. Daily endpoint health is on the <Link href="/status">status page</Link> (<code>GET /api/health</code> gives a reachability snapshot, cached for 5 minutes).
           </p>
