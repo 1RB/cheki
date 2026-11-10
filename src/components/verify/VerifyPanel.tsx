@@ -181,26 +181,26 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
    * check the text it just received in the same tick.
    */
   const runCheck = useCallback(
-    async (value: string, opts: { extra?: string; override?: string; force?: boolean } = {}) => {
+    async (value: string, opts: { extra?: string; override?: string; force?: boolean } = {}): Promise<boolean> => {
       const d: Detection = detectInput(value, { lockedBank, overrideBank: opts.override ?? overrideBank });
       const extraValue = (opts.extra ?? extra).trim();
       setNotice(null);
       setExtraError(null);
       if (d.kind === "empty") {
         inputRef.current?.focus();
-        return;
+        return false;
       }
-      if (lockedBank && d.bank && d.bank.code !== lockedBank) return;
+      if (lockedBank && d.bank && d.bank.code !== lockedBank) return false;
       if (d.kind === "unknownUrl" || !d.bank) {
         inputRef.current?.focus();
-        return;
+        return false;
       }
       // Show a typed reference the way the bank prints it (FT26SAMPLE01 for
       // "ft26 sample01"); detectInput already put it in that form.
       if (shouldShowCanonical(d, value, Boolean(lockedBank))) setInput(d.value);
       if (d.browserFirst && !opts.force) {
         // Telebirr / M-Pesa: the panel below leads; nothing is sent.
-        return;
+        return false;
       }
       if (opts.force) setForced(true);
       if (d.needsAccount || d.needsPhone) {
@@ -210,7 +210,7 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
         if (d.needsPhone ? !phoneOk : !accountOk) {
           setExtraError(d.needsPhone ? t("verify.extra.phoneMissing") : t(accountFieldKeys(d).missing, { digits: d.accountDigits ?? 5 }));
           extraRef.current?.focus();
-          return;
+          return false;
         }
       }
 
@@ -235,9 +235,9 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
       try {
         result = await postJson("/api/verify", body, ctrl.signal);
       } catch {
-        return; // aborted by a newer check
+        return false; // aborted by a newer check
       }
-      if (ctrl.signal.aborted) return;
+      if (ctrl.signal.aborted) return false;
       const checkedAt = new Date();
       const checks: FraudCheck[] = [];
       const bankCode = d.bank.code;
@@ -266,6 +266,7 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
       const referenceHint = d.kind === "reference" && referenceLooksOff(bankCode, typed);
       setOutcome({ result, checks, checkedAt, bankCode, reference: enteredRef, share, referenceHint });
       setPhase("done");
+      return true; // the bank answered
     },
     [extra, lockedBank, overrideBank, t]
   );
@@ -415,8 +416,10 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
       if (!lockedBank && shared.bank) setOverrideBank(shared.bank);
       setExtra(shared.extra ?? "");
       const d = detectInput(shared.input, { lockedBank, overrideBank: shared.bank });
-      await runCheck(shared.input, { extra: shared.extra ?? "", override: shared.bank ?? "" });
-      if (!d.browserFirst) setNotice(t("verify.shared.opened"));
+      const asked = await runCheck(shared.input, { extra: shared.extra ?? "", override: shared.bank ?? "" });
+      // Only claim a re-check when the bank was actually asked (an incomplete
+      // link, such as a BOA slip without the account digits, stops earlier).
+      if (asked && !d.browserFirst) setNotice(t("verify.shared.opened"));
     };
     open();
     window.addEventListener("hashchange", open);

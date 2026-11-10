@@ -62,6 +62,8 @@ const services = [
 ];
 
 /**
+ * Feature labels wrap inside a capped column (at most 40% of the viewport), so
+ * at 200% text zoom the sticky column still leaves room for a service value.
  * The feature column stays put while the services scroll sideways on a phone,
  * so the half-visible next column is the cue to swipe (no "swipe" caption).
  * overflow: clip, not hidden: a hidden table would become the scroll container
@@ -86,7 +88,7 @@ function Table({ rows, noted }: { rows: Row[]; noted?: boolean }) {
         <tbody>
           {rows.map((row, i) => (
             <tr key={row.feature} style={{ borderBottom: "1px solid var(--border)", background: i % 2 === 0 ? "var(--surface)" : "var(--surface-alt)" }}>
-              <td style={{ padding: "11px 14px", fontWeight: 600, color: "var(--ink)", whiteSpace: "nowrap", ...stickyCol }}>{row.feature}</td>
+              <td style={{ padding: "11px 14px", fontWeight: 600, color: "var(--ink)", minWidth: "7.5em", maxWidth: "min(40vw, 16em)", ...stickyCol }}>{row.feature}</td>
               {services.map((s) => (
                 <td key={s.key} style={{ padding: "11px 14px", verticalAlign: "top" }}>
                   {/* Values wrap at a fixed width (a td ignores max-width) so a long
