@@ -643,6 +643,22 @@
         "notes": "The FT Ref is 16 letters and digits. The app's longer Transaction Ref / Transfer Reference (WDTI..., OBTI...) is rejected."
       },
       {
+        "id": "dashen-receipt-qr",
+        "status": "current",
+        "label": "Receipt QR code",
+        "via": "dashen-receipts-html",
+        "inputs": [
+          {
+            "name": "qr",
+            "label": "QR code on the receipt page"
+          }
+        ],
+        "responseType": "html",
+        "confidence": "verified",
+        "evidence": "Decoded from three real Dashen Bank Super App receipts (2026-11): 81 characters, 'superappreceipt_' + 32 hex + '.' + 32 hex, where the first half XOR a fixed 16-byte key yields the 16-character FT Ref. Confirmed by re-encoding two known FT Refs byte-for-byte, and by the endpoint answering HTTP 200 for the decoded FT Ref while refusing the raw token with HTTP 401. Test fixtures are synthetic.",
+        "notes": "Input only, never fetched and never proof of payment: cheki reads the FT Ref out of the QR (on the device, or from qrData in the API) and checks it through dashen-receipts-html exactly like a typed one. The raw token is never sent, and nothing else in the QR is used."
+      },
+      {
         "id": "dashen-superapp-pdf",
         "status": "deprecated",
         "label": "Dashen Super App receipt link",
@@ -677,6 +693,12 @@
         "formatId": "dashen-receipts-html",
         "change": "/api/receipt redirects to Dashen's own receipt page instead of proxying its HTML.",
         "source": "cheki"
+      },
+      {
+        "date": "2026-11-11",
+        "formatId": "dashen-receipt-qr",
+        "change": "cheki reads the QR on Dashen Bank Super App receipts (superappreceipt_ + 32 hex XOR a fixed 16-byte key = the FT Ref, plus an opaque 32 hex) and checks the FT Ref like a typed reference. Before this the QR was not recognised and its raw token was sent to the endpoint, which refuses it with HTTP 401.",
+        "source": "cheki, from three real Dashen receipts (not committed; fixtures are synthetic)"
       }
     ]
   },

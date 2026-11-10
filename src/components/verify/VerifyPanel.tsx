@@ -10,6 +10,9 @@
  *   - A Telebirr receipt QR (photo, camera or paste) is swapped for the
  *     transaction number inside it and checked as if it had been typed. The
  *     QR itself proves nothing; Telebirr's record decides.
+ *   - A Dashen Super App receipt QR is swapped for the FT Ref inside it and
+ *     checked the same way. The token is only left in the field to report a
+ *     mismatch on another bank's page, and is never sent.
  *   - Telebirr / M-Pesa lead with "Open the receipt" and the paste/bookmarklet
  *     panel. No server request goes out unless the user asks for one.
  *   - Every response goes through readVerifyResponse (src/lib/verify/client.ts)
@@ -25,6 +28,7 @@ import { useTranslation } from "@/lib/i18n/use-translation";
 import { detectBankFromUrl, isUrl } from "@/lib/adapters/url-detector";
 import { isBoaQrPayload } from "@/lib/qr/decode";
 import { isTelebirrQrPayload, parseTelebirrQr } from "@/lib/qr/telebirr";
+import { isDashenQrPayload, parseDashenQr } from "@/lib/qr/dashen";
 import { accountFieldKeys, browserReceiptUrl, detectInput, liveBanks, shouldShowCanonical, type Detection } from "@/lib/verify/detect";
 import { postJson } from "@/lib/verify/client";
 import { presentVerdict, type FraudCheck } from "@/lib/verify/verdict";
@@ -258,7 +262,7 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
       const nextHistory = addVerified(historyRef.current, result, { bank: bankCode, ref: savedRef }, checkedAt);
       historyRef.current = nextHistory;
       setHistory(nextHistory);
-      const enteredRef = d.kind === "url" ? d.urlReference : d.kind === "reference" || d.kind === "telebirrQr" ? d.value : undefined;
+      const enteredRef = d.kind === "url" ? d.urlReference : d.kind === "reference" || d.kind === "telebirrQr" || d.kind === "dashenQr" ? d.value : undefined;
       const share: ShareInput = { input: d.value, bank: bankCode, ...(d.needsAccount || d.needsPhone ? { extra: extraValue } : {}) };
       // What the user typed, if it is still the reference being checked (the
       // field may have been changed since by a scan, a recent check or a link).
@@ -278,6 +282,9 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
    * the server gate. Nothing from the QR but that number is used or shown.
    * On another bank's page it is left as is and reported as a Telebirr
    * receipt, like a link for another bank.
+   *
+   * A Dashen Super App receipt QR behaves the same way, with the FT Ref
+   * standing in for the transaction number.
    */
   const acceptScanned = useCallback(
     async (raw: string, fromQr = false) => {
@@ -288,6 +295,17 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
         if (!lockedBank) setOverrideBank("telebirr");
         await runCheck(telebirr.reference, { override: "telebirr" });
         setNotice(t("verify.qr.telebirr"));
+        return;
+      }
+      // The token is kept on another bank's page on purpose: detectInput needs
+      // it to name Dashen and report the mismatch, rather than sending the
+      // FT Ref to the bank the page is locked to.
+      const dashen = parseDashenQr(text);
+      if (dashen.ok && (!lockedBank || lockedBank === "dashen")) {
+        setInput(dashen.reference);
+        if (!lockedBank) setOverrideBank("dashen");
+        await runCheck(dashen.reference, { override: "dashen" });
+        setNotice(t("verify.qr.dashen"));
         return;
       }
       setInput(text);
@@ -350,7 +368,7 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
       return;
     }
     const text = e.clipboardData?.getData("text")?.trim() ?? "";
-    if (text && (isUrl(text) || isBoaQrPayload(text) || isTelebirrQrPayload(text))) {
+    if (text && (isUrl(text) || isBoaQrPayload(text) || isTelebirrQrPayload(text) || isDashenQrPayload(text))) {
       e.preventDefault();
       acceptScanned(text);
     }
@@ -373,7 +391,7 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
         return;
       }
       const text = e.clipboardData?.getData("text")?.trim() ?? "";
-      if (text && (isUrl(text) || isBoaQrPayload(text) || isTelebirrQrPayload(text))) {
+      if (text && (isUrl(text) || isBoaQrPayload(text) || isTelebirrQrPayload(text) || isDashenQrPayload(text))) {
         e.preventDefault();
         latest.current.acceptScanned(text);
       }
