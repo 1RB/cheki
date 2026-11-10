@@ -26,7 +26,7 @@ Usage:
   cheki verify <bank> <ref> [-a <account>] [-p <phone>]
                                                   Verify a receipt (-p: payer phone, CBE Birr)
   cheki verify-qr [bank] <qr-data>                Verify from QR code (bank optional for a
-                                                  Telebirr or CBE Birr receipt QR)
+                                                  Telebirr, CBE Birr or Bunna receipt QR)
   cheki health                                    Check endpoint health
   cheki --version                                 Show version
 
@@ -39,6 +39,7 @@ Examples:
   cheki verify-qr boa <base64-qr-payload>
   cheki verify-qr telebirr <telebirr-receipt-qr>     (reads the transaction number, then checks it)
   cheki verify-qr "<cbe-birr-receipt-qr>"            (a cbepay1 receipt link: receipt number + payer phone)
+  cheki verify-qr "<bunna-receipt-qr>"               (an online.bunnabanksc.com receipt link)
   cheki verify cbe FT26SAMPLE01 -a 1000000006171   (older CBE receipt, legacy format)
 `);
     process.exit(0);
