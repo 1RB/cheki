@@ -33,6 +33,7 @@ export const BANK_LOGOS: Record<string, BankLogoSpec> = {
   cbebirr: { label: "CBEb", color: "#0ea5e9", fontSize: 10, fontWeight: 700 },
   siinqee: initials("SQE", "#be185d"),
   zamzam: initials("ZZB", "#0d9488"),
+  bunna: initials("BUN", "#9333ea"),
 };
 
 /** The mark for a bank code; unknown codes get their first three letters on grey. */

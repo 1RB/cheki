@@ -60,7 +60,8 @@ _FAILURE_STATUS = re.compile(
 # "cbe-new" is CBE's current format (the Receipt ID); the receipt carries the FT id.
 # "zamzam" is looked up by its numeric receipt id; the record carries ZamZam's own
 # transaction reference (no direct verifier here: use ChekiClient for ZamZam).
-_REFERENCE_IS_OPAQUE_TOKEN = frozenset({"awash", "ebirr", "siinqee", "cbe-new", "zamzam"})
+# "bunna" is looked up by the opaque token in its receipt link (no direct verifier here either).
+_REFERENCE_IS_OPAQUE_TOKEN = frozenset({"awash", "ebirr", "siinqee", "cbe-new", "zamzam", "bunna"})
 
 _DEPRECATION = (
     "cheki.verify() (direct verification) is deprecated and will be removed in the next major "

@@ -1,6 +1,6 @@
 # cheki Python SDK
 
-Python client for the [cheki](https://cheki.et) receipt verification API: verify Ethiopian bank and wallet receipts (live: CBE, Telebirr, BOA, M-Pesa (beta), Dashen, Awash, Siinqee, eBirr, ZamZam (beta), CBE Birr (beta); `get_banks()` lists the current set). Python 3.10+.
+Python client for the [cheki](https://cheki.et) receipt verification API: verify Ethiopian bank and wallet receipts (live: CBE, Telebirr, BOA, M-Pesa (beta), Dashen, Awash, Siinqee, eBirr, ZamZam (beta), CBE Birr (beta), Bunna (beta); `get_banks()` lists the current set). Python 3.10+.
 
 From the hosted API at cheki.et, Telebirr and M-Pesa come back as a 502 with `fallback_url` (the official receipt page), because they block cloud servers. Send the user there to check the amount and receiver; direct checks return once a local relay is live.
 

@@ -385,7 +385,7 @@ export const articles: Article[] = [
     slug: "ethiopian-bank-receipt-formats",
     title: "Ethiopian Bank Receipt Formats: A Complete Reference",
     description:
-      "Ethiopian bank receipt reference formats, endpoint URLs and response types in one place: CBE, Telebirr, BOA, M-Pesa, Dashen, Awash, CBE Birr, Siinqee, eBirr, ZamZam, and Zemen in development.",
+      "Ethiopian bank receipt reference formats, endpoint URLs and response types in one place: CBE, Telebirr, BOA, M-Pesa, Dashen, Awash, CBE Birr, Siinqee, eBirr, ZamZam, Bunna, and Zemen in development.",
     category: "technical",
     excerpt:
       `A reference for Ethiopian bank receipt formats. Reference patterns, endpoint URLs, required fields, and response types for the ${LIVE_BANK_COUNT} live banks and wallets (${DIRECT_BANK_COUNT} checked directly from cheki.et), plus the ones still in research.`,
@@ -412,6 +412,7 @@ export const articles: Article[] = [
           ["CBE Birr (beta)", "PDF", "The receipt QR code or link (both carry the payer phone), or the receipt number + payer phone"],
           ["Siinqee and eBirr", "HTML page", "Receipt link from receipt.ebirr.com"],
           ["ZamZam (beta)", "JSON", "Receipt link, or the number at the end of it"],
+          ["Bunna (beta)", "JSON", "Receipt link, or the receipt QR code"],
         ],
       },
       { type: "text", text: "The sections below give each bank's endpoint, reference pattern and the fields its receipt carries." },
@@ -640,6 +641,22 @@ export const articles: Article[] = [
       },
       { type: "text", text: "The receipt link opens a web app; its data comes from ZamZam's JSON service, which expects a fixed credential that ZamZam ships inside that public web app (cheki sends the same one). The record names the ZamZam account holder, the amount, the date (no time) and ZamZam's transaction reference. cheki masks the account number to its first digit and last 4. Whether the holder paid or received is inferred from the record's debit/credit flag, which is why ZamZam support is in beta." },
 
+      { type: "heading", text: "Bunna Bank (beta)" },
+      {
+        type: "table",
+        headers: ["Field", "Value"],
+        rows: [
+          ["Receipt link", "https://online.bunnabanksc.com/receipt/#/{TOKEN}"],
+          ["Receipt QR", "https://online.bunnabanksc.com/#/receipt-v2/{TOKEN}"],
+          ["Data endpoint", "https://online.bunnabanksc.com/st_backend/api/v1/advice?data={TOKEN}"],
+          ["Response format", "JSON (status SUCCESS with the receipt, or status FAILURE)"],
+          ["Input needed", "The receipt link or the receipt QR code"],
+          ["Account number required", "No"],
+          ["Geo-blocked", "No"],
+        ],
+      },
+      { type: "text", text: "The token sits after the # in the link, so the page itself carries no receipt: a web app sends the token to Bunna's JSON service. The record names the payer and the receiver with account numbers Bunna masks itself, the amount, the date (no time) and Bunna's transaction reference. Bunna answers FAILURE for an unknown token, a cut-off link and its own errors alike, so cheki reports that as not confirmed, never as fake. The transaction number printed on the receipt does not work on its own. Only one real receipt has been checked, which is why Bunna support is in beta." },
+
       { type: "heading", text: "Other Ethiopian banks (researching)" },
       { type: "text", text: `These are in development: cheki does not yet have a confirmed public receipt endpoint for them, or has not seen a real receipt that its parser reads. ${inDevelopmentBankList()}.` },
       { type: "callout", variant: "tip", title: "Help us add more banks", text: "If you have a receipt from one of these banks with a QR code or receipt link, use the private Help us add box on that bank's page at https://cheki.et/banks. It goes to the maintainers and is not published. In public, open a bank request issue with only the host and a redacted pattern (every reference, token and account replaced with X), never a full link or reference." },
@@ -658,6 +675,7 @@ export const articles: Article[] = [
           ["2 letters + a digit", "BOA"],
           ["2 letters + 6 digits", "M-Pesa (also fits BOA)"],
           ["tenant/token (nib/, wegagen/, ahadu/, kaafimf/)", "eBirr"],
+          ["online.bunnabanksc.com/receipt/#/{token}", "Bunna Bank (also the receipt QR)"],
           ["Anything else (a Dashen FT Ref, a CBE Birr receipt number, a ZamZam receipt id)", "Choose the bank yourself"],
         ],
       },
@@ -673,7 +691,7 @@ export const articles: Article[] = [
     relatedPages: ["/endpoints", "/banks"],
     seo: {
       title: "Ethiopian Bank Receipt Formats: Complete Reference",
-      description: "Ethiopian bank receipt reference formats, endpoint URLs and response types: CBE, Telebirr, BOA, M-Pesa, Dashen, Awash, CBE Birr, Siinqee, eBirr, ZamZam, and Zemen in development.",
+      description: "Ethiopian bank receipt reference formats, endpoint URLs and response types: CBE, Telebirr, BOA, M-Pesa, Dashen, Awash, CBE Birr, Siinqee, eBirr, ZamZam, Bunna, and Zemen in development.",
       keywords: ["ethiopian bank receipt format", "ethiopian bank receipt formats", "cbe receipt format", "telebirr receipt format", "boa receipt json", "CBE FT reference", "telebirr transaction ID format", "BOA receipt endpoint", "ethiopian bank API", "receipt verification reference pattern"],
     },
   },
