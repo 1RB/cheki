@@ -344,7 +344,7 @@ export const endpointDocs: EndpointDoc[] = [
       {
         name: "{REFERENCE}",
         what: "The Dashen FT Ref.",
-        whereToFind: 'In the Dashen app it is labelled "FT Ref". On the web receipt it is labelled "Transaction Reference".',
+        whereToFind: 'In the Dashen app it is labelled "FT Ref". On the web receipt it is labelled "Transaction Reference". The receipt page\'s QR holds it too: scan or upload the QR and cheki reads the FT Ref out of it.',
         format: "16 characters, letters and digits, e.g. B22WDTI00SAMPLE1.",
         traps: 'The app also shows a longer "Transaction Ref" or "Transfer Reference" (WDTI... or OBTI...). The endpoint rejects it. Use the FT Ref.',
       },
@@ -355,6 +355,7 @@ export const endpointDocs: EndpointDoc[] = [
     gotchas: [
       "The old host receipt.dashensuperapp.com now returns 502 Bad Gateway. Old PDF links on api.dashensuperapp.com are still detected and routed to the new host.",
       "The live endpoint returns an HTML receipt, not a PDF. GET /api/receipt redirects to it rather than serving the bank's HTML from cheki.",
+      "The receipt page's QR reads superappreceipt_<32 hex>.<32 hex>: the first half is the 16-byte FT Ref XOR a fixed 16-byte key, the second half is opaque 32 hex (not a UUID). The endpoint refuses the raw token with HTTP 401, so cheki decodes the FT Ref before any request and then checks it exactly like a typed one. The QR holds nothing else cheki uses (no amount, no names), so it is never proof of payment. Decoder: src/lib/qr/dashen.ts, write-up: docs/dashen-qr.md.",
     ],
     changelog: [],
     parserSource: "src/lib/parsers/dashen.ts",

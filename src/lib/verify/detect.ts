@@ -13,13 +13,16 @@ import { formatAccountDigits, formatNeeds, matchesFormat, primaryFormat, support
 import type { ReceiptFormat } from "@/lib/core/types";
 import { isBoaQrPayload } from "@/lib/qr/decode";
 import { parseTelebirrQr } from "@/lib/qr/telebirr";
+import { parseDashenQr } from "@/lib/qr/dashen";
 import { canonicalReference } from "@/lib/reference-case";
 
 /**
  * "telebirrQr": a Telebirr receipt QR payload. Only its transaction number is
  * used (as `value`); it is then checked exactly like a typed reference.
+ * "dashenQr": a Dashen Super App receipt QR payload. Only its FT Ref is used
+ * (as `value`); likewise checked exactly like a typed reference.
  */
-export type InputKind = "empty" | "url" | "unknownUrl" | "reference" | "boaQr" | "telebirrQr";
+export type InputKind = "empty" | "url" | "unknownUrl" | "reference" | "boaQr" | "telebirrQr" | "dashenQr";
 
 export interface Detection {
   kind: InputKind;
@@ -124,6 +127,28 @@ export function detectInput(raw: string, opts: { lockedBank?: string; overrideBa
         candidates: [telebirr],
         overridden: false,
         format: primaryFormat(telebirr),
+        needsAccount: false,
+        needsPhone: false,
+      });
+    }
+  }
+
+  // A Dashen Super App receipt QR names its own bank too, and carries only the
+  // FT Ref, obfuscated with a fixed key. Decoded here and then checked exactly
+  // like a typed reference: the raw token is never sent, because the endpoint
+  // refuses it (HTTP 401) and only the decoded FT Ref resolves.
+  const dashenQr = parseDashenQr(value);
+  if (dashenQr.ok) {
+    const dashen = bankByCode("dashen");
+    if (dashen) {
+      return finish({
+        ...base,
+        kind: "dashenQr",
+        value: dashenQr.reference,
+        bank: dashen,
+        candidates: [dashen],
+        overridden: false,
+        format: primaryFormat(dashen),
         needsAccount: false,
         needsPhone: false,
       });

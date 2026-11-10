@@ -258,7 +258,7 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
       const nextHistory = addVerified(historyRef.current, result, { bank: bankCode, ref: savedRef }, checkedAt);
       historyRef.current = nextHistory;
       setHistory(nextHistory);
-      const enteredRef = d.kind === "url" ? d.urlReference : d.kind === "reference" || d.kind === "telebirrQr" ? d.value : undefined;
+      const enteredRef = d.kind === "url" ? d.urlReference : d.kind === "reference" || d.kind === "telebirrQr" || d.kind === "dashenQr" ? d.value : undefined;
       const share: ShareInput = { input: d.value, bank: bankCode, ...(d.needsAccount || d.needsPhone ? { extra: extraValue } : {}) };
       // What the user typed, if it is still the reference being checked (the
       // field may have been changed since by a scan, a recent check or a link).
