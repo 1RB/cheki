@@ -17,6 +17,7 @@ import { CBEBirrParser } from "./cbebirr";
 import { SiinqeeParser } from "./siinqee";
 import { AwashParser } from "./awash";
 import { ZamZamParser } from "./zamzam";
+import { BunnaParser } from "./bunna";
 
 // Register all parsers
 registerParser(new CBEParser());
@@ -31,6 +32,7 @@ registerParser(new CBEBirrParser());
 registerParser(new SiinqeeParser());
 registerParser(new AwashParser());
 registerParser(new ZamZamParser());
+registerParser(new BunnaParser());
 
 // Re-export for convenience
 export { CBEParser, CBENewParser } from "./cbe";
@@ -44,6 +46,7 @@ export { CBEBirrParser } from "./cbebirr";
 export { SiinqeeParser } from "./siinqee";
 export { AwashParser } from "./awash";
 export { ZamZamParser } from "./zamzam";
+export { BunnaParser } from "./bunna";
 export { BaseParser } from "./base";
 export {
   registerParser,

@@ -102,7 +102,7 @@ jobs:
           node -e '
             const j = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"));
             const ok = typeof j.generatedAt === "string" && Array.isArray(j.banks) && j.banks.length < 200 &&
-              j.banks.every((b) => typeof b.id === "string" && /^[a-z0-9-]{1,40}$/.test(b.id) &&
+              j.banks.every((b) => typeof b.id === "string" && /^[a-z0-9-]{1,40}(:[a-z0-9-]{1,40})?$/.test(b.id) &&
                 ["live", "in-development", "degraded", "not-checked"].includes(b.status) &&
                 (b.observed === undefined || (typeof b.observed === "string" && b.observed.length <= 200)) &&
                 (b.detail === undefined || (typeof b.detail === "string" && b.detail.length <= 500)));

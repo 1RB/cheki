@@ -29,8 +29,11 @@ import { classifyStatus } from "./status";
  *   - zamzam: looked up by the numeric receipt id from the link; the record
  *     carries ZamZam's transaction reference instead. The parser checks that
  *     the record's own id equals the id requested (ZamZamParser.parseRecord).
+ *   - bunna: looked up by the opaque token in the receipt link's fragment;
+ *     the record carries Bunna's transaction reference (tranId) and does not
+ *     echo the token back.
  */
-const REFERENCE_IS_OPAQUE_TOKEN = new Set(["awash", "ebirr", "siinqee", "cbe-new", "zamzam"]);
+const REFERENCE_IS_OPAQUE_TOKEN = new Set(["awash", "ebirr", "siinqee", "cbe-new", "zamzam", "bunna"]);
 
 export type GateFailure = "amount" | "reference" | "party" | "status";
 

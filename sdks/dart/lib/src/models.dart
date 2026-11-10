@@ -261,8 +261,8 @@ class BankInfo {
   /// `live` or `in-development`.
   final String status;
 
-  /// Live, but not yet confirmed with enough real receipts (M-Pesa and
-  /// ZamZam today).
+  /// Live, but not yet confirmed with enough real receipts (M-Pesa,
+  /// ZamZam, CBE Birr and Bunna today).
   final bool beta;
   final bool requiresAccount;
 
