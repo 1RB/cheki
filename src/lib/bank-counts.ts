@@ -51,6 +51,11 @@ export function directBankList(style: "short" | "long" = "long"): string {
   return nameList(directProviders, style);
 }
 
+/** The providers still in development (no checker yet), in manifest order. */
+export function inDevelopmentBankList(): string {
+  return nameList(providers.filter((b) => b.status !== "live"), "short");
+}
+
 /** "Telebirr and M-Pesa": live providers cheki.et links out to. */
 export function linkOutBankList(): string {
   return nameList(linkOutProviders, "short");
