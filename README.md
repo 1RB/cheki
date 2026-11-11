@@ -64,7 +64,7 @@ Confirmed results are cached in memory for 6 hours, so checking the same receipt
 
 ## Supported banks
 
-**11 live banks** (four in beta) and 20 in research. From cheki.et, 9 are checked directly with the bank; Telebirr and M-Pesa go through their official receipt pages until a local relay exists. The source of truth is [`src/lib/manifest/banks.json`](src/lib/manifest/banks.json); `GET /api/banks` returns it, including each bank's receipt formats, current first.
+**11 live banks** (five in beta) and 20 in research. From cheki.et, 9 are checked directly with the bank; Telebirr and M-Pesa go through their official receipt pages until a local relay exists. The source of truth is [`src/lib/manifest/banks.json`](src/lib/manifest/banks.json); `GET /api/banks` returns it, including each bank's receipt formats, current first.
 
 | Bank | `id` | What to send | Notes |
 |------|------|--------------|-------|
@@ -74,13 +74,13 @@ Confirmed results are cached in memory for 6 hours, so checking the same receipt
 | M-Pesa Ethiopia | `mpesa` | Transaction number | Beta. Blocks cloud servers: cheki.et gives the official receipt link |
 | Dashen Bank | `dashen` | FT Ref (16 letters and digits) | Old Dashen Super App links are read for their FT Ref |
 | Awash Bank | `awash` | Share link from the SMS | |
-| Siinqee Bank | `siinqee` | eBirr receipt link (`receipt.ebirr.com/siinqee/…`) | Newer `receipts.siinqeebank.com` links are not supported yet |
-| eBirr | `ebirr` | Receipt link (`receipt.ebirr.com/{tenant}/{token}`) | Also reads eBirr links issued for Nib, Wegagen, Ahadu and KAAFI |
+| Siinqee Bank | `siinqee` | Receipt link (`receipts.siinqeebank.com:871/generate/…`) or the reference after "Ref:" in the SMS, exactly as printed | Beta. Case-sensitive. Older `receipt.ebirr.com/siinqee/…` links are still accepted |
+| eBirr | `ebirr` | Receipt link (`receipt.ebirr.com/{tenant}/{token}`) | Also reads eBirr links issued for Nib, Wegagen, Ahadu and KAAFI. `transactioninfo.ebirr.com` links only open on Ethiopian networks: cheki.et gives the link back |
 | ZamZam Bank | `zamzam` | Receipt link (`receipt.zamzambank.com.et/receipt/…`) or its numeric id | Beta |
 | CBE Birr | `cbebirr` | Receipt number (TID, e.g. `DTS41AB2C90`) + the payer's phone number, or the receipt QR (it carries both) | Beta. An empty page back usually means the number and phone don't match |
 | Bunna Bank | `bunna` | Receipt link (`online.bunnabanksc.com/receipt/#/…`) or the receipt QR | Beta. The transaction number printed on the receipt does not work on its own |
 
-References are not case-sensitive for CBE FT references, BOA, Telebirr, M-Pesa, Dashen and CBE Birr, whose receipts print them in capitals: `det0sample` is checked as `DET0SAMPLE`, and spaces or dashes typed inside are dropped. CBE Receipt IDs, Awash and eBirr links and ZamZam ids are used exactly as given; Bunna tokens keep their case (only their URL encoding is normalised).
+References are not case-sensitive for CBE FT references, BOA, Telebirr, M-Pesa, Dashen and CBE Birr, whose receipts print them in capitals: `det0sample` is checked as `DET0SAMPLE`, and spaces or dashes typed inside are dropped. CBE Receipt IDs, Awash and eBirr links, Siinqee references and ZamZam ids are used exactly as given; Bunna tokens keep their case (only their URL encoding is normalised).
 
 Beta means the bank is live but not yet confirmed with enough real receipts. [cheki.et/endpoints](https://cheki.et/endpoints) shows every format with a dated changelog, and [cheki.et/status](https://cheki.et/status) shows the daily endpoint health check.
 
@@ -103,7 +103,7 @@ Zemen Bank has a parser and is waiting on a confirmed real receipt. The others n
 | M-Pesa | `https://m-pesabusiness.safaricom.et/api/receipt/getReceipt?trxNo={REFERENCE}` | JSON envelope holding a base64 PDF |
 | Dashen | `https://receipts.dashenbanksc.com/receipt/{FT_REF}` | HTML |
 | Awash | `https://awashpay.awashbank.com:8225/-{TOKEN}` (the share link) | HTML |
-| Siinqee | `https://receipt.ebirr.com/siinqee/{TOKEN}` | HTML |
+| Siinqee | `https://receipts.siinqeebank.com:871/generate/{REFERENCE}` | HTML (PDF also read) |
 | eBirr | `https://receipt.ebirr.com/{TENANT}/{TOKEN}` | HTML |
 | ZamZam | `https://receipt-backend.zamzambank.com.et/api/v1/invoice/{RECEIPT_ID}` | JSON |
 | CBE Birr | `https://cbepay1.cbe.com.et/aureceipt?TID={RECEIPT_NUMBER}&PH={PAYER_PHONE}` | PDF |

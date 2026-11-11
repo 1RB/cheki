@@ -241,7 +241,7 @@ export interface BankInfo {
   swift?: string;
   type: "bank" | "mobile" | "wallet";
   status: "live" | "in-development";
-  /** Live, but the parser has not yet been confirmed with enough real receipts (M-Pesa, ZamZam, CBE Birr and Bunna today). Always set by the SDK (false when the server omits it). */
+  /** Live, but the parser has not yet been confirmed with enough real receipts (M-Pesa, ZamZam, CBE Birr, Bunna and Siinqee today). Always set by the SDK (false when the server omits it). */
   beta: boolean;
   requiresAccount: boolean;
   /** How many trailing account digits the bank needs, when it needs an account. */
@@ -270,8 +270,8 @@ export interface ReceiptFormatInfo {
   responseType: "pdf" | "html" | "json" | "pdf-in-json" | (string & {});
   /** False when cheki documents the format but cannot check it yet. */
   supported: boolean;
-  /** "verified" (observed by cheki) or "inferred" (from another source). */
-  confidence: "verified" | "inferred" | (string & {});
+  /** "verified" (checked by cheki), "observed" (seen on real receipts, not yet fetched by cheki) or "inferred" (from another source). */
+  confidence: "verified" | "observed" | "inferred" | (string & {});
 }
 
 /** Response from `GET /api/banks`. */

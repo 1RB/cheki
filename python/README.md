@@ -1,6 +1,6 @@
 # cheki Python SDK
 
-Python client for the [cheki](https://cheki.et) receipt verification API: verify Ethiopian bank and wallet receipts (live: CBE, Telebirr, BOA, M-Pesa (beta), Dashen, Awash, Siinqee, eBirr, ZamZam (beta), CBE Birr (beta), Bunna (beta); `get_banks()` lists the current set). Python 3.10+.
+Python client for the [cheki](https://cheki.et) receipt verification API: verify Ethiopian bank and wallet receipts (live: CBE, Telebirr, BOA, M-Pesa (beta), Dashen, Awash, Siinqee (beta), eBirr, ZamZam (beta), CBE Birr (beta), Bunna (beta); `get_banks()` lists the current set). Python 3.10+.
 
 From the hosted API at cheki.et, Telebirr and M-Pesa come back as a 502 with `fallback_url` (the official receipt page), because they block cloud servers. Send the user there to check the amount and receiver; direct checks return once a local relay is live.
 
@@ -132,7 +132,7 @@ It exits 0 only when the bank confirmed the receipt. `--api` is accepted and ign
 
 ## Direct verification (deprecated)
 
-`from cheki import verify` needs `pip install 'cheki[direct]'` (without it, it raises `DirectModeUnavailableError`). It fetches bank endpoints from your own machine with Python parsers that have drifted from the server's: they lack its host allowlist and ReDoS fixes and do not support eBirr/Siinqee. CBE (Receipt ID first, FT reference + account for older receipts) and Dashen (receipts.dashenbanksc.com) follow the current formats. It is kept only so existing code keeps working:
+`from cheki import verify` needs `pip install 'cheki[direct]'` (without it, it raises `DirectModeUnavailableError`). It fetches bank endpoints from your own machine with Python parsers that have drifted from the server's: they lack its host allowlist and ReDoS fixes and do not support eBirr or Siinqee. CBE (Receipt ID first, FT reference + account for older receipts) and Dashen (receipts.dashenbanksc.com) follow the current formats. It is kept only so existing code keeps working:
 
 - it emits a `DeprecationWarning`;
 - it rejects references that are not plain receipt numbers (no `/ ? # & %`, `..` or spaces);

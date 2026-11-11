@@ -356,7 +356,8 @@ class ClientReceiptFormat:
     response_type: str = ""
     #: False when cheki documents the format but can't check it yet.
     supported: bool = False
-    #: "verified" (observed by cheki) or "inferred".
+    #: "verified" (checked by cheki), "observed" (seen on real receipts, not yet
+    #: fetched by cheki) or "inferred".
     confidence: str = ""
 
     @classmethod
@@ -390,7 +391,7 @@ class ClientBankInfo:
     swift: str | None = None
     type: str | None = None
     status: str | None = None
-    #: Live, but not yet confirmed with enough real receipts (M-Pesa, ZamZam, CBE Birr and Bunna today).
+    #: Live, but not yet confirmed with enough real receipts (M-Pesa, ZamZam, CBE Birr, Bunna and Siinqee today).
     beta: bool = False
     requires_account: bool = False
     account_digits: int | None = None

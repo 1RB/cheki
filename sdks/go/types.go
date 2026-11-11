@@ -115,7 +115,7 @@ type BankInfo struct {
 	Type   string `json:"type"`   // "bank" | "mobile" | "wallet"
 	Status string `json:"status"` // "live" | "in-development"
 	// Beta is true for a live bank not yet confirmed with enough real
-	// receipts (M-Pesa, ZamZam, CBE Birr and Bunna today).
+	// receipts (M-Pesa, ZamZam, CBE Birr, Bunna and Siinqee today).
 	Beta            bool `json:"beta,omitempty"`
 	RequiresAccount bool `json:"requiresAccount"`
 	AccountDigits   int  `json:"accountDigits,omitempty"`
@@ -142,7 +142,8 @@ type ReceiptFormat struct {
 	ResponseType  string   `json:"responseType"`
 	// Supported is false when cheki documents the format but can't check it yet.
 	Supported bool `json:"supported"`
-	// Confidence is "verified" (observed by cheki) or "inferred".
+	// Confidence is "verified" (checked by cheki), "observed" (seen on real
+	// receipts, not yet fetched by cheki) or "inferred".
 	Confidence string `json:"confidence"`
 }
 

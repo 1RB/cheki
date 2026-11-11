@@ -21,7 +21,7 @@ class ReceiptFormat
     public string $responseType;
     /** False when cheki documents the format but can't check it yet. */
     public bool $supported;
-    /** 'verified' (observed by cheki) or 'inferred'. */
+    /** 'verified' (checked by cheki), 'observed' (seen on real receipts, not yet fetched by cheki) or 'inferred'. */
     public string $confidence;
 
     /** @param list<string> $inputs */

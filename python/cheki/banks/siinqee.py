@@ -4,10 +4,11 @@ from cheki.result import VerificationResult
 
 
 class SiinqeeVerifier(BankVerifier):
-    """Siinqee Bank receipt verifier.
+    """Siinqee Bank receipt verifier (not available in direct mode).
 
-    Siinqee does not provide a public receipt verification URL.
-    check.et falls back to the Zemen share endpoint or image verification.
+    Siinqee receipts are read by the cheki server from
+    receipts.siinqeebank.com:871/generate/{reference} (beta). The deprecated
+    direct mode has no parser for them: use ``cheki.ChekiClient`` instead.
     """
 
     BANK_CODE = "siinqee"
@@ -15,6 +16,6 @@ class SiinqeeVerifier(BankVerifier):
 
     def verify(self, reference: str, **kwargs: object) -> VerificationResult:
         raise UnsupportedBankError(
-            "Siinqee Bank does not provide a public receipt verification URL. "
-            "Use image verification or a different service."
+            "Siinqee Bank is not supported by the deprecated direct mode. "
+            "Use cheki.ChekiClient().verify('siinqee', reference) instead."
         )
