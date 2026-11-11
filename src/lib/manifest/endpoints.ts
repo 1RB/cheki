@@ -32,6 +32,12 @@ export interface ProbeExpectation {
   bodyIncludes?: string[];
   /** The whole body (trimmed) must be exactly this, e.g. ZamZam's "null" for an unknown id. */
   bodyIs?: string;
+  /**
+   * The unknown-reference answer has not been observed (Siinqee): any HTTP
+   * answer counts, 5xx included, and no answer at all is "not-checked", not
+   * "degraded". Replace it with a real shape once one is seen.
+   */
+  anyAnswer?: boolean;
 }
 
 export interface ProbeSpec {
@@ -475,24 +481,54 @@ export const endpointDocs: EndpointDoc[] = [
   {
     id: "siinqee",
     label: "Siinqee",
-    inputNeeded: "Receipt link (tenant/token)",
+    inputNeeded: "Receipt link (receipts.siinqeebank.com:871/generate/{reference}) or the reference after \"Ref:\" in the SMS",
+    preferLink: true,
+    responseTypeLabel: "HTML page (a PDF is read too)",
     placeholders: [
       {
-        name: "{token}",
-        what: "The Siinqee receipt token on the shared eBirr platform.",
-        whereToFind: "The receipt link in the SMS. It is the last path segment.",
-        format: "Alphanumeric, length not yet confirmed.",
-        confirmed: false,
+        name: "{REFERENCE}",
+        what: "Siinqee Bank's transaction reference. The receipt page is keyed by it alone: no account or phone.",
+        whereToFind: "The last path segment of the receipt link, or the SMS after \"Ref:\".",
+        format: "16 characters: 3 capitals or digits (branch-like, e.g. 12B), 4 letters or digits (a channel or teller code; IIPS on an incoming instant payment), 5 digits YYDDD (year and day of the year: 26295 is 22 October 2026), 4-digit sequence.",
+        traps: "Case-sensitive: the 4-character code can hold a lowercase letter (004k), so the reference is never uppercased. Reference No on the receipt must equal it exactly.",
+        confirmed: true,
       },
     ],
-    redactedExample: "https://receipt.ebirr.com/siinqee/XXXXXXXXXXXX",
-    fieldsParsed: EBIRR_FIELDS,
-    unknownRef: 'Expected like other eBirr tenants: HTTP 200 text/html "Not Found Page".',
-    gotchas: ['On 2026-10-10 the siinqee route answered HTTP 404 text/plain "Cannot GET /siinqee/...", unlike other eBirr tenants. The tenant name may have changed. A real Siinqee receipt link would settle it.'],
+    redactedExample: "https://receipts.siinqeebank.com:871/generate/12B004k262950007",
+    fieldsParsed: ["senderName", "senderAccount", "receiverName", "receiverAccount", "amount", "currency", "date", "reference", "transactionType", "transactionStatus", "serviceFee", "serviceFeeVat", "totalPaid"],
+    unknownRef: "Not observed yet. cheki treats any page without \"Transaction is successful\" and the exact reference asked for as not confirmed (HTTP 422 with checkedUrl), never as fake.",
+    gotchas: [
+      "Port 871, HTTPS. The host and port are allowlisted together; the URL is rebuilt from the validated reference, never fetched as pasted.",
+      "Another verifier reports that each receipt link opens about five times in total (unverified by cheki). cheki makes one request per check, never retries (not even on a timeout or 5xx), and caches a confirmed receipt; failures are not cached.",
+      "Seen as an HTML page (a text reader showed it titled \"C B\"); another verifier reports PDFs. A body starting with %PDF goes through PDF text extraction, anything else has its tags stripped; fields are read by label either way.",
+      "The page also prints a Customer Information block (customer name, phone, TIN, branch). cheki never returns it or keeps it in raw.",
+      "On an incoming instant payment (IIPS), Payer Name reads \"Incoming from Other Bank\" and the amount label is Amount instead of Transferred Amount.",
+      "Not yet fetched from cheki's server. The parser follows real receipts the maintainer opened; the first live check settles HTML or PDF.",
+    ],
     changelog: [],
+    legacy: [
+      {
+        formatId: "siinqee-ebirr",
+        placeholders: [
+          {
+            name: "{token}",
+            what: "The Siinqee receipt token on the shared eBirr platform.",
+            whereToFind: "The last path segment of an older receipt.ebirr.com/siinqee/... link.",
+            format: "Alphanumeric, length not confirmed.",
+            confirmed: false,
+          },
+        ],
+        redactedExample: "https://receipt.ebirr.com/siinqee/XXXXXXXXXXXX",
+        unknownRef: 'Since 2026-10-10 the siinqee route answers HTTP 404 text/plain "Cannot GET /siinqee/...", unlike other eBirr tenants.',
+      },
+    ],
     parserSource: "src/lib/parsers/siinqee.ts",
-    fixture: "tests/parsers/ebirr.test.ts",
-    probe: { ref: "chekiprobe000000", expect: NOT_FOUND_PAGE, observed: "expected; Oregon, US, 2026-10-10 saw 404 Cannot GET" },
+    fixture: "tests/parsers/siinqee.test.ts",
+    probe: {
+      ref: "000A000000000000",
+      expect: { anyAnswer: true },
+      observed: "not observed yet (unknown-reference answer unseen; any HTTP answer counts)",
+    },
   },
   {
     ...ebirrTenant("ebirr", "eBirr", "nib"),
@@ -513,7 +549,10 @@ export const endpointDocs: EndpointDoc[] = [
       },
     ],
     redactedExample: "https://receipt.ebirr.com/nib/XXXXXXXXXXXX",
-    gotchas: ["An unknown token still returns HTTP 200, so the parser must check the page body."],
+    gotchas: [
+      "An unknown token still returns HTTP 200, so the parser must check the page body.",
+      "KAAFI receipts can link to transactioninfo.ebirr.com/kaafimf-Ebirr/receipt/{12 digits}. That host is NXDOMAIN on public DNS (dns.google, 2026-11-10) and the same number on receipt.ebirr.com/kaafimf/ answers the Not Found Page, so cheki never fetches it: /api/verify answers 502 with the link, rebuilt on the fixed host, as fallbackUrl.",
+    ],
   },
   ebirrTenant("nib", "Nib", "nib"),
   ebirrTenant("wegagen", "Wegagen", "wegagen"),

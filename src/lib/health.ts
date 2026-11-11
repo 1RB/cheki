@@ -90,7 +90,7 @@ export function matchExpectation(r: ObservedResponse, e: ProbeExpectation): stri
     if (!r.body.includes(s)) problems.push(`body is missing "${s}"`);
   }
   if (e.bodyIs !== undefined && r.body.trim() !== e.bodyIs) problems.push(`body is not exactly "${e.bodyIs}"`);
-  if (e.status === undefined && r.status >= 500) problems.push(`server error HTTP ${r.status}`);
+  if (e.status === undefined && !e.anyAnswer && r.status >= 500) problems.push(`server error HTTP ${r.status}`);
   return problems;
 }
 
@@ -164,6 +164,12 @@ export function evaluate(
     return { ...base, status: "in-development", detail: "No public receipt endpoint known yet." };
   }
   if (outcome.error || !outcome.response) {
+    // An endpoint whose unknown-reference answer is not known yet (Siinqee)
+    // is not marked degraded for no answer: the probe can't tell a block on
+    // the runner's network from an outage.
+    if (t.probe?.expect.anyAnswer) {
+      return { ...base, status: "not-checked", detail: `No answer from the health check's network (${outcome.error ?? "no response"}); the unknown-reference answer is not known yet.` };
+    }
     return { ...base, status: "degraded", detail: `Endpoint unreachable: ${outcome.error ?? "no response"}.` };
   }
   const problems = matchExpectation(outcome.response, t.probe?.expect ?? {});

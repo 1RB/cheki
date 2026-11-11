@@ -1009,21 +1009,25 @@
     },
     "type": "bank",
     "status": "live",
+    "beta": true,
+    "betaNote": "Beta: the parser is built from real Siinqee Bank receipts, but cheki's server has not fetched one live yet.",
     "parser": "siinqee",
     "responseType": "html",
     "requiresAccount": false,
-    "endpoint": "https://receipt.ebirr.com/siinqee/{ref}",
-    "endpointFormat": "https://receipt.ebirr.com/siinqee/{token}",
+    "endpoint": "https://receipts.siinqeebank.com:871/generate/{ref}",
+    "endpointFormat": "https://receipts.siinqeebank.com:871/generate/{REFERENCE}",
     "sslVerify": true,
     "color": "#006A4E",
     "initials": "SQ",
-    "notes": "Supported through the eBirr route (receipt.ebirr.com/siinqee/{token}), which answered 404 on 2026-10-10. Another verifier reports Siinqee Bank receipts on receipts.siinqeebank.com:871 (PDF, inferred, not supported yet).",
-    "description": "Siinqee Bank is an Ethiopian microfinance institution turned bank. Siinqee receipts are available via a public endpoint.",
-    "referenceFormat": "Alphanumeric transaction reference",
-    "referenceExample": "SQ12345678",
+    "notes": "Beta. Receipt links are receipts.siinqeebank.com:871/generate/{reference}, keyed by the transaction reference the SMS prints after \"Ref:\", so a typed reference works too. The reference is case-sensitive (it can hold a lowercase letter). The receipt page is HTML; a PDF answer is read too. Another verifier reports about five views per receipt, so cheki fetches each check once, never retries, and caches a confirmed receipt. The older eBirr route (receipt.ebirr.com/siinqee/...) has answered HTTP 404 since 2026-10-10.",
+    "description": "Siinqee Bank grew out of Oromia Credit and Saving Share Company (OCSSCO), a microfinance institution, and was licensed as a commercial bank in 2021. Its receipt links (receipts.siinqeebank.com:871/generate/...) open a receipt page keyed by the transaction reference from the SMS: cheki reads that page and confirms the amount, date, payer and receiver, with account numbers masked by Siinqee. Siinqee support is in beta.",
+    "referenceFormat": "The receipt link (https://receipts.siinqeebank.com:871/generate/{reference}) or the 16-character reference after \"Ref:\" in the SMS: 3 capitals or digits, 4 letters or digits (a code such as IIPS for an incoming instant payment), then 9 digits (year and day of the year, then a sequence). Letter case matters.",
+    "referenceExample": "12B004k262950007",
     "howToVerify": [
-      "Get the transaction reference from the customer's Siinqee receipt",
-      "cheki fetches the receipt from Siinqee's public endpoint"
+      "Paste the receipt link from the Siinqee SMS (https://receipts.siinqeebank.com:871/generate/...) into cheki",
+      "Or select Siinqee Bank and type the reference after \"Ref:\" in the SMS, exactly as printed",
+      "cheki opens Siinqee Bank's own receipt page for that reference and reads the amount, date, payer and receiver",
+      "Compare the amount, date and receiver with the payment you expected"
     ],
     "useCases": [
       "Merchants verifying Siinqee transfers",
@@ -1031,44 +1035,70 @@
     ],
     "faq": [
       {
-        "q": "When will Siinqee verification be available?",
-        "a": "Siinqee verification is in development. Follow the GitHub repository for updates."
+        "q": "What do I need to verify a Siinqee Bank receipt?",
+        "a": "The receipt link from the Siinqee SMS (receipts.siinqeebank.com:871/generate/...) or the reference printed after \"Ref:\" in the same SMS. No account number is needed. Type the reference exactly as printed: it can hold a lowercase letter, and letter case matters."
+      },
+      {
+        "q": "What does cheki confirm for a Siinqee Bank receipt?",
+        "a": "That Siinqee Bank's own receipt page for that reference says the transaction was successful, and what it shows: the amount, the date, the payer and the receiver, with account numbers masked by Siinqee. Siinqee support is in beta: the parser is built from real receipts, but cheki's server has not fetched one live yet."
+      },
+      {
+        "q": "Does a check use up one of the receipt's views?",
+        "a": "Another verifier reports that each Siinqee receipt link opens about five times in total. cheki asks Siinqee once per check, never retries, and remembers a confirmed receipt for a few hours, so checking the same receipt again on cheki.et usually does not open it again."
+      },
+      {
+        "q": "What if cheki says the Siinqee receipt is not confirmed?",
+        "a": "Siinqee's page did not show a successful transaction for exactly that reference. Check the reference letter by letter, including lowercase letters, or ask the sender for the receipt link. It is not proof that the receipt is fake, but do not hand anything over until it is confirmed."
       }
     ],
     "seo": {
       "title": "Siinqee Bank Receipt Check Online: Free Verifier",
-      "description": "Verify a Siinqee Bank receipt by reference and confirm amount, sender and date against the bank's record. Free, no signup, results in seconds.",
+      "description": "Check a Siinqee Bank receipt link or SMS reference against Siinqee's own receipt page: cheki confirms the amount, date, payer and receiver. Free, no signup.",
       "keywords": [
         "siinqee receipt check",
         "Siinqee Bank receipt verification",
         "verify Siinqee transaction",
+        "receipts.siinqeebank.com",
         "ethiopian bank receipt verify"
       ]
     },
     "formats": [
       {
-        "id": "siinqee-bank-pdf",
+        "id": "siinqee-bank-receipt",
         "status": "current",
-        "label": "Siinqee Bank receipt link",
+        "label": "Receipt link or reference",
+        "parser": "siinqee",
+        "endpoint": "https://receipts.siinqeebank.com:871/generate/{ref}",
+        "link": "https://receipts.siinqeebank.com:871/generate/{ref}",
         "linkHosts": [
           "receipts.siinqeebank.com"
         ],
         "inputs": [
           {
             "name": "link",
-            "label": "Receipt link"
+            "label": "Receipt link",
+            "example": "https://receipts.siinqeebank.com:871/generate/12B004k262950007"
+          },
+          {
+            "name": "reference",
+            "label": "Reference from the SMS",
+            "example": "12B004k262950007"
           }
         ],
-        "responseType": "pdf",
-        "confidence": "inferred",
-        "evidence": "Another verifier lists receipts.siinqeebank.com:871 (PDF) for Siinqee Bank and says each receipt allows about five views in total; it showed Siinqee unavailable on 2026-10-11. Not tested by cheki and not supported yet.",
-        "notes": "Not fetched. Needs a real receipt link and a parser that respects the view limit."
+        "refPattern": {
+          "source": "^[0-9A-Z]{3}[0-9A-Za-z]{4}\\d{9}$",
+          "flags": ""
+        },
+        "responseType": "html",
+        "confidence": "observed",
+        "evidence": "Real receipts from the maintainer (2026-10-31): the SMS prints \"Ref:\" and a 16-character reference, and the link is receipts.siinqeebank.com:871/generate/{reference}. The page reads \"Customer Receipt\" and \"Transaction is successful!\", then Reference No, Payer Account (masked), Payer Name, Transaction Date (dd/mm/yyyy), Currency, Transaction Description, Receiver Account (masked), Receiver Name, Transferred Amount (Amount on an incoming instant payment), Charge Amount, VAT Amount, Disaster Fund and Total Amount. A text reader rendered it as HTML; another verifier reports PDFs and about five views per receipt. Not yet fetched from cheki's server; the unknown-reference answer is not observed.",
+        "notes": "Read as HTML or PDF, by label. One request per check, no retry. Verified only with \"Transaction is successful\" and the exact (case-sensitive) reference asked for."
       },
       {
         "id": "siinqee-ebirr",
         "status": "legacy",
         "label": "eBirr receipt link (receipt.ebirr.com/siinqee/...)",
-        "parser": "siinqee",
+        "parser": "siinqee-ebirr",
         "endpoint": "https://receipt.ebirr.com/siinqee/{ref}",
         "link": "https://receipt.ebirr.com/siinqee/{ref}",
         "linkHosts": [
@@ -1082,7 +1112,12 @@
         ],
         "responseType": "html",
         "confidence": "inferred",
-        "evidence": "The siinqee route answered HTTP 404 'Cannot GET' on 2026-10-10, unlike other eBirr tenants. Another verifier reads Siinqee's wallet (COOPay) receipts at receipt.ebirr.com/coopay/."
+        "evidence": "The siinqee route answered HTTP 404 'Cannot GET' on 2026-10-10, unlike other eBirr tenants. Kept so an old link still verifies if the route answers again.",
+        "refPattern": {
+          "source": "^siinqee/[A-Za-z0-9_-]{4,128}$",
+          "flags": "i"
+        },
+        "replacedBy": "siinqee-bank-receipt"
       }
     ],
     "endpointHistory": [
@@ -1094,9 +1129,15 @@
       },
       {
         "date": "2026-10-11",
-        "formatId": "siinqee-bank-pdf",
+        "formatId": "siinqee-bank-receipt",
         "change": "Another verifier lists Siinqee Bank receipts on receipts.siinqeebank.com:871 (PDF). Recorded as inferred, not supported.",
         "source": "https://links.et/docs/providers"
+      },
+      {
+        "date": "2026-11-10",
+        "formatId": "siinqee-bank-receipt",
+        "change": "cheki reads Siinqee Bank receipts from receipts.siinqeebank.com:871/generate/{reference}, by receipt link or SMS reference (beta). The eBirr route stays as a legacy format.",
+        "source": "Real Siinqee Bank receipts from the maintainer (2026-10-31)"
       }
     ]
   },
@@ -1114,8 +1155,8 @@
     "sslVerify": true,
     "color": "#059669",
     "initials": "eB",
-    "notes": "Shared receipt platform for Nib, Wegagen, Ahadu, KAAFI, and Siinqee/Coopbank. User provides tenant/token or full URL.",
-    "description": "eBirr is a mobile money platform connecting 5 Ethiopian financial institutions: Nib International Bank, Wegagen Bank, Ahadu Bank, KAAFI Microfinance, and Cooperative Bank of Oromia (Siinqee). Receipts are available via a shared HTML endpoint at receipt.ebirr.com. Users provide either a full receipt URL or a 'tenant/token' string (e.g., nib/abc123). cheki auto-detects the tenant and maps it to the correct partner bank.",
+    "notes": "Shared receipt platform for Nib, Wegagen, Ahadu, KAAFI and Coopbank (COOPay-Ebirr). User provides tenant/token or full URL. Links on transactioninfo.ebirr.com only open on Ethiopian networks, so cheki hands them back to open on a phone.",
+    "description": "eBirr is a mobile money platform used by several Ethiopian financial institutions, including Nib International Bank, Wegagen Bank, Ahadu Bank, KAAFI Microfinance and Cooperative Bank of Oromia (COOPay-Ebirr). Receipts are available via a shared HTML endpoint at receipt.ebirr.com. Users provide either a full receipt URL or a 'tenant/token' string (e.g., nib/abc123). cheki auto-detects the tenant and maps it to the correct partner bank.",
     "referenceFormat": "Receipt URL (receipt.ebirr.com/{tenant}/{token}) or tenant/token string (e.g., nib/abc123, wegagen/xyz, ahadu/def, kaafimf/ghi)",
     "referenceExample": "nib/abc123def",
     "howToVerify": [
@@ -1133,7 +1174,7 @@
     "faq": [
       {
         "q": "Which banks does eBirr cover?",
-        "a": "eBirr connects 5 financial institutions: Nib International Bank (tenant: nib), Wegagen Bank (tenant: wegagen), Ahadu Bank (tenant: ahadu), KAAKI Microfinance (tenant: kaafimf), and Cooperative Bank of Oromia / Siinqee Bank. All use the same receipt endpoint at receipt.ebirr.com/{tenant}/{token}."
+        "a": "eBirr is used by Nib International Bank (tenant: nib), Wegagen Bank (tenant: wegagen), Ahadu Bank (tenant: ahadu), KAAFI Microfinance (tenant: kaafimf) and Cooperative Bank of Oromia (COOPay-Ebirr). Shared receipts use the receipt endpoint at receipt.ebirr.com/{tenant}/{token}."
       },
       {
         "q": "How do I find my eBirr receipt URL?",
@@ -1146,6 +1187,10 @@
       {
         "q": "Is the eBirr receipt endpoint public?",
         "a": "Yes. The receipt URL at receipt.ebirr.com/{tenant}/{token} is publicly accessible without authentication. The token is a random string that maps to a specific transaction. cheki, qbirr, and any other verification service use this same endpoint."
+      },
+      {
+        "q": "Why can't cheki check a transactioninfo.ebirr.com link?",
+        "a": "Some eBirr receipts (KAAFI's, for one) link to transactioninfo.ebirr.com/{tenant}-Ebirr/receipt/{number}. That address only opens on Ethiopian networks, so cheki's server can't reach it. cheki gives the link back: open it on a phone on an Ethiopian network and check the amount, the receiver and the date there."
       }
     ],
     "seo": {
@@ -1183,6 +1228,34 @@
         "responseType": "html",
         "confidence": "verified",
         "evidence": "Unknown tokens answer HTTP 200 'Not Found Page' (cheki, 2026-10-10). Another verifier reads the same host for COOPay and Kaafi."
+      },
+      {
+        "id": "ebirr-transactioninfo-link",
+        "status": "current",
+        "label": "transactioninfo.ebirr.com receipt link",
+        "link": "https://transactioninfo.ebirr.com/{tenant}-Ebirr/receipt/{number}",
+        "linkHosts": [
+          "transactioninfo.ebirr.com"
+        ],
+        "inputs": [
+          {
+            "name": "link",
+            "label": "Receipt link",
+            "example": "https://transactioninfo.ebirr.com/kaafimf-Ebirr/receipt/800000000001"
+          }
+        ],
+        "responseType": "html",
+        "confidence": "observed",
+        "evidence": "A real KAAFI receipt link (2026-11-10) has the shape transactioninfo.ebirr.com/kaafimf-Ebirr/receipt/{12 digits}. transactioninfo.ebirr.com is NXDOMAIN on public DNS (dns.google, cheki, 2026-11-10) and receipt.ebirr.com/kaafimf/{same number} answers eBirr's Not Found Page, so cheki's server cannot check it.",
+        "notes": "Never fetched. cheki recognises the link and returns it, rebuilt on the fixed host, to open on an Ethiopian network."
+      }
+    ],
+    "endpointHistory": [
+      {
+        "date": "2026-11-10",
+        "formatId": "ebirr-transactioninfo-link",
+        "change": "KAAFI eBirr receipt links on transactioninfo.ebirr.com are recognised and handed back to open on an Ethiopian network (the host is not in public DNS).",
+        "source": "A real KAAFI receipt link and a public DNS lookup (cheki)"
       }
     ]
   },

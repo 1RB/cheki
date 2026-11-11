@@ -32,6 +32,7 @@ import { CBEBirrParser } from "../parsers/cbebirr";
 import { MpesaParser } from "../parsers/mpesa";
 import { ZamZamParser } from "../parsers/zamzam";
 import { BunnaParser } from "../parsers/bunna";
+import { SiinqeeParser } from "../parsers/siinqee";
 import { verificationGate, gateFailureMessage } from "./gate";
 import { checkAccountSuffix, checkPhone, checkReference } from "../security/reference";
 import { parseTelebirrQr } from "../qr/telebirr";
@@ -75,6 +76,18 @@ function publicFields(parsed: ParsedReceipt): Omit<ParsedReceipt, "raw" | "verif
  */
 export const CBEBIRR_EMPTY_SHELL_MESSAGE =
   "CBE Birr sent back an empty receipt page, so this could not be confirmed. The receipt number and payer phone number may not match: check both, or open the receipt on CBE Birr's own site.";
+
+/**
+ * A receipt link that only opens on Ethiopian networks (eBirr's
+ * transactioninfo.ebirr.com is not in public DNS). Ends with a colon:
+ * errorToMessage appends the link.
+ */
+export const LOCAL_ONLY_MESSAGE =
+  "This receipt link only opens on Ethiopian networks, so cheki's server can't check it. Open it on a phone on an Ethiopian network and compare the amount, the receiver and the date:";
+
+/** Siinqee's page answered, but not with a successful receipt for this reference. */
+export const SIINQEE_NOT_CONFIRMED =
+  "Siinqee Bank's page did not show a successful transaction for this reference, so it cannot be confirmed as a receipt. Check the reference (letter case matters) or ask the sender for the receipt link.";
 
 export class Verifier {
   /**
@@ -207,6 +220,10 @@ export class Verifier {
           message: "Could not detect bank from URL. Please paste the reference number manually.",
         });
       }
+      // A link only Ethiopian networks can open (eBirr's transactioninfo
+      // host): nothing is fetched. The link, rebuilt on its fixed host, goes
+      // back with the same "not checked" answer the geo-blocked banks give.
+      if (detected.localOnlyUrl) return this.localOnly(detected.bank, detected.localOnlyUrl);
       resolvedBank = detected.bank;
       resolvedRef = detected.reference;
       resolvedFromLink = true;
@@ -218,6 +235,13 @@ export class Verifier {
       { bank: resolvedBank, reference: resolvedRef, accountNumber: resolvedAccount, phoneNumber: resolvedPhone, fromLink: resolvedFromLink },
       startTime
     );
+  }
+
+  /** A receipt link cheki's server cannot open at all: hand the link back, never a verdict. */
+  private localOnly(bankId: string, url: string): Result<Receipt, ChekiError> {
+    const entry = getBank(bankId);
+    if (!entry || entry.status !== "live") return err({ kind: "BANK_NOT_SUPPORTED", bank: bankId });
+    return err({ kind: "ENDPOINT_ERROR", bank: entry.name, message: LOCAL_ONLY_MESSAGE, fallbackUrl: url });
   }
 
   // ─── Bank + input gates, fetch, parse, verification gate ─────────────
@@ -508,6 +532,27 @@ export class Verifier {
           message: notFound
             ? "Bunna Bank did not return a receipt for this link. Check that the whole link was copied, or scan the receipt QR."
             : "Could not read the Bunna Bank receipt.",
+        });
+      }
+      return ok(parsed);
+    }
+
+    // Siinqee: an HTML page (or a PDF) read by its labels. Verified only with
+    // "Transaction is successful" and the exact, case-sensitive reference
+    // that was asked for. What Siinqee answers for an unknown reference has
+    // not been seen, so anything else is "not confirmed", never "not found".
+    if (id === "siinqee") {
+      const { parsed, miss } = await SiinqeeParser.parseResponse(data, requestedReference);
+      if (!parsed.verified) {
+        return err({
+          kind: "EXTRACTION_ERROR",
+          bank: manifestEntry.name,
+          message:
+            miss === "reference"
+              ? "The bank returned a receipt with a different reference than the one you entered."
+              : miss === "pdf"
+                ? "Could not read the Siinqee Bank receipt PDF, so it cannot be confirmed as a receipt."
+                : SIINQEE_NOT_CONFIRMED,
         });
       }
       return ok(parsed);

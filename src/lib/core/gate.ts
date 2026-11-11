@@ -23,7 +23,10 @@ import { classifyStatus } from "./status";
  * receipt, so the returned reference can never equal the requested one:
  *   - awash: the link carries a share token; the receipt prints a numeric
  *     Transaction ID.
- *   - ebirr / siinqee: the link carries an opaque token.
+ *   - ebirr / siinqee-ebirr: the eBirr link carries an opaque token. (Siinqee's
+ *     current bank-host format is looked up by the transaction reference
+ *     itself, so it is not exempt: its parser also checks the exact,
+ *     case-sensitive reference.)
  *   - cbe-new: the current CBE format is looked up by its Receipt ID (share
  *     token); the receipt it returns carries the FT transaction id instead.
  *   - zamzam: looked up by the numeric receipt id from the link; the record
@@ -33,7 +36,7 @@ import { classifyStatus } from "./status";
  *     the record carries Bunna's transaction reference (tranId) and does not
  *     echo the token back.
  */
-const REFERENCE_IS_OPAQUE_TOKEN = new Set(["awash", "ebirr", "siinqee", "cbe-new", "zamzam", "bunna"]);
+const REFERENCE_IS_OPAQUE_TOKEN = new Set(["awash", "ebirr", "siinqee-ebirr", "cbe-new", "zamzam", "bunna"]);
 
 export type GateFailure = "amount" | "reference" | "party" | "status";
 

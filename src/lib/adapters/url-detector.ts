@@ -17,12 +17,73 @@
  *   - receipt.zamzambank.com.et/receipt/{id} → ZamZam (numeric receipt id)
  *   - online.bunnabanksc.com/receipt/#/{token} → Bunna (token in the fragment;
  *     the receipt QR is online.bunnabanksc.com/#/receipt-v2/{token})
+ *   - receipts.siinqeebank.com:871/generate/{ref} → Siinqee (the reference)
+ *   - transactioninfo.ebirr.com/{tenant}-Ebirr/receipt/{digits} → eBirr (or
+ *     Siinqee for its tenant). Only opens on Ethiopian networks, so it is
+ *     never fetched: `localOnlyUrl` carries the link rebuilt on the fixed host.
  */
 export interface DetectedReceipt {
   bank: string;
   reference: string;
   accountNumber?: string;
   phoneNumber?: string;
+  /**
+   * Set for a receipt link that only opens on Ethiopian networks and that
+   * cheki's server cannot check at all (eBirr's transactioninfo.ebirr.com).
+   * The link rebuilt on its fixed host from the validated parts, never the
+   * pasted text; the verifier hands it back instead of fetching anything.
+   */
+  localOnlyUrl?: string;
+}
+
+/** Siinqee Bank's receipt host (port 871 on the links seen). */
+export const SIINQEE_LINK_HOST = "receipts.siinqeebank.com";
+const SIINQEE_LINK_PORTS = new Set(["", "871"]);
+
+/**
+ * eBirr's transaction-info host. It is not in public DNS (dns.google answered
+ * NXDOMAIN on 2026-11-10): its links only open on Ethiopian networks.
+ */
+export const EBIRR_LOCAL_HOST = "transactioninfo.ebirr.com";
+
+/**
+ * eBirr tenants on transactioninfo.ebirr.com ("{tenant}-Ebirr" in the path)
+ * and the bank cheki reports them under. Only kaafimf has been seen; the rest
+ * follow the receipt.ebirr.com tenant names. Kaafi, Nib, Wegagen, Ahadu and
+ * Coopbank are reported as eBirr (the live entry), Siinqee as itself.
+ */
+const EBIRR_LOCAL_TENANTS: Record<string, string> = {
+  kaafimf: "ebirr",
+  nib: "ebirr",
+  wegagen: "ebirr",
+  ahadu: "ebirr",
+  coop: "ebirr",
+  siinqee: "siinqee",
+};
+
+/** The receipt number in a transactioninfo.ebirr.com link: digits (12 on the link seen). */
+const EBIRR_LOCAL_ID_RE = /^\d{6,20}$/;
+
+/**
+ * Read a transactioninfo.ebirr.com/{tenant}-Ebirr/receipt/{digits} link into
+ * its bank, a "{tenant}-Ebirr/{digits}" reference and the link rebuilt on the
+ * fixed host. Null for anything else (another tenant, path or host).
+ */
+export function parseEbirrLocalLink(url: URL): DetectedReceipt | null {
+  if (url.hostname.toLowerCase() !== EBIRR_LOCAL_HOST || url.port) return null;
+  const parts = url.pathname.split("/").filter(Boolean);
+  if (parts.length !== 3 || parts[1].toLowerCase() !== "receipt") return null;
+  const m = /^([a-z]+)-ebirr$/i.exec(parts[0]);
+  if (!m) return null;
+  const tenant = m[1].toLowerCase();
+  if (!Object.hasOwn(EBIRR_LOCAL_TENANTS, tenant)) return null;
+  const id = parts[2];
+  if (!EBIRR_LOCAL_ID_RE.test(id)) return null;
+  return {
+    bank: EBIRR_LOCAL_TENANTS[tenant],
+    reference: `${tenant}-Ebirr/${id}`,
+    localOnlyUrl: `https://${EBIRR_LOCAL_HOST}/${tenant}-Ebirr/receipt/${id}`,
+  };
 }
 
 /** Host of Bunna Bank's receipt page, receipt QR link and receipt JSON service. */
@@ -52,7 +113,9 @@ const EBIRR_TENANTS: Record<string, string> = {
   ahadu: "ahadu",
   kaafimf: "kaafi",
   kaafi: "kaafi",
-  coop: "siinqee",
+  // Cooperative Bank of Oromia (COOPay-Ebirr). Not Siinqee Bank, which grew
+  // out of the OCSSCO microfinance institution.
+  coop: "ebirr",
 };
 
 /**
@@ -244,6 +307,21 @@ export function detectBankFromUrl(input: string): DetectedReceipt | null {
         if (token) return { bank: "bunna", reference: token };
       }
     }
+
+    // Siinqee Bank: https://receipts.siinqeebank.com:871/generate/{REFERENCE}
+    // Exactly that host, on port 871 (or none). Only the reference is taken,
+    // with its case kept (it can hold a lowercase letter); the parser
+    // validates it and rebuilds the URL on the fixed host and port.
+    if (host === SIINQEE_LINK_HOST && SIINQEE_LINK_PORTS.has(url.port)) {
+      const parts = url.pathname.split("/").filter(Boolean);
+      if (parts.length === 2 && parts[0].toLowerCase() === "generate" && parts[1]) {
+        // A link copied out of an SMS can carry the sentence's full stop.
+        return { bank: "siinqee", reference: parts[1].replace(/[.,;:!?]+$/, "") };
+      }
+    }
+
+    // eBirr transaction info: https://transactioninfo.ebirr.com/{tenant}-Ebirr/receipt/{digits}
+    if (host === EBIRR_LOCAL_HOST) return parseEbirrLocalLink(url);
 
     return null;
   } catch {

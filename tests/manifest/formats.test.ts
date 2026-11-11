@@ -40,7 +40,7 @@ describe("format data in banks.json", () => {
   it("records evidence and confidence on every format, and dates on every history entry", () => {
     for (const bank of getAllBanks()) {
       for (const f of formatsOf(bank)) {
-        expect(["verified", "inferred"], `${bank.id}/${f.id}`).toContain(f.confidence);
+        expect(["verified", "observed", "inferred"], `${bank.id}/${f.id}`).toContain(f.confidence);
         expect(f.evidence.length, `${bank.id}/${f.id}`).toBeGreaterThan(10);
         if (f.replacedBy) expect(formatsOf(bank).some((g) => g.id === f.replacedBy), `${bank.id}/${f.id}`).toBe(true);
       }
@@ -57,9 +57,10 @@ describe("format data in banks.json", () => {
         if (/another verifier/i.test(f.evidence) && !/cheki/.test(f.evidence)) expect(f.confidence, `${bank.id}/${f.id}`).toBe("inferred");
       }
     }
-    for (const id of ["siinqee", "mpesa"]) {
-      for (const f of formatsOf(getBank(id))) expect(f.confidence, `${id}/${f.id}`).toBe("inferred");
-    }
+    for (const f of formatsOf(getBank("mpesa"))) expect(f.confidence, `mpesa/${f.id}`).toBe("inferred");
+    // Siinqee: built from real receipts but not yet fetched by cheki, so never "verified".
+    for (const f of formatsOf(getBank("siinqee"))) expect(f.confidence, `siinqee/${f.id}`).not.toBe("verified");
+    expect(formatsOf(getBank("siinqee"))[0]).toMatchObject({ id: "siinqee-bank-receipt", status: "current", confidence: "observed", parser: "siinqee" });
   });
 
   it("CBE Birr is verified with dated evidence from real receipts, and labelled beta", () => {
@@ -249,7 +250,9 @@ describe("allowlist derived from the formats", () => {
     }
     expect(isAllowedUrl("https://receipt.dashensuperapp.com/receipt/x")).toBe(false);
     expect(isAllowedUrl("https://api.dashensuperapp.com/receipts/x.pdf")).toBe(false);
-    expect(isAllowedUrl("https://receipts.siinqeebank.com:871/x")).toBe(false); // inferred, unsupported
+    expect(isAllowedUrl("https://receipts.siinqeebank.com:871/x")).toBe(true); // Siinqee's current format
+    expect(isAllowedUrl("https://receipts.siinqeebank.com/x")).toBe(false); // without its port
+    expect(isAllowedUrl("https://transactioninfo.ebirr.com/kaafimf-Ebirr/receipt/800000000001")).toBe(false); // never fetched
     expect(isAllowedUrl("https://mb.cbe.com.et.evil.example/x")).toBe(false);
     expect(isAllowedUrl("https://apps.cbe.com.et/?id=x")).toBe(false); // wrong port
     expect(isAllowedUrl("http://mb.cbe.com.et/x")).toBe(false);

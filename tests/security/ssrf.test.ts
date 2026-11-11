@@ -84,9 +84,14 @@ describe("eBirr / Siinqee SSRF (review C1)", () => {
 
   it("rebuilds genuine eBirr links on the fixed host", () => {
     expect(getParser("ebirr")!.buildUrl("https://receipt.ebirr.com/nib/abc123")).toBe("https://receipt.ebirr.com/nib/abc123");
-    expect(getParser("siinqee")!.buildUrl("SQ12345678")).toBe("https://receipt.ebirr.com/siinqee/SQ12345678");
-    expect(getParser("siinqee")!.buildUrl("siinqee/SQ12345678")).toBe("https://receipt.ebirr.com/siinqee/SQ12345678");
-    expect(() => getParser("siinqee")!.buildUrl("nib/SQ12345678")).toThrow();
+    expect(getParser("siinqee-ebirr")!.buildUrl("SQ12345678")).toBe("https://receipt.ebirr.com/siinqee/SQ12345678");
+    expect(getParser("siinqee-ebirr")!.buildUrl("siinqee/SQ12345678")).toBe("https://receipt.ebirr.com/siinqee/SQ12345678");
+    expect(() => getParser("siinqee-ebirr")!.buildUrl("nib/SQ12345678")).toThrow();
+    // "coop" is Cooperative Bank of Oromia, not Siinqee.
+    expect(() => getParser("siinqee-ebirr")!.buildUrl("coop/SQ12345678")).toThrow();
+    // Siinqee Bank's own host: rebuilt from the reference, never a pasted URL.
+    expect(getParser("siinqee")!.buildUrl("12B004k262950007")).toBe("https://receipts.siinqeebank.com:871/generate/12B004k262950007");
+    expect(() => getParser("siinqee")!.buildUrl("https://receipts.siinqeebank.com:871/generate/12B004k262950007")).toThrow();
   });
 });
 

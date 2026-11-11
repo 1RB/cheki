@@ -150,8 +150,6 @@ const OCR_PATTERNS: { bank: string; pattern: RegExp; confidence: OcrParseConfide
   { bank: "zemen", pattern: /\bZM[A-Z0-9]{6,}\b/i, confidence: "medium" },
   // CBE Birr.
   { bank: "cbebirr", pattern: /\bCB[A-Z0-9]{6,}\b/i, confidence: "medium" },
-  // Siinqee.
-  { bank: "siinqee", pattern: /\b(SQ|SI)[A-Z0-9]{6,}\b/i, confidence: "medium" },
   // eBirr tenants.
   { bank: "ebirr", pattern: /\b(NIB|WEGAGEN|AHADU|KAAFI)[A-Z0-9]{6,}\b/i, confidence: "medium" },
   // M-Pesa.
@@ -162,6 +160,13 @@ const OCR_PATTERNS: { bank: string; pattern: RegExp; confidence: OcrParseConfide
   // Fallback CBE.
   { bank: "cbe", pattern: /\bFT[A-Z0-9]{6,}\b/i, confidence: "medium" },
 ];
+
+/**
+ * A Siinqee Bank reference (case-sensitive), as printed after "Ref:" in the
+ * SMS. A letter in the first 7 characters is required, so a 16-digit account
+ * or card number is not taken for one.
+ */
+const SIINQEE_REF_IN_TEXT = /(?<![0-9A-Za-z])(?=[0-9A-Za-z]{0,6}[A-Za-z])[0-9A-Z]{3}[0-9A-Za-z]{4}\d{9}(?![0-9A-Za-z])/;
 
 // Bank-specific label overrides. For banks whose references are plain numbers
 // (Awash) or have formats that clash with other banks, we require the label
@@ -235,6 +240,13 @@ function parseReceiptTextInternal(text: string): OcrParseResult | null {
         shareUrl: urlInText,
       };
     }
+  }
+
+  // Siinqee references are case-sensitive (12B004k...), so they are read
+  // from the text as written, never from the uppercased copy below.
+  if (bankFromText === "siinqee") {
+    const m = text.match(SIINQEE_REF_IN_TEXT);
+    if (m) return { reference: m[0], bank: "siinqee", confidence: "medium", rawText: text };
   }
 
   // 1. Try bank-specific text clue first, then extract a reference by label
@@ -327,6 +339,8 @@ function parseReceiptTextInternal(text: string): OcrParseResult | null {
   // 4. Manifest refPattern fallback. Only accept if the bank is detected
   //    from text or the reference itself has a known prefix. Avoid guessing.
   for (const b of banks) {
+    // Matched on uppercased text, which would lose a Siinqee reference's case.
+    if (b.code === "siinqee") continue;
     if (b.refPattern) {
       const source = b.refPattern.source.startsWith("^")
         ? b.refPattern.source.slice(1)

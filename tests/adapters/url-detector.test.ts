@@ -140,6 +140,10 @@ describe("detectBankFromUrl", () => {
     expect(result!.reference).toBe("siinqee/SQ12345678");
   });
 
+  it("checks the coop tenant (Cooperative Bank of Oromia, COOPay-Ebirr) as eBirr, not as Siinqee", () => {
+    expect(detectBankFromUrl("https://receipt.ebirr.com/coop/abc123def")).toEqual({ bank: "ebirr", reference: "coop/abc123def" });
+  });
+
   it("maps a named eBirr tenant to its own bank", () => {
     const result = detectBankFromUrl("https://receipt.ebirr.com/nib/abc123def");
     expect(result).not.toBeNull();
