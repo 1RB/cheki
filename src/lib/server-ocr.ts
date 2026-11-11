@@ -1,5 +1,6 @@
 import sharp from "sharp";
 import type { QRCode } from "jsqr";
+import { parseDashenQr } from "./qr/dashen";
 
 /**
  * Decode a QR code from an image buffer.
@@ -44,8 +45,8 @@ export async function decodeQrFromImage(buffer: Buffer): Promise<QRCode | null> 
  * Try to interpret a QR code payload as a receipt reference.
  *
  * Some receipts encode the reference directly in the QR (CBE), others encode
- * a structured binary blob (Telebirr). We extract the highest-confidence value
- * we can without AI.
+ * a structured binary blob (Telebirr) or an obfuscated one (Dashen). We
+ * extract the highest-confidence value we can without AI.
  */
 export function parseQrReference(qrData: string): { bank: string; reference: string } | null {
   if (!qrData) return null;
@@ -61,6 +62,14 @@ export function parseQrReference(qrData: string): { bank: string; reference: str
   const telebirr = extractTelebirrInvoiceFromQr(qrData);
   if (telebirr) {
     return { bank: "telebirr", reference: telebirr };
+  }
+
+  // Dashen Super App QR codes are "superappreceipt_<payload>.<trailing>",
+  // where the payload is the FT Ref XOR a fixed key. The endpoint only
+  // answers for the decoded reference, never the token.
+  const dashen = parseDashenQr(qrData);
+  if (dashen.ok) {
+    return { bank: "dashen", reference: dashen.reference };
   }
 
   return null;

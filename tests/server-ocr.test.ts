@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { parseQrReference } from "@/lib/server-ocr";
+import { SYNTHETIC_QR, SYNTHETIC_REF } from "./fixtures/dashen-qr";
 
 describe("parseQrReference", () => {
   it("extracts CBE reference from raw QR text", () => {
@@ -12,6 +13,10 @@ describe("parseQrReference", () => {
       "ODAxODAwMDIwNjAxMDI5MTAyMDEzMTgxMjQwMDBBNDM0NzQ5MzE0YzQ0NTE0NDU1NDQ2MzA0RTYxOQ==",
     );
     expect(result).toEqual({ bank: "telebirr", reference: "CGI1LDQDUD" });
+  });
+
+  it("extracts the FT Ref from a Dashen Super App QR payload", () => {
+    expect(parseQrReference(SYNTHETIC_QR)).toEqual({ bank: "dashen", reference: SYNTHETIC_REF });
   });
 
   it("returns null for unknown QR payloads", () => {

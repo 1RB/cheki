@@ -18,6 +18,10 @@
  * Telebirr receipt QR payloads only carry the transaction number
  * (src/lib/qr/telebirr.ts). It is read out and checked exactly like a typed
  * Telebirr reference; nothing else from the QR is used.
+ *
+ * Dashen Super App receipt QR payloads likewise carry only the FT Ref
+ * (src/lib/qr/dashen.ts). The bank endpoint refuses the raw token, so the
+ * reference is decoded first and then looked up like a typed one.
  */
 import type { Result, Receipt, VerifyRequest, ChekiError, ParsedReceipt, BankManifestEntry } from "./types";
 import { ok, err } from "./types";
@@ -36,6 +40,7 @@ import { SiinqeeParser } from "../parsers/siinqee";
 import { verificationGate, gateFailureMessage } from "./gate";
 import { checkAccountSuffix, checkPhone, checkReference } from "../security/reference";
 import { parseTelebirrQr } from "../qr/telebirr";
+import { parseDashenQr } from "../qr/dashen";
 import { selectFormat, formatNeeds, formatAccountDigits, fillTemplate } from "../manifest/formats";
 import { canonicalReference } from "../reference-case";
 
@@ -162,6 +167,22 @@ export class Verifier {
           });
         }
         return this.resolve({ bank: "telebirr", reference: telebirr.reference }, startTime, depth + 1, true);
+      }
+      // A Dashen Super App receipt QR: the FT Ref XOR a fixed key. The endpoint
+      // refuses the raw token (HTTP 401), so the reference must be decoded
+      // before any URL is built. The prefix is unambiguous, so it is matched
+      // before the BOA and URL branches below.
+      const dashen = parseDashenQr(qrData);
+      if (dashen.ok) {
+        const named = (bank || "").trim().toLowerCase();
+        if (named && named !== "dashen") {
+          return err({
+            kind: "MISSING_INPUT",
+            field: "qrData",
+            message: "This QR code is from a Dashen receipt. Check it with bank \"dashen\".",
+          });
+        }
+        return this.resolve({ bank: "dashen", reference: dashen.reference }, startTime, depth + 1, true);
       }
       if ((bank || "").toLowerCase() === "boa") {
         return this.verifyBoaQr(qrData, startTime, depth);
