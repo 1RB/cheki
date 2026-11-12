@@ -154,6 +154,34 @@ describe("detectBankFromUrl", () => {
     expect(detectBankFromUrl("https://receipt.ebirr.com/constructor/abc123def")).toBeNull();
   });
 
+  it("keeps an eBirr white-label Wegagen link on the shared eBirr parser", () => {
+    // Wegagen's own share links (transinfo.wegagenbanksc.com.et) go to the
+    // live "wegagen" bank below; a receipt link issued under the wegagen
+    // tenant on receipt.ebirr.com is still the shared eBirr format.
+    expect(detectBankFromUrl("https://receipt.ebirr.com/wegagen/abc123def")).toEqual({ bank: "ebirr", reference: "wegagen/abc123def" });
+  });
+
+  it("reads the share id out of a Wegagen share link, in capitals", () => {
+    const id = "000SAMPSAMPLE1000001DFTD";
+    expect(detectBankFromUrl(`https://transinfo.wegagenbanksc.com.et:8183/?id=${id}`)).toEqual({ bank: "wegagen", reference: id });
+    expect(detectBankFromUrl(`https://transinfo.wegagenbanksc.com.et:8183/?id=${id.toLowerCase()}`)).toEqual({ bank: "wegagen", reference: id });
+    // No port: the same host serves the share page.
+    expect(detectBankFromUrl(`https://transinfo.wegagenbanksc.com.et/?id=${id}`)).toEqual({ bank: "wegagen", reference: id });
+  });
+
+  it("only exactly transinfo.wegagenbanksc.com.et with a full 24-character id counts", () => {
+    const id = "000SAMPSAMPLE1000001DFTD";
+    // Lookalike hosts, another query, and a short id (the printed 16-character
+    // Reference No is not a lookup key) are all rejected.
+    expect(detectBankFromUrl(`https://transinfo.wegagenbanksc.com.et.evil.example/?id=${id}`)).toBeNull();
+    expect(detectBankFromUrl(`https://x.transinfo.wegagenbanksc.com.et/?id=${id}`)).toBeNull();
+    expect(detectBankFromUrl(`https://transinfo.wegagenbanksc.com.et:8183/?ref=${id}`)).toBeNull();
+    expect(detectBankFromUrl(`https://transinfo.wegagenbanksc.com.et:8183/?id=${id.slice(0, 16)}`)).toBeNull();
+    expect(detectBankFromUrl(`https://transinfo.wegagenbanksc.com.et:8183/?id=`)).toBeNull();
+    // A bare share id or reference is left to reference detection, not URL detection.
+    expect(detectBankFromUrl(id)).toBeNull();
+  });
+
   it("returns null for unknown URLs", () => {
     const result = detectBankFromUrl("https://example.com/something");
     expect(result).toBeNull();

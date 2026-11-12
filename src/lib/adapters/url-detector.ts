@@ -17,6 +17,8 @@
  *   - receipt.zamzambank.com.et/receipt/{id} → ZamZam (numeric receipt id)
  *   - online.bunnabanksc.com/receipt/#/{token} → Bunna (token in the fragment;
  *     the receipt QR is online.bunnabanksc.com/#/receipt-v2/{token})
+ *   - transinfo.wegagenbanksc.com.et:8183/?id={SHARE_ID} → Wegagen (24-char
+ *     share id; the printed 16-character Reference No is not the key)
  */
 export interface DetectedReceipt {
   bank: string;
@@ -48,7 +50,11 @@ export function bunnaTokenFromHash(hash: string): string | null {
 const EBIRR_TENANTS: Record<string, string> = {
   siinqee: "siinqee",
   nib: "nib",
-  wegagen: "wegagen",
+  // Wegagen's own share links (transinfo.wegagenbanksc.com.et) are handled
+  // below and go to the live "wegagen" parser; an eBirr *white-label* link
+  // under receipt.ebirr.com/wegagen/... stays on the shared "ebirr" parser,
+  // like the manifest's banks.ts detectBank rule for `wegagen/` prefixes.
+  wegagen: "ebirr",
   ahadu: "ahadu",
   kaafimf: "kaafi",
   kaafi: "kaafi",
@@ -243,6 +249,18 @@ export function detectBankFromUrl(input: string): DetectedReceipt | null {
         const token = bunnaTokenFromHash(url.hash);
         if (token) return { bank: "bunna", reference: token };
       }
+    }
+
+    // Wegagen: https://transinfo.wegagenbanksc.com.et:8183/?id={SHARE_ID}
+    // The share id is 24 letters and digits (the printed 16-character
+    // Reference No plus three more fields) and is the only lookup key; the
+    // printed reference alone never answers. Exactly that host and exactly
+    // that query, so a bare reference is left to reference detection and a
+    // lookalike host is not accepted. The id is uppercased because the
+    // endpoint answers with the full record only for capitals.
+    if (host === "transinfo.wegagenbanksc.com.et") {
+      const id = url.searchParams.get("id")?.trim();
+      if (id && /^[A-Za-z0-9]{24}$/.test(id)) return { bank: "wegagen", reference: id.toUpperCase() };
     }
 
     return null;

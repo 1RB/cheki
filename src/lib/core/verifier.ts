@@ -36,10 +36,12 @@ import { CBEBirrParser } from "../parsers/cbebirr";
 import { MpesaParser } from "../parsers/mpesa";
 import { ZamZamParser } from "../parsers/zamzam";
 import { BunnaParser } from "../parsers/bunna";
+import { WegagenParser } from "../parsers/wegagen";
 import { verificationGate, gateFailureMessage } from "./gate";
 import { checkAccountSuffix, checkPhone, checkReference } from "../security/reference";
 import { parseTelebirrQr } from "../qr/telebirr";
 import { parseDashenQr } from "../qr/dashen";
+import { parseWegagenQr } from "../qr/wegagen";
 import { selectFormat, formatNeeds, formatAccountDigits, fillTemplate } from "../manifest/formats";
 import { canonicalReference } from "../reference-case";
 
@@ -170,6 +172,22 @@ export class Verifier {
           });
         }
         return this.resolve({ bank: "dashen", reference: dashen.reference }, startTime, depth + 1, true);
+      }
+      // A Wegagen receipt QR: prose with a share link inside it. Only the
+      // 24-character share id after ?id= is used; it is looked up exactly
+      // like a pasted share link. The prefix is unambiguous, so it is matched
+      // before the BOA and URL branches below.
+      const wegagen = parseWegagenQr(qrData);
+      if (wegagen.ok) {
+        const named = (bank || "").trim().toLowerCase();
+        if (named && named !== "wegagen") {
+          return err({
+            kind: "MISSING_INPUT",
+            field: "qrData",
+            message: "This QR code is from a Wegagen receipt. Check it with bank \"wegagen\".",
+          });
+        }
+        return this.resolve({ bank: "wegagen", reference: wegagen.shareId }, startTime, depth + 1, true);
       }
       if ((bank || "").toLowerCase() === "boa") {
         return this.verifyBoaQr(qrData, startTime, depth);
@@ -529,6 +547,24 @@ export class Verifier {
           message: notFound
             ? "Bunna Bank did not return a receipt for this link. Check that the whole link was copied, or scan the receipt QR."
             : "Could not read the Bunna Bank receipt.",
+        });
+      }
+      return ok(parsed);
+    }
+
+    // Wegagen: an unknown share id is HTTP 200 with the body `Transaction not
+    // found in Daily or History`. The share id is the printed reference plus
+    // three more fields, so it can never equal the record's own reference
+    // (the gate treats it as an opaque token); parseRecord checks the prefix.
+    if (id === "wegagen") {
+      const { parsed, notFound } = WegagenParser.parseRecord(data, requestedReference);
+      if (!parsed.verified) {
+        return err({
+          kind: "EXTRACTION_ERROR",
+          bank: manifestEntry.name,
+          message: notFound
+            ? "Wegagen Bank has no transaction with this share id. Check the 24 characters after ?id= in the share link."
+            : "Could not read the Wegagen Bank receipt.",
         });
       }
       return ok(parsed);

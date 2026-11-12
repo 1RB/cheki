@@ -1295,61 +1295,117 @@
       "registry": "not-checked"
     },
     "type": "bank",
-    "status": "in-development",
+    "status": "live",
+    "beta": true,
+    "betaNote": "Beta: cheki confirms Wegagen Bank's own record for a share id and shows the amount, the date and both sides of the payment, with account numbers masked. Three share links have been checked, and the service answers intermittently, so a check can fail and be worth retrying.",
     "parser": "wegagen",
-    "responseType": "html",
+    "responseType": "json",
     "requiresAccount": false,
-    "endpoint": "receipt.ebirr.com/wegagen",
-    "endpointFormat": "https://receipt.ebirr.com/wegagen/{token}",
+    "requiresPhone": false,
+    "endpoint": "https://transinfo.wegagenbanksc.com.et:8011/sms_wega/txn/{ref}",
+    "endpointFormat": "https://transinfo.wegagenbanksc.com.et:8011/sms_wega/txn/{SHARE_ID}",
     "sslVerify": true,
     "color": "#b45309",
     "initials": "Wegagen",
-    "description": "Wegagen Bank is a private commercial bank established in 1996 with 279 branches. Wegagen partners with eBirr for mobile money. Receipts are available via receipt.ebirr.com/wegagen/{token}.",
-    "referenceFormat": "eBirr receipt URL or tenant/token (wegagen/{token})",
-    "referenceExample": "wegagen/abc123def",
+    "notes": "Beta. Wegagen shares receipts as a link (transinfo.wegagenbanksc.com.et:8183/?id=...) that opens its own receipt page; cheki reads the 24-character share id out of it and asks the JSON service on port 8011 for the record. An unknown id answers HTTP 200 with the plain text 'Transaction not found in Daily or History'. The service answers intermittently, so the parser retries once, and account numbers are masked with Wegagen's own rule before anything is shown or cached.",
+    "refPattern": {
+      "source": "^\\d{3}[A-Z]{4}[A-Z0-9]{17}$",
+      "flags": ""
+    },
+    "description": "Wegagen Bank is a private commercial bank established in 1996 with 279 branches. Wegagen shares receipts as a link: cheki reads the 24-character share id out of it, asks Wegagen's own transaction service for the record, and shows the amount, the date and both sides of the payment with account numbers masked. Wegagen support is in beta.",
+    "referenceFormat": "The 24-character share id after ?id= in the share link: the 16-character Reference No printed on the receipt, then the first 4 digits of the account the record is filed under, the debit/credit flag and the transaction code (FTD, AAT, ...). The 16-character Reference No printed on the receipt is not a lookup key on its own.",
+    "referenceExample": "000SAMP26000000000000001",
     "howToVerify": [
-      "Use the eBirr receipt sharing feature in the Wegagen mobile app",
-      "Paste the receipt URL or tenant/token into cheki"
+      "Share the receipt from Wegagen to get a transinfo.wegagenbanksc.com.et:8183/?id=... link",
+      "Paste that link into cheki, or choose Wegagen Bank and enter the 24 characters after ?id=",
+      "cheki looks the share id up in Wegagen Bank's own transaction service",
+      "If Wegagen has the record, cheki shows the amount, the date and both sides, with account numbers masked",
+      "Compare the amount, date and names with the payment you expected"
     ],
     "useCases": [
-      "Merchants verifying Wegagen Bank transfers",
-      "Businesses reconciling Wegagen deposits"
+      "Merchants confirming a Wegagen Bank transfer before releasing goods",
+      "Businesses reconciling Wegagen deposits from shared receipt links",
+      "Apps checking Wegagen Bank receipt links via the cheki API"
     ],
     "faq": [
       {
         "q": "How do I verify a Wegagen Bank receipt?",
-        "a": "Wegagen Bank uses the eBirr platform. Share the receipt to get a receipt.ebirr.com/wegagen/{token} URL, then paste it into cheki."
+        "a": "Share the receipt to get a transinfo.wegagenbanksc.com.et:8183/?id=... link and paste the whole link into cheki. If you only have the id, choose Wegagen Bank and enter the 24 characters after ?id=. cheki asks Wegagen's own transaction service and shows what Wegagen's record says."
+      },
+      {
+        "q": "Why doesn't the Reference No printed on the receipt work?",
+        "a": "The Reference No is only the first 16 characters of Wegagen's lookup key. The full key is 24 characters: that reference plus the first 4 digits of the account the record is filed under, the debit/credit flag and the transaction code. Wegagen builds it into every share link, so paste the link, or the 24 characters after ?id= in it."
+      },
+      {
+        "q": "Does cheki show the full Wegagen account number?",
+        "a": "No. Every account on the record is masked with Wegagen's own rule from its receipt page before cheki shows, returns or caches anything: a 13-digit account keeps its first digit and last 7, a 12-character one the first 4 and last 2, a 10-character one the first 2 and last 2."
+      },
+      {
+        "q": "Is the Wegagen receipt endpoint public?",
+        "a": "Yes. It needs no login or token, and its certificate is DigiCert for *.wegagenbanksc.com.et. It answers intermittently, so a check can fail without meaning anything: try it again."
       }
     ],
     "seo": {
       "title": "Verify Wegagen Bank Receipts Online",
-      "description": "Verify Wegagen Bank receipts for free via eBirr. No signup, no API key.",
+      "description": "Check a Wegagen Bank receipt link against Wegagen's own record: cheki confirms the amount, date and both sides, with account numbers masked. Free, no signup.",
       "keywords": [
         "Wegagen Bank receipt",
         "verify Wegagen",
-        "Wegagen eBirr"
+        "Wegagen receipt link",
+        "Wegagen payment check"
       ]
     },
     "formats": [
       {
-        "id": "ebirr-wegagen",
+        "id": "wegagen-share-link",
         "status": "current",
-        "label": "eBirr receipt link",
+        "label": "Share link or 24-character share id",
         "parser": "wegagen",
-        "endpoint": "https://receipt.ebirr.com/wegagen/{token}",
-        "link": "https://receipt.ebirr.com/wegagen/{token}",
+        "endpoint": "https://transinfo.wegagenbanksc.com.et:8011/sms_wega/txn/{ref}",
+        "link": "https://transinfo.wegagenbanksc.com.et:8183/?id={ref}",
         "linkHosts": [
-          "receipt.ebirr.com"
+          "transinfo.wegagenbanksc.com.et:8183"
         ],
         "inputs": [
           {
-            "name": "link",
-            "label": "eBirr receipt link"
+            "name": "reference",
+            "label": "Share link or 24-character share id",
+            "example": "000SAMP26000000000000001"
           }
         ],
-        "responseType": "html",
-        "confidence": "inferred",
-        "evidence": "The wegagen tenant route exists on receipt.ebirr.com (cheki, 2026-10-10); the receipt layout is not confirmed with a real receipt."
+        "refPattern": {
+          "source": "^[A-Za-z0-9]{24}$",
+          "flags": ""
+        },
+        "responseType": "json",
+        "receiptPage": "redirect",
+        "confidence": "verified",
+        "evidence": "cheki, 2026-11-11: three real share links answered HTTP 200 application/json with the full record (DigiCert for *.wegagenbanksc.com.et, verified without -k); an unknown id answered HTTP 200 'Transaction not found in Daily or History', text/plain with Accept: */* and application/json with Accept: application/json. The printed 16-character Reference No alone never answers. Test fixtures are synthetic.",
+        "notes": "The share id is 24 letters and digits. It is a prefix-checked opaque key: the record carries the printed 16-character reference, which is the start of the share id, so the gate treats the id as a token (core/gate.ts) and the parser checks the prefix."
+      },
+      {
+        "id": "wegagen-receipt-qr",
+        "status": "current",
+        "label": "Receipt QR code",
+        "via": "wegagen-share-link",
+        "inputs": [
+          {
+            "name": "qr",
+            "label": "QR code on the receipt page"
+          }
+        ],
+        "responseType": "json",
+        "confidence": "verified",
+        "evidence": "Wegagen's own receipt page prints this QR (cheki, 2026-11-11, from Wegagen's public receipt app): prose with the share link inside it, ending 'For more information, click here: https://transinfo.wegagenbanksc.com.et:8183/?id={SHARE_ID} - Wegagen Bank.' cheki reads only the share id out of it. Test fixtures are synthetic.",
+        "notes": "Input only, never fetched and never proof of payment: cheki reads the share id out of the QR (on the device, or from qrData in the API) and checks it through wegagen-share-link exactly like a pasted link. The names, accounts and amount in the same text are ignored."
+      }
+    ],
+    "endpointHistory": [
+      {
+        "date": "2026-11-11",
+        "formatId": "wegagen-share-link",
+        "change": "Wegagen receipts are read from Wegagen's own transaction service (transinfo.wegagenbanksc.com.et:8011) by the 24-character share id, replacing the eBirr white-label tenant route (receipt.ebirr.com/wegagen), where no receipt could be found.",
+        "source": "cheki (3 real share links)"
       }
     ]
   },
@@ -1371,17 +1427,18 @@
     "parser": "ahadu",
     "responseType": "html",
     "requiresAccount": false,
-    "endpoint": "receipt.ebirr.com/ahadu",
-    "endpointFormat": "https://receipt.ebirr.com/ahadu/{token}",
+    "endpoint": "https://receipt.ahadubank.com/digitalReceiptIPS?es={ref}",
+    "endpointFormat": "https://receipt.ahadubank.com/digitalReceiptIPS?es={TOKEN}",
     "sslVerify": true,
     "color": "#7c3aed",
     "initials": "Ahadu",
-    "description": "Ahadu Bank is a newer private commercial bank established in 2022. Ahadu partners with eBirr for mobile money. Receipts are available via receipt.ebirr.com/ahadu/{token}.",
-    "referenceFormat": "eBirr receipt URL or tenant/token (ahadu/{token})",
-    "referenceExample": "ahadu/abc123def",
+    "description": "Ahadu Bank is a newer private commercial bank established in 2022. Ahadu receipts are served as a PDF from receipt.ahadubank.com/digitalReceiptIPS?es={TOKEN}. cheki has not opened a receipt with a working token yet, so Ahadu support stays in development. An eBirr receipt link (receipt.ebirr.com/ahadu/{token}) is the format cheki can check today.",
+    "referenceFormat": "The 26-character token in the es parameter of the Ahadu receipt link (receipt.ahadubank.com/digitalReceiptIPS?es={TOKEN}). It has the same shape as the 26-character reference printed on the receipt, but that printed reference did not open a receipt (302 then 404), so only a link from Ahadu can be trusted. Not confirmed: no working link has been found yet.",
+    "referenceExample": "https://receipt.ahadubank.com/digitalReceiptIPS?es=XXXXXXXXXXXXXXXXXXXXXXXXXX",
     "howToVerify": [
-      "Use the eBirr receipt sharing feature in the Ahadu mobile app",
-      "Paste the receipt URL or tenant/token into cheki"
+      "Get the receipt link from Ahadu (it carries ?es={TOKEN})",
+      "Paste the whole link into cheki",
+      "cheki recognises the host but has not confirmed what a real receipt looks like, so Ahadu stays in development"
     ],
     "useCases": [
       "Merchants verifying Ahadu Bank transfers",
@@ -1390,16 +1447,20 @@
     "faq": [
       {
         "q": "How do I verify an Ahadu Bank receipt?",
-        "a": "Ahadu Bank uses the eBirr platform. Share the receipt to get a receipt.ebirr.com/ahadu/{token} URL, then paste it into cheki."
+        "a": "Ahadu receipts are shared as a receipt.ahadubank.com/digitalReceiptIPS?es=... link. cheki recognises that link but has not confirmed it with a real receipt yet, so Ahadu stays in development. An eBirr receipt link (receipt.ebirr.com/ahadu/...) is the Ahadu format cheki can check today."
+      },
+      {
+        "q": "Why is Ahadu still in development?",
+        "a": "No working es token has been found to check the receipt service with, so cheki has never seen what it returns for a real receipt. The endpoint is recorded so a contributor who has a receipt link can settle it."
       }
     ],
     "seo": {
       "title": "Verify Ahadu Bank Receipts Online",
-      "description": "Verify Ahadu Bank receipts for free via eBirr. No signup, no API key.",
+      "description": "Ahadu Bank receipt checking: cheki recognises the receipt.ahadubank.com link and the eBirr receipt link. Ahadu support is in development. Free, no signup.",
       "keywords": [
         "Ahadu Bank receipt",
         "verify Ahadu",
-        "Ahadu eBirr"
+        "Ahadu receipt link"
       ]
     },
     "formats": [
@@ -1427,6 +1488,7 @@
         "id": "ahadu-bank-pdf",
         "status": "current",
         "label": "Ahadu Bank receipt link",
+        "endpoint": "https://receipt.ahadubank.com/digitalReceiptIPS?es={TOKEN}",
         "linkHosts": [
           "receipt.ahadubank.com"
         ],
@@ -1438,7 +1500,7 @@
         ],
         "responseType": "pdf",
         "confidence": "inferred",
-        "evidence": "Another verifier lists receipt.ahadubank.com (PDF). Not tested by cheki and not supported yet."
+        "evidence": "Another verifier lists receipt.ahadubank.com (PDF). cheki found the same host and its digitalReceiptIPS?es= parameter on 2026-10-16, but no working es token has been found: a printed reference answered 302 then 404, so the PDF layout is not confirmed."
       }
     ]
   },
