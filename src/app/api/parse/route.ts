@@ -200,6 +200,9 @@ export async function POST(request: NextRequest) {
           success: false,
           verified: false,
           error: errorMsg,
+          // Same code vocabulary as /api/verify: cheki could not read it,
+          // which is not a claim that the receipt does not exist.
+          code: "unreadable",
           bank: parser.bankName,
         },
         { status: 422, headers: CORS_HEADERS }

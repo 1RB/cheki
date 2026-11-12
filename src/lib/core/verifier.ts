@@ -24,7 +24,7 @@
  * reference is decoded first and then looked up like a typed one.
  */
 import type { Result, Receipt, VerifyRequest, ChekiError, ParsedReceipt, BankManifestEntry } from "./types";
-import { ok, err } from "./types";
+import { ok, err, isNotFoundCode } from "./types";
 import { getParser, type RegisteredParser } from "../parsers/registry";
 import { getBank, suggestBank } from "../manifest/loader";
 import { detectBankFromUrl, isUrl, looksLikeUrl } from "../adapters/url-detector";
@@ -37,7 +37,7 @@ import { MpesaParser } from "../parsers/mpesa";
 import { ZamZamParser } from "../parsers/zamzam";
 import { BunnaParser } from "../parsers/bunna";
 import { WegagenParser } from "../parsers/wegagen";
-import { verificationGate, gateFailureMessage } from "./gate";
+import { verificationGate, gateFailureMessage, gateErrorCode } from "./gate";
 import { checkAccountSuffix, checkPhone, checkReference } from "../security/reference";
 import { parseTelebirrQr } from "../qr/telebirr";
 import { parseDashenQr } from "../qr/dashen";
@@ -399,6 +399,9 @@ export class Verifier {
         kind: "EXTRACTION_ERROR",
         bank: manifestEntry.name,
         message: gateFailureMessage(gate),
+        code: gateErrorCode(gate.reason),
+        // The verdict card shows the bank's own status word ("Failed", "Pending").
+        ...(gate.reason === "status" && gate.detail ? { detail: gate.detail } : {}),
         ...(/^https:\/\//i.test(checkedUrl) ? { checkedUrl } : {}),
       });
     }
@@ -451,6 +454,7 @@ export class Verifier {
             kind: "EXTRACTION_ERROR",
             bank: manifestEntry.name,
             message: `Could not parse the receipt PDF. ${pdf.hint}`,
+            code: "unreadable",
           });
         }
         return ok(parsed);
@@ -460,6 +464,7 @@ export class Verifier {
           kind: "EXTRACTION_ERROR",
           bank: manifestEntry.name,
           message: `The bank did not return a valid receipt PDF. ${pdf.hint}`,
+          code: "unreadable",
         });
       }
     }
@@ -489,6 +494,7 @@ export class Verifier {
           kind: "EXTRACTION_ERROR",
           bank: manifestEntry.name,
           message: "Could not read the CBE Birr receipt. Check the receipt number and the payer phone number.",
+          code: "unreadable",
         });
       }
       return ok(parsed);
@@ -506,13 +512,16 @@ export class Verifier {
             : envelope.reason === "too-large"
               ? "M-Pesa returned a receipt larger than cheki accepts."
               : "M-Pesa did not return a valid receipt.";
-        return err({ kind: "EXTRACTION_ERROR", bank: manifestEntry.name, message });
+        // The upstream has no such receipt; anything else is an answer cheki
+        // could not read.
+        return err({ kind: "EXTRACTION_ERROR", bank: manifestEntry.name, message, code: envelope.reason === "upstream-error" ? "notFound" : "unreadable" });
       }
       if (!parsed.verified) {
         return err({
           kind: "EXTRACTION_ERROR",
           bank: manifestEntry.name,
           message: "Could not read the M-Pesa receipt PDF. Check the transaction number.",
+          code: "unreadable",
         });
       }
       return ok(parsed);
@@ -530,6 +539,7 @@ export class Verifier {
           message: notFound
             ? "ZamZam Bank has no receipt with this id. Check the number at the end of the receipt link."
             : "Could not read the ZamZam Bank receipt.",
+          code: notFound ? "notFound" : "unreadable",
         });
       }
       return ok(parsed);
@@ -547,6 +557,7 @@ export class Verifier {
           message: notFound
             ? "Bunna Bank did not return a receipt for this link. Check that the whole link was copied, or scan the receipt QR."
             : "Could not read the Bunna Bank receipt.",
+          code: notFound ? "notFound" : "unreadable",
         });
       }
       return ok(parsed);
@@ -565,6 +576,7 @@ export class Verifier {
           message: notFound
             ? "Wegagen Bank has no transaction with this share id. Check the 24 characters after ?id= in the share link."
             : "Could not read the Wegagen Bank receipt.",
+          code: notFound ? "notFound" : "unreadable",
         });
       }
       return ok(parsed);
@@ -578,7 +590,7 @@ export class Verifier {
       const { parsed, notFound } = (parser as BOAParser).parseLookup(data, contentType);
       if (!parsed.verified) {
         return notFound
-          ? err({ kind: "EXTRACTION_ERROR", bank: manifestEntry.name, message: BOA_NOT_FOUND })
+          ? err({ kind: "EXTRACTION_ERROR", bank: manifestEntry.name, message: BOA_NOT_FOUND, code: "notFound:otherAccount" })
           : err({ kind: "ENDPOINT_ERROR", bank: manifestEntry.name, message: BOA_UNREADABLE });
       }
       return ok(parsed);
@@ -588,10 +600,12 @@ export class Verifier {
       const parsed = parser.parse(data, contentType);
       if (!parsed.verified) {
         const text = typeof data === "string" ? data : data.toString("utf8");
+        const missing = /transaction not found/i.test(text.slice(0, 4096));
         return err({
           kind: "EXTRACTION_ERROR",
           bank: manifestEntry.name,
-          message: /transaction not found/i.test(text.slice(0, 4096)) ? DASHEN_NOT_FOUND : "Could not read the Dashen receipt. Check the FT Ref.",
+          message: missing ? DASHEN_NOT_FOUND : "Could not read the Dashen receipt. Check the FT Ref.",
+          code: missing ? "notFound" : "unreadable",
         });
       }
       return ok(parsed);
@@ -599,7 +613,7 @@ export class Verifier {
 
     const parsed = parser.parse(data, contentType);
     if (!parsed.verified) {
-      return err({ kind: "EXTRACTION_ERROR", bank: manifestEntry.name, message: "Receipt not found or invalid." });
+      return err({ kind: "EXTRACTION_ERROR", bank: manifestEntry.name, message: "Receipt not found or invalid.", code: "notFound" });
     }
     return ok(parsed);
   }
@@ -624,6 +638,7 @@ export class Verifier {
         kind: "EXTRACTION_ERROR",
         bank: manifestEntry.name,
         message: "Could not decrypt the QR code. It may be malformed or not a BOA receipt.",
+        code: "unreadable",
       });
     }
 
@@ -638,6 +653,7 @@ export class Verifier {
         kind: "EXTRACTION_ERROR",
         bank: manifestEntry.name,
         message: "The QR code does not contain a valid BOA reference, so it can't be checked with the bank.",
+        code: "unreadable",
       });
     }
     const accountCheck = decoded.receiverAccount ? checkAccountSuffix(decoded.receiverAccount, digits) : null;
@@ -646,6 +662,7 @@ export class Verifier {
         kind: "EXTRACTION_ERROR",
         bank: manifestEntry.name,
         message: "The QR code does not contain a full receiving account number, so it can't be checked with the bank.",
+        code: "unreadable",
       });
     }
 
@@ -678,7 +695,7 @@ export class Verifier {
     if (
       !lookup.ok &&
       lookup.error.kind === "EXTRACTION_ERROR" &&
-      lookup.error.message === BOA_NOT_FOUND &&
+      isNotFoundCode(lookup.error.code) &&
       senderCheck?.ok &&
       senderCheck.value !== accountCheck.value
     ) {
@@ -695,8 +712,8 @@ export class Verifier {
     }
     // The typed-input hint (try the other account) does not apply to a QR:
     // cheki already asked under every full account the QR names.
-    if (!lookup.ok && lookup.error.kind === "EXTRACTION_ERROR" && lookup.error.message === BOA_NOT_FOUND) {
-      lookup = err({ ...lookup.error, message: BOA_QR_NOT_FOUND });
+    if (!lookup.ok && lookup.error.kind === "EXTRACTION_ERROR" && isNotFoundCode(lookup.error.code)) {
+      lookup = err({ ...lookup.error, message: BOA_QR_NOT_FOUND, code: "notFound" });
     }
 
     if (lookup.ok) {
@@ -711,6 +728,7 @@ export class Verifier {
           kind: "EXTRACTION_ERROR",
           bank: manifestEntry.name,
           message: "The QR code does not match the bank's record for this receipt.",
+          code: "qrMismatch",
         });
       }
       return lookup;

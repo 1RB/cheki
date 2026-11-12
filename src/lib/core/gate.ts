@@ -15,7 +15,7 @@
  *   4. The transaction status, when the bank gives one, is not a known
  *      failure or non-final state (Failed, Reversed, Pending, Cancelled, ...).
  */
-import type { ParsedReceipt } from "./types";
+import type { ChekiErrorCode, ParsedReceipt } from "./types";
 import { classifyStatus } from "./status";
 
 /**
@@ -103,4 +103,19 @@ export function gateFailureMessage(result: Extract<GateResult, { ok: false }>): 
     default:
       return "The bank's response is missing the payer and receiver, so it cannot be confirmed as a receipt.";
   }
+}
+
+/**
+ * The same failure as a ChekiErrorCode, for error payloads. The record below
+ * is exhaustive on purpose: a new GateFailure does not compile until
+ * ChekiErrorCode (and so every consumer of a code) has a case for it.
+ */
+export function gateErrorCode(reason: GateFailure): ChekiErrorCode {
+  const codes: Record<GateFailure, ChekiErrorCode> = {
+    amount: "gate:amount",
+    reference: "gate:reference",
+    party: "gate:party",
+    status: "gate:status",
+  };
+  return codes[reason];
 }

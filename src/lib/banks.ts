@@ -10,7 +10,7 @@
  *   - filters out parser-only aliases (e.g. `cbe-new`) so they do not get pages
  */
 import manifestData from "./manifest/banks.json";
-import type { BankManifestEntry, BankRefPattern, BankSwift, ManifestResponseType, ReceiptFormat } from "./core/types";
+import type { BankManifestEntry, BankRefPattern, BankSwift, ChekiErrorCode, ManifestResponseType, ReceiptFormat } from "./core/types";
 
 export interface Bank {
   code: string;
@@ -161,6 +161,17 @@ export interface VerifyResult {
   httpStatus?: number;
   /** Seconds to wait, from Retry-After, when httpStatus is 429. */
   retryAfter?: number;
+  /**
+   * Why a failed check failed, as data (see ChekiErrorCode). presentVerdict
+   * switches on this; `error` is copy for humans and is never pattern-matched.
+   * Absent on successes and on answers from an older server, which then keep
+   * the default classification.
+   */
+  code?: ChekiErrorCode;
+  /** Bank-supplied detail for a code, e.g. the status word a gate:status shows. */
+  detail?: string;
+  /** The request field a 400 was about (a missing or invalid input). */
+  field?: string;
   reference?: string;
   sourceUrl?: string;
   verified?: boolean;

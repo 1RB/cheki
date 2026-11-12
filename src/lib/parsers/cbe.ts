@@ -166,6 +166,7 @@ export class CBEParser extends BaseParser {
           kind: "EXTRACTION_ERROR" as const,
           bank: this.bankName,
           message: "Receipt not found. Check the reference number and account suffix.",
+          code: "notFound",
         });
       }
 
@@ -262,6 +263,7 @@ export class CBENewParser extends BaseParser {
           kind: "EXTRACTION_ERROR" as const,
           bank: this.bankName,
           message: "Receipt not found. Check the link or reference.",
+          code: "notFound",
         });
       }
       if (resp.status < 200 || resp.status >= 300) {

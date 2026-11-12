@@ -27,6 +27,36 @@ export type Reference = Brand<string, "Reference">;
 
 // ─── Error Hierarchy (discriminated unions, not classes) ────────────
 
+/**
+ * Why a check failed, as data. Every surface that has to *decide* what a
+ * failure means (the verdict card, a test, an SDK) reads this code; the
+ * `message` is copy for humans and must never be pattern-matched: rewording
+ * a message may not change what a result means.
+ *
+ *   gate:*     the bank answered, cheki's gate refused to confirm it:
+ *              amount / reference / party / status map 1:1 to GateFailure.
+ *   notFound   the bank has no such receipt.
+ *   notFound:otherAccount  BOA files some receipts under the payer's
+ *              account, so a miss says which other account to try.
+ *   unreadable the bank (or the QR) answered, but not in a shape cheki can
+ *              read; it is not a claim that the receipt does not exist.
+ *   qrMismatch the QR's own numbers contradict the bank's record.
+ */
+export type ChekiErrorCode =
+  | "gate:amount"
+  | "gate:reference"
+  | "gate:party"
+  | "gate:status"
+  | "notFound"
+  | "notFound:otherAccount"
+  | "unreadable"
+  | "qrMismatch";
+
+/** True for the codes that mean "the bank has no such receipt". */
+export function isNotFoundCode(code: ChekiErrorCode | undefined): boolean {
+  return code === "notFound" || code === "notFound:otherAccount";
+}
+
 export type ChekiError =
   | { kind: "BANK_NOT_SUPPORTED"; bank: string; suggestion?: string; message?: string }
   | { kind: "REF_ERROR"; bank: string; message: string }
@@ -35,6 +65,10 @@ export type ChekiError =
       kind: "EXTRACTION_ERROR";
       bank: string;
       message: string;
+      /** What this failure means (see ChekiErrorCode). Set by every producer. */
+      code?: ChekiErrorCode;
+      /** Bank-supplied detail for a code, e.g. the status word a gate:status shows. */
+      detail?: string;
       /**
        * The bank page cheki asked, when the bank answered but did not confirm
        * the receipt, so anyone can open it and see the bank's answer.
@@ -80,6 +114,25 @@ export function errorToMessage(error: ChekiError): string {
       return "Unknown error";
     }
   }
+}
+
+/**
+ * The JSON body of a failed check, for both verify routes. `code` / `detail`
+ * / `field` are what the verdict card switches on; `error` is copy for
+ * humans. Built here so a new field is added once and the two routes can
+ * never drift apart.
+ */
+export function errorPayload(error: ChekiError): Record<string, unknown> {
+  return {
+    success: false,
+    error: errorToMessage(error),
+    ...(error.kind === "EXTRACTION_ERROR"
+      ? { ...(error.code ? { code: error.code } : {}), ...(error.detail ? { detail: error.detail } : {}) }
+      : {}),
+    ...(error.kind === "MISSING_INPUT" ? { field: error.field } : {}),
+    ...(error.kind === "ENDPOINT_ERROR" && error.fallbackUrl ? { fallbackUrl: error.fallbackUrl } : {}),
+    ...(error.kind === "EXTRACTION_ERROR" && error.checkedUrl ? { checkedUrl: error.checkedUrl } : {}),
+  };
 }
 
 // ─── Receipt Entity ─────────────────────────────────────────────────

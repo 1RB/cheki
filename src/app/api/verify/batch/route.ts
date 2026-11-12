@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Verifier, errorToHttpStatus, errorToMessage } from "@/lib";
+import { Verifier, errorToHttpStatus, errorPayload } from "@/lib";
 import { getCached, setCached, verificationCacheKey } from "@/lib/receipt-cache";
 import { limiters, rateLimited } from "@/lib/rate-limit";
 import { readJsonCapped, bodyErrorResponse } from "@/lib/http/read-body";
@@ -93,12 +93,9 @@ export async function POST(request: NextRequest) {
         return { success: false, error: "No result.", status: 500 };
       }
       if (!r.ok) {
-        return {
-          success: false,
-          error: errorToMessage(r.error),
-          status: errorToHttpStatus(r.error),
-          ...(r.error.kind === "EXTRACTION_ERROR" && r.error.checkedUrl ? { checkedUrl: r.error.checkedUrl } : {}),
-        };
+        // The same body the single-receipt route sends, plus this row's HTTP
+        // status: `code` / `detail` / `field` travel with every failure.
+        return { ...errorPayload(r.error), status: errorToHttpStatus(r.error) };
       }
       const payload = { success: true, ...r.value };
       if (r.value.verified) setCached(keys[i], payload);

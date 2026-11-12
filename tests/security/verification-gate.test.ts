@@ -161,6 +161,8 @@ describe("Verifier applies the gate to every bank", () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response(body, { status: 200 })));
     const r = await v.verify({ bank: "boa", reference: "FT26167ABCDE", accountNumber: "1000054321" });
     expect(r.ok).toBe(false);
+    // The refusal travels as a code, so the verdict never reads the copy.
+    if (!r.ok && r.error.kind === "EXTRACTION_ERROR") expect(r.error.code).toBe("gate:reference");
   });
 
   it("eBirr parser alone: one field is not a receipt", () => {

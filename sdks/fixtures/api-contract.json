@@ -207,6 +207,7 @@
           {
             "success": false,
             "error": "[Telebirr] Receipt not found. Check the reference number.",
+            "code": "notFound",
             "status": 422
           }
         ],
@@ -336,7 +337,7 @@
       "path": "/api/verify",
       "status": 400,
       "headers": {},
-      "body": { "success": false, "error": "Reference number, receipt URL, or QR data is required." }
+      "body": { "success": false, "error": "Reference number, receipt URL, or QR data is required.", "field": "reference" }
     },
     "error_400_batch_too_large": {
       "method": "POST",
@@ -364,7 +365,7 @@
       "path": "/api/verify",
       "status": 422,
       "headers": {},
-      "body": { "success": false, "error": "[Telebirr] Receipt not found. Check the reference number." }
+      "body": { "success": false, "error": "[Telebirr] Receipt not found. Check the reference number.", "code": "notFound" }
     },
     "error_429_rate_limited": {
       "method": "POST",

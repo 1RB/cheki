@@ -153,6 +153,8 @@ export abstract class BaseParser {
           kind: "EXTRACTION_ERROR" as const,
           bank: this.bankName,
           message: notFoundMessage ?? this.notFoundMessage ?? "Receipt not found. Check the reference number.",
+          // The bank says it has no such receipt: a state, not a wording.
+          code: "notFound" as const,
         }),
         retryable: false,
       };
