@@ -32,8 +32,12 @@ import { classifyStatus } from "./status";
  *   - bunna: looked up by the opaque token in the receipt link's fragment;
  *     the record carries Bunna's transaction reference (tranId) and does not
  *     echo the token back.
+ *   - wegagen: looked up by the 24-character share id (the printed
+ *     16-character Reference No plus three more fields); the record carries
+ *     the printed reference, which is a prefix of the share id and can never
+ *     equal it. The parser checks the prefix (WegagenParser.parseRecord).
  */
-const REFERENCE_IS_OPAQUE_TOKEN = new Set(["awash", "ebirr", "siinqee", "cbe-new", "zamzam", "bunna"]);
+const REFERENCE_IS_OPAQUE_TOKEN = new Set(["awash", "ebirr", "siinqee", "cbe-new", "zamzam", "bunna", "wegagen"]);
 
 export type GateFailure = "amount" | "reference" | "party" | "status";
 

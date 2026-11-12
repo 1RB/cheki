@@ -18,6 +18,7 @@ import { SiinqeeParser } from "./siinqee";
 import { AwashParser } from "./awash";
 import { ZamZamParser } from "./zamzam";
 import { BunnaParser } from "./bunna";
+import { WegagenParser } from "./wegagen";
 
 // Register all parsers
 registerParser(new CBEParser());
@@ -33,6 +34,7 @@ registerParser(new SiinqeeParser());
 registerParser(new AwashParser());
 registerParser(new ZamZamParser());
 registerParser(new BunnaParser());
+registerParser(new WegagenParser());
 
 // Re-export for convenience
 export { CBEParser, CBENewParser } from "./cbe";
@@ -47,6 +49,7 @@ export { SiinqeeParser } from "./siinqee";
 export { AwashParser } from "./awash";
 export { ZamZamParser } from "./zamzam";
 export { BunnaParser } from "./bunna";
+export { WegagenParser } from "./wegagen";
 export { BaseParser } from "./base";
 export {
   registerParser,

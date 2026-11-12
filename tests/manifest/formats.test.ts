@@ -14,6 +14,7 @@ import { formatNeeds, formatsOf, primaryFormat, selectFormat, supportedFormats, 
 import { verificationGate } from "@/lib/core/gate";
 import { allowedHosts, isAllowedUrl } from "@/lib/security/hosts";
 import { CBEParser } from "@/lib/parsers/cbe";
+import { WegagenParser } from "@/lib/parsers/wegagen";
 import { GET as receiptGET } from "@/app/api/receipt/route";
 import "@/lib/parsers";
 
@@ -173,6 +174,35 @@ describe("gate: CBE Receipt ID is an opaque token", () => {
       expect(r.value.verified).toBe(true);
       expect(r.value.amount).toBe(20000);
     }
+  });
+});
+
+describe("gate: a Wegagen share id is an opaque token", () => {
+  const receipt = {
+    verified: true,
+    amount: 1250,
+    senderName: "Test Payer",
+    receiverName: "Test Receiver",
+  };
+  const REF = "000SAMPSAMPLE100";
+  const SHARE_ID = "000SAMPSAMPLE1000001DFTD";
+
+  it("passes a receipt whose reference is the printed Reference No, only a prefix of the share id", () => {
+    expect(verificationGate({ ...receipt, reference: REF }, { bankId: "wegagen", requestedReference: SHARE_ID })).toEqual({ ok: true });
+  });
+
+  it("the exemption does not relax the other checks", () => {
+    expect(verificationGate({ ...receipt, amount: 0, reference: REF }, { bankId: "wegagen", requestedReference: SHARE_ID })).toMatchObject({ ok: false, reason: "amount" });
+    expect(verificationGate({ verified: true, amount: 5, reference: REF }, { bankId: "wegagen", requestedReference: SHARE_ID })).toMatchObject({ ok: false, reason: "party" });
+  });
+
+  it("a record for another transaction is caught by the parser's prefix check, not by the gate", () => {
+    // The gate cannot compare them: the share id never equals the record's
+    // reference. WegagenParser.parseRecord refuses a record whose reference
+    // is not a prefix of the requested share id (tests/parsers/wegagen.test.ts).
+    expect(verificationGate({ ...receipt, reference: "000NEVER260000000" }, { bankId: "wegagen", requestedReference: SHARE_ID })).toEqual({ ok: true });
+    const body = JSON.stringify({ trnRefNo: "000NEVER260000000", txnAmount: 1250, sender_name: "A", receiver_name: "B" });
+    expect(WegagenParser.parseRecord(body, SHARE_ID).parsed.verified).toBe(false);
   });
 });
 
