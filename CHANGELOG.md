@@ -4,6 +4,16 @@ Every cheki SDK ships the same version: npm `cheki-verify` (and `@1rb/cheki-veri
 
 ## Unreleased
 
+**Wegagen Bank (beta)**
+- cheki checks Wegagen Bank receipts. Paste the share link (`transinfo.wegagenbanksc.com.et:8183/?id={24 characters}`) or the 24-character share id after `?id=`, or scan the QR printed on the receipt: cheki reads the `?id=` out of it and asks Wegagen's transaction service, which answers the amount, the date, both sides of the payment (account numbers masked by Wegagen) and the printed Reference No.
+- The printed 16-character Reference No is not a lookup key: only the share id finds the record, and a share id the record's reference does not start with is rejected. A pasted bare share link is detected as a link, and the QR prose is read only for its `?id=`: the names, accounts and amount around it are ignored.
+- Verified 2026-11-11 against three real share links (DigiCert for `*.wegagenbanksc.com.et`, verified without `-k`); an unknown id answers "Transaction not found", which cheki reports as not confirmed, never as fake. The service answers intermittently, so the parser retries once and a check that fails is worth retrying. The daily health check probes it with an all-zero share id.
+- The answer's source is Wegagen's own share page. No SDK or CLI code change: `verify` takes the share link as `reference`, and `cheki verify wegagen <share-id>` (or `cheki verify-qr` on the receipt QR) works from the terminal.
+- Copy, llms.txt, README, the formats guide and the SDK and Python descriptions now count 12 live banks, 10 checked directly.
+
+**Ahadu Bank (documented, still in development)**
+- Ahadu's own receipt service (`receipt.ahadubank.com/digitalReceiptIPS?es={TOKEN}`) is now documented in the manifest and on the bank page, beside the eBirr route cheki already reads for `ahadu`. No parser yet: no real Ahadu receipt has ever been seen, so `ahadu` stays in development and is not checked.
+
 **Bunna Bank (beta)**
 - cheki checks Bunna Bank receipts. Paste the receipt link (`online.bunnabanksc.com/receipt/#/{token}`) or scan the QR on the receipt (`online.bunnabanksc.com/#/receipt-v2/{token}`): cheki sends the token to the JSON service behind Bunna's own receipt page and shows the amount, date, payer, receiver (account numbers masked by Bunna) and Bunna's transaction reference. Beta: one real receipt confirmed so far.
 - The token is opaque base64 and case-sensitive. Only its URL encoding is normalised (`%2B`, a `+` that became a space, base64url, missing padding), so a link, the QR and a pasted token share one cache entry. A typed transaction number (`BB…`) is rejected before any request: Bunna does not look receipts up by it.
