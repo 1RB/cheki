@@ -3,7 +3,8 @@ import Link from "next/link";
 import { banks, getBank } from "@/lib/banks";
 import { Nav, Footer } from "@/components/Chrome";
 import { BouncyAccordion } from "@/components/motion/bouncy-accordion";
-import { brandTileBg } from "@/lib/utils";
+import { BankMark } from "@/components/BankLogo";
+import "@/components/page/page.css";
 import { VerifyPanel } from "@/components/verify/VerifyPanel";
 import { ContributeBox } from "@/components/ContributeBox";
 import { getEndpointDoc } from "@/lib/manifest/endpoints";
@@ -101,20 +102,18 @@ export default async function BankPage({ params }: { params: Promise<{ code: str
       <Nav />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
-      <main className="container" style={{ paddingTop: "48px", paddingBottom: "48px" }}>
-        <nav aria-label="Breadcrumb" style={{ fontSize: "13px", color: "var(--ink-3)", marginBottom: "16px" }}>
-          <Link href="/" style={{ color: "var(--ink-3)" }}>Home</Link>
-          <span style={{ margin: "0 6px"}}>/</span>
-          <Link href="/banks" style={{ color: "var(--ink-3)" }}>Banks</Link>
-          <span style={{ margin: "0 6px"}}>/</span>
-          <span style={{ color: "var(--ink)" }}>{bank.shortName}</span>
+      <main className="container pg">
+        <nav aria-label="Breadcrumb">
+          <ol className="pg-crumb" role="list">
+            <li><Link href="/">Home</Link></li>
+            <li><Link href="/banks">Banks</Link></li>
+            <li aria-current="page">{bank.shortName}</li>
+          </ol>
         </nav>
 
-        <div style={{ display: "flex", alignItems: "center", gap: "16px", marginBottom: "24px" }}>
-          <div aria-hidden="true" style={{ width: "48px", height: "48px", borderRadius: "12px", background: brandTileBg(bank.color), display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700, fontSize: "18px" }}>
-            {bank.shortName.slice(0, 3)}
-          </div>
-          <h1 style={{ fontSize: "clamp(24px, 4vw, 32px)", fontWeight: 700, letterSpacing: "-0.03em", lineHeight: 1.15 }}>
+        <div className="bank-head">
+          <BankMark code={bank.code} shortName={bank.shortName} color={bank.color} size={40} />
+          <h1 className="pg-title">
             {bank.shortName} Receipt Check
           </h1>
         </div>
@@ -125,7 +124,7 @@ export default async function BankPage({ params }: { params: Promise<{ code: str
           </section>
         )}
 
-        <p style={{ color: "var(--ink-2)", fontSize: "17px", lineHeight: 1.6, maxWidth: "680px", marginBottom: "40px" }}>
+        <p className="pg-lede bank-desc">
           {bank.description}
         </p>
 
@@ -146,7 +145,7 @@ export default async function BankPage({ params }: { params: Promise<{ code: str
             in development) already shows what works, and the geo-blocked
             wallets explain themselves in the checker and in their own section. */}
 
-        <div className="two-col" style={{ gap: "48px" }}>
+        <div className="two-col bank-body">
           <div className="prose">
             <h2 id={BANK_HEADING.requiredInfo.id}>{BANK_HEADING.requiredInfo.text(bank.shortName)}</h2>
             {primary ? (
@@ -192,9 +191,9 @@ export default async function BankPage({ params }: { params: Promise<{ code: str
             <p>Example: <code>{bank.referenceExample}</code></p>
 
             <h2 id={BANK_HEADING.howToVerify.id}>{BANK_HEADING.howToVerify.text(bank.shortName)}</h2>
-            <ol style={{ paddingLeft: "20px" }}>
+            <ol style={{ paddingLeft: "20px", listStyle: "decimal" }}>
               {bank.howToVerify.map((step, i) => (
-                <li key={i} style={{ marginBottom: "8px", color: "var(--ink-2)", fontSize: "15px", lineHeight: 1.7 }}>{step}</li>
+                <li key={i}>{step}</li>
               ))}
             </ol>
 
@@ -280,22 +279,19 @@ export default async function BankPage({ params }: { params: Promise<{ code: str
             />
           </div>
 
-          <aside>
-            <div className="sticky-desktop" style={{
-              top: "calc(var(--nav-h) + 24px)", padding: "24px",
-              borderRadius: "12px", background: "var(--surface)", border: "1px solid var(--border)",
-            }}>
-              <p style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink)", marginBottom: "16px" }}>Other supported providers</p>
-              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+          <aside aria-labelledby="other-providers">
+            <div className="sticky-desktop bank-aside">
+              <p id="other-providers" className="bank-aside-title">Other supported providers</p>
+              <ul className="pg-rows">
                 {otherBanks.map((b) => (
-                  <a key={b.code} href={`/banks/${b.code}`} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "8px 12px", borderRadius: "8px", transition: "background-color 0.15s, color 0.15s, border-color 0.15s, transform 0.15s" }}>
-                    <div style={{ width: "28px", height: "28px", borderRadius: "6px", background: brandTileBg(b.color), display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700, fontSize: "11px", flexShrink: 0 }}>
-                      {b.shortName.slice(0, 3)}
-                    </div>
-                    <span style={{ fontSize: "14px", fontWeight: 500, color: "var(--ink-2)" }}>{b.shortName}</span>
-                  </a>
+                  <li key={b.code}>
+                    <a href={`/banks/${b.code}`} className="pg-row bank-aside-row">
+                      <BankMark code={b.code} shortName={b.shortName} color={b.color} size={20} />
+                      <span>{b.shortName}</span>
+                    </a>
+                  </li>
                 ))}
-              </div>
+              </ul>
             </div>
           </aside>
         </div>

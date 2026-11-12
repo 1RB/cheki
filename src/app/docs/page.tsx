@@ -1107,8 +1107,8 @@ docker-compose up -d
                   style={{
                     padding: "12px 24px",
                     borderRadius: "8px",
-                    background: "var(--green-cta)",
-                    color: "var(--green-cta-fg)",
+                    background: "var(--accent)",
+                    color: "var(--accent-ink)",
                     fontSize: "14px",
                     fontWeight: 600,
                     display: "inline-flex",
@@ -1117,7 +1117,7 @@ docker-compose up -d
                   }}
                 >
                   Developer guide{" "}
-                  <Icon icon={ArrowRight01Icon} size={14} color="var(--green-cta-fg)" />
+                  <Icon icon={ArrowRight01Icon} size={14} color="var(--accent-ink)" />
                 </a>
                 <a
                   href="https://github.com/1RB/cheki"

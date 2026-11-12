@@ -36,7 +36,7 @@
 .gx-clear {
   min-height: 44px; padding: 0; border: none; background: none; cursor: pointer;
   font-size: 14px; font-weight: 600; color: var(--ink);
-  text-decoration: underline; text-decoration-color: var(--border-strong); text-underline-offset: 3px;
+  text-decoration: underline; text-decoration-color: color-mix(in srgb, currentColor 40%, transparent); text-underline-offset: 3px;
 }
 
 .gx-list { margin-top: 24px; }
@@ -62,7 +62,7 @@
 .gx-row-meta { font-size: 13px; line-height: 1.4; color: var(--ink-3); font-variant-numeric: tabular-nums; }
 .gx-row-meta > span + span::before { content: "·"; margin: 0 8px; }
 @media (hover: hover) {
-  .gx-row:hover .gx-row-title { text-decoration: underline; text-decoration-color: var(--border-strong); text-underline-offset: 3px; }
+  .gx-row:hover .gx-row-title { text-decoration: underline; text-decoration-color: color-mix(in srgb, currentColor 40%, transparent); text-underline-offset: 3px; }
 }
 
 @media (min-width: 640px) {
@@ -132,7 +132,7 @@
 
 /* Body copy: links and inline code in ink, not green. */
 .ga-prose { margin-top: 28px; overflow-wrap: break-word; }
-.ga-prose a { color: var(--ink); text-decoration: underline; text-decoration-color: var(--border-strong); text-underline-offset: 3px; text-decoration-thickness: 1px; }
+.ga-prose a { color: var(--ink); text-decoration: underline; text-decoration-color: color-mix(in srgb, currentColor 40%, transparent); text-underline-offset: 3px; text-decoration-thickness: 1px; }
 @media (hover: hover) { .ga-prose a:hover { text-decoration-color: var(--ink); } }
 .ga-code { font-family: var(--mono); font-size: 0.88em; background: var(--surface-alt); color: var(--ink); padding: 1px 5px; border-radius: 4px; }
 
@@ -179,5 +179,5 @@
 /* Preflight strips list markers; the /privacy lists need them to read as lists. */
 .trust-article .ga-prose ul { list-style: disc; }
 .trust-article .ga-prose li::marker { color: var(--ink-3); }
-.ga-meta a { color: var(--ink-2); text-decoration: underline; text-decoration-color: var(--border-strong); text-underline-offset: 3px; text-decoration-thickness: 1px; }
+.ga-meta a { color: var(--ink-2); text-decoration: underline; text-decoration-color: color-mix(in srgb, currentColor 40%, transparent); text-underline-offset: 3px; text-decoration-thickness: 1px; }
 @media (hover: hover) { .ga-meta a:hover { color: var(--ink); text-decoration-color: var(--ink); } }

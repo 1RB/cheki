@@ -464,9 +464,9 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
     detection.kind === "boaQr" ? t("verify.detect.boaQr") : (outcome?.reference || input.trim().replace(/^https?:\/\//i, ""));
 
   return (
-    <div className="vp" data-phase={phase}>
+    <div className="vp" data-phase={phase} data-ui>
       <div className="vp-card" data-folded={folded || undefined}>
-      <div className="vp-fold" data-hidden={!folded || undefined} inert={!folded}>
+      <div className="vp-fold" data-hidden={!folded || undefined} inert={!folded} aria-hidden={!folded || undefined}>
         <div>
           <div className="vp-summary">
             {summaryBank && <BankLogoByName code={summaryBank.code} size={20} />}
@@ -486,7 +486,7 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
           </div>
         </div>
       </div>
-      <div className="vp-fold" data-hidden={folded || undefined} inert={folded}>
+      <div className="vp-fold" data-hidden={folded || undefined} inert={folded} aria-hidden={folded || undefined}>
       <div>
       <form
         className="vp-form"

@@ -234,10 +234,10 @@ export function ContributeBox({
     display: "block", fontSize: "13px", fontWeight: 600, color: "var(--ink-2)", marginBottom: "6px",
   };
   const hint: React.CSSProperties = {
-    fontSize: "12px", color: "var(--ink-3)", marginTop: "6px", lineHeight: 1.5, overflowWrap: "anywhere",
+    fontSize: "13px", color: "var(--ink-3)", marginTop: "6px", lineHeight: 1.5, overflowWrap: "anywhere",
   };
   const linkBtn: React.CSSProperties = {
-    background: "none", border: "none", padding: 0, color: "var(--green-dark)", fontSize: "13px",
+    background: "none", border: "none", padding: 0, color: "var(--ink)", fontSize: "13px",
     fontWeight: 600, cursor: "pointer", textDecoration: "underline", textUnderlineOffset: "3px",
   };
 
@@ -295,16 +295,16 @@ export function ContributeBox({
           display: "flex", flexDirection: screenshotFirst ? "column" : "row", alignItems: "center",
           justifyContent: "center", gap: screenshotFirst ? "2px" : "8px", flexWrap: "wrap", textAlign: "center",
           padding: screenshotFirst ? "14px 12px" : "10px 12px", borderRadius: "8px", cursor: reading ? "wait" : "pointer",
-          border: `1px dashed ${dragging || fileFocus ? "var(--green-dark)" : "var(--border)"}`,
-          outline: fileFocus ? "2px solid var(--green-dark)" : "none", outlineOffset: "2px",
-          background: dragging ? "var(--green-light)" : "var(--bg)",
+          border: `1px dashed ${dragging || fileFocus ? "var(--ink)" : "var(--border-strong)"}`,
+          outline: fileFocus ? "2px solid var(--ring)" : "none", outlineOffset: "2px",
+          background: dragging ? "var(--surface-alt)" : "var(--bg)",
         }}
       >
-        <span style={{ fontSize: "14px", fontWeight: 600, color: "var(--green-dark)" }}>
+        <span style={{ fontSize: "14px", fontWeight: 600, color: "var(--ink)" }}>
           {reading ? "Reading screenshot..." : screenshotFirst ? "Choose a screenshot" : "Or upload a screenshot"}
         </span>
         {screenshotFirst && (
-          <span style={{ fontSize: "12px", color: "var(--ink-3)" }}>or drop or paste it here</span>
+          <span style={{ fontSize: "13px", color: "var(--ink-3)" }}>or drop or paste it here</span>
         )}
       </label>
       <input
@@ -332,26 +332,27 @@ export function ContributeBox({
     <section
       id="contribute"
       aria-labelledby="contribute-title"
+      data-ui
       style={{
         position: "relative", padding: "clamp(16px, 4vw, 22px)", borderRadius: "12px", background: "var(--surface)",
-        border: "1px solid var(--border)", marginBottom: "40px", maxWidth: "680px",
+        border: "1px solid var(--border)", boxShadow: "var(--shadow-md)", marginBottom: "72px", maxWidth: "640px",
       }}
     >
       <h2 id="contribute-title" style={{ fontSize: "19px", fontWeight: 800, letterSpacing: "-0.01em", marginBottom: "6px" }}>
         Help us add {shortName}
       </h2>
-      <p style={{ color: "var(--ink-2)", fontSize: "14px", lineHeight: 1.55, marginBottom: "12px" }}>
+      <p style={{ color: "var(--ink-2)", fontSize: "15px", lineHeight: 1.55, marginBottom: "12px" }}>
         {screenshotFirst
           ? `${shortName} checks are not live yet, and we have not found its receipt link. A screenshot of one real receipt helps us find it.`
           : `${shortName} checks are not live yet. One real receipt link is enough for us to build and test the parser.`}
       </p>
-      <p style={{ padding: "8px 12px", borderRadius: "8px", background: "var(--green-light)", color: "var(--ink-2)", fontSize: "13px", lineHeight: 1.5, marginBottom: "14px" }}>
+      <p style={{ padding: "8px 12px", borderRadius: "8px", background: "var(--surface-alt)", color: "var(--ink-2)", fontSize: "13px", lineHeight: 1.5, marginBottom: "14px" }}>
         <strong style={{ color: "var(--ink)" }}>Private.</strong> Sent only to the maintainers, used to build the parser, deleted after it ships.
       </p>
 
       {done ? (
         <div>
-          <p role="status" style={{ padding: "12px 14px", borderRadius: "8px", background: "var(--green-light)", color: "var(--green-dark)", fontSize: "14px", fontWeight: 600, lineHeight: 1.5 }}>
+          <p role="status" style={{ padding: "12px 14px", borderRadius: "8px", background: "var(--surface-alt)", color: "var(--ink)", fontSize: "14px", fontWeight: 600, lineHeight: 1.5 }}>
             {done} {sentCredit ? `We will credit ${sentCredit} when ${shortName} goes live.` : ""}
           </p>
           <p style={{ marginTop: "8px", fontSize: "13px", color: "var(--ink-3)", lineHeight: 1.5 }}>
@@ -390,7 +391,7 @@ export function ContributeBox({
           )}
 
           {notice && (
-            <p role="status" style={{ margin: "-4px 0 12px", padding: "8px 12px", borderRadius: "8px", background: "var(--green-light)", color: "var(--green-dark)", fontSize: "13px", fontWeight: 600, lineHeight: 1.5 }}>
+            <p role="status" style={{ margin: "-4px 0 12px", padding: "8px 12px", borderRadius: "8px", background: "var(--surface-alt)", color: "var(--ink)", fontSize: "13px", fontWeight: 600, lineHeight: 1.5 }}>
               {notice}
             </p>
           )}
@@ -475,7 +476,7 @@ export function ContributeBox({
             disabled={loading || reading}
             style={{
               width: "100%", padding: "12px 24px", borderRadius: "8px", border: "none",
-              background: "var(--green-cta)", color: "var(--green-cta-fg)",
+              background: "var(--accent)", color: "var(--accent-ink)",
               fontSize: "15px", fontWeight: 600, cursor: loading || reading ? "wait" : "pointer",
             }}
           >
@@ -483,7 +484,7 @@ export function ContributeBox({
           </button>
           <p style={{ ...hint, marginTop: "10px", textAlign: "center" }}>
             Developer?{" "}
-            <a href={PROBE_URL} target="_blank" rel="noopener noreferrer" style={{ color: "var(--green-dark)" }}>
+            <a href={PROBE_URL} target="_blank" rel="noopener noreferrer" style={{ color: "var(--ink)" }}>
               Test your receipt locally instead.
             </a>
           </p>
