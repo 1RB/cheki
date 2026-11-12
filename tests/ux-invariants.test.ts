@@ -127,7 +127,7 @@ function contrast(fg: string, bg: string, tokens: Record<string, string>): numbe
 
 /** [foreground token, background token, minimum ratio] */
 const PAIRS: [string, string, number][] = [
-  ["--green-cta-fg", "--green-cta", 4.5],
+  ["--accent-ink", "--accent", 4.5],
   ["--red-cta-fg", "--red-cta", 4.5],
   ["--red-text", "--red-light", 4.5],
   ["--amber-text", "--amber-light", 4.5],
@@ -179,12 +179,12 @@ describe("theme palette", () => {
     const verifyCss = read("src/components/verify/verify.css");
     const homeCss = read("src/components/home/home.css");
     for (const src of [verifyCss, homeCss]) {
-      for (const m of src.matchAll(/([^{}]+)\{([^{}]*background:\s*var\(--green-cta\)[^{}]*)\}/g)) {
-        expect(m[2], `${m[1].trim()} needs a token foreground`).toContain("var(--green-cta-fg)");
+      for (const m of src.matchAll(/([^{}]+)\{([^{}]*background:\s*var\(--accent\)[^{}]*)\}/g)) {
+        expect(m[2], `${m[1].trim()} needs a token foreground`).toContain("var(--accent-ink)");
         expect(m[2]).not.toMatch(/color:\s*#fff/i);
       }
     }
-    expect(verifyCss).toContain("var(--green-cta-fg)");
+    expect(verifyCss).toContain("var(--accent-ink)");
     expect(read("src/app/globals.css")).toContain("--red-cta-fg");
   });
 });

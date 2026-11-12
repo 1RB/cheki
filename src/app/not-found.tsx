@@ -47,8 +47,8 @@ export default function NotFound() {
             style={{
               padding: "12px 24px",
               borderRadius: "10px",
-              background: "var(--green-cta)",
-              color: "var(--green-cta-fg)",
+              background: "var(--accent)",
+              color: "var(--accent-ink)",
               fontSize: "14px",
               fontWeight: 600,
               textDecoration: "none",

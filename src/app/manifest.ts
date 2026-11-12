@@ -8,8 +8,8 @@ export default function manifest(): MetadataRoute.Manifest {
       "Free, open-source Ethiopian bank receipt verification. Checks CBE, BOA, Dashen and more with the bank; Telebirr and M-Pesa open on their official receipt pages. No signup, no API key.",
     start_url: "/",
     display: "standalone",
-    background_color: "#faf9f6",
-    theme_color: "#16a34a",
+    background_color: "#f7f7f7",
+    theme_color: "#f7f7f7",
     orientation: "portrait-primary",
     categories: ["finance", "business", "utilities", "productivity"],
     icons: [

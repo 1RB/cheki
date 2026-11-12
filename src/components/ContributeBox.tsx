@@ -475,7 +475,7 @@ export function ContributeBox({
             disabled={loading || reading}
             style={{
               width: "100%", padding: "12px 24px", borderRadius: "8px", border: "none",
-              background: "var(--green-cta)", color: "var(--green-cta-fg)",
+              background: "var(--accent)", color: "var(--accent-ink)",
               fontSize: "15px", fontWeight: 600, cursor: loading || reading ? "wait" : "pointer",
             }}
           >

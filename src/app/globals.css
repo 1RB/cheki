@@ -1,27 +1,28 @@
 @import "tailwindcss";
 
 /* ── Design tokens ──────────────────────────────────────────────────────
-   Calm and warm: an off-white canvas with true-white surfaces, near-black
-   ink and warm greys. Hierarchy comes from type, weight and space, never from
-   hue. Colour is semantic and small (a status dot, a short word); the one
-   brand accent is the green primary action. Surfaces are a 1px hairline at
-   ~8% ink plus a very soft layered shadow, never a heavy border and a heavy
-   shadow together.
+   Taste Skill pass (direction "The product performs", palette "Bottle ink,
+   yellow"). A neutral grey ground, type in a near-black bottle green, one
+   saturated note: the yellow primary action. The page draws no lines and no
+   resting shadows: a surface is one tone step from the ground. Real product
+   UI (the checker, the verdict slip, fragments marked [data-ui]), real tables
+   and form fields keep the product's own 1px lines; see the [data-ui] block
+   below.
 
-   Text: ink plus two warm tones, never a cool grey. The tones are a sepia
-   ink (a brown-grey with the canvas's own warmth) rather than a washed-out
-   neutral, so secondary copy reads as written, not disabled: --ink-2 (body
-   and sub-lines) is ~10:1 and --ink-3 (labels, meta) ~7:1 on the canvas,
-   well past AA. Hierarchy between them comes from size and weight.
-   Minimums are enforced in tests/ux-invariants.test.ts. */
+   Colour stays semantic: green, red and amber are verdicts and status dots
+   only. Green means bank-confirmed and nothing else, which is why the primary
+   action is the accent yellow, not green.
+
+   Text: --ink-2 (body and sub-lines) is ~9:1 and --ink-3 (labels, meta)
+   ~7:1 on the ground. Minimums are enforced in tests/ux-invariants.test.ts. */
 :root {
-  --bg: #faf9f7;
-  --surface: #ffffff;
-  --surface-alt: #f3f1ee;
-  --receipt-bg: #f8f6f2;
-  --ink: #1c1814;
-  --ink-2: #463d34;
-  --ink-3: #5c5248;
+  --bg: #f7f7f7;
+  --surface: #ececec;
+  --surface-alt: #e1e3e2;
+  --receipt-bg: #ffffff;
+  --ink: #0d2a1c;
+  --ink-2: #33443b;
+  --ink-3: #46544c;
   --green: #16a34a;
   --green-dark: #0a7b43;
   --green-light: #e7f6ec;
@@ -34,34 +35,37 @@
   --amber: #e08a0b;
   --amber-text: #92400e;
   --amber-light: #fdf6e8;
-  /* CTA surfaces: white on --green is 3.29:1 in light mode, so the button
-     background darkens to --green-dark. The dark scheme flips it back to
-     --green with --bg text. Text on a filled CTA is always --*-cta-fg, never
-     a literal #fff. */
-  --green-cta: var(--green-dark);
-  --green-cta-fg: #ffffff;
+  /* The one accent: the primary action (Check receipt) and one field per
+     page at most. Text on it is always --accent-ink. */
+  --accent: #f6e016;
+  --accent-ink: #0d2a1c;
   --red-cta: var(--red-text);
   --red-cta-fg: #ffffff;
   /* Neutral filled action (after a result the primary is "Verify another":
-     an action, not a status, so it does not borrow the verdict's green). */
-  --ink-cta: #1c1814;
-  --ink-cta-fg: #faf9f7;
-  --border: rgba(28, 25, 23, 0.09);
-  --border-strong: rgba(28, 25, 23, 0.16);
-  --dotted: #d9d5ce;
-  --ring: rgba(10, 123, 67, 0.55);
-  --shadow-sm: 0 1px 2px rgba(28, 25, 23, 0.04);
-  --shadow-md: 0 1px 2px rgba(28, 25, 23, 0.04), 0 8px 24px rgba(28, 25, 23, 0.05);
-  --shadow-lg: 0 1px 2px rgba(28, 25, 23, 0.05), 0 24px 64px rgba(28, 25, 23, 0.14);
-  --mono: "JetBrains Mono", "IBM Plex Mono", "Roboto Mono", ui-monospace, monospace;
-  /* System serif for the one italic accent in the hero: no font file. */
-  --serif: "Iowan Old Style", "Palatino Linotype", Georgia, "Noto Serif", serif;
+     an action, not a status, so it borrows neither the verdict's green nor
+     the accent). */
+  --ink-cta: #0d2a1c;
+  --ink-cta-fg: #f7f7f7;
+  /* Page chrome draws no lines: --border is transparent outside product UI.
+     --line is the product's own 1px line (inputs, tables, [data-ui]). */
+  --line: rgba(13, 42, 28, 0.14);
+  --line-strong: rgba(13, 42, 28, 0.26);
+  --border: transparent;
+  --border-strong: transparent;
+  --hover: rgba(13, 42, 28, 0.06);
+  --dotted: #d3d7d4;
+  --ring: #0d2a1c;
+  --shadow-sm: 0 0 0 0 transparent;
+  --shadow-md: 0 0 0 0 transparent;
+  /* Only for what floats: dialogs, menus, the ⌘K palette. */
+  --shadow-lg: 0 1px 2px rgba(13, 42, 28, 0.06), 0 24px 64px rgba(13, 42, 28, 0.16);
+  --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
   --sans: var(--font-inter, "Inter"), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --nav-h: 56px;
-  --code-bg: #24292e;
-  --code-text: #e1e4e8;
-  --invert-bg: #1c1a17;
-  --invert-text: #faf9f7;
+  --code-bg: #10201a;
+  --code-text: #e1e6e2;
+  --invert-bg: #0d2a1c;
+  --invert-text: #f7f7f7;
 }
 
 /* Scale tokens: identical in both schemes, so they live outside the colour
@@ -71,7 +75,7 @@
   --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
   --space-5: 20px; --space-6: 24px; --space-8: 32px; --space-10: 40px; --space-12: 48px;
   --radius-xs: 6px; --radius-sm: 8px; --radius-md: 12px; --radius-lg: 16px; --radius-xl: 20px; --radius-full: 999px;
-  --text-xs: 12px; --text-sm: 13px; --text-base: 15px; --text-md: 17px; --text-lg: 20px;
+  --text-xs: 13px; --text-sm: 14px; --text-base: 16px; --text-md: 20px; --text-lg: 20px;
   --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
   --dur-fast: 120ms; --dur-base: 180ms; --dur-slow: 240ms;
@@ -79,13 +83,13 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #131211;
-    --surface: #1b1a18;
-    --surface-alt: #24221f;
-    --receipt-bg: #181715;
-    --ink: #efeae3;
-    --ink-2: #cfc6ba;
-    --ink-3: #ada395;
+    --bg: #0f1612;
+    --surface: #19221d;
+    --surface-alt: #222c26;
+    --receipt-bg: #141c18;
+    --ink: #e9efe9;
+    --ink-2: #c5cfc8;
+    --ink-3: #a4b0a8;
     --green: #3dd37a;
     --green-dark: #3dd37a;
     --green-light: rgba(61, 211, 122, 0.1);
@@ -95,34 +99,37 @@
     --amber: #f2ac45;
     --amber-text: #f2ac45;
     --amber-light: rgba(242, 172, 69, 0.1);
-    --green-cta: #34a868;
-    --green-cta-fg: #131211;
+    --accent: #f6e016;
+    --accent-ink: #0d2a1c;
     --red-cta: #f0606f;
-    --red-cta-fg: #131211;
-    --ink-cta: #efeae3;
-    --ink-cta-fg: #131211;
-    --border: rgba(255, 250, 240, 0.08);
-    --border-strong: rgba(255, 250, 240, 0.15);
-    --dotted: #34312d;
-    --ring: rgba(61, 211, 122, 0.6);
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.2);
+    --red-cta-fg: #0f1612;
+    --ink-cta: #e9efe9;
+    --ink-cta-fg: #0f1612;
+    --line: rgba(233, 239, 233, 0.12);
+    --line-strong: rgba(233, 239, 233, 0.22);
+    --border: transparent;
+    --border-strong: transparent;
+    --hover: rgba(233, 239, 233, 0.07);
+    --dotted: #2c3730;
+    --ring: #e9efe9;
+    --shadow-sm: 0 0 0 0 transparent;
+    --shadow-md: 0 0 0 0 transparent;
     --shadow-lg: 0 1px 2px rgba(0, 0, 0, 0.4), 0 24px 64px rgba(0, 0, 0, 0.5);
-    --code-bg: #0e0d0c;
-    --code-text: #c9c4bc;
-    --invert-bg: #1b1a18;
-    --invert-text: #edebe7;
+    --code-bg: #0a100d;
+    --code-text: #cfd8d2;
+    --invert-bg: #19221d;
+    --invert-text: #e9efe9;
   }
 }
 
 [data-theme="dark"] {
-  --bg: #131211;
-  --surface: #1b1a18;
-  --surface-alt: #24221f;
-  --receipt-bg: #181715;
-  --ink: #efeae3;
-  --ink-2: #cfc6ba;
-  --ink-3: #ada395;
+  --bg: #0f1612;
+  --surface: #19221d;
+  --surface-alt: #222c26;
+  --receipt-bg: #141c18;
+  --ink: #e9efe9;
+  --ink-2: #c5cfc8;
+  --ink-3: #a4b0a8;
   --green: #3dd37a;
   --green-dark: #3dd37a;
   --green-light: rgba(61, 211, 122, 0.1);
@@ -132,29 +139,59 @@
   --amber: #f2ac45;
   --amber-text: #f2ac45;
   --amber-light: rgba(242, 172, 69, 0.1);
-  --green-cta: #34a868;
-  --green-cta-fg: #131211;
+  --accent: #f6e016;
+  --accent-ink: #0d2a1c;
   --red-cta: #f0606f;
-  --red-cta-fg: #131211;
-  --ink-cta: #efeae3;
-  --ink-cta-fg: #131211;
-  --border: rgba(255, 250, 240, 0.08);
-  --border-strong: rgba(255, 250, 240, 0.15);
-  --dotted: #34312d;
-  --ring: rgba(61, 211, 122, 0.6);
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.2);
+  --red-cta-fg: #0f1612;
+  --ink-cta: #e9efe9;
+  --ink-cta-fg: #0f1612;
+  --line: rgba(233, 239, 233, 0.12);
+  --line-strong: rgba(233, 239, 233, 0.22);
+  --border: transparent;
+  --border-strong: transparent;
+  --hover: rgba(233, 239, 233, 0.07);
+  --dotted: #2c3730;
+  --ring: #e9efe9;
+  --shadow-sm: 0 0 0 0 transparent;
+  --shadow-md: 0 0 0 0 transparent;
   --shadow-lg: 0 1px 2px rgba(0, 0, 0, 0.4), 0 24px 64px rgba(0, 0, 0, 0.5);
-  --code-bg: #0e0d0c;
-  --code-text: #c9c4bc;
-  --invert-bg: #1b1a18;
-  --invert-text: #edebe7;
+  --code-bg: #0a100d;
+  --code-text: #cfd8d2;
+  --invert-bg: #19221d;
+  --invert-text: #e9efe9;
 }
+
+/* Product UI keeps the product's own conventions: white panels, a 1px
+   line, a soft shadow on what is raised. The checker, the verdict slip and
+   every interface fragment carry [data-ui]; real tables and form fields keep
+   their lines too. Outside these, the page draws no lines and no shadows. */
+[data-ui] {
+  --surface: #ffffff;
+  --surface-alt: #f2f3f2;
+  --border: var(--line);
+  --border-strong: var(--line-strong);
+  --shadow-sm: 0 1px 2px rgba(13, 42, 28, 0.05);
+  --shadow-md: 0 1px 2px rgba(13, 42, 28, 0.05), 0 8px 24px rgba(13, 42, 28, 0.06);
+}
+[data-theme="dark"] [data-ui] {
+  --surface: #19221d;
+  --surface-alt: #222c26;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) [data-ui] {
+    --surface: #19221d;
+    --surface-alt: #222c26;
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.25);
+  }
+}
+table, input, select, textarea { --border: var(--line); --border-strong: var(--line-strong); }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 html { font-size: 16px; }
-@media (max-width: 640px) { html { font-size: 15px; } }
 
 html, body {
   background: var(--bg);
@@ -213,11 +250,15 @@ a { color: inherit; text-decoration: none; }
    an underline is the calmer signal anyway. Classed links (buttons, cards,
    rows) style themselves. */
 :where(p, li, dd, td) a:not([class]) {
+  color: var(--ink);
   text-decoration: underline;
-  text-decoration-thickness: 1px;
-  text-underline-offset: 3px;
-  text-decoration-color: color-mix(in srgb, currentColor 35%, transparent);
+  text-decoration-thickness: 0.07em;
+  text-underline-offset: 0.18em;
+  text-decoration-color: color-mix(in srgb, currentColor 45%, transparent);
+  transition: text-decoration-color var(--dur-fast) var(--ease-out);
 }
+@media (hover: hover) { :where(p, li, dd, td) a:not([class]):hover { text-decoration-color: currentColor; } }
+::selection { background: var(--accent); color: var(--accent-ink); }
 
 /* layout containers */
 .container { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
@@ -279,7 +320,7 @@ a { color: inherit; text-decoration: none; }
 }@media (hover: hover) {
 
 /* TOC link hover */
-.toc-link:hover { color: var(--green-dark) !important; border-left-color: var(--green) !important; }
+.toc-link:hover { color: var(--ink) !important; }
 }
 
 /* Docs sidebar layout */
@@ -298,12 +339,12 @@ a { color: inherit; text-decoration: none; }
 }
 
 /* Related article card hover */
-.related-card { border: 1px solid var(--border) !important; }@media (hover: hover) {
+.related-card { border: 0 !important; background: var(--surface) !important; }@media (hover: hover) {
 
-.related-card:hover { border-color: var(--green) !important; box-shadow: 0 2px 8px rgba(22,163,74,0.08); }
+.related-card:hover { background: var(--surface-alt) !important; transform: translateY(-2px); }
 }@media (hover: hover) {
 
-.related-card:hover .related-arrow { background: var(--green-dark); color: #fff !important; border-color: var(--green) !important; transform: scale(1.05); }
+.related-card:hover .related-arrow { background: var(--accent); color: var(--accent-ink) !important; transform: translateX(2px); }
 }
 
 /* footer grid */
@@ -319,8 +360,7 @@ a { color: inherit; text-decoration: none; }
 /* ── Site nav ── */
 .site-nav {
   position: sticky; top: 0; z-index: 100; height: var(--nav-h);
-  background: color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--border);
+  background: var(--bg);
 }
 .nav-inner { height: 100%; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .nav-left { display: flex; align-items: center; gap: 20px; min-width: 0; }
@@ -332,13 +372,12 @@ a { color: inherit; text-decoration: none; }
   transition: color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out); text-decoration: none;
 }
 @media (hover: hover) { .nav-link:hover { color: var(--ink); } }
-.nav-link[aria-current="page"] { color: var(--ink); background: var(--border); }
+.nav-link[aria-current="page"] { color: var(--ink); background: var(--surface); }
 .nav-right { gap: 4px; align-items: center; flex-shrink: 0; }
 /* GitHub is a quiet secondary: the page has one filled action (Check). */
 .nav-gh {
   display: flex; align-items: center; gap: 6px; margin-left: 4px; height: 32px; padding: 0 12px; border-radius: var(--radius-sm);
-  font-size: 13px; font-weight: 550; color: var(--ink); background: var(--surface); text-decoration: none;
-  box-shadow: inset 0 0 0 1px var(--border), var(--shadow-sm);
+  font-size: 14px; font-weight: 550; color: var(--ink); background: var(--surface); text-decoration: none;
   transition: background-color var(--dur-fast) var(--ease-out);
 }
 @media (hover: hover) { .nav-gh:hover { background: var(--surface-alt); } }
@@ -347,7 +386,7 @@ a { color: inherit; text-decoration: none; }
   border: none; border-radius: var(--radius-md); background: transparent; cursor: pointer; flex-shrink: 0;
   transition: background-color var(--dur-fast) var(--ease-out);
 }
-@media (hover: hover) { .nav-icon-btn:hover { background: var(--border); } }
+@media (hover: hover) { .nav-icon-btn:hover { background: var(--hover); } }
 .nav-mobile-actions { display: flex; align-items: center; gap: 2px; }
 /* Empty on desktop; without this it is a third space-between item and
    pulls the right-hand group ~120px off the container edge. */
@@ -358,7 +397,7 @@ a { color: inherit; text-decoration: none; }
 }
 .nmm-head {
   height: var(--nav-h); flex-shrink: 0; display: flex; align-items: center; justify-content: space-between;
-  padding: 0 16px; border-bottom: 1px solid var(--border);
+  padding: 0 16px;
 }
 /* One surface, hairline-separated rows (same language as the verdict),
    instead of a stack of bordered boxes. */
@@ -369,14 +408,13 @@ a { color: inherit; text-decoration: none; }
 }
 @keyframes nmm-in { from { opacity: 0; transform: translateY(6px); } }
 .nmm-group {
-  display: flex; flex-direction: column; border-radius: var(--radius-lg); background: var(--surface);
-  box-shadow: inset 0 0 0 1px var(--border), var(--shadow-sm); overflow: hidden;
+  display: flex; flex-direction: column; gap: 2px; border-radius: var(--radius-lg); overflow: hidden;
 }
 .nmm-link, .nmm-row, .nmm-gh {
   flex-shrink: 0; min-height: 52px; padding: 0 16px; display: flex; align-items: center;
   justify-content: space-between; font-size: 16px; font-weight: 550; text-decoration: none; color: var(--ink);
 }
-.nmm-group > * + * { box-shadow: inset 0 1px 0 var(--border); }
+.nmm-group > * { background: var(--surface); }
 .nmm-gh { justify-content: flex-start; gap: 10px; }
 @media (prefers-reduced-motion: reduce) { .nmm-body { animation: none; } }
 
@@ -395,14 +433,14 @@ a { color: inherit; text-decoration: none; }
 .tc-opt {
   position: relative; isolation: isolate; display: inline-flex; align-items: center; justify-content: center; gap: 5px;
   min-height: 0; height: 38px; padding: 0 10px; border: none; border-radius: var(--radius-full);
-  background: transparent; color: var(--ink-3); font: inherit; font-size: 13px; font-weight: 550; line-height: 1;
+  background: transparent; color: var(--ink-3); font: inherit; font-size: 14px; font-weight: 550; line-height: 1;
   white-space: nowrap; cursor: pointer; -webkit-tap-highlight-color: transparent;
   transition: color var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
 }
 /* The raised surface of the selected option: opacity/transform only. */
 .tc-opt::before {
   content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit;
-  background: var(--surface); box-shadow: inset 0 0 0 1px var(--border), var(--shadow-sm);
+  background: var(--bg);
   opacity: 0; transform: scale(0.94);
   transition: opacity var(--dur-fast) var(--ease-out), transform var(--dur-base) var(--ease-out);
 }
@@ -421,7 +459,7 @@ html[data-locale="am"] .tc-opt[data-v="am"]::before { opacity: 1; transform: non
 @media (hover: hover) { .tc-opt:hover { color: var(--ink-2); } }
 /* Header: icons only, 32px like the other header controls; 44px on touch. */
 .tc--compact .tc-opt { width: 30px; height: 26px; padding: 0; }
-.tc--compact .tc-opt--text { width: auto; min-width: 30px; padding: 0 8px; font-size: 12px; }
+.tc--compact .tc-opt--text { width: auto; min-width: 30px; padding: 0 8px; font-size: 13px; }
 @media (pointer: coarse) { .tc--compact .tc-opt { width: 40px; height: 38px; } .tc--compact .tc-opt--text { width: auto; min-width: 40px; } }
 /* Menu settings rows: both 44px controls share the right edge, and each
    option's hit area grows to the full 52px row height. */
@@ -435,7 +473,7 @@ html[data-locale="am"] .tc-opt[data-v="am"]::before { opacity: 1; transform: non
 }
 
 /* ── ⌘K palette ── */
-.cp-root { position: fixed; inset: 0; z-index: 300; }
+.cp-root { position: fixed; inset: 0; z-index: 300; --border: var(--line); }
 .cp-backdrop { position: absolute; inset: 0; background: rgba(20, 18, 16, 0.32); animation: cp-fade var(--dur-base) var(--ease-out) both; }
 @keyframes cp-fade { from { opacity: 0; } }
 .cp {
@@ -450,14 +488,14 @@ html[data-locale="am"] .tc-opt[data-v="am"]::before { opacity: 1; transform: non
 .cp-input:focus-visible { outline: none; }
 .cp-close { width: 44px; height: 44px; border: none; border-radius: 10px; background: transparent; color: var(--ink-3); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
 .cp-list { list-style: none; overflow-y: auto; padding: 6px; flex: 1; }
-.cp-group { display: block; padding: 12px 12px 4px; font-size: 12px; font-weight: 500; color: var(--ink-3); }
+.cp-group { display: block; padding: 12px 12px 4px; font-size: 13px; font-weight: 500; color: var(--ink-3); }
 .cp-option { display: flex; flex-direction: column; justify-content: center; min-height: 44px; padding: 8px 12px; border-radius: var(--radius-md); cursor: pointer; }
 .cp-option[aria-selected="true"] { background: var(--surface-alt); }
 .cp-label { font-size: 14px; font-weight: 500; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.cp-desc { font-size: 12px; color: var(--ink-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cp-desc { font-size: 13px; color: var(--ink-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cp-empty { padding: 28px 12px; text-align: center; color: var(--ink-3); font-size: 14px; }
-.cp-foot { padding: 10px 16px; border-top: 1px solid var(--border); font-size: 11px; color: var(--ink-3); display: flex; gap: 10px; }
-.cp-foot kbd { font-family: var(--mono); font-size: 11px; padding: 1px 5px; border-radius: 4px; background: var(--surface-alt); border: 1px solid var(--border); }
+.cp-foot { padding: 10px 16px; border-top: 1px solid var(--border); font-size: 13px; color: var(--ink-3); display: flex; gap: 10px; }
+.cp-foot kbd { font-family: var(--mono); font-size: 13px; padding: 1px 5px; border-radius: 4px; background: var(--surface-alt); border: 1px solid var(--border); }
 @media (prefers-reduced-motion: reduce) { .cp, .cp-backdrop { animation: none; } }
 
 .nav-desktop { display: flex !important; }
@@ -479,15 +517,15 @@ html[data-locale="am"] .tc-opt[data-v="am"]::before { opacity: 1; transform: non
 .spin { animation: spin 0.8s linear infinite; }
 
 /* prose styles for article content */
-.prose h2 { font-size: 20px; font-weight: 700; color: var(--ink); margin: 28px 0 10px; letter-spacing: -0.01em; }
-.prose h3 { font-size: 16px; font-weight: 600; color: var(--ink); margin: 20px 0 6px; }
-.prose p { color: var(--ink-2); font-size: 15px; line-height: 1.7; margin-bottom: 12px; }
+.prose h2 { font-size: 24px; line-height: 1.2; font-weight: 700; color: var(--ink); margin: 40px 0 12px; letter-spacing: -0.02em; }
+.prose h3 { font-size: 20px; font-weight: 650; color: var(--ink); margin: 28px 0 8px; letter-spacing: -0.01em; }
+.prose p { color: var(--ink); font-size: 17px; line-height: 1.65; margin-bottom: 14px; }
 .prose ul { margin: 8px 0 16px; padding-left: 20px; }
-.prose li { color: var(--ink-2); font-size: 15px; line-height: 1.7; margin-bottom: 6px; }
-.prose a { color: var(--green-dark); text-decoration: underline; }
+.prose li { color: var(--ink); font-size: 17px; line-height: 1.65; margin-bottom: 6px; }
+.prose a { color: var(--ink); text-decoration: underline; text-decoration-thickness: 0.07em; text-underline-offset: 0.18em; }
 @media (max-width: 640px) {
-  .prose p { font-size: 14px; }
-  .prose li { font-size: 14px; }
+  .prose p { font-size: 16px; }
+  .prose li { font-size: 16px; }
 }
 
 /* code blocks - GitHub Dark theme (Shiki), token colors via inline styles */
@@ -501,7 +539,7 @@ html[data-locale="am"] .tc-opt[data-v="am"]::before { opacity: 1; transform: non
   line-height: 1.6;
   overflow-x: auto;
   margin: 14px 0;
-  border: 1px solid rgba(255,255,255,0.08);
+  border: 0;
   -webkit-overflow-scrolling: touch;
 }
 .prose pre code, .code-block code {
@@ -513,7 +551,7 @@ html[data-locale="am"] .tc-opt[data-v="am"]::before { opacity: 1; transform: non
 }
 @media (max-width: 640px) {
   .prose pre, .code-block {
-    font-size: 12px;
+    font-size: 13px;
     padding: 14px 16px;
     border-radius: 8px;
   }
@@ -531,9 +569,8 @@ html[data-locale="am"] .tc-opt[data-v="am"]::before { opacity: 1; transform: non
   justify-content: space-between;
   padding: 8px 16px;
   background: color-mix(in srgb, var(--code-bg) 94%, #ffffff);
-  border-bottom: 1px solid rgba(255,255,255,0.08);
   border-radius: 10px 10px 0 0;
-  font-size: 12px;
+  font-size: 13px;
   color: #9aa0a8;
   font-family: var(--mono);
 }
@@ -547,7 +584,7 @@ html[data-locale="am"] .tc-opt[data-v="am"]::before { opacity: 1; transform: non
 }
 .code-lang-label {
   font-weight: 500;
-  font-size: 12px;
+  font-size: 13px;
 }
 .code-copy-btn {
   background: none;
@@ -556,7 +593,7 @@ html[data-locale="am"] .tc-opt[data-v="am"]::before { opacity: 1; transform: non
   padding: 3px 8px;
   border-radius: 5px;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 13px;
   font-family: var(--sans);
   font-weight: 500;
   min-height: 28px;
@@ -580,12 +617,11 @@ html[data-locale="am"] .tc-opt[data-v="am"]::before { opacity: 1; transform: non
 /* inline code - light, not the dark block */
 .prose p code, .prose li code {
   font-family: var(--mono);
-  font-size: 13px;
-  background: var(--surface-alt);
-  color: var(--green-dark);
+  font-size: 0.88em;
+  background: var(--surface);
+  color: var(--ink);
   padding: 2px 6px;
   border-radius: 4px;
-  border: 1px solid var(--border);
   /* Wrap at normal break points first; split a token only when it alone is
      wider than the line (break-all split "reference": and 10-char IDs). */
   word-break: normal;
@@ -615,24 +651,18 @@ html[data-locale="am"] .tc-opt[data-v="am"]::before { opacity: 1; transform: non
   width: auto;
   min-width: 100%;
   border-collapse: collapse;
-  font-size: 14px;
-  background: var(--surface);
-  border-radius: 8px;
-  overflow: hidden;
+  font-size: 15px;
 }
 .prose table, table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 14px;
-  background: var(--surface);
-  border-radius: 8px;
-  overflow: hidden;
+  font-size: 15px;
 }
 .prose th, table th {
   text-align: left;
   padding: 10px 14px;
-  font-weight: 700;
-  font-size: 13px;
+  font-weight: 650;
+  font-size: 14px;
   color: var(--ink);
   border-bottom: 2px solid var(--border);
   white-space: nowrap;
@@ -641,33 +671,30 @@ html[data-locale="am"] .tc-opt[data-v="am"]::before { opacity: 1; transform: non
   padding: 10px 14px;
   border-bottom: 1px solid var(--border);
   color: var(--ink-2);
-  font-size: 13px;
+  font-size: 15px;
 }
 @media (max-width: 640px) {
-  .prose th, table th { padding: 8px 10px; font-size: 12px; }
-  .prose td, table td { padding: 8px 10px; font-size: 12px; }
+  .prose th, table th { padding: 8px 10px; font-size: 13px; }
+  .prose td, table td { padding: 8px 10px; font-size: 14px; }
 }
 
 /* accordion / details - professional styling */
 details {
   margin-bottom: 10px;
   padding: 0;
-  border: 1px solid var(--border);
+  border: 0;
   border-radius: var(--radius-md);
   background: var(--surface);
   overflow: hidden;
-  transition: border-color 0.15s;
-}@media (hover: hover) {
-
-details:hover { border-color: var(--border-strong); }
+  transition: background-color var(--dur-fast) var(--ease-out);
 }
-details[open] { border-color: var(--border-strong); }
 
 details summary {
   font-weight: 600;
-  font-size: 15px;
+  font-size: 17px;
   cursor: pointer;
-  padding: 14px 18px;
+  padding: 18px 20px;
+  min-height: 64px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -675,10 +702,8 @@ details summary {
   user-select: none;
   transition: background 0.15s;
 }
-details summary::-webkit-details-marker { display: none; }@media (hover: hover) {
-
-details summary:hover { background: var(--surface-alt); }
-}
+details summary::-webkit-details-marker { display: none; }
+@media (hover: hover) { details:not([open]):hover { background: var(--surface-alt); } }
 details summary::after {
   content: "";
   display: inline-block;
@@ -695,18 +720,15 @@ details[open] summary::after {
   transform: rotate(180deg);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20' fill='none'%3E%3Cpath d='M5 8l5 5 5-5' stroke='%23857a6d' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
 }
-details[open] summary {
-  border-bottom: 1px solid var(--border);
-}
 details > p, details > div {
-  padding: 14px 18px;
-  color: var(--ink-2);
-  font-size: 14px;
+  padding: 0 20px 20px;
+  color: var(--ink);
+  font-size: 16px;
   line-height: 1.6;
 }
 @media (max-width: 640px) {
-  details summary { font-size: 14px; padding: 12px 14px; }
-  details > p, details > div { padding: 12px 14px; font-size: 13px; }
+  details summary { font-size: 16px; padding: 16px; }
+  details > p, details > div { padding: 0 16px 16px; font-size: 16px; }
 }
 
 /* Press feedback. A control that does not move under the finger reads as
@@ -778,10 +800,10 @@ html[data-nav] .t-page-enter {
   /* Vertical padding so a question that wraps to two lines keeps its air;
      min-height still sets the one-line row. */
   padding: 12px 20px !important;
-  font-size: 15px !important;
-  font-weight: 500 !important;
+  font-size: 16px !important;
+  font-weight: 550 !important;
   color: var(--ink) !important;
-  min-height: 52px !important;
+  min-height: 56px !important;
   border: none !important;
   background: transparent !important;
   cursor: pointer !important;
@@ -808,8 +830,8 @@ html[data-nav] .t-page-enter {
   min-width: 0 !important;
 }
 .bouncy-accordion-content {
-  font-size: 14px !important;
-  line-height: 1.65 !important;
+  font-size: 16px !important;
+  line-height: 1.6 !important;
   color: var(--ink-2) !important;
   font-family: var(--sans) !important;
   padding: 0 20px 18px !important;
@@ -817,12 +839,12 @@ html[data-nav] .t-page-enter {
 @media (max-width: 640px) {
   .bouncy-accordion-trigger {
     padding: 12px 16px !important;
-    min-height: 48px !important;
-    font-size: 14px !important;
+    min-height: 52px !important;
+    font-size: 16px !important;
   }
   .bouncy-accordion-content {
     padding: 0 16px 16px !important;
-    font-size: 13px !important;
+    font-size: 16px !important;
   }
 }
 
@@ -831,7 +853,7 @@ html[data-nav] .t-page-enter {
 /* "Account required" is the one label a bank card carries (the exception that
    decides whether the reader can act). Plain text at the end of the row, no pill. */
 .bank-meta__chip {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
   color: var(--ink-2);
   white-space: nowrap;
@@ -856,11 +878,12 @@ html[data-nav] .t-page-enter {
 
 /* Footer: one column of 21px links becomes two columns of 44px rows. */
 .footer-links { display: flex; flex-direction: column; gap: 6px; }
-.footer-link { font-size: 13px; color: var(--ink-2); }
-.footer-link--more { color: var(--green-dark); font-weight: 600; }
+.footer-link { font-size: 14px; color: var(--ink-2); transition: color var(--dur-fast) var(--ease-out); }
+@media (hover: hover) { .footer-link:hover, .footer-legal-link:hover { color: var(--ink); } }
+.footer-link--more { color: var(--ink); font-weight: 600; }
 .footer-translate { display: inline-flex; margin-top: 12px; }
 .footer-legal-links { display: flex; gap: 16px; }
-.footer-legal-link { font-size: 12px; color: var(--ink-3); }
+.footer-legal-link { font-size: 13px; color: var(--ink-3); }
 @media (pointer: coarse) {
   .footer-links { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 16px; }
   .footer-link, .footer-legal-link { display: inline-flex; align-items: center; min-height: 44px; }
@@ -880,3 +903,25 @@ html[data-nav] .t-page-enter {
 /* Every in-page anchor (#faq, #cbe, the verdict) lands below the sticky
    nav, not under it. One rule instead of per-element scroll-margin. */
 html { scroll-padding-top: calc(var(--nav-h) + 16px); }
+
+/* ── Photographs (src/components/Photo.tsx) ── */
+.photo { position: relative; overflow: hidden; background: var(--surface); }
+.photo img { display: block; width: 100%; height: 100%; object-fit: cover; transition: transform 600ms var(--ease-out); }
+@media (hover: hover) { a:hover .photo img, .photo:hover img { transform: scale(1.025); } }
+@media (prefers-reduced-motion: reduce) { .photo img { transition: none; } }
+/* Photo credits: one small line at the foot of the page. */
+.photo-credits { margin-top: 96px; font-size: 13px; line-height: 1.6; color: var(--ink-3); }
+.photo-credits a { color: inherit; text-decoration: underline; text-decoration-color: color-mix(in srgb, currentColor 40%, transparent); text-underline-offset: 0.18em; }
+
+/* ── Entrance layer (src/components/motion/Reveal.tsx) ──
+   Parts below the first screen rise 24px and fade in once, staggered by
+   --rv-d. The hidden state exists only with script, without a reduced-motion
+   preference, and never in print: the reduced page is the finished page. */
+@media (prefers-reduced-motion: no-preference) {
+  html[data-rv] [data-rv=""] { opacity: 0; transform: translateY(24px); }
+  html[data-rv] [data-rv="in"] {
+    opacity: 1; transform: none;
+    transition: opacity 640ms var(--ease-out) var(--rv-d, 0ms), transform 640ms var(--ease-out) var(--rv-d, 0ms);
+  }
+}
+@media print { [data-rv] { opacity: 1 !important; transform: none !important; } }

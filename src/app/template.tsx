@@ -1,12 +1,17 @@
+import { Reveal } from "@/components/motion/Reveal";
+
 /**
  * Next.js App Router template - re-mounts on every navigation.
- * Wraps each route in a page-enter animation adapted from
- * transitions.dev's page side-by-side pattern.
- *
- * Uses CSS animation (not transition) so it plays on mount without
- * needing a exit/unmount coordination. Respects prefers-reduced-motion
- * via the .t-page-enter media query in globals.css.
+ * Wraps each route in a page-enter animation (opacity only, see
+ * .t-page-enter in globals.css) and mounts the entrance layer, which reads
+ * the new page's parts once it is in the DOM. Both respect
+ * prefers-reduced-motion.
  */
 export default function Template({ children }: { children: React.ReactNode }) {
-  return <div className="t-page-enter">{children}</div>;
+  return (
+    <div className="t-page-enter">
+      {children}
+      <Reveal />
+    </div>
+  );
 }

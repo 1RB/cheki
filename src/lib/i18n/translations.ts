@@ -23,8 +23,8 @@ export const translations = {
     },
     hero: {
       title: "Verify Ethiopian receipts for free",
-      titleLead: "Verify an Ethiopian receipt for free",
-      titleRest: "against the bank's own record.",
+      titleLead: "Verify Ethiopian receipts",
+      titleRest: "with the bank",
       bankLabel: "Bank or wallet",
       referenceLabel: "Receipt",
       referencePlaceholder: "e.g. https://mbreciept.cbe.com.et/fHCxExampleRcpt01",

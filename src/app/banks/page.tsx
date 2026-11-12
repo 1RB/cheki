@@ -122,7 +122,7 @@ export default function BanksPage() {
           </p>
           <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
             <a href={NEW_BANK_ISSUE_URL} target="_blank" rel="noopener" style={{
-              padding: "12px 24px", borderRadius: "8px", background: "var(--green-cta)", color: "var(--green-cta-fg)",
+              padding: "12px 24px", borderRadius: "8px", background: "var(--accent)", color: "var(--accent-ink)",
               fontSize: "14px", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "8px",
             }}>
               Submit a bank on GitHub
