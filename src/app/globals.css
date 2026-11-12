@@ -348,12 +348,12 @@ a { color: inherit; text-decoration: none; }
 }
 
 /* footer grid */
-.footer-grid { grid-template-columns: minmax(0, 1fr) !important; gap: 24px !important; }
+.footer-grid { display: grid; grid-template-columns: minmax(0, 1fr) !important; gap: 32px !important; }
 @media (min-width: 640px) {
   .footer-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important; }
 }
 @media (min-width: 900px) {
-  .footer-grid { grid-template-columns: 2fr minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) !important; gap: 20px !important; }
+  .footer-grid { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) !important; gap: 32px !important; }
 }
 
 /* nav: show desktop links, hide mobile toggle by default */
@@ -876,14 +876,24 @@ html[data-nav] .t-page-enter {
   select, textarea { font-size: 16px !important; }
 }
 
-/* Footer: one column of 21px links becomes two columns of 44px rows. */
-.footer-links { display: flex; flex-direction: column; gap: 6px; }
-.footer-link { font-size: 14px; color: var(--ink-2); transition: color var(--dur-fast) var(--ease-out); }
+/* Footer: no rule above it and none above the legal line; it is set apart by
+   space and a tone step (the --surface field). One column of links becomes
+   two columns of 44px rows on touch. */
+.site-footer { margin-top: 96px; background: var(--surface); }
+@media (min-width: 900px) { .site-footer { margin-top: 144px; } }
+/* A dark field that ends the page sits flush on the footer. */
+main:has(> .pg-band:last-child) + .site-footer, main:has(> .hp-band:last-child) + .site-footer { margin-top: 0; }
+.site-footer-inner { padding-top: 56px; padding-bottom: calc(40px + env(safe-area-inset-bottom, 0px)); }
+.footer-word { margin-bottom: 12px; font-weight: 750; font-size: 22px; letter-spacing: -0.035em; color: var(--ink); }
+.footer-head { margin-bottom: 12px; font-size: 15px; font-weight: 650; color: var(--ink); }
+.footer-legal { margin-top: 56px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px 24px; }
+.footer-links { display: flex; flex-direction: column; gap: 8px; }
+.footer-link { font-size: 15px; color: var(--ink-2); transition: color var(--dur-fast) var(--ease-out); }
 @media (hover: hover) { .footer-link:hover, .footer-legal-link:hover { color: var(--ink); } }
 .footer-link--more { color: var(--ink); font-weight: 600; }
 .footer-translate { display: inline-flex; margin-top: 12px; }
 .footer-legal-links { display: flex; gap: 16px; }
-.footer-legal-link { font-size: 13px; color: var(--ink-3); }
+.footer-legal-link { font-size: 14px; color: var(--ink-2); }
 @media (pointer: coarse) {
   .footer-links { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 16px; }
   .footer-link, .footer-legal-link { display: inline-flex; align-items: center; min-height: 44px; }
