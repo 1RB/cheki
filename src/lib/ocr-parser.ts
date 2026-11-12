@@ -166,6 +166,9 @@ const OCR_PATTERNS: { bank: string; pattern: RegExp; confidence: OcrParseConfide
  * SMS. A letter in the first 7 characters is required, so a 16-digit account
  * or card number is not taken for one.
  */
+/** Siinqee named anywhere on the receipt, whatever the OCR casing. */
+const SIINQEE_CLUE = /SIINQEE|SINQEE/i;
+
 const SIINQEE_REF_IN_TEXT = /(?<![0-9A-Za-z])(?=[0-9A-Za-z]{0,6}[A-Za-z])[0-9A-Z]{3}[0-9A-Za-z]{4}\d{9}(?![0-9A-Za-z])/;
 
 // Bank-specific label overrides. For banks whose references are plain numbers
@@ -243,8 +246,12 @@ function parseReceiptTextInternal(text: string): OcrParseResult | null {
   }
 
   // Siinqee references are case-sensitive (12B004k...), so they are read
-  // from the text as written, never from the uppercased copy below.
-  if (bankFromText === "siinqee") {
+  // from the text as written, never from the uppercased copy below. A
+  // Siinqee receipt can name another bank (a transfer to CBE), which the
+  // clue list would pick first, so Siinqee wins whenever the receipt names
+  // Siinqee AND carries a reference in Siinqee's own shape (16 characters,
+  // nine trailing digits; no other bank's reference has that shape).
+  if (bankFromText === "siinqee" || SIINQEE_CLUE.test(text)) {
     const m = text.match(SIINQEE_REF_IN_TEXT);
     if (m) return { reference: m[0], bank: "siinqee", confidence: "medium", rawText: text };
   }

@@ -10,6 +10,8 @@
  *   down         a live bank whose endpoint was unreachable or answered differently
  *   geo          a live bank that only answers Ethiopian networks, so the
  *                cloud probe (outside Ethiopia) cannot see it
+ *   unknown      a live bank whose probe got no answer, where no answer is not
+ *                yet known to mean down (Siinqee): neither green nor red
  *   unsupported  cheki does not check this bank's receipts yet (in development)
  *
  * There is no "slow": status.json records no latency today. When it does,
@@ -18,12 +20,13 @@
 import type { BankManifestEntry } from "./core/types";
 import type { BankHealth, HealthStatus } from "./health";
 
-export type BankState = "working" | "down" | "geo" | "unsupported";
+export type BankState = "working" | "down" | "geo" | "unknown" | "unsupported";
 
 export const STATE_LABEL: Record<BankState, string> = {
   working: "Working",
   down: "Down",
   geo: "Geo-restricted",
+  unknown: "Not checked",
   unsupported: "Not supported yet",
 };
 
@@ -36,6 +39,8 @@ export function stateMeaning(state: BankState, bank: string, measuredFrom: strin
       return `${bank} checks may fail right now: the endpoint did not answer the daily probe as expected. A failed check says "couldn't check", never "fake".`;
     case "geo":
       return `${bank} only answers Ethiopian networks, so the probe from ${measuredFrom} cannot reach it. From an Ethiopian network, checks usually work.`;
+    case "unknown":
+      return `The daily probe from ${measuredFrom} got no answer from ${bank}, so its state is unknown. A failed check says "couldn't check", never "fake".`;
     case "unsupported":
       return `cheki does not check ${bank} receipts yet, whatever its endpoint does.`;
   }
@@ -44,11 +49,11 @@ export function stateMeaning(state: BankState, bank: string, measuredFrom: strin
 export function bankState(bank: Pick<BankManifestEntry, "status" | "geoBlocked">, status: HealthStatus): BankState {
   if (bank.status !== "live") return "unsupported";
   if (status === "degraded") return "down";
-  if (status === "not-checked") return bank.geoBlocked ? "geo" : "working";
+  if (status === "not-checked") return bank.geoBlocked ? "geo" : "unknown";
   return "working";
 }
 
-/** The dot's tone. Green is "answering as expected", nothing stronger. */
+/** The dot's tone. Green is "answering as expected", nothing stronger; unknown is neutral. */
 export function stateTone(state: BankState): "green" | "red" | "amber" | "neutral" {
   return state === "working" ? "green" : state === "down" ? "red" : state === "geo" ? "amber" : "neutral";
 }
@@ -58,6 +63,7 @@ export interface StatusSummary {
   working: number;
   down: number;
   geo: number;
+  unknown: number;
   tone: "green" | "amber" | "red" | "neutral";
 }
 
@@ -66,8 +72,9 @@ export function summarize(states: BankState[]): StatusSummary {
   const working = live.filter((s) => s === "working").length;
   const down = live.filter((s) => s === "down").length;
   const geo = live.filter((s) => s === "geo").length;
+  const unknown = live.filter((s) => s === "unknown").length;
   const tone = live.length === 0 ? "neutral" : down === live.length ? "red" : down > 0 ? "amber" : "green";
-  return { live: live.length, working, down, geo, tone };
+  return { live: live.length, working, down, geo, unknown, tone };
 }
 
 /** "Telebirr and M-Pesa", "CBE, BOA and Dashen". */

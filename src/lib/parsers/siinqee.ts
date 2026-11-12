@@ -180,6 +180,31 @@ function isoDate(v: string | undefined): string | undefined {
   return `${y}-${String(mo).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
 }
 
+/**
+ * Words that start the customer or company block, in any casing. A
+ * description never runs into them: Transaction Description is free text,
+ * and if a layout puts the customer block (or a label in other casing that
+ * the label list misses) after it, the value would carry phone, TIN or
+ * branch into the result.
+ */
+const NOT_DESCRIPTION_RE = /\b(?:customer|company address|address|region|city|vat registration|phone|tin|branch|email|website|payer|receiver|amount|charge|total|disaster|currency|reference|transaction date)\b/i;
+/** Siinqee's narratives are short; anything longer is not a safe narrative. */
+const MAX_DESCRIPTION = 80;
+
+/**
+ * The transaction description, cut at the first word that belongs to another
+ * block. Omitted when nothing is left, or when it is still longer than a
+ * narrative can be (its end could not be found safely).
+ */
+export function boundedDescription(v: string | undefined): string | undefined {
+  const s = value(v);
+  if (!s) return undefined;
+  const cut = NOT_DESCRIPTION_RE.exec(s);
+  const head = value(cut ? s.slice(0, cut.index) : s);
+  if (!head || head.length > MAX_DESCRIPTION) return undefined;
+  return head;
+}
+
 /** A positive amount, or undefined ("-" and words are missing). */
 function amountOf(v: string | undefined): number | undefined {
   const s = value(v)?.replace(/^(?:ETB|Birr)\s*/i, "");
@@ -208,7 +233,7 @@ export function parseSiinqeeText(text: string, requestedReference: string): { pa
 
   const currency = value(f["Currency"])?.split(" ")[0]?.toUpperCase();
   const date = isoDate(f["Transaction Date"]);
-  const description = value(f["Transaction Description"]);
+  const description = boundedDescription(f["Transaction Description"]);
   const fee = amountOf(f["Charge Amount"]);
   const vat = amountOf(f["VAT Amount"]);
   const total = amountOf(f["Total Amount"]);

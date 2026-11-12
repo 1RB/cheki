@@ -19,6 +19,7 @@ import {
   siinqeeFields,
   maskSiinqeeAccount,
   checkSiinqeeReference,
+  boundedDescription,
 } from "@/lib/parsers/siinqee";
 import { detectBankFromUrl } from "@/lib/adapters/url-detector";
 import { isAllowedUrl } from "@/lib/security/hosts";
@@ -210,6 +211,13 @@ describe("Siinqee links", () => {
     // A 16-digit number is not taken for a Siinqee reference.
     expect(parseReceiptText("Siinqee Bank account 1000000000000001")?.reference).not.toBe("1000000000000001");
   });
+
+  it("OCR keeps Siinqee (and the reference's case) when the receipt also names CBE", () => {
+    const text = `Siinqee Bank S.C\nCustomer Receipt\nTransaction is successful!\nReceiver Bank: Commercial Bank of Ethiopia (CBE)\nReference No ${SYNTH_SIINQEE_IPS_REF.replace("IIPS", "iiPS")}\nAmount 1,500.00`;
+    expect(parseReceiptText(text)).toMatchObject({ bank: "siinqee", reference: SYNTH_SIINQEE_IPS_REF.replace("IIPS", "iiPS") });
+    // A CBE receipt with no Siinqee-shaped reference stays CBE.
+    expect(parseReceiptText("Commercial Bank of Ethiopia\nTransferred to Siinqee Bank\nReference No FT26304ABCDE")?.bank).toBe("cbe");
+  });
 });
 
 describe("Siinqee through the verifier", () => {
@@ -317,5 +325,29 @@ describe("Siinqee verdicts", () => {
     const v = presentVerdict({ success: false, httpStatus: 422, bankCode: "siinqee", error: `[Siinqee Bank] ${SIINQEE_NOT_CONFIRMED}`, checkedUrl: SYNTH_SIINQEE_LINK });
     expect(v.kind).toBe("unconfirmed");
     expect(v.tone).toBe("amber");
+  });
+});
+
+describe("Siinqee description stays inside the transaction block", () => {
+  it("cuts at the customer block in any casing, and drops what it can't bound", () => {
+    expect(boundedDescription("ACCOUNT TO ACCOUNT TRANSFER")).toBe("ACCOUNT TO ACCOUNT TRANSFER");
+    expect(boundedDescription(`ACCOUNT TO ACCOUNT TRANSFER CUSTOMER INFORMATION customer name: ${SYNTH_CUSTOMER.name} customer phone: ${SYNTH_CUSTOMER.phone}`)).toBe("ACCOUNT TO ACCOUNT TRANSFER");
+    expect(boundedDescription(`school fee tin: ${SYNTH_CUSTOMER.tin}`)).toBe("school fee");
+    expect(boundedDescription(`Phone: ${SYNTH_CUSTOMER.phone}`)).toBeUndefined();
+    expect(boundedDescription("X".repeat(200))).toBeUndefined();
+  });
+
+  it("a receipt with the customer block after the description, labels in other casing, leaks nothing", () => {
+    const text = [
+      "Siinqee Bank S.C Customer Receipt Transaction is successful!",
+      `Reference No ${SYNTH_SIINQEE_REF} Transaction Date 22/10/2026 Currency ETB`,
+      "Transferred Amount 1,500.00 Total Amount 1,500.00",
+      `Transaction Description ACCOUNT TO ACCOUNT TRANSFER CUSTOMER INFORMATION CUSTOMER NAME: ${SYNTH_CUSTOMER.name} CUSTOMER PHONE: ${SYNTH_CUSTOMER.phone} tin: ${SYNTH_CUSTOMER.tin} branch: ${SYNTH_CUSTOMER.branch}`,
+    ].join(" ");
+    const { parsed } = parseSiinqeeText(text, SYNTH_SIINQEE_REF);
+    expect(parsed.verified).toBe(true);
+    expect(parsed.transactionType).toBe("ACCOUNT TO ACCOUNT TRANSFER");
+    const out = JSON.stringify(parsed);
+    for (const secret of Object.values(SYNTH_CUSTOMER)) expect(out).not.toContain(secret);
   });
 });

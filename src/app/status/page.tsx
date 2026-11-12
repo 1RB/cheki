@@ -25,7 +25,7 @@ function abs(iso: string | undefined): string | undefined {
   return p ? formatAbsolute(p, "en") : undefined;
 }
 
-const ORDER: BankState[] = ["down", "geo", "working"];
+const ORDER: BankState[] = ["down", "unknown", "geo", "working"];
 
 /** What to do instead, when the state calls for it. */
 function workaround(state: BankState, label: string): React.ReactNode {
@@ -61,12 +61,14 @@ export default function StatusPage() {
   const sum = summarize(rows.map((r) => r.state));
   const down = live.filter((r) => r.state === "down").map((r) => r.doc.label);
   const geo = live.filter((r) => r.state === "geo").map((r) => r.doc.label);
+  const unknown = live.filter((r) => r.state === "unknown").map((r) => r.doc.label);
   // Names never break inside themselves ("M-Pesa" at its hyphen).
   const names = (list: string[]) =>
     list.flatMap((n, i) => [i === 0 ? null : i === list.length - 1 ? " and " : ", ", <span key={n} className="st-nowrap">{n}</span>]);
   const sub = (
     <>
-      {down.length > 0 ? <>{names(down)} {down.length === 1 ? "is" : "are"} down. </> : sum.live > 0 ? "Every bank we can reach answered as expected. " : null}
+      {down.length > 0 ? <>{names(down)} {down.length === 1 ? "is" : "are"} down. </> : sum.live > 0 && unknown.length === 0 ? "Every bank we can reach answered as expected. " : null}
+      {unknown.length > 0 ? <>{names(unknown)} didn&apos;t answer the probe, so {unknown.length === 1 ? "its" : "their"} state is unknown. </> : null}
       {geo.length > 0 ? <>{names(geo)} only answer{geo.length === 1 ? "s" : ""} Ethiopian networks, so we can&apos;t see {geo.length === 1 ? "it" : "them"} from here.</> : null}
     </>
   );
@@ -130,7 +132,7 @@ export default function StatusPage() {
                           {older.map((h) => {
                             const fid = h.id.split(":")[1];
                             const f = r.bank.formats?.find((x) => x.id === fid);
-                            const s: BankState = h.status === "degraded" ? "down" : h.status === "not-checked" ? "geo" : "working";
+                            const s: BankState = h.status === "degraded" ? "down" : h.status === "not-checked" ? (r.bank.geoBlocked ? "geo" : "unknown") : "working";
                             return (
                               <div key={h.id}>
                                 <dt>Older receipts</dt>
