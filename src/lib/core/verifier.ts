@@ -2,9 +2,11 @@
  * Verifier - the orchestrator. Pure business logic, no direct I/O.
  *
  * Flow:
- *   1. Resolve the input: a QR payload, a receipt link or a reference
- *      becomes (bank, reference, account, phone). Links are only used to
- *      extract those parts; the bank URL is always rebuilt from a fixed host.
+ *   1. Resolve the input (resolveInput, src/lib/core/resolve-input.ts): a
+ *      QR payload, a receipt link or a reference becomes (bank, reference,
+ *      account, phone), a BOA QR, or an error. Pure, no recursion. Links are
+ *      only used to extract those parts; the bank URL is always rebuilt from
+ *      a fixed host.
  *   2. Gate the bank: it exists, is live, has a parser, and the account or
  *      phone it needs is present and well formed.
  *   3. Validate the reference (no path/query characters, strict charset).
@@ -27,7 +29,7 @@ import type { Result, Receipt, VerifyRequest, ChekiError, ParsedReceipt, BankMan
 import { ok, err } from "./types";
 import { getParser, type RegisteredParser } from "../parsers/registry";
 import { getBank, suggestBank } from "../manifest/loader";
-import { detectBankFromUrl, isUrl, looksLikeUrl } from "../adapters/url-detector";
+import { resolveInput, resolveReference, type ReferenceTarget, type ResolvedInput } from "./resolve-input";
 import { CBEParser } from "../parsers/cbe";
 import { DashenParser, DASHEN_NOT_FOUND } from "../parsers/dashen";
 import { BOAParser } from "../parsers/boa";
@@ -38,20 +40,25 @@ import { ZamZamParser } from "../parsers/zamzam";
 import { BunnaParser } from "../parsers/bunna";
 import { verificationGate, gateFailureMessage } from "./gate";
 import { checkAccountSuffix, checkPhone, checkReference } from "../security/reference";
-import { parseTelebirrQr } from "../qr/telebirr";
-import { parseDashenQr } from "../qr/dashen";
 import { selectFormat, formatNeeds, formatAccountDigits, fillTemplate } from "../manifest/formats";
 import { canonicalReference } from "../reference-case";
 
 /** Receipts verified at the same time in one batch. */
 export const BATCH_CONCURRENCY = 5;
-const MAX_QR_LENGTH = 4096;
 
 /** BOA has no receipt under this reference + account pair (typed input). */
 export const BOA_NOT_FOUND =
   "BOA has no receipt with this reference and account. BOA files some receipts under the payer's account: if you entered the receiving account, try the last 5 digits of the source account.";
 /** BOA answered, but not in a shape cheki can read: not a "no record". */
 export const BOA_UNREADABLE = "BOA sent an answer cheki could not read, so the receipt is not confirmed. Try again in a minute.";
+/**
+ * BOA said it has no receipt under this reference + account pair. The BOA QR
+ * flow branches on it (ask again under the QR's source account), so it is
+ * recognised in this one place rather than by comparing messages inline.
+ */
+function isBoaNotFound(r: Result<Receipt, ChekiError>): r is { ok: false; error: Extract<ChekiError, { kind: "EXTRACTION_ERROR" }> } {
+  return !r.ok && r.error.kind === "EXTRACTION_ERROR" && r.error.message === BOA_NOT_FOUND;
+}
 /** BOA has no receipt under either account a QR names. */
 export const BOA_QR_NOT_FOUND = "BOA has no receipt for the reference and accounts on this QR code.";
 const MAX_BANK_LENGTH = 32;
@@ -59,10 +66,6 @@ const MAX_BANK_LENGTH = 32;
 /** "Account on the receipt" → "account on the receipt" (keeps "FT" etc. intact). */
 function lowerFirst(s: string): string {
   return s.charAt(0).toLowerCase() + s.slice(1);
-}
-
-function asOptionalString(v: unknown): string | undefined {
-  return typeof v === "string" ? v : undefined;
 }
 
 /** Strip debugging data before a receipt leaves the core. */
@@ -89,7 +92,7 @@ export class Verifier {
   async verify(request: VerifyRequest): Promise<Result<Receipt, ChekiError>> {
     const startTime = Date.now();
     try {
-      return await this.resolve(request, startTime, 0);
+      return await this.lookup(resolveInput(request), startTime);
     } catch {
       return err({ kind: "INTERNAL_ERROR", message: "Verification failed unexpectedly. Try again." });
     }
@@ -115,136 +118,28 @@ export class Verifier {
   // ─── Input resolution ─────────────────────────────────────────────
 
   /**
-   * `fromLink`: the reference was read out of a receipt link or QR, so it is
-   * case-normalised but never compacted (see canonicalReference).
+   * Look up what resolveInput (src/lib/core/resolve-input.ts) decided. Every
+   * kind is handled here; a new kind fails to compile until it is.
    */
-  private async resolve(request: VerifyRequest, startTime: number, depth: number, fromLink = false): Promise<Result<Receipt, ChekiError>> {
-    if (depth > 2) {
-      return err({ kind: "MISSING_INPUT", field: "reference", message: "Could not resolve this receipt." });
+  private lookup(input: ResolvedInput, startTime: number): Promise<Result<Receipt, ChekiError>> {
+    switch (input.kind) {
+      case "invalid":
+        return Promise.resolve(err(input.error));
+      case "boaQr":
+        return this.verifyBoaQr(input.qrData, startTime);
+      case "reference":
+        return this.verifyReference(input.target, startTime);
+      default: {
+        const never: never = input;
+        throw new Error(`Unhandled input kind: ${JSON.stringify(never)}`);
+      }
     }
-    const bank = asOptionalString(request.bank);
-    const reference = asOptionalString(request.reference)?.trim();
-    const accountNumber = asOptionalString(request.accountNumber)?.trim() || undefined;
-    const phoneNumber = asOptionalString(request.phoneNumber)?.trim() || undefined;
-    const qrData = asOptionalString(request.qrData)?.trim();
-
-    if (!reference && !qrData) {
-      return err({
-        kind: "MISSING_INPUT",
-        field: "reference",
-        message: "Reference number, receipt URL, or QR data is required.",
-      });
-    }
-
-    // QR payloads
-    if (qrData) {
-      if (qrData.length > MAX_QR_LENGTH) {
-        return err({ kind: "MISSING_INPUT", field: "qrData", message: "QR data is too long." });
-      }
-      // A Telebirr receipt QR (CRC-checked, so it can't be mistaken for a
-      // BOA ciphertext). Only the transaction number inside is used.
-      const telebirr = parseTelebirrQr(qrData);
-      if (telebirr.ok) {
-        const named = (bank || "").trim().toLowerCase();
-        if (named && named !== "telebirr") {
-          return err({
-            kind: "MISSING_INPUT",
-            field: "qrData",
-            message: "This QR code is from a Telebirr receipt. Check it with bank \"telebirr\".",
-          });
-        }
-        return this.resolve({ bank: "telebirr", reference: telebirr.reference }, startTime, depth + 1, true);
-      }
-      // A Dashen Super App receipt QR: the FT Ref XOR a fixed key. The endpoint
-      // refuses the raw token (HTTP 401), so the reference must be decoded
-      // before any URL is built. The prefix is unambiguous, so it is matched
-      // before the BOA and URL branches below.
-      const dashen = parseDashenQr(qrData);
-      if (dashen.ok) {
-        const named = (bank || "").trim().toLowerCase();
-        if (named && named !== "dashen") {
-          return err({
-            kind: "MISSING_INPUT",
-            field: "qrData",
-            message: "This QR code is from a Dashen receipt. Check it with bank \"dashen\".",
-          });
-        }
-        return this.resolve({ bank: "dashen", reference: dashen.reference }, startTime, depth + 1, true);
-      }
-      if ((bank || "").toLowerCase() === "boa") {
-        return this.verifyBoaQr(qrData, startTime, depth);
-      }
-      if (looksLikeUrl(qrData)) {
-        // Only a receipt link cheki recognises. An unknown URL is rejected,
-        // never fetched or used as a reference.
-        const detected = isUrl(qrData) ? detectBankFromUrl(qrData) : null;
-        if (!detected) {
-          return err({
-            kind: "MISSING_INPUT",
-            field: "qrData",
-            message: "This QR code is not a receipt link cheki recognises.",
-          });
-        }
-        // A CBE Birr receipt QR is its own receipt link: the receipt number
-        // and the payer phone it was issued for (TID + PH). Like a Telebirr
-        // QR it names its bank, and the pair in it wins over a typed phone,
-        // since CBE Birr only answers for the pair that belongs together.
-        if (detected.bank === "cbebirr") {
-          const named = (bank || "").trim().toLowerCase();
-          if (named && named !== "cbebirr") {
-            return err({
-              kind: "MISSING_INPUT",
-              field: "qrData",
-              message: "This QR code is from a CBE Birr receipt. Check it with bank \"cbebirr\".",
-            });
-          }
-          return this.resolve(
-            { bank: "cbebirr", reference: detected.reference, phoneNumber: detected.phoneNumber ?? phoneNumber },
-            startTime,
-            depth + 1,
-            true
-          );
-        }
-        return this.resolve({ bank: bank ?? "", reference: qrData, accountNumber, phoneNumber }, startTime, depth + 1);
-      }
-      // Plain reference inside the QR, for the bank the caller named.
-      return this.resolve({ bank: bank ?? "", reference: qrData, accountNumber, phoneNumber }, startTime, depth + 1, true);
-    }
-
-    let resolvedBank = bank;
-    let resolvedRef = reference!;
-    let resolvedAccount = accountNumber;
-    let resolvedPhone = phoneNumber;
-    let resolvedFromLink = fromLink;
-
-    // Receipt links. Anything with URL syntax must be a proper http(s) link
-    // to a known bank host; "http:/x", "http:evil.com", "//x" are rejected.
-    if (looksLikeUrl(resolvedRef)) {
-      const detected = isUrl(resolvedRef) ? detectBankFromUrl(resolvedRef) : null;
-      if (!detected) {
-        return err({
-          kind: "MISSING_INPUT",
-          field: "reference",
-          message: "Could not detect bank from URL. Please paste the reference number manually.",
-        });
-      }
-      resolvedBank = detected.bank;
-      resolvedRef = detected.reference;
-      resolvedFromLink = true;
-      if (detected.accountNumber && !resolvedAccount) resolvedAccount = detected.accountNumber;
-      if (detected.phoneNumber && !resolvedPhone) resolvedPhone = detected.phoneNumber;
-    }
-
-    return this.verifyReference(
-      { bank: resolvedBank, reference: resolvedRef, accountNumber: resolvedAccount, phoneNumber: resolvedPhone, fromLink: resolvedFromLink },
-      startTime
-    );
   }
 
   // ─── Bank + input gates, fetch, parse, verification gate ─────────────
 
   private async verifyReference(
-    rawInput: { bank?: string; reference: string; accountNumber?: string; phoneNumber?: string; fromLink?: boolean },
+    rawInput: ReferenceTarget,
     startTime: number
   ): Promise<Result<Receipt, ChekiError>> {
     const bank = rawInput.bank;
@@ -575,7 +470,7 @@ export class Verifier {
    * one. The decrypted reference and receiver account are only used to look
    * the receipt up at BOA; the result shown is BOA's, not the QR's.
    */
-  private async verifyBoaQr(qrData: string, startTime: number, depth: number): Promise<Result<Receipt, ChekiError>> {
+  private async verifyBoaQr(qrData: string, startTime: number): Promise<Result<Receipt, ChekiError>> {
     const manifestEntry = getBank("boa");
     const parser = getParser("boa") as BOAParser | undefined;
     if (!manifestEntry || !parser || manifestEntry.status !== "live") {
@@ -625,11 +520,9 @@ export class Verifier {
         durationMs: Date.now() - startTime,
       });
 
-    let lookup = await this.resolve(
-      { bank: "boa", reference: refCheck.value, accountNumber: decoded.receiverAccount },
-      startTime,
-      depth + 1,
-      true
+    let lookup = await this.lookup(
+      resolveReference({ bank: "boa", reference: refCheck.value, accountNumber: decoded.receiverAccount }, true),
+      startTime
     );
 
     // BOA files some receipts under the source account's suffix instead of
@@ -640,17 +533,13 @@ export class Verifier {
     // is the same QR's own field, never a guess, and BOA still decides.
     const senderCheck = decoded.senderAccount ? checkAccountSuffix(decoded.senderAccount, digits) : null;
     if (
-      !lookup.ok &&
-      lookup.error.kind === "EXTRACTION_ERROR" &&
-      lookup.error.message === BOA_NOT_FOUND &&
+      isBoaNotFound(lookup) &&
       senderCheck?.ok &&
       senderCheck.value !== accountCheck.value
     ) {
-      const bySender = await this.resolve(
-        { bank: "boa", reference: refCheck.value, accountNumber: decoded.senderAccount },
-        startTime,
-        depth + 1,
-        true
+      const bySender = await this.lookup(
+        resolveReference({ bank: "boa", reference: refCheck.value, accountNumber: decoded.senderAccount }, true),
+        startTime
       );
       // Only a found receipt replaces the first answer. If this second request
       // fails, BOA's "no record" under the receiver stands, so a QR is never
@@ -659,7 +548,7 @@ export class Verifier {
     }
     // The typed-input hint (try the other account) does not apply to a QR:
     // cheki already asked under every full account the QR names.
-    if (!lookup.ok && lookup.error.kind === "EXTRACTION_ERROR" && lookup.error.message === BOA_NOT_FOUND) {
+    if (isBoaNotFound(lookup)) {
       lookup = err({ ...lookup.error, message: BOA_QR_NOT_FOUND });
     }
 
