@@ -16,6 +16,7 @@ import { liveProviders, LIVE_BANK_COUNT, IN_DEVELOPMENT_BANK_COUNT } from "@/lib
 import { getAllBanks } from "@/lib/manifest/loader";
 import { RATE_LIMITS } from "@/lib/rate-limit-config";
 import { SAMPLE, SAMPLE_VERIFY_RESPONSE } from "@/lib/sample-receipt";
+import { BRAND_PROFILES } from "@/lib/site-schema";
 
 const ROOT = join(__dirname, "..", "..");
 const read = (p: string) => readFileSync(join(ROOT, p), "utf8");
@@ -36,7 +37,7 @@ const prose = (() => {
 
 describe("llms.txt structure (llmstxt.org)", () => {
   it("opens with an H1 and a blockquote summary", () => {
-    expect(lines[0]).toBe("# cheki");
+    expect(lines[0]).toBe("# cheki.et");
     expect(lines[1]).toBe("");
     expect(lines[2]).toMatch(/^> \S/);
   });
@@ -64,9 +65,29 @@ describe("llms.txt structure (llmstxt.org)", () => {
       const path = u.replace("https://cheki.et/", "");
       if (path.startsWith("api/")) continue;
       const guide = path.match(/^guides\/(.+)$/);
+      const bank = path.match(/^banks\/([a-z0-9-]+)$/);
       if (guide) expect(read("src/lib/guides.ts"), u).toContain(`slug: "${guide[1]}"`);
+      else if (bank) expect(getAllBanks().find((b) => b.id === bank[1] && b.status === "live"), u).toBeTruthy();
       else expect(() => read(`src/app/${path}/page.tsx`), u).not.toThrow();
     }
+  });
+});
+
+describe("llms.txt entity", () => {
+  it("says it is not affiliated with any bank", () => {
+    expect(txt).toMatch(/not affiliated with any bank/);
+  });
+
+  it("has a Check a receipt list with a /banks/{id} link for every live bank", () => {
+    const start = lines.indexOf("## Check a receipt");
+    expect(start).toBeGreaterThan(0);
+    const end = lines.findIndex((l, i) => i > start && l.startsWith("## "));
+    const section = lines.slice(start + 1, end).join("\n");
+    for (const b of liveProviders) expect(section, b.id).toContain(`(https://cheki.et/banks/${b.id})`);
+  });
+
+  it("lists the brand profiles that sameAs names", () => {
+    for (const p of BRAND_PROFILES) expect(txt, p.name).toContain(`(${p.url})`);
   });
 });
 
