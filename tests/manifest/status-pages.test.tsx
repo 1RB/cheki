@@ -37,6 +37,9 @@ describe("status-view", () => {
     expect(summarize(["working", "down"]).tone).toBe("amber");
     expect(summarize(["down"]).tone).toBe("red");
     expect(summarize(["unsupported"]).tone).toBe("neutral");
+    // Unanswered probes are never green.
+    expect(summarize(["unknown"]).tone).toBe("neutral");
+    expect(summarize(["working", "unknown"]).tone).toBe("amber");
   });
 
   it("says where it measured from", () => {

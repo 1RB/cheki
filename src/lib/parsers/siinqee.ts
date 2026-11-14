@@ -187,14 +187,16 @@ function isoDate(v: string | undefined): string | undefined {
  * the label list misses) after it, the value would carry phone, TIN or
  * branch into the result.
  */
-const NOT_DESCRIPTION_RE = /\b(?:customer|company address|address|region|city|vat registration|phone|tin|branch|email|website|payer|receiver|amount|charge|total|disaster|currency|reference|transaction date)\b/i;
+const NOT_DESCRIPTION_RE = /customer|company|address|vat\s*registration|phone|branch|email|website|payer|receiver|amount|charge|disaster|currency|reference|transaction\s*date|\bregion\b|\bcity\b|\btin\b/i;
 /** Siinqee's narratives are short; anything longer is not a safe narrative. */
 const MAX_DESCRIPTION = 80;
 
 /**
  * The transaction description, cut at the first word that belongs to another
- * block. Omitted when nothing is left, or when it is still longer than a
- * narrative can be (its end could not be found safely).
+ * block (matched inside joined PDF words too: "CUSTOMERINFORMATION").
+ * Omitted whenever its end is uncertain: nothing left, longer than a
+ * narrative can be, a "label:" left in it, or a run of 7+ digits (a phone,
+ * TIN or account).
  */
 export function boundedDescription(v: string | undefined): string | undefined {
   const s = value(v);
@@ -202,6 +204,7 @@ export function boundedDescription(v: string | undefined): string | undefined {
   const cut = NOT_DESCRIPTION_RE.exec(s);
   const head = value(cut ? s.slice(0, cut.index) : s);
   if (!head || head.length > MAX_DESCRIPTION) return undefined;
+  if (head.includes(":") || /\d{7,}/.test(head)) return undefined;
   return head;
 }
 

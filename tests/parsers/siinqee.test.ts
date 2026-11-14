@@ -217,6 +217,8 @@ describe("Siinqee links", () => {
     expect(parseReceiptText(text)).toMatchObject({ bank: "siinqee", reference: SYNTH_SIINQEE_IPS_REF.replace("IIPS", "iiPS") });
     // A CBE receipt with no Siinqee-shaped reference stays CBE.
     expect(parseReceiptText("Commercial Bank of Ethiopia\nTransferred to Siinqee Bank\nReference No FT26304ABCDE")?.bank).toBe("cbe");
+    // A Dashen receipt to a Siinqee account stays Dashen, though its FT ref has Siinqee's shape.
+    expect(parseReceiptText("Dashen Bank\nReceiver Bank: Siinqee Bank\nFT Reference: B22WDTI000000001")?.bank).toBe("dashen");
   });
 });
 
@@ -335,6 +337,11 @@ describe("Siinqee description stays inside the transaction block", () => {
     expect(boundedDescription(`school fee tin: ${SYNTH_CUSTOMER.tin}`)).toBe("school fee");
     expect(boundedDescription(`Phone: ${SYNTH_CUSTOMER.phone}`)).toBeUndefined();
     expect(boundedDescription("X".repeat(200))).toBeUndefined();
+    // Joined PDF labels (no spaces) are still a boundary.
+    expect(boundedDescription(`TRANSFER CUSTOMERINFORMATION CUSTOMERNAME: ${SYNTH_CUSTOMER.name} CUSTOMERPHONE: ${SYNTH_CUSTOMER.phone}`)).toBe("TRANSFER");
+    // An unknown label or a long digit run means the end is uncertain: omitted.
+    expect(boundedDescription(`TRANSFER MOBILENO: ${SYNTH_CUSTOMER.phone}`)).toBeUndefined();
+    expect(boundedDescription(`TRANSFER ${SYNTH_CUSTOMER.tin}`)).toBeUndefined();
   });
 
   it("a receipt with the customer block after the description, labels in other casing, leaks nothing", () => {

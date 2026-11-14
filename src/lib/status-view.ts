@@ -73,7 +73,10 @@ export function summarize(states: BankState[]): StatusSummary {
   const down = live.filter((s) => s === "down").length;
   const geo = live.filter((s) => s === "geo").length;
   const unknown = live.filter((s) => s === "unknown").length;
-  const tone = live.length === 0 ? "neutral" : down === live.length ? "red" : down > 0 ? "amber" : "green";
+  // Green only when nothing is down and nothing went unanswered; all unknown
+  // is neutral (no reading), some unknown is amber (not a clean bill).
+  const tone =
+    live.length === 0 || unknown === live.length ? "neutral" : down === live.length ? "red" : down > 0 || unknown > 0 ? "amber" : "green";
   return { live: live.length, working, down, geo, unknown, tone };
 }
 
