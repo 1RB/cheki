@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "cheki - Verify Ethiopian Receipts",
+    name: "cheki.et: Check Ethiopian Bank Receipts",
     short_name: "cheki",
     description:
       "Free, open-source Ethiopian bank receipt verification. Checks CBE, BOA, Dashen and more with the bank; Telebirr and M-Pesa open on their official receipt pages. No signup, no API key.",
