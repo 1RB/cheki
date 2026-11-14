@@ -29,6 +29,7 @@ import type { Result, Receipt, VerifyRequest, ChekiError, ParsedReceipt, BankMan
 import { ok, err, isNotFoundCode } from "./types";
 import { getParser, type RegisteredParser } from "../parsers/registry";
 import { getBank, suggestBank } from "../manifest/loader";
+import { readQrPayload } from "../qr/chain";
 import { resolveReference, type ResolvedReference } from "../reference-input";
 import { CBEParser } from "../parsers/cbe";
 import { DashenParser, DASHEN_NOT_FOUND } from "../parsers/dashen";
@@ -41,14 +42,13 @@ import { BunnaParser } from "../parsers/bunna";
 import { WegagenParser } from "../parsers/wegagen";
 import { verificationGate, gateFailureMessage, gateErrorCode } from "./gate";
 import { checkAccountSuffix, checkPhone, checkReference } from "../security/reference";
-import { parseTelebirrQr } from "../qr/telebirr";
-import { parseDashenQr } from "../qr/dashen";
-import { parseWegagenQr } from "../qr/wegagen";
 import { selectFormat, formatNeeds, formatAccountDigits, fillTemplate } from "../manifest/formats";
 
 /** Receipts verified at the same time in one batch. */
 export const BATCH_CONCURRENCY = 5;
 const MAX_QR_LENGTH = 4096;
+/** What a QR-format receipt is called in "This QR code is from a X receipt". */
+const QR_RECEIPT_NAME = { telebirr: "Telebirr", dashen: "Dashen", wegagen: "Wegagen" } as const;
 
 /** BOA has no receipt under this reference + account pair (typed input). */
 export const BOA_NOT_FOUND =
@@ -147,51 +147,27 @@ export class Verifier {
       if (qrData.length > MAX_QR_LENGTH) {
         return err({ kind: "MISSING_INPUT", field: "qrData", message: "QR data is too long." });
       }
-      // A Telebirr receipt QR (CRC-checked, so it can't be mistaken for a
-      // BOA ciphertext). Only the transaction number inside is used.
-      const telebirr = parseTelebirrQr(qrData);
-      if (telebirr.ok) {
+      // A QR that names its own bank is checked with the bank it names. The
+      // chain (src/lib/qr/chain.ts) decides which format this is and in what
+      // order the formats are tried, so the detector, the panel and this
+      // branch cannot disagree about it. A caller that named a different
+      // bank is told which bank the QR is from, never re-routed to it.
+      const qr = readQrPayload(qrData);
+      if (qr.format && qr.format !== "boa") {
         const named = (bank || "").trim().toLowerCase();
-        if (named && named !== "telebirr") {
+        if (named && named !== qr.format) {
           return err({
             kind: "MISSING_INPUT",
             field: "qrData",
-            message: "This QR code is from a Telebirr receipt. Check it with bank \"telebirr\".",
+            message: `This QR code is from a ${QR_RECEIPT_NAME[qr.format]} receipt. Check it with bank "${qr.format}".`,
           });
         }
-        return this.resolve({ bank: "telebirr", reference: telebirr.reference, fromLink: true }, startTime, depth + 1);
-      }
-      // A Dashen Super App receipt QR: the FT Ref XOR a fixed key. The endpoint
-      // refuses the raw token (HTTP 401), so the reference must be decoded
-      // before any URL is built. The prefix is unambiguous, so it is matched
-      // before the BOA and URL branches below.
-      const dashen = parseDashenQr(qrData);
-      if (dashen.ok) {
-        const named = (bank || "").trim().toLowerCase();
-        if (named && named !== "dashen") {
-          return err({
-            kind: "MISSING_INPUT",
-            field: "qrData",
-            message: "This QR code is from a Dashen receipt. Check it with bank \"dashen\".",
-          });
-        }
-        return this.resolve({ bank: "dashen", reference: dashen.reference, fromLink: true }, startTime, depth + 1);
-      }
-      // A Wegagen receipt QR: prose with a share link inside it. Only the
-      // 24-character share id after ?id= is used; it is looked up exactly
-      // like a pasted share link. The prefix is unambiguous, so it is matched
-      // before the BOA and URL branches below.
-      const wegagen = parseWegagenQr(qrData);
-      if (wegagen.ok) {
-        const named = (bank || "").trim().toLowerCase();
-        if (named && named !== "wegagen") {
-          return err({
-            kind: "MISSING_INPUT",
-            field: "qrData",
-            message: "This QR code is from a Wegagen receipt. Check it with bank \"wegagen\".",
-          });
-        }
-        return this.resolve({ bank: "wegagen", reference: wegagen.shareId, fromLink: true }, startTime, depth + 1);
+        // A Telebirr or Dashen QR carries only the number the bank looks the
+        // receipt up by (CRC-checked for Telebirr, XOR a fixed key for Dashen,
+        // which the endpoint refuses raw with HTTP 401); a Wegagen QR carries
+        // the 24-character share id. Either way only that value is used, and
+        // it is checked exactly like a typed one.
+        return this.resolve({ bank: qr.format, reference: qr.reference, fromLink: true }, startTime, depth + 1);
       }
       if ((bank || "").toLowerCase() === "boa") {
         return this.verifyBoaQr(qrData, startTime, depth);

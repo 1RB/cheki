@@ -1,7 +1,7 @@
 "use client";
 
 import { useDeferredValue, useMemo } from "react";
-import { detectInput, extraFieldProblem, type Detection } from "@/lib/verify/detect";
+import { detectInput, type Detection } from "@/lib/verify/detect";
 
 /**
  * Live bank + format detection for the smart input. Detection is pure and
@@ -10,11 +10,9 @@ import { detectInput, extraFieldProblem, type Detection } from "@/lib/verify/det
  */
 export function useReceiptDetection(
   input: string,
-  opts: { lockedBank?: string; overrideBank?: string; extra: string }
-): { detection: Detection; extraProblem: "phone" | "account" | null } {
+  opts: { lockedBank?: string; overrideBank?: string }
+): Detection {
   const deferred = useDeferredValue(input);
-  const { lockedBank, overrideBank, extra } = opts;
-  const detection = useMemo(() => detectInput(deferred, { lockedBank, overrideBank }), [deferred, lockedBank, overrideBank]);
-  const extraProblem = useMemo(() => extraFieldProblem(detection, extra), [detection, extra]);
-  return { detection, extraProblem };
+  const { lockedBank, overrideBank } = opts;
+  return useMemo(() => detectInput(deferred, { lockedBank, overrideBank }), [deferred, lockedBank, overrideBank]);
 }
