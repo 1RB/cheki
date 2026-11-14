@@ -310,4 +310,29 @@ void main() {
     expect(parseRetryAfter(HttpDate.format(now.add(const Duration(seconds: 5))), now), const Duration(seconds: 5));
     expect(parseRetryAfter('soon'), isNull);
   });
+
+  // isVerified is the API's verificationState() rule, in all 16 combinations
+  // of the four flags. The rule is restated here because the SDK is a
+  // separate package and cannot import the server's copy; the TypeScript
+  // SDK's tests run the same matrix against that copy.
+  test('isVerified is one rule over every combination of the flags', () {
+    const flags = <bool>[true, false];
+    for (final success in flags) {
+      for (final verified in flags) {
+        for (final decodedOnly in flags) {
+          for (final parsed in flags) {
+            final r = VerifyResult(
+              success: success,
+              verified: verified,
+              decodedOnly: decodedOnly,
+              parsed: parsed,
+            );
+            final want = success && verified && !decodedOnly && !parsed;
+            expect(r.isVerified, want,
+                reason: 'success=$success verified=$verified decodedOnly=$decodedOnly parsed=$parsed');
+          }
+        }
+      }
+    }
+  });
 }

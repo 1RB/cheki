@@ -297,9 +297,20 @@ export interface HealthStatus {
   banks: BankHealth[];
 }
 
-/** True only when the bank confirmed the receipt. `success`, `decodedOnly` and `parsed` are not proof. */
+/**
+ * True only when the bank confirmed the receipt: `success`, `verified`, and
+ * neither `decodedOnly` nor `parsed`. The other three are not proof: a BOA QR
+ * the bank could not confirm and content someone pasted are both handled
+ * requests, never payments.
+ *
+ * This is the server's `verificationState()` rule, re-read from JSON because
+ * the SDK is a separate package. tests/security/ui-verification-state.test.ts
+ * runs both over every combination of those four flags, so they cannot drift.
+ */
 export function isVerified(result: unknown): result is VerifyResult & { verified: true } {
-  return typeof result === "object" && result !== null && (result as { verified?: unknown }).verified === true;
+  if (typeof result !== "object" || result === null) return false;
+  const r = result as { success?: unknown; verified?: unknown; decodedOnly?: unknown; parsed?: unknown };
+  return r.success === true && r.verified === true && r.decodedOnly !== true && r.parsed !== true;
 }
 
 // ============================================================================

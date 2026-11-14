@@ -15,7 +15,9 @@ import { postJson } from "@/lib/verify/client";
 import { Icon, Copy01Icon, CopyCheckIcon } from "@/components/Icon";
 
 // The bookmarklet runs on the bank's page. Every value it prints goes through
-// esc() before innerHTML, including the API's error message.
+// esc() before innerHTML, including the API's error message. It shows what it
+// read only for `parsed: true`, which is what /api/parse answers with (it can
+// never say verified): the same "parsed" state the verdict card shows amber.
 const BOOKMARKLET_CODE = `(function(){
     var url=location.href;
     var bank='telebirr';
@@ -41,7 +43,7 @@ const BOOKMARKLET_CODE = `(function(){
     .then(function(r){return r.json();})
     .then(function(d){
       var esc=function(v){return String(v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});};
-      if(d.success&&(d.verified||d.parsed)){
+      if(d.parsed===true){
         var rows=[];
         if(d.senderName)rows.push(['From',d.senderName]);
         if(d.receiverName)rows.push(['To',d.receiverName]);

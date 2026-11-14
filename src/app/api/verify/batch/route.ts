@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Verifier, errorToHttpStatus, errorPayload } from "@/lib";
+import { verificationState, type VerifyResult } from "@/lib/banks";
 import { getCached, setCached, verificationCacheKey } from "@/lib/receipt-cache";
 import { limiters, rateLimited } from "@/lib/rate-limit";
 import { readJsonCapped, bodyErrorResponse } from "@/lib/http/read-body";
@@ -83,6 +84,14 @@ export async function POST(request: NextRequest) {
 
     let freshCursor = 0;
     type BatchItem = { [key: string]: unknown; success?: boolean };
+    // A row is JSON, so its flags are `unknown`. This only reads them;
+    // verificationState() is what decides whether the row is verified.
+    const stateOf = (row: BatchItem): Pick<VerifyResult, "success" | "verified" | "decodedOnly" | "parsed"> => ({
+      success: row.success === true,
+      verified: row.verified === true,
+      decodedOnly: row.decodedOnly === true,
+      parsed: row.parsed === true,
+    });
     const results: BatchItem[] = inputs.map((_, i) => {
       const hit = hits[i];
       if (hit) {
@@ -98,13 +107,16 @@ export async function POST(request: NextRequest) {
         return { ...errorPayload(r.error), status: errorToHttpStatus(r.error) };
       }
       const payload = { success: true, ...r.value };
-      if (r.value.verified) setCached(keys[i], payload);
+      // Only a bank-confirmed receipt earns a cache entry, by the same rule
+      // that decides the count below.
+      if (verificationState(payload) === "verified") setCached(keys[i], payload);
       return { ...payload, cached: false };
     });
 
-    // The SDKs read `verified` and `failed` counts. Only verified:true counts
-    // as verified; a decoded-only BOA QR or an error counts as failed.
-    const verifiedCount = results.filter((r) => r.verified === true).length;
+    // The SDKs read `verified` and `failed` counts. The count comes from the
+    // one rule every surface uses: only a bank-confirmed row is verified, so
+    // a decoded-only BOA QR, a parse and an error all count as failed.
+    const verifiedCount = results.filter((row) => verificationState(stateOf(row)) === "verified").length;
     return NextResponse.json({
       success: true,
       results,

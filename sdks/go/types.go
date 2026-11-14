@@ -75,9 +75,15 @@ type VerifyResult struct {
 	CheckedURL string `json:"checkedUrl,omitempty"`
 }
 
-// IsVerified reports whether the bank confirmed the receipt. Success,
-// DecodedOnly and Parsed are not proof of payment.
-func (r *VerifyResult) IsVerified() bool { return r != nil && r.Verified }
+// IsVerified reports whether the bank confirmed the receipt: Success and
+// Verified, with neither DecodedOnly nor Parsed. Success alone only says the
+// request was handled; a BOA QR the bank could not confirm and content read
+// from a page are never payments. This is the API's verificationState() rule,
+// re-read from JSON because the SDK is a separate module: every SDK's test
+// suite asserts it over all combinations of those four flags.
+func (r *VerifyResult) IsVerified() bool {
+	return r != nil && r.Success && r.Verified && !r.DecodedOnly && !r.Parsed
+}
 
 // BatchItem is one entry of BatchResult.Results. A failed item has Success
 // false, Error set, and Status (the HTTP status a single verify would have

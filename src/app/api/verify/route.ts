@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Verifier, errorToHttpStatus, errorPayload } from "@/lib";
+import { verificationState } from "@/lib/banks";
 import { getCached, setCached, verificationCacheKey } from "@/lib/receipt-cache";
 import { limiters, rateLimited } from "@/lib/rate-limit";
 import { readJsonCapped, bodyErrorResponse } from "@/lib/http/read-body";
@@ -61,7 +62,10 @@ export async function POST(request: NextRequest) {
     }
 
     const payload = { success: true, ...result.value };
-    if (result.value.verified) setCached(key, payload);
+    // Only a bank-confirmed receipt earns a cache entry, by the same rule the
+    // verdict card uses: a cached answer is never judged differently from a
+    // live one.
+    if (verificationState(payload) === "verified") setCached(key, payload);
 
     return NextResponse.json({ ...payload, cached: false }, {
       headers: { "x-cheki-cache": "miss" },

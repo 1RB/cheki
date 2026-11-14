@@ -8,6 +8,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { verificationState } from "@/lib/banks";
 import { cliVerdict } from "@/cli/verdict";
+import { isVerified } from "../../sdks/typescript/src/index";
 
 describe("verificationState", () => {
   it("is verified only for success + verified:true", () => {
@@ -115,5 +116,61 @@ describe("CLI verdict", () => {
 
   it("an unverified result exits non-zero", () => {
     expect(cliVerdict({ verified: false }).exitCode).not.toBe(0);
+  });
+});
+
+// "Is this verified?" is decided in several places: the API's
+// verificationState, the CLI, the batch count, the bookmarklet, and every SDK
+// (which is a separate package and cannot import the API's copy). They must be
+// one rule, so both TypeScript implementations are run against each other and
+// against the rule as the docs state it, over every combination of the four
+// flags. Each SDK's own suite runs the same matrix over its copy.
+describe("one rule for verified, wherever it is decided", () => {
+  type Flags = { success: boolean; verified: boolean; decodedOnly: boolean; parsed: boolean };
+  const matrix: Flags[] = [];
+  for (const success of [true, false]) {
+    for (const verified of [true, false]) {
+      for (const decodedOnly of [true, false]) {
+        for (const parsed of [true, false]) matrix.push({ success, verified, decodedOnly, parsed });
+      }
+    }
+  }
+  /** The rule as the docs state it: a handled request that the bank confirmed. */
+  const confirmed = (f: Flags) => f.success && f.verified && !f.decodedOnly && !f.parsed;
+
+  it("covers all 16 combinations, exactly one of them verified", () => {
+    expect(matrix).toHaveLength(16);
+    expect(matrix.filter(confirmed)).toHaveLength(1);
+  });
+
+  it("verificationState, the SDK's isVerified and the CLI agree with it", () => {
+    const bad: string[] = [];
+    for (const f of matrix) {
+      const want = confirmed(f);
+      if ((verificationState(f) === "verified") !== want) bad.push(`verificationState ${JSON.stringify(f)}`);
+      if (isVerified(f) !== want) bad.push(`isVerified ${JSON.stringify(f)}`);
+      // The CLI is only ever handed a Receipt, which exists because the
+      // request was handled: its half of the matrix is success: true.
+      if (f.success && (cliVerdict(f).exitCode === 0) !== want) bad.push(`cliVerdict ${JSON.stringify(f)}`);
+    }
+    expect(bad).toEqual([]);
+  });
+
+  it("the batch count, the cache and the bookmarklet read the same state", () => {
+    const read = (p: string) => readFileSync(join(__dirname, "..", "..", p), "utf8");
+    const batchRoute = read("src/app/api/verify/batch/route.ts");
+    expect(batchRoute).toMatch(/verificationState\(stateOf\(row\)\) === "verified"/);
+    expect(batchRoute).not.toMatch(/verified === true\)\.length/);
+    // The cache holds only what the rule calls verified, in both routes.
+    for (const route of ["src/app/api/verify/route.ts", "src/app/api/verify/batch/route.ts"]) {
+      const src = read(route);
+      expect(src).toMatch(/if \(verificationState\(payload\) === "verified"\) setCached/);
+      expect(src).not.toMatch(/value\.verified\) setCached/);
+    }
+    const geo = read("src/components/verify/GeoFallback.tsx");
+    // The bookmarklet shows what it read only when the parse endpoint says
+    // parsed, which is the state the verdict card shows amber.
+    expect(geo).toMatch(/if\(d\.parsed===true\)\{/);
+    expect(geo).not.toMatch(/d\.verified\|\|d\.parsed/);
   });
 });

@@ -134,9 +134,12 @@ class VerifyResult {
     this.index,
   });
 
-  /// True only when the bank confirmed the receipt. [success], [decodedOnly]
-  /// and [parsed] are not proof of payment.
-  bool get isVerified => success && verified;
+  /// True only when the bank confirmed the receipt: [success] and [verified],
+  /// with neither [decodedOnly] nor [parsed]. The others are handled requests,
+  /// never payments. This is the API's `verificationState()` rule, re-read
+  /// from JSON because the SDK is a separate package; the test suite asserts
+  /// it over every combination of those four flags.
+  bool get isVerified => success && verified && !decodedOnly && !parsed;
 
   /// Creates a [VerifyResult] from a decoded JSON map.
   factory VerifyResult.fromJson(Map<String, dynamic> json, {int? index}) {
