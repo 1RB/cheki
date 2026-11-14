@@ -24,7 +24,7 @@ export const metadata: Metadata = {
   description: DESCRIPTION,
   alternates: { canonical: "/endpoints" },
   openGraph: {
-    images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "cheki - verify Ethiopian receipts for free" }],
+    images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "cheki.et: check Ethiopian bank receipts for free" }],
     title: TITLE,
     description: DESCRIPTION,
     type: "article",
