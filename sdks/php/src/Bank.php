@@ -19,7 +19,7 @@ class Bank
     public ?string $type;
     /** 'live' or 'in-development'. */
     public ?string $status;
-    /** Live, but not yet confirmed with enough real receipts (M-Pesa, ZamZam, CBE Birr and Bunna today). */
+    /** Live, but not yet confirmed with enough real receipts (M-Pesa, ZamZam, CBE Birr, Bunna and Siinqee today). */
     public bool $beta;
     public bool $requiresAccount;
     /** Trailing account digits the bank needs, when it needs an account. */

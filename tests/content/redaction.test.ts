@@ -111,7 +111,9 @@ describe("the redaction how-to", () => {
 });
 
 describe("no real receipt data in the repo", () => {
-  it("no tracked text file contains a removed name, number or reference", () => {
+  // Reads every text file in the repo, so it gets more than the 5 s default on
+  // a busy machine.
+  it("no tracked text file contains a removed name, number or reference", { timeout: 30_000 }, () => {
     const hits: string[] = [];
     for (const file of walk(ROOT)) {
       for (const t of tokens(readFileSync(file, "utf8"))) {

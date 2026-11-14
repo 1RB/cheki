@@ -4,6 +4,18 @@ Every cheki SDK ships the same version: npm `cheki-verify` (and `@1rb/cheki-veri
 
 ## Unreleased
 
+**Siinqee Bank receipts (beta)**
+- cheki reads Siinqee Bank receipts from `receipts.siinqeebank.com:871/generate/{reference}`, the link in Siinqee's SMS. The page is keyed by the reference alone, so the 16-character reference after "Ref:" in the SMS works typed too (bank `siinqee`). It is case-sensitive (it can hold a lowercase letter, e.g. `12B004k262950007`) and never uppercased.
+- The receipt page is read as HTML or, when the body is a PDF, through PDF text extraction; fields are taken by label, so the markup does not matter. Verified only when the page says "Transaction is successful" and its Reference No equals the reference asked for exactly. Amount: Transferred Amount (Amount on an incoming instant payment), then Total Amount. Charge Amount, VAT Amount and Total Amount map to `serviceFee`, `serviceFeeVat` and `totalPaid` when numeric. Accounts keep Siinqee's mask (at most 4 digits either side) or are remasked. The customer block (name, phone, TIN, branch) is never returned or kept.
+- Anything else (no success line, another reference, no amount) is not confirmed: 422 with `checkedUrl`, never "fake". What Siinqee answers for an unknown reference has not been observed, and cheki's server has not fetched a receipt live yet, hence beta.
+- Another verifier reports about five views per receipt: a Siinqee check makes one request and never retries, not even on a timeout or 5xx. Confirmed receipts are cached as before.
+- Host and port 871 are allowlisted from the manifest; the URL is rebuilt from the validated reference. Links are recognised in the checker, the QR path and OCR text (OCR keeps the reference's case). The older eBirr route (`receipt.ebirr.com/siinqee/…`, 404 since 2026-10-10) stays as a legacy format.
+- Manifest format confidence gains `observed` (seen on real receipts, not yet fetched by cheki) next to `verified` and `inferred`; `/api/banks` and the SDK types document it. The health check probes an all-zero reference and accepts any HTTP answer until the unknown-reference shape is known; no answer is "not checked", not "degraded".
+- Siinqee's description now says it grew out of the Oromia Credit and Saving Share Company microfinance institution. eBirr's `coop` tenant is Cooperative Bank of Oromia (COOPay-Ebirr), a different bank, so its links are checked as eBirr, not Siinqee.
+
+**eBirr: transactioninfo.ebirr.com links (KAAFI)**
+- `transactioninfo.ebirr.com/{tenant}-Ebirr/receipt/{number}` links (seen on a KAAFI receipt) are recognised. The host is not in public DNS, so they only open on Ethiopian networks and are never fetched: `/api/verify` answers 502 with the link, rebuilt on the fixed host, as `fallbackUrl`, and the checker says to open it on a phone on an Ethiopian network and compare the amount, receiver and date. `receipt.ebirr.com` links work as before.
+
 **Bunna Bank (beta)**
 - cheki checks Bunna Bank receipts. Paste the receipt link (`online.bunnabanksc.com/receipt/#/{token}`) or scan the QR on the receipt (`online.bunnabanksc.com/#/receipt-v2/{token}`): cheki sends the token to the JSON service behind Bunna's own receipt page and shows the amount, date, payer, receiver (account numbers masked by Bunna) and Bunna's transaction reference. Beta: one real receipt confirmed so far.
 - The token is opaque base64 and case-sensitive. Only its URL encoding is normalised (`%2B`, a `+` that became a space, base64url, missing padding), so a link, the QR and a pasted token share one cache entry. A typed transaction number (`BB…`) is rejected before any request: Bunna does not look receipts up by it.

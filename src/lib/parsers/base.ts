@@ -8,8 +8,9 @@
  * The base class handles:
  *   - HTTP fetching through safeFetch: host allowlist on every hop, manual
  *     redirects, a total deadline and a response size cap
- *   - Retries for network errors and 5xx only (at most 2 attempts in total);
- *     a 4xx, including 404, is a definite answer and is never retried
+ *   - Retries for network errors and 5xx only (at most 2 attempts in total,
+ *     or the parser's own maxAttempts); a 4xx, including 404, is a definite
+ *     answer and is never retried
  *   - Geo-blocked banks (Telebirr, M-Pesa): one plain attempt with a short
  *     timeout. They only answer Ethiopian IPs, and no header trick changes
  *     that, so we fail fast and hand the user the receipt link instead.
@@ -64,6 +65,12 @@ export abstract class BaseParser {
    * overrides this.
    */
   protected readonly notFoundStatuses: readonly number[] = [404];
+  /**
+   * Attempts per receipt fetch. A bank that counts views per receipt
+   * (Siinqee: about five, by another verifier's report) sets 1, so a slow
+   * answer is never fetched a second time.
+   */
+  protected readonly maxAttempts: number = MAX_ATTEMPTS;
   /** Message for a not-found status; a generic one is used when unset. */
   protected readonly notFoundMessage?: string;
 
@@ -126,11 +133,12 @@ export abstract class BaseParser {
     }
 
     let last: Attempt | undefined;
-    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    const attempts = Math.max(1, Math.min(this.maxAttempts, MAX_ATTEMPTS));
+    for (let attempt = 1; attempt <= attempts; attempt++) {
       last = this.geoBlocked ? await this.fetchGeoBlocked(url) : await this.doFetch(url);
       // A geo-block does not lift on a retry: one attempt, then the fallback link.
       if (last.result.ok || !last.retryable || this.geoBlocked) break;
-      if (attempt < MAX_ATTEMPTS) await sleep(RETRY_BACKOFF_MS);
+      if (attempt < attempts) await sleep(RETRY_BACKOFF_MS);
     }
     const result = last!.result;
 

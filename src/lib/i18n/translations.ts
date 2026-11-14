@@ -159,6 +159,11 @@ export const translations = {
           subtitle: "{bank} only answers Ethiopian networks, so cheki can't confirm this receipt yet.",
           next: "Before you release goods, check the amount, the receiver's name and the date on {bank}'s page.",
         },
+        localOnly: {
+          title: "Not checked: this link only opens in Ethiopia",
+          subtitle: "This {bank} receipt link only opens on Ethiopian networks, so cheki's server can't check it.",
+          next: "Open the link on a phone on an Ethiopian network and check the amount, the receiver's name and the date before you release goods.",
+        },
         openAtBank: { title: "{bank} didn't show cheki the receipt", subtitle: "{bank} sent back an empty page, which usually means the receipt number and payer phone don't match. Check both, or open the receipt on {bank}'s own site." },
         invalidInput: { title: "Check what you entered", subtitle: "That doesn't look like a receipt reference for this bank." },
       },

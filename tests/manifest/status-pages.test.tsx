@@ -26,6 +26,8 @@ describe("status-view", () => {
     expect(bankState(live, "live")).toBe("working");
     expect(bankState(live, "degraded")).toBe("down");
     expect(bankState({ status: "live", geoBlocked: true }, "not-checked")).toBe("geo");
+    // An unanswered probe on a bank that is not geo-blocked is neither green nor red.
+    expect(bankState({ status: "live" }, "not-checked")).toBe("unknown");
     expect(bankState({ status: "in-development" }, "live")).toBe("unsupported");
     expect(bankState({ status: "in-development" }, "degraded")).toBe("unsupported");
   });
@@ -35,6 +37,9 @@ describe("status-view", () => {
     expect(summarize(["working", "down"]).tone).toBe("amber");
     expect(summarize(["down"]).tone).toBe("red");
     expect(summarize(["unsupported"]).tone).toBe("neutral");
+    // Unanswered probes are never green.
+    expect(summarize(["unknown"]).tone).toBe("neutral");
+    expect(summarize(["working", "unknown"]).tone).toBe("amber");
   });
 
   it("says where it measured from", () => {

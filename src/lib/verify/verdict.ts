@@ -23,6 +23,7 @@ import { classifyStatus } from "@/lib/core/status";
 import { tEn, type Translate } from "@/lib/i18n/translate";
 import { formatAgeDays, parseTimestamp } from "@/lib/time/relative";
 import { referenceExample } from "@/lib/reference-case";
+import { EBIRR_LOCAL_HOST } from "@/lib/adapters/url-detector";
 
 /** "info" is a neutral note (grey dot): worth reading, not a warning. */
 export type FraudCheckState = "pass" | "warn" | "mismatch" | "unknown" | "info";
@@ -135,6 +136,14 @@ export interface PresentOptions {
 
 const HTTPS = /^https:\/\//i;
 
+function hostOf(url: string): string | undefined {
+  try {
+    return new URL(url).hostname.toLowerCase();
+  } catch {
+    return undefined;
+  }
+}
+
 export function findBank(codeOrName: string | undefined | null): Bank | undefined {
   if (!codeOrName) return undefined;
   const raw = String(codeOrName).trim();
@@ -238,6 +247,14 @@ export function presentVerdict(result: VerifyResult | null | undefined, opts: Pr
     // does not claim it is.
     if (fallbackUrl && !bank?.geoBlocked && bank?.code === "cbebirr") {
       return neutral("geoBlocked", t("verify.verdict.openAtBank.title", { bank: short }), t("verify.verdict.openAtBank.subtitle", { bank: short }), { fallbackUrl });
+    }
+    // A link only Ethiopian networks can open (eBirr's transactioninfo
+    // host): no bank blocked anything, cheki's server just can't reach it.
+    if (fallbackUrl && hostOf(fallbackUrl) === EBIRR_LOCAL_HOST) {
+      return neutral("geoBlocked", t("verify.verdict.localOnly.title"), t("verify.verdict.localOnly.subtitle", { bank: short }), {
+        fallbackUrl,
+        nextStep: t("verify.verdict.localOnly.next"),
+      });
     }
     if (fallbackUrl || (bank?.geoBlocked && (status === 502 || status === 504))) {
       // Never green, never a judgement: cheki did not see the receipt. The

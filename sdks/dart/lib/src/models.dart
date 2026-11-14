@@ -262,7 +262,7 @@ class BankInfo {
   final String status;
 
   /// Live, but not yet confirmed with enough real receipts (M-Pesa,
-  /// ZamZam, CBE Birr and Bunna today).
+  /// ZamZam, CBE Birr, Bunna and Siinqee today).
   final bool beta;
   final bool requiresAccount;
 
@@ -545,7 +545,8 @@ class ReceiptFormat {
   /// False when cheki documents the format but can't check it yet.
   final bool supported;
 
-  /// `verified` (observed by cheki) or `inferred`.
+  /// `verified` (checked by cheki), `observed` (seen on real receipts, not yet
+  /// fetched by cheki) or `inferred`.
   final String confidence;
 
   /// Constructs a [ReceiptFormat].
