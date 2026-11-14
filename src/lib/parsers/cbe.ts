@@ -192,6 +192,9 @@ export class CBENewParser extends BaseParser {
   readonly requiresAccount = false;
   readonly accountDigits?: number = undefined;
   readonly requiresPhone = false;
+  // The current CBE format is looked up by its Receipt ID (a share token);
+  // the receipt it returns carries the FT transaction id instead.
+  readonly referenceIsOpaqueToken = true;
 
   private static readonly API_URL = "https://mb.cbe.com.et/api/v1/transactions/public/transaction-detail";
   /**

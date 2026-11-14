@@ -120,7 +120,7 @@ describe("MpesaParser PDF fields", () => {
       paymentChannel: "APP",
     });
     expect(parsed.transactionStatus).toBeUndefined();
-    expect(verificationGate(parsed, { bankId: "mpesa", requestedReference: REF })).toEqual({ ok: true });
+    expect(verificationGate(parsed, { requestedReference: REF })).toEqual({ ok: true });
   });
 
   it("reads flowed text (one long line) the same way", () => {

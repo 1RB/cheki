@@ -167,6 +167,11 @@ export class WegagenParser extends BaseParser {
   readonly requiresAccount = false;
   readonly accountDigits?: number = undefined;
   readonly requiresPhone = false;
+  // Looked up by the 24-character share id (the printed 16-character
+  // Reference No plus three more fields); the record carries the printed
+  // reference, which is a prefix of the share id and can never equal it.
+  // The parser checks the prefix (WegagenParser.parseRecord).
+  readonly referenceIsOpaqueToken = true;
 
   normalizeReference(ref: string): Checked<string> {
     return checkWegagenId(ref);

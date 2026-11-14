@@ -16,6 +16,7 @@
  */
 import type { ParsedReceipt, HttpResult, Result, ChekiError } from "../core/types";
 import { ok, err } from "../core/types";
+import { getBank } from "../manifest/loader";
 import { checkReference, type Checked } from "../security/reference";
 import { canonicalReference } from "../reference-case";
 import { assertAllowedUrl } from "../security/hosts";
@@ -50,7 +51,27 @@ export abstract class BaseParser {
   abstract readonly accountDigits?: number;
   abstract readonly requiresPhone: boolean;
   readonly sslVerify: boolean = true;
-  readonly geoBlocked: boolean = false;
+  /**
+   * The bank only answers Ethiopian IPs, so one plain request with a short
+   * timeout is made and the receipt link is handed to the user instead.
+   * Declared in src/lib/manifest/banks.json (geoBlocked): the manifest is
+   * the single source of truth for it, and this reads it, so there is no
+   * second copy to keep in step. A parser whose bank is not in the manifest
+   * (a test double) is not geo-blocked.
+   */
+  get geoBlocked(): boolean {
+    return getBank(this.bankId)?.geoBlocked === true;
+  }
+  /**
+   * This bank is looked up by an opaque share token, not by the transaction
+   * reference printed on the receipt, so the reference the receipt returns
+   * can never equal the requested one and the verification gate's reference
+   * check (src/lib/core/gate.ts) must be skipped for it. The parser is the
+   * only place that knows how its own bank is looked up, so the gate is
+   * passed this flag and fails closed when it is absent. The contract copy
+   * of the list is sdks/fixtures/api-contract.json (gate.opaqueLookupParsers).
+   */
+  readonly referenceIsOpaqueToken: boolean = false;
   /**
    * Read the body as bytes even when responseType is not "pdf" (a bank that
    * may answer with a PDF or with HTML, like CBE Birr). Such a bank gets the

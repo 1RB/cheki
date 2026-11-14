@@ -275,7 +275,7 @@ describe("CBE Birr real PDF layout (synthetic fixture)", () => {
       paymentChannel: "API",
       amountInWords: "One Thousand Two Hundred Fifty ETB and Fifty Cents",
     });
-    expect(verificationGate(r, { bankId: "cbebirr", requestedReference: "DTS41AB2C90" })).toEqual({ ok: true });
+    expect(verificationGate(r, { requestedReference: "DTS41AB2C90" })).toEqual({ ok: true });
   });
 
   it("reads a wallet-to-bank receipt: the receiver is the Receiver Name row, not the bank on the credit row", async () => {
@@ -341,9 +341,9 @@ describe("CBE Birr real PDF layout (synthetic fixture)", () => {
 
   it("the gate rejects a receipt whose number is not the one requested, or that did not complete", async () => {
     const r = await read(buildSyntheticCbeBirrPdf());
-    expect(verificationGate(r, { bankId: "cbebirr", requestedReference: "DTS41AB2C91" }).ok).toBe(false);
+    expect(verificationGate(r, { requestedReference: "DTS41AB2C91" }).ok).toBe(false);
     const failed = await read(buildSyntheticCbeBirrPdf({ status: "Failed" }));
-    expect(verificationGate(failed, { bankId: "cbebirr", requestedReference: "DTS41AB2C90" }).ok).toBe(false);
+    expect(verificationGate(failed, { requestedReference: "DTS41AB2C90" }).ok).toBe(false);
   });
 
   it("still reads the core fields from flowed text (content-stream order, no rows)", async () => {

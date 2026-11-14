@@ -41,6 +41,8 @@ export class EBirrParser extends BaseParser {
   readonly requiresAccount = false;
   readonly accountDigits?: number = undefined;
   readonly requiresPhone = false;
+  // The receipt link carries an opaque token, which is what is looked up.
+  readonly referenceIsOpaqueToken = true;
 
   /**
    * Accepts "tenant/token" or a https://receipt.ebirr.com/tenant/token link and

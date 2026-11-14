@@ -135,17 +135,17 @@ describe("gate: CBE Receipt ID is an opaque token", () => {
   };
 
   it("passes a cbe-new receipt whose returned reference is the FT id, not the Receipt ID", () => {
-    expect(verificationGate({ ...receipt, reference: "FT26SAMPLE01" }, { bankId: "cbe-new", requestedReference: "fHCxExampleRcpt01" })).toEqual({ ok: true });
+    expect(verificationGate({ ...receipt, reference: "FT26SAMPLE01" }, { referenceIsOpaqueToken: true, requestedReference: "fHCxExampleRcpt01" })).toEqual({ ok: true });
   });
 
   it("still fails a mismatched reference for a non-opaque bank (legacy CBE FT, Dashen)", () => {
-    expect(verificationGate({ ...receipt, reference: "FT00000XXXXX" }, { bankId: "cbe", requestedReference: "FT26SAMPLE01" })).toMatchObject({ ok: false, reason: "reference" });
-    expect(verificationGate({ ...receipt, reference: "B22WDTI0000000XX" }, { bankId: "dashen", requestedReference: "B22WDTI00SAMPLE1" })).toMatchObject({ ok: false, reason: "reference" });
+    expect(verificationGate({ ...receipt, reference: "FT00000XXXXX" }, { requestedReference: "FT26SAMPLE01" })).toMatchObject({ ok: false, reason: "reference" });
+    expect(verificationGate({ ...receipt, reference: "B22WDTI0000000XX" }, { requestedReference: "B22WDTI00SAMPLE1" })).toMatchObject({ ok: false, reason: "reference" });
   });
 
   it("the opaque-token exemption does not relax the other checks for cbe-new", () => {
-    expect(verificationGate({ ...receipt, amount: 0, reference: "FT26SAMPLE01" }, { bankId: "cbe-new", requestedReference: "tok123456789" })).toMatchObject({ ok: false, reason: "amount" });
-    expect(verificationGate({ verified: true, amount: 5, reference: "FT26SAMPLE01" }, { bankId: "cbe-new", requestedReference: "tok123456789" })).toMatchObject({ ok: false, reason: "party" });
+    expect(verificationGate({ ...receipt, amount: 0, reference: "FT26SAMPLE01" }, { referenceIsOpaqueToken: true, requestedReference: "tok123456789" })).toMatchObject({ ok: false, reason: "amount" });
+    expect(verificationGate({ verified: true, amount: 5, reference: "FT26SAMPLE01" }, { referenceIsOpaqueToken: true, requestedReference: "tok123456789" })).toMatchObject({ ok: false, reason: "party" });
   });
 
   it("end to end: bank=cbe with a Receipt ID verifies when CBE returns the FT id", async () => {
@@ -188,19 +188,19 @@ describe("gate: a Wegagen share id is an opaque token", () => {
   const SHARE_ID = "000SAMPSAMPLE1000001DFTD";
 
   it("passes a receipt whose reference is the printed Reference No, only a prefix of the share id", () => {
-    expect(verificationGate({ ...receipt, reference: REF }, { bankId: "wegagen", requestedReference: SHARE_ID })).toEqual({ ok: true });
+    expect(verificationGate({ ...receipt, reference: REF }, { referenceIsOpaqueToken: true, requestedReference: SHARE_ID })).toEqual({ ok: true });
   });
 
   it("the exemption does not relax the other checks", () => {
-    expect(verificationGate({ ...receipt, amount: 0, reference: REF }, { bankId: "wegagen", requestedReference: SHARE_ID })).toMatchObject({ ok: false, reason: "amount" });
-    expect(verificationGate({ verified: true, amount: 5, reference: REF }, { bankId: "wegagen", requestedReference: SHARE_ID })).toMatchObject({ ok: false, reason: "party" });
+    expect(verificationGate({ ...receipt, amount: 0, reference: REF }, { referenceIsOpaqueToken: true, requestedReference: SHARE_ID })).toMatchObject({ ok: false, reason: "amount" });
+    expect(verificationGate({ verified: true, amount: 5, reference: REF }, { referenceIsOpaqueToken: true, requestedReference: SHARE_ID })).toMatchObject({ ok: false, reason: "party" });
   });
 
   it("a record for another transaction is caught by the parser's prefix check, not by the gate", () => {
     // The gate cannot compare them: the share id never equals the record's
     // reference. WegagenParser.parseRecord refuses a record whose reference
     // is not a prefix of the requested share id (tests/parsers/wegagen.test.ts).
-    expect(verificationGate({ ...receipt, reference: "000NEVER260000000" }, { bankId: "wegagen", requestedReference: SHARE_ID })).toEqual({ ok: true });
+    expect(verificationGate({ ...receipt, reference: "000NEVER260000000" }, { referenceIsOpaqueToken: true, requestedReference: SHARE_ID })).toEqual({ ok: true });
     const body = JSON.stringify({ trnRefNo: "000NEVER260000000", txnAmount: 1250, sender_name: "A", receiver_name: "B" });
     expect(WegagenParser.parseRecord(body, SHARE_ID).parsed.verified).toBe(false);
   });

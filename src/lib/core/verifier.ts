@@ -366,8 +366,12 @@ export class Verifier {
     }
     const parsed = parsedResult.value;
 
-    // The gate is keyed by the parser (format), e.g. cbe-new looks receipts up by an opaque Receipt ID.
-    const gate = verificationGate(parsed, { bankId: parser.bankId, requestedReference: ref });
+    // The gate's reference check is skipped only when the parser says this
+    // bank is looked up by an opaque token (e.g. cbe-new's Receipt ID).
+    const gate = verificationGate(parsed, {
+      referenceIsOpaqueToken: parser.referenceIsOpaqueToken,
+      requestedReference: ref,
+    });
     if (!gate.ok) {
       return err({
         kind: "EXTRACTION_ERROR",

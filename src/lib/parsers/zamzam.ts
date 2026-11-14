@@ -132,6 +132,10 @@ export class ZamZamParser extends BaseParser {
   readonly requiresAccount = false;
   readonly accountDigits?: number = undefined;
   readonly requiresPhone = false;
+  // Looked up by the numeric receipt id from the link; the record carries
+  // ZamZam's transaction reference instead. The parser checks that the
+  // record's own id equals the id requested (ZamZamParser.parseRecord).
+  readonly referenceIsOpaqueToken = true;
 
   normalizeReference(ref: string): Checked<string> {
     return checkZamzamId(ref);

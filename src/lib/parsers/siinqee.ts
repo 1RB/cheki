@@ -31,6 +31,8 @@ export class SiinqeeParser extends BaseParser {
   readonly requiresAccount = false;
   readonly accountDigits?: number = undefined;
   readonly requiresPhone = false;
+  // The receipt link carries an opaque token, which is what is looked up.
+  readonly referenceIsOpaqueToken = true;
 
   private ebirrParser = new EBirrParser();
 
