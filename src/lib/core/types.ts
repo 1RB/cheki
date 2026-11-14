@@ -185,6 +185,14 @@ export interface VerifyRequest {
   accountNumber?: string;
   phoneNumber?: string;
   qrData?: string;
+  /**
+   * The reference came from a receipt link or a QR payload rather than a
+   * keyboard, so it is uppercased but never compacted (see
+   * src/lib/reference-input.ts). Not an API field: both verify routes build
+   * this object field by field from JSON, so only the verifier's QR branches
+   * ever set it.
+   */
+  fromLink?: boolean;
 }
 
 // ─── Parser Port (interface that bank parsers implement) ────────────

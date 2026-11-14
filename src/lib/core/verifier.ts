@@ -3,8 +3,10 @@
  *
  * Flow:
  *   1. Resolve the input: a QR payload, a receipt link or a reference
- *      becomes (bank, reference, account, phone). Links are only used to
- *      extract those parts; the bank URL is always rebuilt from a fixed host.
+ *      becomes (bank, reference, account, phone). That rewrite lives in
+ *      src/lib/reference-input.ts, shared with the cache key so both name
+ *      the same fetch. Links are only used to extract those parts; the bank
+ *      URL is always rebuilt from a fixed host.
  *   2. Gate the bank: it exists, is live, has a parser, and the account or
  *      phone it needs is present and well formed.
  *   3. Validate the reference (no path/query characters, strict charset).
@@ -27,7 +29,7 @@ import type { Result, Receipt, VerifyRequest, ChekiError, ParsedReceipt, BankMan
 import { ok, err, isNotFoundCode } from "./types";
 import { getParser, type RegisteredParser } from "../parsers/registry";
 import { getBank, suggestBank } from "../manifest/loader";
-import { detectBankFromUrl, isUrl, looksLikeUrl } from "../adapters/url-detector";
+import { resolveReference, type ResolvedReference } from "../reference-input";
 import { CBEParser } from "../parsers/cbe";
 import { DashenParser, DASHEN_NOT_FOUND } from "../parsers/dashen";
 import { BOAParser } from "../parsers/boa";
@@ -43,7 +45,6 @@ import { parseTelebirrQr } from "../qr/telebirr";
 import { parseDashenQr } from "../qr/dashen";
 import { parseWegagenQr } from "../qr/wegagen";
 import { selectFormat, formatNeeds, formatAccountDigits, fillTemplate } from "../manifest/formats";
-import { canonicalReference } from "../reference-case";
 
 /** Receipts verified at the same time in one batch. */
 export const BATCH_CONCURRENCY = 5;
@@ -117,10 +118,13 @@ export class Verifier {
   // ─── Input resolution ─────────────────────────────────────────────
 
   /**
-   * `fromLink`: the reference was read out of a receipt link or QR, so it is
-   * case-normalised but never compacted (see canonicalReference).
+   * Turn the request into what the bank is asked. `request.fromLink` (set
+   * only by the QR branches below) says the reference was printed rather
+   * than typed, so it is case-normalised but never compacted; see
+   * src/lib/reference-input.ts, which is the one place that reads a link
+   * and the one place that canonicalises a reference.
    */
-  private async resolve(request: VerifyRequest, startTime: number, depth: number, fromLink = false): Promise<Result<Receipt, ChekiError>> {
+  private async resolve(request: VerifyRequest, startTime: number, depth: number): Promise<Result<Receipt, ChekiError>> {
     if (depth > 2) {
       return err({ kind: "MISSING_INPUT", field: "reference", message: "Could not resolve this receipt." });
     }
@@ -155,7 +159,7 @@ export class Verifier {
             message: "This QR code is from a Telebirr receipt. Check it with bank \"telebirr\".",
           });
         }
-        return this.resolve({ bank: "telebirr", reference: telebirr.reference }, startTime, depth + 1, true);
+        return this.resolve({ bank: "telebirr", reference: telebirr.reference, fromLink: true }, startTime, depth + 1);
       }
       // A Dashen Super App receipt QR: the FT Ref XOR a fixed key. The endpoint
       // refuses the raw token (HTTP 401), so the reference must be decoded
@@ -171,7 +175,7 @@ export class Verifier {
             message: "This QR code is from a Dashen receipt. Check it with bank \"dashen\".",
           });
         }
-        return this.resolve({ bank: "dashen", reference: dashen.reference }, startTime, depth + 1, true);
+        return this.resolve({ bank: "dashen", reference: dashen.reference, fromLink: true }, startTime, depth + 1);
       }
       // A Wegagen receipt QR: prose with a share link inside it. Only the
       // 24-character share id after ?id= is used; it is looked up exactly
@@ -187,85 +191,66 @@ export class Verifier {
             message: "This QR code is from a Wegagen receipt. Check it with bank \"wegagen\".",
           });
         }
-        return this.resolve({ bank: "wegagen", reference: wegagen.shareId }, startTime, depth + 1, true);
+        return this.resolve({ bank: "wegagen", reference: wegagen.shareId, fromLink: true }, startTime, depth + 1);
       }
       if ((bank || "").toLowerCase() === "boa") {
         return this.verifyBoaQr(qrData, startTime, depth);
       }
-      if (looksLikeUrl(qrData)) {
-        // Only a receipt link cheki recognises. An unknown URL is rejected,
-        // never fetched or used as a reference.
-        const detected = isUrl(qrData) ? detectBankFromUrl(qrData) : null;
-        if (!detected) {
+      // A receipt link inside the QR, or a plain reference the QR printed.
+      // Either way it is the QR that typed it: case-normalised, never
+      // compacted. An unknown URL is rejected here, never fetched and never
+      // used as a reference.
+      const qrRead = resolveReference({ bank: bank ?? "", reference: qrData, accountNumber, phoneNumber, fromLink: true });
+      if (qrRead.kind === "unrecognised-link") {
+        return err({
+          kind: "MISSING_INPUT",
+          field: "qrData",
+          message: "This QR code is not a receipt link cheki recognises.",
+        });
+      }
+      // A CBE Birr receipt QR is its own receipt link: the receipt number
+      // and the payer phone it was issued for (TID + PH). Like a Telebirr
+      // QR it names its bank, and the pair in it wins over a typed phone,
+      // since CBE Birr only answers for the pair that belongs together.
+      if (qrRead.kind === "link" && qrRead.link.bank === "cbebirr") {
+        const named = (bank || "").trim().toLowerCase();
+        if (named && named !== "cbebirr") {
           return err({
             kind: "MISSING_INPUT",
             field: "qrData",
-            message: "This QR code is not a receipt link cheki recognises.",
+            message: "This QR code is from a CBE Birr receipt. Check it with bank \"cbebirr\".",
           });
         }
-        // A CBE Birr receipt QR is its own receipt link: the receipt number
-        // and the payer phone it was issued for (TID + PH). Like a Telebirr
-        // QR it names its bank, and the pair in it wins over a typed phone,
-        // since CBE Birr only answers for the pair that belongs together.
-        if (detected.bank === "cbebirr") {
-          const named = (bank || "").trim().toLowerCase();
-          if (named && named !== "cbebirr") {
-            return err({
-              kind: "MISSING_INPUT",
-              field: "qrData",
-              message: "This QR code is from a CBE Birr receipt. Check it with bank \"cbebirr\".",
-            });
-          }
-          return this.resolve(
-            { bank: "cbebirr", reference: detected.reference, phoneNumber: detected.phoneNumber ?? phoneNumber },
-            startTime,
-            depth + 1,
-            true
-          );
-        }
-        return this.resolve({ bank: bank ?? "", reference: qrData, accountNumber, phoneNumber }, startTime, depth + 1);
+        return this.verifyReference(
+          { bank: "cbebirr", reference: qrRead.input.reference, phoneNumber: qrRead.link.phoneNumber ?? phoneNumber, fromLink: true },
+          startTime
+        );
       }
-      // Plain reference inside the QR, for the bank the caller named.
-      return this.resolve({ bank: bank ?? "", reference: qrData, accountNumber, phoneNumber }, startTime, depth + 1, true);
+      return this.verifyReference(qrRead.input, startTime);
     }
 
-    let resolvedBank = bank;
-    let resolvedRef = reference!;
-    let resolvedAccount = accountNumber;
-    let resolvedPhone = phoneNumber;
-    let resolvedFromLink = fromLink;
-
-    // Receipt links. Anything with URL syntax must be a proper http(s) link
-    // to a known bank host; "http:/x", "http:evil.com", "//x" are rejected.
-    if (looksLikeUrl(resolvedRef)) {
-      const detected = isUrl(resolvedRef) ? detectBankFromUrl(resolvedRef) : null;
-      if (!detected) {
-        return err({
-          kind: "MISSING_INPUT",
-          field: "reference",
-          message: "Could not detect bank from URL. Please paste the reference number manually.",
-        });
-      }
-      resolvedBank = detected.bank;
-      resolvedRef = detected.reference;
-      resolvedFromLink = true;
-      if (detected.accountNumber && !resolvedAccount) resolvedAccount = detected.accountNumber;
-      if (detected.phoneNumber && !resolvedPhone) resolvedPhone = detected.phoneNumber;
+    // A receipt link, or a typed reference for the bank the caller named.
+    const read = resolveReference({ bank, reference, accountNumber, phoneNumber, fromLink: request.fromLink });
+    if (read.kind === "unrecognised-link") {
+      return err({
+        kind: "MISSING_INPUT",
+        field: "reference",
+        message: "Could not detect bank from URL. Please paste the reference number manually.",
+      });
     }
-
-    return this.verifyReference(
-      { bank: resolvedBank, reference: resolvedRef, accountNumber: resolvedAccount, phoneNumber: resolvedPhone, fromLink: resolvedFromLink },
-      startTime
-    );
+    return this.verifyReference(read.input, startTime);
   }
 
   // ─── Bank + input gates, fetch, parse, verification gate ─────────────
 
-  private async verifyReference(
-    rawInput: { bank?: string; reference: string; accountNumber?: string; phoneNumber?: string; fromLink?: boolean },
-    startTime: number
-  ): Promise<Result<Receipt, ChekiError>> {
-    const bank = rawInput.bank;
+  /**
+   * Ask the bank for one receipt. `input` is already resolved: the reference
+   * is in its bank's canonical form (src/lib/reference-input.ts), so what is
+   * left here is the gates, the fetch, the parse and the verification gate.
+   * `input.fromLink` is not read again; it was applied to the reference.
+   */
+  private async verifyReference(input: ResolvedReference, startTime: number): Promise<Result<Receipt, ChekiError>> {
+    const bank = input.bank;
     if (!bank) {
       return err({ kind: "MISSING_INPUT", field: "bank", message: "Bank is required." });
     }
@@ -293,17 +278,6 @@ export class Verifier {
         message: `${manifestEntry.name} is in development and not yet supported.`,
       });
     }
-
-    // The bank's canonical form of the reference: "ft26sample01" and a typed
-    // "FT26 SAMPLE01" are FT26SAMPLE01 for a bank whose references are
-    // uppercase-only. A reference read out of a link or QR is only uppercased,
-    // never compacted. Case-sensitive tokens (CBE Receipt IDs, Awash and eBirr
-    // share tokens) are only trimmed. Done before the format is picked, so a
-    // spaced FT reference still goes to the FT format.
-    const input = {
-      ...rawInput,
-      reference: canonicalReference(manifestEntry.id, rawInput.reference, { compact: !rawInput.fromLink }),
-    };
 
     // Pick the receipt format from the input's shape (current formats first).
     // This never costs a bank request: exactly one format is fetched.
@@ -679,10 +653,9 @@ export class Verifier {
       });
 
     let lookup = await this.resolve(
-      { bank: "boa", reference: refCheck.value, accountNumber: decoded.receiverAccount },
+      { bank: "boa", reference: refCheck.value, accountNumber: decoded.receiverAccount, fromLink: true },
       startTime,
-      depth + 1,
-      true
+      depth + 1
     );
 
     // BOA files some receipts under the source account's suffix instead of
@@ -700,10 +673,9 @@ export class Verifier {
       senderCheck.value !== accountCheck.value
     ) {
       const bySender = await this.resolve(
-        { bank: "boa", reference: refCheck.value, accountNumber: decoded.senderAccount },
+        { bank: "boa", reference: refCheck.value, accountNumber: decoded.senderAccount, fromLink: true },
         startTime,
-        depth + 1,
-        true
+        depth + 1
       );
       // Only a found receipt replaces the first answer. If this second request
       // fails, BOA's "no record" under the receiver stands, so a QR is never

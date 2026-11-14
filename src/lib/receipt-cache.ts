@@ -16,9 +16,7 @@
  * must retry against the live endpoint next time.
  */
 
-import { detectBankFromUrl, isUrl } from "./adapters/url-detector";
-import { getBank } from "./manifest/loader";
-import { canonicalReference } from "./reference-case";
+import { resolveReference } from "./reference-input";
 
 export const DEFAULT_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours, one business day
 export const DEFAULT_MAX_ENTRIES = 1000;
@@ -91,9 +89,11 @@ export function cacheKeyFor(input: {
  * Cache key for an incoming API body.
  *
  * The verifier rewrites a receipt URL into (bank, reference, accountNumber,
- * phoneNumber) before fetching, so the key has to mirror that rewrite.
- * Otherwise the same URL pasted with a different pre-selected bank would miss
- * the cache every time, and the point of caching is precisely that it does not.
+ * phoneNumber) and canonicalises the reference before fetching, so the key
+ * is that same rewrite (src/lib/reference-input.ts) rather than a copy of it:
+ * otherwise the same URL pasted with a different pre-selected bank would
+ * miss the cache every time, and the point of caching is precisely that it
+ * does not.
  */
 export function verificationCacheKey(input: {
   bank?: string;
@@ -102,32 +102,11 @@ export function verificationCacheKey(input: {
   phoneNumber?: string;
   qrData?: string;
 }): string {
-  const normalized = { ...input };
-  const ref = (input.reference ?? "").trim();
-  let fromUrl = false;
-  if (ref && isUrl(ref)) {
-    const detected = detectBankFromUrl(ref);
-    if (detected) {
-      fromUrl = true;
-      normalized.bank = detected.bank;
-      normalized.reference = detected.reference;
-      if (detected.accountNumber && !input.accountNumber) {
-        normalized.accountNumber = detected.accountNumber;
-      }
-      if (detected.phoneNumber && !input.phoneNumber) {
-        normalized.phoneNumber = detected.phoneNumber;
-      }
-    }
-  }
-  // The verifier asks the bank with the canonical reference, so "ft26sample01"
-  // and "FT26SAMPLE01" are one receipt and one cache entry. Case-sensitive
-  // tokens stay as typed (src/lib/reference-case.ts).
-  if (normalized.reference && !isUrl(normalized.reference)) {
-    const bankId = getBank(normalized.bank ?? "")?.id ?? normalized.bank;
-    // A reference read out of a link is uppercased only, as in the verifier.
-    normalized.reference = canonicalReference(bankId, normalized.reference, { compact: !fromUrl });
-  }
-  return cacheKeyFor(normalized);
+  const read = resolveReference(input);
+  // A URL cheki does not recognise is rejected by the verifier before it
+  // ever fetches, so nothing is ever stored under its key: keep the input
+  // as it arrived rather than inventing a canonical form for it.
+  return cacheKeyFor(read.kind === "unrecognised-link" ? input : { ...input, ...read.input });
 }
 
 /** Returns a copy of the cached payload, or undefined on miss/expiry. */
