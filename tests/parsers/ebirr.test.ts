@@ -128,10 +128,6 @@ describe("EBirrParser", () => {
       expect(parser.bankName).toBe("eBirr");
     });
 
-    it("does not require account", () => {
-      expect(parser.requiresAccount).toBe(false);
-    });
-
     it("returns HTML response type", () => {
       expect(parser.responseType).toBe("html");
     });

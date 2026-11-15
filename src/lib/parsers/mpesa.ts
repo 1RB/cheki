@@ -232,7 +232,6 @@ export class MpesaParser extends BaseParser {
   readonly bankId = "mpesa";
   readonly bankName = "M-Pesa Ethiopia";
   readonly responseType = "json" as const;
-  readonly requiresAccount = false;
   readonly accountDigits?: number = undefined;
   readonly requiresPhone = false;
   // geoBlocked is read from the manifest (src/lib/manifest/banks.json).

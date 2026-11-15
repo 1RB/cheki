@@ -28,7 +28,6 @@ export class SiinqeeParser extends BaseParser {
   readonly bankId = "siinqee";
   readonly bankName = "Siinqee Bank";
   readonly responseType = "html" as const;
-  readonly requiresAccount = false;
   readonly accountDigits?: number = undefined;
   readonly requiresPhone = false;
   // The receipt link carries an opaque token, which is what is looked up.

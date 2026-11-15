@@ -164,7 +164,6 @@ export class WegagenParser extends BaseParser {
   readonly bankId = "wegagen";
   readonly bankName = "Wegagen Bank";
   readonly responseType = "json" as const;
-  readonly requiresAccount = false;
   readonly accountDigits?: number = undefined;
   readonly requiresPhone = false;
   // Looked up by the 24-character share id (the printed 16-character

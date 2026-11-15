@@ -201,7 +201,6 @@ export interface ParserPort {
   readonly bankId: string;
   readonly bankName: string;
   readonly responseType: "pdf" | "html" | "json";
-  readonly requiresAccount: boolean;
   readonly accountDigits?: number;
   readonly requiresPhone: boolean;
 
@@ -325,7 +324,14 @@ export interface ReceiptFormat {
   endpoint?: string;
   /** URL template of the receipt page people share or open. */
   link?: string;
-  /** Hosts whose links are recognised for this format (reference extraction only). */
+  /**
+   * Hosts this format's receipt pages are served from, shown on /endpoints
+   * when the format has no `link`/`endpoint` template and in the "Reported
+   * host" line for evidence-only rows. It documents; it does not recognise:
+   * whether a pasted URL counts as this format's receipt is decided in
+   * src/lib/adapters/url-detector.ts, and tests/manifest/link-hosts.test.ts
+   * pins the two against each other.
+   */
   linkHosts?: string[];
   inputs: ReceiptFormatInput[];
   /** References this format accepts. Used to pick a format by the shape of the input. */
@@ -403,7 +409,6 @@ export interface BankManifestEntry {
    * Absent: the endpoint needs no authentication.
    */
   endpointAuth?: string;
-  sslVerify: boolean;
   headers?: Record<string, string>;
   geoBlocked?: boolean;
   notes?: string;

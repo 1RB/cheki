@@ -96,7 +96,6 @@ export class AwashParser extends BaseParser {
   readonly bankId = "awash";
   readonly bankName = "Awash Bank";
   readonly responseType = "html" as const;
-  readonly requiresAccount = false;
   readonly accountDigits?: number = undefined;
   readonly requiresPhone = false;
   // The link carries a share token; the receipt prints a numeric Transaction

@@ -25,7 +25,6 @@ export class CBEParser extends BaseParser {
   readonly bankId = "cbe";
   readonly bankName = "Commercial Bank of Ethiopia";
   readonly responseType = "pdf" as const;
-  readonly requiresAccount = true;
   readonly accountDigits = 8;
   readonly requiresPhone = false;
 
@@ -189,7 +188,6 @@ export class CBENewParser extends BaseParser {
   readonly bankId = "cbe-new";
   readonly bankName = "Commercial Bank of Ethiopia";
   readonly responseType = "json" as const;
-  readonly requiresAccount = false;
   readonly accountDigits?: number = undefined;
   readonly requiresPhone = false;
   // The current CBE format is looked up by its Receipt ID (a share token);

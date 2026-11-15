@@ -43,7 +43,6 @@
     { "name": "verify_504_platform", "method": "POST", "path": "/api/verify", "status": 504, "headers": { "content-type": "text/plain" }, "rawBody": "An error occurred with your deployment\n\nFUNCTION_INVOCATION_TIMEOUT", "retried": false },
     { "name": "verify_503_retry_after", "method": "POST", "path": "/api/verify", "status": 503, "headers": { "retry-after": "0" }, "body": { "success": false, "error": "Temporarily unavailable." }, "retried": true },
     { "name": "verify_503_no_retry_after", "method": "POST", "path": "/api/verify", "status": 503, "headers": {}, "body": { "success": false, "error": "Temporarily unavailable." }, "retried": false },
-    { "name": "verify_503_not_retryable", "method": "POST", "path": "/api/verify", "status": 503, "headers": { "retry-after": "0" }, "body": { "success": false, "error": "Temporarily unavailable.", "retryable": false }, "retried": false },
     { "name": "verify_429_retry_after", "method": "POST", "path": "/api/verify", "status": 429, "headers": { "retry-after": "0" }, "body": { "success": false, "error": "Too many requests from your network. Wait a minute and try again." }, "retried": true },
     { "name": "verify_429_no_retry_after", "method": "POST", "path": "/api/verify", "status": 429, "headers": {}, "body": { "success": false, "error": "Too many requests from your network. Wait a minute and try again." }, "retried": false },
     { "name": "verify_429_long_retry_after", "method": "POST", "path": "/api/verify", "status": 429, "headers": { "retry-after": "120" }, "body": { "success": false, "error": "Too many requests from your network. Wait a minute and try again." }, "retried": false },
@@ -52,7 +51,6 @@
     { "name": "batch_429_retry_after", "method": "POST", "path": "/api/verify/batch", "status": 429, "headers": { "retry-after": "0" }, "body": { "success": false, "error": "Too many requests from your network. Wait a minute and try again." }, "retried": true },
     { "name": "banks_500_internal", "method": "GET", "path": "/api/banks", "status": 500, "headers": { "retry-after": "0" }, "body": { "success": false, "error": "Internal server error." }, "retried": true },
     { "name": "banks_504_platform", "method": "GET", "path": "/api/banks", "status": 504, "headers": { "content-type": "text/plain", "retry-after": "0" }, "rawBody": "An error occurred with your deployment\n\nFUNCTION_INVOCATION_TIMEOUT", "retried": true },
-    { "name": "banks_502_not_retryable", "method": "GET", "path": "/api/banks", "status": 502, "headers": { "retry-after": "0" }, "body": { "success": false, "error": "Bad gateway.", "retryable": false }, "retried": false },
     { "name": "health_502", "method": "GET", "path": "/api/health", "status": 502, "headers": { "retry-after": "0" }, "body": { "success": false, "error": "Bad gateway." }, "retried": true },
     { "name": "health_404", "method": "GET", "path": "/api/health", "status": 404, "headers": {}, "body": { "success": false, "error": "Not found." }, "retried": false }
   ],

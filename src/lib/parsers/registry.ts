@@ -10,7 +10,6 @@ export interface RegisteredParser {
   bankId: string;
   bankName: string;
   responseType: "pdf" | "html" | "json";
-  requiresAccount: boolean;
   accountDigits?: number;
   requiresPhone: boolean;
   /** Looked up by an opaque share token: see BaseParser.referenceIsOpaqueToken. */

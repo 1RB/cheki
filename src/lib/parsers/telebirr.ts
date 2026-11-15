@@ -146,7 +146,6 @@ export class TelebirrParser extends BaseParser {
   readonly bankId = "telebirr";
   readonly bankName = "Telebirr";
   readonly responseType = "html" as const;
-  readonly requiresAccount = false;
   readonly accountDigits?: number = undefined;
   readonly requiresPhone = false;
   // geoBlocked is read from the manifest (src/lib/manifest/banks.json).

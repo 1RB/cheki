@@ -53,7 +53,6 @@ export class BOAParser extends BaseParser {
   readonly bankId = "boa";
   readonly bankName = "Bank of Abyssinia";
   readonly responseType = "json" as const;
-  readonly requiresAccount = true;
   readonly accountDigits = 5;
   readonly requiresPhone = false;
 

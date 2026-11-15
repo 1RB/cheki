@@ -253,7 +253,6 @@ describe("manifest: Wegagen formats", () => {
     expect(primaryFormat(wegagen)?.id).toBe("wegagen-share-link");
     // No account and no phone: the share id alone is the lookup key.
     expect(primaryFormat(wegagen)?.inputs.map((i) => i.name)).toEqual(["reference"]);
-    expect(wegagen.requiresAccount).toBe(false);
     expect(wegagen.requiresPhone).toBe(false);
   });
 

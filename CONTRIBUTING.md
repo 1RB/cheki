@@ -127,7 +127,6 @@ Every bank is one entry in `src/lib/manifest/banks.json`. That file is the singl
   "requiresPhone": false,
   "endpoint": "https://receipt.yourbank.com/receipt/{ref}",
   "endpointFormat": "https://receipt.yourbank.com/receipt/{REFERENCE}",
-  "sslVerify": true,
   "geoBlocked": false,
   "color": "#0A5C36",
   "initials": "YB",
@@ -187,7 +186,6 @@ export class YourBankParser extends BaseParser {
   readonly bankId = "yourbank";
   readonly bankName = "Your Bank";
   readonly responseType = "html" as const;
-  readonly requiresAccount = false;
   readonly accountDigits?: number = undefined;
   readonly requiresPhone = false;
 

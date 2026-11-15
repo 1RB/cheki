@@ -27,7 +27,6 @@ export class DashenParser extends BaseParser {
   readonly bankId = "dashen";
   readonly bankName = "Dashen Bank";
   readonly responseType = "html" as const;
-  readonly requiresAccount = false;
   readonly accountDigits?: number = undefined;
   readonly requiresPhone = false;
   /** receipts.dashenbanksc.com answers an unknown reference with HTTP 400 JSON "Transaction not found". */

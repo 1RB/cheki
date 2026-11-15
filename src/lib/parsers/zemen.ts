@@ -12,7 +12,6 @@ export class ZemenParser extends BaseParser {
   readonly bankId = "zemen";
   readonly bankName = "Zemen Bank";
   readonly responseType = "pdf" as const;
-  readonly requiresAccount = false;
   readonly accountDigits?: number = undefined;
   readonly requiresPhone = false;
 

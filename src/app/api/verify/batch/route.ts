@@ -99,7 +99,12 @@ export async function POST(request: NextRequest) {
       }
       const r = fresh[freshCursor++];
       if (!r) {
-        return { success: false, error: "No result.", status: 500 };
+        // verifyBatch fills one slot per request (see its worker loop), so a
+        // gap means that invariant broke: a bug in this route, not a
+        // per-receipt failure. Throwing turns it into a real 500 instead of
+        // HTTP 200 carrying a fabricated "No result." row the SDKs would
+        // count as a receipt that failed verification.
+        throw new Error("verifyBatch returned no result for a miss");
       }
       if (!r.ok) {
         // The same body the single-receipt route sends, plus this row's HTTP
