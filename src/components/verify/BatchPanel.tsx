@@ -17,6 +17,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { Translate } from "@/lib/i18n/translate";
 import { decodeQrFromImage } from "@/lib/qr/decode";
 import { detectInput } from "@/lib/verify/detect";
+import { canonicalBankCode } from "@/lib/bank-ids";
 import { postJson } from "@/lib/verify/client";
 import { presentVerdict } from "@/lib/verify/verdict";
 import {
@@ -126,7 +127,7 @@ export default function BatchPanel({ files, t, onClear, onPick }: Props) {
         const { extractTextFromImage } = await import("@/lib/ocr");
         const { parsed } = await extractTextFromImage(files[i]);
         if (!parsed?.reference) return set(i, { name, status: "noReceipt" });
-        return check(i, parsed.reference, parsed.bank === "cbe-new" ? "cbe" : parsed.bank || undefined);
+        return check(i, parsed.reference, parsed.bank ? canonicalBankCode(parsed.bank) : undefined);
       } catch {
         set(i, { name, status: "noReceipt" });
       }

@@ -8,6 +8,7 @@
  */
 import manifestData from "@/lib/manifest/banks.json";
 import { banks, type Bank } from "@/lib/banks";
+import { canonicalBankCode } from "@/lib/bank-ids";
 import { detectBankFromUrl, isUrl } from "@/lib/adapters/url-detector";
 import { accountDigitsFor, extraFieldNeeds, formatNeeds, matchesFormat, primaryFormat, supportedFormats, DEFAULT_ACCOUNT_DIGITS } from "@/lib/manifest/formats";
 import type { ReceiptFormat } from "@/lib/core/types";
@@ -71,7 +72,7 @@ export function betaInfo(bank: Bank | undefined): { beta: boolean; note?: string
 
 function bankByCode(code: string | undefined | null): Bank | undefined {
   if (!code) return undefined;
-  const c = code === "cbe-new" ? "cbe" : code;
+  const c = canonicalBankCode(code);
   return liveBanks.find((b) => b.code === c);
 }
 

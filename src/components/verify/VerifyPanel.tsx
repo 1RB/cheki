@@ -33,6 +33,7 @@ import { presentVerdict, type FraudCheck } from "@/lib/verify/verdict";
 import { addVerified, clearRecent, findPrevious, loadRecent, removeRecent, type RecentCheck } from "@/lib/verify/history";
 import { secondaryFormats, DEFAULT_ACCOUNT_DIGITS } from "@/lib/manifest/formats";
 import { canonicalReference, referenceLooksOff } from "@/lib/reference-case";
+import { canonicalBankCode } from "@/lib/bank-ids";
 import { useReceiptDetection } from "./use-receipt-detection";
 import { VerifyInput } from "./VerifyInput";
 import { VerdictCard } from "./VerdictCard";
@@ -348,7 +349,7 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
         setPhase("idle");
         if (parsed?.reference) {
           setInput(parsed.reference);
-          if (!lockedBank && parsed.bank) setOverrideBank(parsed.bank === "cbe-new" ? "cbe" : parsed.bank);
+          if (!lockedBank && parsed.bank) setOverrideBank(canonicalBankCode(parsed.bank));
           setNotice(t("verify.photo.read"));
           focusInput();
         } else {

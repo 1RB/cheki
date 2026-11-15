@@ -19,6 +19,7 @@
  *     check": they say nothing about the receipt.
  */
 import { banks, verificationState, type Bank, type VerifyResult } from "@/lib/banks";
+import { canonicalBankCode } from "@/lib/bank-ids";
 import { classifyStatus } from "@/lib/core/status";
 import { tEn, type Translate } from "@/lib/i18n/translate";
 import { formatAgeDays, parseTimestamp } from "@/lib/time/relative";
@@ -138,7 +139,7 @@ const HTTPS = /^https:\/\//i;
 export function findBank(codeOrName: string | undefined | null): Bank | undefined {
   if (!codeOrName) return undefined;
   const raw = String(codeOrName).trim();
-  const code = raw.toLowerCase() === "cbe-new" ? "cbe" : raw.toLowerCase();
+  const code = canonicalBankCode(raw);
   return (
     banks.find((b) => b.code === code) ??
     banks.find((b) => b.name.toLowerCase() === raw.toLowerCase() || b.shortName.toLowerCase() === raw.toLowerCase())
