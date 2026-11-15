@@ -130,7 +130,11 @@ export default function StatusPage() {
                           {older.map((h) => {
                             const fid = h.id.split(":")[1];
                             const f = r.bank.formats?.find((x) => x.id === fid);
-                            const s: BankState = h.status === "degraded" ? "down" : h.status === "not-checked" ? "geo" : "working";
+                            // A format's own probe, read with the same words
+                            // as the bank's row: status-view owns every
+                            // HealthStatus -> BankState reading, so the two
+                            // dots on one bank can never disagree.
+                            const s = bankState(r.bank, h.status);
                             return (
                               <div key={h.id}>
                                 <dt>Older receipts</dt>
