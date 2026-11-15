@@ -11,7 +11,7 @@
  * 301 here (next.config.ts, src/lib/seo-redirects.ts), and their distinct
  * content lives in this file.
  */
-import { formatAccountDigits, formatNeeds, primaryFormat } from "./manifest/formats";
+import { accountDigitsFor, extraFieldNeeds, primaryFormat } from "./manifest/formats";
 import type { Bank } from "./banks";
 import { NO_SIGNUP_SENTENCE, competitorPrices } from "./guides-facts";
 import { BANK_HEADING, BANKS_WITH_TOPIC_PAGES } from "./seo-redirects";
@@ -77,10 +77,9 @@ export function howToSubmit(b: Bank): string {
   if (first === "link") return "Paste the full receipt link into cheki";
   const lead = "Scan the receipt's QR code or paste the receipt link into cheki";
   const ref = refNoun(b);
-  const needsAccount = primary ? formatNeeds(primary, "account") : Boolean(b.requiresAccount);
-  const needsPhone = primary ? formatNeeds(primary, "phone") : Boolean(b.requiresPhone);
+  const { needsAccount, needsPhone } = extraFieldNeeds(primary, b);
   if (needsAccount) {
-    const digits = formatAccountDigits(primary) ?? b.accountDigits;
+    const digits = accountDigitsFor(primary, b);
     return `${lead}. If you only have the ${ref}, select ${b.name} and add the last ${digits} digits of the account on the receipt`;
   }
   if (needsPhone) return `${lead}. If you only have the ${ref}, select ${b.name} and add the payer's phone number`;
@@ -107,8 +106,7 @@ const LINK_OUT_CHECK = "On that page, check that the amount, the receiver's name
 export function requiredInfoIntro(b: Bank): string | null {
   if (b.status !== "live") return null;
   const primary = primaryFormat(b);
-  const needsAccount = primary ? formatNeeds(primary, "account") : Boolean(b.requiresAccount);
-  const needsPhone = primary ? formatNeeds(primary, "phone") : Boolean(b.requiresPhone);
+  const { needsAccount, needsPhone } = extraFieldNeeds(primary, b);
   if (needsAccount) return `Ask the sender for the ${refNoun(b)} and the account digits from their receipt: ${b.shortName}'s receipt record needs both.`;
   if (needsPhone) return `Ask the sender for the receipt QR code or link, which carries the ${refNoun(b)} and the payer's phone number. Without it, you need both: ${b.shortName} only answers for the pair.`;
   return `Ask the sender for the ${refNoun(b)} from their receipt. No account number is needed.`;
@@ -122,8 +120,7 @@ export function requiredInfoIntro(b: Bank): string | null {
  */
 export function apiExampleBody(b: Bank): string {
   const primary = primaryFormat(b);
-  const needsAccount = primary ? formatNeeds(primary, "account") : Boolean(b.requiresAccount);
-  const needsPhone = primary ? formatNeeds(primary, "phone") : Boolean(b.requiresPhone);
+  const { needsAccount, needsPhone } = extraFieldNeeds(primary, b);
   const ref = primary?.inputs[0]?.example ?? b.referenceExample;
   return `{ "bank": "${b.code}", "reference": "${ref}"${needsAccount ? `, "accountNumber": "1000XXXXXXX"` : ""}${needsPhone ? `, "phoneNumber": "2519XXXXXXXX"` : ""} }`;
 }

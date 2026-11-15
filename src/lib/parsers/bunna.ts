@@ -144,8 +144,6 @@ export class BunnaParser extends BaseParser {
   readonly bankId = "bunna";
   readonly bankName = "Bunna International Bank";
   readonly responseType = "json" as const;
-  readonly accountDigits?: number = undefined;
-  readonly requiresPhone = false;
   // Looked up by the opaque token in the receipt link's fragment; the record
   // carries Bunna's transaction reference (tranId) and does not echo the
   // token back.

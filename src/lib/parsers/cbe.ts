@@ -25,8 +25,6 @@ export class CBEParser extends BaseParser {
   readonly bankId = "cbe";
   readonly bankName = "Commercial Bank of Ethiopia";
   readonly responseType = "pdf" as const;
-  readonly accountDigits = 8;
-  readonly requiresPhone = false;
 
   buildUrl(ref: string, account?: string): string {
     const suffix = (account || "").replace(/\D/g, "").slice(-8);
@@ -188,8 +186,6 @@ export class CBENewParser extends BaseParser {
   readonly bankId = "cbe-new";
   readonly bankName = "Commercial Bank of Ethiopia";
   readonly responseType = "json" as const;
-  readonly accountDigits?: number = undefined;
-  readonly requiresPhone = false;
   // The current CBE format is looked up by its Receipt ID (a share token);
   // the receipt it returns carries the FT transaction id instead.
   readonly referenceIsOpaqueToken = true;

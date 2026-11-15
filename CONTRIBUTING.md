@@ -186,8 +186,6 @@ export class YourBankParser extends BaseParser {
   readonly bankId = "yourbank";
   readonly bankName = "Your Bank";
   readonly responseType = "html" as const;
-  readonly accountDigits?: number = undefined;
-  readonly requiresPhone = false;
 
   buildUrl(ref: string): string {
     return `https://receipt.yourbank.com/receipt/${encodeURIComponent(ref)}`;

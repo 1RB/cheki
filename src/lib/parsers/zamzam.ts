@@ -129,8 +129,6 @@ export class ZamZamParser extends BaseParser {
   readonly bankId = "zamzam";
   readonly bankName = "ZamZam Bank";
   readonly responseType = "json" as const;
-  readonly accountDigits?: number = undefined;
-  readonly requiresPhone = false;
   // Looked up by the numeric receipt id from the link; the record carries
   // ZamZam's transaction reference instead. The parser checks that the
   // record's own id equals the id requested (ZamZamParser.parseRecord).

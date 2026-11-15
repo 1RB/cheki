@@ -43,8 +43,6 @@ export class EBirrParser extends BaseParser {
   readonly bankId = "ebirr";
   readonly bankName = "eBirr";
   readonly responseType = "html" as const;
-  readonly accountDigits?: number = undefined;
-  readonly requiresPhone = false;
   // The receipt link carries an opaque token, which is what is looked up.
   readonly referenceIsOpaqueToken = true;
 

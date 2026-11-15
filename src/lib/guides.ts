@@ -1227,7 +1227,7 @@ export const articles: Article[] = [
         ],
       },
       { type: "text", text: "The parser interface is simple:" },
-      { type: "code", lang: "typescript", code: "class MyBankParser extends BaseParser {\n  readonly bankId = \"mybank\";\n  readonly bankName = \"My Bank\";\n  readonly responseType = \"html\" as const; // or \"json\" or \"pdf\"\n  readonly requiresPhone = false;\n\n  buildUrl(ref: string, account?: string): string {\n    return `https://mybank.com/receipt/${ref}`;\n  }\n\n  parse(data: string | Buffer, contentType: string): ParsedReceipt {\n    // Parse the HTML/JSON/PDF response\n    // Return { verified: true, senderName, receiverName, amount, ... }\n  }\n}" },
+      { type: "code", lang: "typescript", code: "class MyBankParser extends BaseParser {\n  readonly bankId = \"mybank\";\n  readonly bankName = \"My Bank\";\n  readonly responseType = \"html\" as const; // or \"json\" or \"pdf\"\n\n  buildUrl(ref: string, account?: string): string {\n    return `https://mybank.com/receipt/${ref}`;\n  }\n\n  parse(data: string | Buffer, contentType: string): ParsedReceipt {\n    // Parse the HTML/JSON/PDF response\n    // Return { verified: true, senderName, receiverName, amount, ... }\n  }\n}" },
 
       { type: "heading", text: "Option 3: Report broken endpoints" },
       { type: "text", text: "Banks occasionally change their receipt URL formats. If you notice that a bank that used to work on cheki is now returning errors, open a GitHub issue with:" },

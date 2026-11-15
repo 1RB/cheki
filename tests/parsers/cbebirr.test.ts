@@ -131,7 +131,6 @@ describe("CBEBirrParser", () => {
 
   it("reads the body as bytes so a PDF survives the fetch", () => {
     expect(parser.binaryResponse).toBe(true);
-    expect(parser.requiresPhone).toBe(true);
   });
 
   it("parses the PDF text layout using the real receipt labels", () => {

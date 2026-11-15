@@ -47,8 +47,6 @@ export abstract class BaseParser {
   abstract readonly bankId: string;
   abstract readonly bankName: string;
   abstract readonly responseType: "pdf" | "html" | "json";
-  abstract readonly accountDigits?: number;
-  abstract readonly requiresPhone: boolean;
   /**
    * The bank only answers Ethiopian IPs, so one plain request with a short
    * timeout is made and the receipt link is handed to the user instead.

@@ -201,8 +201,6 @@ export interface ParserPort {
   readonly bankId: string;
   readonly bankName: string;
   readonly responseType: "pdf" | "html" | "json";
-  readonly accountDigits?: number;
-  readonly requiresPhone: boolean;
 
   buildUrl(ref: string, account?: string, phone?: string): string;
   parse(data: string | Buffer, contentType: string): ParsedReceipt;

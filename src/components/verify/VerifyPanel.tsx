@@ -31,7 +31,7 @@ import { accountFieldKeys, browserReceiptUrl, detectInput, extraFieldProblem, li
 import { postJson } from "@/lib/verify/client";
 import { presentVerdict, type FraudCheck } from "@/lib/verify/verdict";
 import { addVerified, clearRecent, findPrevious, loadRecent, removeRecent, type RecentCheck } from "@/lib/verify/history";
-import { secondaryFormats } from "@/lib/manifest/formats";
+import { secondaryFormats, DEFAULT_ACCOUNT_DIGITS } from "@/lib/manifest/formats";
 import { canonicalReference, referenceLooksOff } from "@/lib/reference-case";
 import { useReceiptDetection } from "./use-receipt-detection";
 import { VerifyInput } from "./VerifyInput";
@@ -209,7 +209,7 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
       // the same one the field's own validation uses.
       const problem = extraFieldProblem(d, extraValue);
       if (problem) {
-        setExtraError(problem === "phone" ? t("verify.extra.phoneMissing") : t(accountFieldKeys(d).missing, { digits: d.accountDigits ?? 5 }));
+        setExtraError(problem === "phone" ? t("verify.extra.phoneMissing") : t(accountFieldKeys(d).missing, { digits: d.accountDigits ?? DEFAULT_ACCOUNT_DIGITS }));
         extraRef.current?.focus();
         return false;
       }

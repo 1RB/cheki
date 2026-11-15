@@ -9,7 +9,7 @@
 import manifestData from "@/lib/manifest/banks.json";
 import { banks, type Bank } from "@/lib/banks";
 import { detectBankFromUrl, isUrl } from "@/lib/adapters/url-detector";
-import { formatAccountDigits, formatNeeds, matchesFormat, primaryFormat, supportedFormats } from "@/lib/manifest/formats";
+import { accountDigitsFor, extraFieldNeeds, formatNeeds, matchesFormat, primaryFormat, supportedFormats, DEFAULT_ACCOUNT_DIGITS } from "@/lib/manifest/formats";
 import type { ReceiptFormat } from "@/lib/core/types";
 import { readQrPayload } from "@/lib/qr/chain";
 import { canonicalReference } from "@/lib/reference-case";
@@ -170,7 +170,7 @@ export function detectInput(raw: string, opts: { lockedBank?: string; overrideBa
       olderFormat: Boolean(format && primary && format !== primary),
       needsAccount: linkNeedsAccount,
       needsPhone: linkNeedsPhone,
-      ...(linkNeedsAccount ? { accountDigits: formatAccountDigits(format) ?? bank.accountDigits } : {}),
+      ...(linkNeedsAccount ? { accountDigits: accountDigitsFor(format, bank) } : {}),
     });
   }
 
@@ -182,8 +182,7 @@ export function detectInput(raw: string, opts: { lockedBank?: string; overrideBa
   const reference = canonicalReference(bank.code, value);
   const primary = primaryFormat(bank);
   const format = supportedFormats(bank).find((f) => matchesFormat(f, reference)) ?? primary;
-  const needsAccount = format ? formatNeeds(format, "account") : bank.requiresAccount;
-  const needsPhone = format ? formatNeeds(format, "phone") : Boolean(bank.requiresPhone);
+  const { needsAccount, needsPhone } = extraFieldNeeds(format, bank);
   return finish({
     ...base,
     kind: "reference",
@@ -194,7 +193,7 @@ export function detectInput(raw: string, opts: { lockedBank?: string; overrideBa
     olderFormat: Boolean(format && primary && format !== primary),
     needsAccount,
     needsPhone,
-    accountDigits: formatAccountDigits(format) ?? bank.accountDigits,
+    accountDigits: accountDigitsFor(format, bank),
   });
 }
 
@@ -231,7 +230,7 @@ export function accountFieldKeys(d: Pick<Detection, "bank">): { label: string; m
 export function extraFieldProblem(d: Detection, extra: string): "phone" | "account" | null {
   const digits = extra.replace(/\D/g, "");
   if (d.needsPhone && !/^(251|0)?[79]\d{8}$/.test(digits)) return "phone";
-  if (d.needsAccount && digits.length < (d.accountDigits ?? 5)) return "account";
+  if (d.needsAccount && digits.length < (d.accountDigits ?? DEFAULT_ACCOUNT_DIGITS)) return "account";
   return null;
 }
 

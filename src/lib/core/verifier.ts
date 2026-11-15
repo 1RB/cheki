@@ -42,7 +42,7 @@ import { BunnaParser } from "../parsers/bunna";
 import { WegagenParser } from "../parsers/wegagen";
 import { verificationGate, gateFailureMessage, gateErrorCode } from "./gate";
 import { checkAccountSuffix, checkPhone, checkReference } from "../security/reference";
-import { selectFormat, formatNeeds, formatAccountDigits, fillTemplate } from "../manifest/formats";
+import { selectFormat, fillTemplate, extraFieldNeeds, accountDigitsFor, DEFAULT_ACCOUNT_DIGITS } from "../manifest/formats";
 
 /** Receipts verified at the same time in one batch. */
 export const BATCH_CONCURRENCY = 5;
@@ -272,8 +272,7 @@ export class Verifier {
       });
     }
 
-    const needsAccount = format ? formatNeeds(format, "account") : manifestEntry.requiresAccount;
-    const needsPhone = format ? formatNeeds(format, "phone") : Boolean(parser.requiresPhone || manifestEntry.requiresPhone);
+    const { needsAccount, needsPhone } = extraFieldNeeds(format, manifestEntry);
 
     // Account number (only the suffix the bank needs, digits only)
     let account: string | undefined;
@@ -285,7 +284,7 @@ export class Verifier {
           message: `${manifestEntry.name} requires the ${lowerFirst(manifestEntry.accountLabel || "account number")}.`,
         });
       }
-      const digits = formatAccountDigits(format) ?? manifestEntry.accountDigits ?? parser.accountDigits ?? 1;
+      const digits = accountDigitsFor(format, manifestEntry) ?? DEFAULT_ACCOUNT_DIGITS;
       const checked = checkAccountSuffix(input.accountNumber, digits);
       if (!checked.ok) return err({ kind: "MISSING_INPUT", field: "accountNumber", message: checked.message });
       account = checked.value;
@@ -600,7 +599,7 @@ export class Verifier {
     // invalid reference, or a receiving account that is missing or masked
     // ("1****42674"), can't be looked up at BOA, so it is an error, never a
     // decoded-only result.
-    const digits = manifestEntry.accountDigits ?? 5;
+    const digits = accountDigitsFor(undefined, manifestEntry) ?? DEFAULT_ACCOUNT_DIGITS;
     const refCheck = checkReference(decoded.reference);
     if (!refCheck.ok) {
       return err({

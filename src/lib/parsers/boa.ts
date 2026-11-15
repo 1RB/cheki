@@ -53,8 +53,6 @@ export class BOAParser extends BaseParser {
   readonly bankId = "boa";
   readonly bankName = "Bank of Abyssinia";
   readonly responseType = "json" as const;
-  readonly accountDigits = 5;
-  readonly requiresPhone = false;
 
   buildUrl(ref: string, account?: string): string {
     const suffix = (account || "").replace(/\D/g, "").slice(-5);
