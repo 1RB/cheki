@@ -223,7 +223,7 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
       // those assertions cover every detection this panel can show.
       const body: Record<string, unknown> =
         d.kind === "boaQr"
-          ? { bank: "boa", qrData: d.value }
+          ? { bank: d.bank.code, qrData: d.value }
           : {
               bank: d.bank.code,
               reference: d.value,

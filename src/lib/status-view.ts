@@ -123,3 +123,14 @@ export function isStale(generatedAt: string | undefined, now: number): boolean {
 export function legacyHealth(all: BankHealth[], bankId: string): BankHealth[] {
   return all.filter((h) => h.id.startsWith(`${bankId}:`));
 }
+
+/**
+ * The format id inside a "<bank>:<formatId>" health row (src/lib/health.ts
+ * builds the key; legacyHealth above keeps a bank's rows). The reading side
+ * of the key has this one owner: a key with no format part gives undefined,
+ * never half an id.
+ */
+export function healthFormatId(id: string): string | undefined {
+  const at = id.indexOf(":");
+  return at === -1 ? undefined : id.slice(at + 1) || undefined;
+}

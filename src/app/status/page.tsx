@@ -9,7 +9,7 @@ import { StaleNote } from "@/components/reference/StaleNote";
 import { getEndpointRows } from "@/lib/manifest/endpoints";
 import { primaryFormat } from "@/lib/manifest/formats";
 import { getBankHealth, healthStatusFor, statusFile } from "@/lib/status-data";
-import { bankState, legacyHealth, measuredFrom, stateMeaning, summarize, type BankState } from "@/lib/status-view";
+import { bankState, healthFormatId, legacyHealth, measuredFrom, stateMeaning, summarize, type BankState } from "@/lib/status-view";
 import { formatAbsolute, parseTimestamp } from "@/lib/time/relative";
 import "@/components/reference/reference.css";
 
@@ -128,7 +128,7 @@ export default function StatusPage() {
                             <dd>{r.health?.checkedAt ? <RelativeTime value={r.health.checkedAt} absolute={abs(r.health.checkedAt)} /> : "Not checked yet"}</dd>
                           </div>
                           {older.map((h) => {
-                            const fid = h.id.split(":")[1];
+                            const fid = healthFormatId(h.id);
                             const f = r.bank.formats?.find((x) => x.id === fid);
                             // A format's own probe, read with the same words
                             // as the bank's row: status-view owns every

@@ -17,7 +17,7 @@ import { describe, expect, it } from "vitest";
 import { getAllBanks } from "@/lib/manifest/loader";
 import { getBank as getUiBank } from "@/lib/banks";
 import { formatsOf, isSupportedFormat } from "@/lib/manifest/formats";
-import { formatStatusTag } from "@/lib/status-view";
+import { formatStatusTag, healthFormatId } from "@/lib/status-view";
 import { HEALTH_STATUSES } from "@/lib/health";
 import { statusFile } from "@/lib/status-data";
 import type { ReceiptFormat } from "@/lib/core/types";
@@ -70,5 +70,27 @@ describe("bank status vocabularies", () => {
     // ever writes a new status word, bankState's exhaustive switch refuses it
     // at compile time; this pins the committed file to the same list.
     for (const row of statusFile.banks) expect(HEALTH_STATUSES, row.id).toContain(row.status);
+  });
+
+  it("keys every health row as bank, or bank:format, and reads it back", () => {
+    // health.ts builds "<bank>:<formatId>" for an older format's row and
+    // "<bank>" for the bank's own; status-view reads both (legacyHealth,
+    // healthFormatId). A key that parses to a bank or format that does not
+    // exist would render a raw fragment as the format's name.
+    const bankIds = new Set(getAllBanks().map((b) => b.id));
+    const formatIds = new Map(getAllBanks().map((b) => [b.id, new Set((b.formats ?? []).map((f) => f.id))]));
+    for (const row of statusFile.banks) {
+      const fid = healthFormatId(row.id);
+      if (fid === undefined) {
+        expect(bankIds, row.id).toContain(row.id);
+      } else {
+        const bankId = row.id.slice(0, row.id.indexOf(":"));
+        expect(bankIds, row.id).toContain(bankId);
+        expect(formatIds.get(bankId) ?? new Set(), row.id).toContain(fid);
+      }
+    }
+    expect(healthFormatId("cbe:cbe-ft-pdf")).toBe("cbe-ft-pdf");
+    expect(healthFormatId("cbe")).toBeUndefined();
+    expect(healthFormatId("cbe:")).toBeUndefined();
   });
 });
