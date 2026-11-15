@@ -108,6 +108,16 @@ export function getBank(code: string): Bank | undefined {
   return banks.find((b) => b.code === code);
 }
 
+/**
+ * eBirr tenant prefixes an OCR'd reference may carry ("nib/abc123").
+ * Deliberately a subset of the canonical EBIRR_TENANTS
+ * (src/lib/security/reference.ts), pinned by
+ * tests/security/ebirr-tenants.test.ts: this fallback only routes to the
+ * shared "ebirr" parser, it never names a tenant.
+ */
+export const EBIRR_TENANT_PREFIXES = ["nib", "wegagen", "ahadu", "kaafimf"];
+const EBIRR_TENANT_PREFIXES_RE = new RegExp(`^(${EBIRR_TENANT_PREFIXES.join("|")})/`, "i");
+
 export function detectBank(reference: string): string | null {
   const upper = reference.toUpperCase().trim();
   for (const b of banks) {
@@ -122,7 +132,7 @@ export function detectBank(reference: string): string | null {
   if (/^(DET|CHQ|DAB|DJA|DEL|ADQ|DEP|CHG|DF|DEV)/i.test(upper)) return "telebirr";
   // eBirr receipt URL or tenant/token
   if (/receipt\.ebirr\.com/i.test(upper)) return "ebirr";
-  if (/^(nib|wegagen|ahadu|kaafimf)\//i.test(upper)) return "ebirr";
+  if (EBIRR_TENANT_PREFIXES_RE.test(upper)) return "ebirr";
   return null;
 }
 

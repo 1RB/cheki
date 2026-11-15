@@ -214,6 +214,12 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
         return false;
       }
 
+      // One extra field, ever: this ternary sends phoneNumber or
+      // accountNumber, never both, while the API accepts either or both.
+      // tests/manifest/extra-field.test.ts pins that no bank and no format
+      // asks for both: detect.ts derives needsAccount/needsPhone from one
+      // matched format's inputs or the bank's own flags, never a mix, so
+      // those assertions cover every detection this panel can show.
       const body: Record<string, unknown> =
         d.kind === "boaQr"
           ? { bank: "boa", qrData: d.value }
