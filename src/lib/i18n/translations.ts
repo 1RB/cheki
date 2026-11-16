@@ -339,6 +339,16 @@ export const translations = {
         noMatch: "“{query}” የሚል ባንክ የለም",
         close: "ዝጋ",
       },
+      verdict: {
+        // Every other verdict card falls back to English key by key
+        // (src/lib/i18n/translate.ts), so only this new card is written
+        // here; the rest is a pre-existing gap, not a regression.
+        localOnly: {
+          title: "አልተረጋገጠም፦ ይህ አገናኝ በኢትዮጵያ ብቻ ይከፈታል",
+          subtitle: "የዚህ {bank} የደረሰኝ አገናኝ በኢትዮጵያ አውታሮች ላይ ብቻ ይከፈታል፣ ስለዚህ የcheki ሰርቨር ማረጋገጥ አይችልም።",
+          next: "በኢትዮጵያ አውታሮች ላይ የሚሰራ ስልክ ላይ አገናኝ ይክፈቱ፤ ዕቃ ከመስጠትዎ በፊት መጠን፣ የተቀባዩን ስምና ቀን ያረጋግጡ።",
+        },
+      },
     },
     time: {
       justNow: "አሁን",

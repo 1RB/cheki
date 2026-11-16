@@ -221,9 +221,14 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
       // asks for both: detect.ts derives needsAccount/needsPhone from one
       // matched format's inputs or the bank's own flags, never a mix, so
       // those assertions cover every detection this panel can show.
+      // A BOA QR is checked as BOA from any page: detect reports the locked
+      // bank (locked ?? boa) so this panel's lock guard lets the input
+      // through, but the payload is BOA's ciphertext and only BOA can read
+      // it. d.bank.code here would post the ciphertext to the locked bank,
+      // which answers "reference too long".
       const body: Record<string, unknown> =
         d.kind === "boaQr"
-          ? { bank: d.bank.code, qrData: d.value }
+          ? { bank: "boa", qrData: d.value }
           : {
               bank: d.bank.code,
               reference: d.value,

@@ -1030,7 +1030,6 @@
     "requiresAccount": false,
     "endpoint": "https://receipts.siinqeebank.com:871/generate/{ref}",
     "endpointFormat": "https://receipts.siinqeebank.com:871/generate/{REFERENCE}",
-    "sslVerify": true,
     "color": "#006A4E",
     "initials": "SQ",
     "notes": "Beta. Receipt links are receipts.siinqeebank.com:871/generate/{reference}, keyed by the transaction reference the SMS prints after \"Ref:\", so a typed reference works too. The reference is case-sensitive (it can hold a lowercase letter). The receipt page is HTML; a PDF answer is read too. Another verifier reports about five views per receipt, so cheki fetches each check once, never retries, and caches a confirmed receipt. The older eBirr route (receipt.ebirr.com/siinqee/...) has answered HTTP 404 since 2026-10-10.",
