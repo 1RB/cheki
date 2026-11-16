@@ -495,7 +495,7 @@ export const endpointDocs: EndpointDoc[] = [
         confirmed: true,
       },
     ],
-    redactedExample: "https://receipts.siinqeebank.com:871/generate/12B004k262950007",
+    redactedExample: "https://receipts.siinqeebank.com:871/generate/SYN000a000000001",
     fieldsParsed: ["senderName", "senderAccount", "receiverName", "receiverAccount", "amount", "currency", "date", "reference", "transactionType", "transactionStatus", "serviceFee", "serviceFeeVat", "totalPaid"],
     unknownRef: "Not observed yet. cheki treats any page without \"Transaction is successful\" and the exact reference asked for as not confirmed (HTTP 422 with checkedUrl), never as fake.",
     gotchas: [

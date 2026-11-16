@@ -1036,7 +1036,7 @@
     "notes": "Beta. Receipt links are receipts.siinqeebank.com:871/generate/{reference}, keyed by the transaction reference the SMS prints after \"Ref:\", so a typed reference works too. The reference is case-sensitive (it can hold a lowercase letter). The receipt page is HTML; a PDF answer is read too. Another verifier reports about five views per receipt, so cheki fetches each check once, never retries, and caches a confirmed receipt. The older eBirr route (receipt.ebirr.com/siinqee/...) has answered HTTP 404 since 2026-10-10.",
     "description": "Siinqee Bank grew out of Oromia Credit and Saving Share Company (OCSSCO), a microfinance institution, and was licensed as a commercial bank in 2021. Its receipt links (receipts.siinqeebank.com:871/generate/...) open a receipt page keyed by the transaction reference from the SMS: cheki reads that page and confirms the amount, date, payer and receiver, with account numbers masked by Siinqee. Siinqee support is in beta.",
     "referenceFormat": "The receipt link (https://receipts.siinqeebank.com:871/generate/{reference}) or the 16-character reference after \"Ref:\" in the SMS: 3 capitals or digits, 4 letters or digits (a code such as IIPS for an incoming instant payment), then 9 digits (year and day of the year, then a sequence). Letter case matters.",
-    "referenceExample": "12B004k262950007",
+    "referenceExample": "SYN000a000000001",
     "howToVerify": [
       "Paste the receipt link from the Siinqee SMS (https://receipts.siinqeebank.com:871/generate/...) into cheki",
       "Or select Siinqee Bank and type the reference after \"Ref:\" in the SMS, exactly as printed",
@@ -1091,12 +1091,12 @@
           {
             "name": "link",
             "label": "Receipt link",
-            "example": "https://receipts.siinqeebank.com:871/generate/12B004k262950007"
+            "example": "https://receipts.siinqeebank.com:871/generate/SYN000a000000001"
           },
           {
             "name": "reference",
             "label": "Reference from the SMS",
-            "example": "12B004k262950007"
+            "example": "SYN000a000000001"
           }
         ],
         "refPattern": {

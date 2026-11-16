@@ -259,7 +259,7 @@ function parseReceiptTextInternal(text: string): OcrParseResult | null {
     }
   }
 
-  // Siinqee references are case-sensitive (12B004k...), so they are read
+  // Siinqee references are case-sensitive (SYN000a...), so they are read
   // from the text as written, never from the uppercased copy below. A
   // Siinqee receipt can name another bank (a transfer to CBE), which the
   // clue list would pick first, so Siinqee wins whenever the receipt names

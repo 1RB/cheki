@@ -79,7 +79,7 @@ describe("canonicalReference", () => {
     ["awash", "2kdl95xe81-4u0000"],
     ["ebirr", "nib/AbCdEf123456"],
     ["siinqee", "siinqee/AbCdEf123456"],
-    ["siinqee", "12B004k262950007"],
+    ["siinqee", "SYN000a000000001"],
     ["nib", "AbCdEf123456"],
     // Banks without a rule, and unknown codes.
     ["zemen", "zb123456"],
@@ -138,7 +138,7 @@ describe("parsers: lowercase is the same reference, case-sensitive tokens are no
     const siinqee = getParser("siinqee-ebirr")!.normalizeReference("AbCdEf123456");
     expect(siinqee.ok && siinqee.value).toContain("AbCdEf123456");
     // Siinqee Bank references can hold a lowercase letter: never uppercased.
-    expect(getParser("siinqee")!.normalizeReference("12B004k262950007")).toEqual({ ok: true, value: "12B004k262950007" });
+    expect(getParser("siinqee")!.normalizeReference("SYN000a000000001")).toEqual({ ok: true, value: "SYN000a000000001" });
   });
 });
 

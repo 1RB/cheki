@@ -16,7 +16,7 @@
  *   - eBirr white-label (Nib, Wegagen, Ahadu, Kaafi, Coopbank, legacy
  *     Siinqee) {token} URL path segments are case-sensitive.
  *   - Siinqee Bank references (receipts.siinqeebank.com:871/generate/{ref},
- *     or "Ref:" in the SMS) can hold a lowercase letter (12B004k...), so they
+ *     or "Ref:" in the SMS) can hold a lowercase letter (SYN000a...), so they
  *     are case-sensitive and only trimmed.
  *   - ZamZam receipt ids are digits; spaces are dropped, nothing else.
  *   - Bunna receipt tokens are base64 from the link fragment (case-sensitive).

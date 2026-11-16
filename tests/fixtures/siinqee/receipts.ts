@@ -12,9 +12,9 @@
  */
 
 /** A transfer within Siinqee. The lowercase "k" makes the reference case-sensitive. */
-export const SYNTH_SIINQEE_REF = "12B004k262950007";
+export const SYNTH_SIINQEE_REF = "SYN000a000000001";
 /** An incoming instant payment from another bank. */
-export const SYNTH_SIINQEE_IPS_REF = "12BIIPS262950008";
+export const SYNTH_SIINQEE_IPS_REF = "SYNIIPS000000002";
 export const SYNTH_SIINQEE_LINK = `https://receipts.siinqeebank.com:871/generate/${SYNTH_SIINQEE_REF}`;
 
 /** Made-up customer details that must never reach a result or `raw`. */
@@ -89,7 +89,7 @@ export function siinqeePdfText(ref = SYNTH_SIINQEE_REF): string {
 }
 
 /** A page for another reference than the one asked for. */
-export const siinqeeOtherRefHtml = () => siinqeeP2pHtml("12B004k262950099");
+export const siinqeeOtherRefHtml = () => siinqeeP2pHtml("SYN000a000000002");
 
 /** The receipt layout without the success line. */
 export const siinqeeNoSuccessHtml = () => siinqeeP2pHtml().replace("Transaction is successful!", "");

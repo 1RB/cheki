@@ -162,7 +162,7 @@ describe("Siinqee references", () => {
   it("accepts the 16-character shape, case kept, and rejects anything else", () => {
     expect(checkSiinqeeReference(` ${SYNTH_SIINQEE_REF} `)).toEqual({ ok: true, value: SYNTH_SIINQEE_REF });
     expect(checkSiinqeeReference(SYNTH_SIINQEE_IPS_REF).ok).toBe(true);
-    for (const bad of ["12b004k262950007", "12B004k26295000", "12B004k2629500071", "12B004-262950007", "12B004k26295000x", "../x", "SQ12345678"]) {
+    for (const bad of ["syn000a000000001", "SYN000a00000000", "SYN000a0000000001", "SYN000-000000001", "SYN000a00000000x", "../x", "SQ12345678"]) {
       expect(checkSiinqeeReference(bad).ok, bad).toBe(false);
     }
   });
@@ -228,7 +228,7 @@ describe("Siinqee through the verifier", () => {
   const v = new Verifier();
   let n = 0;
   /** A unique synthetic reference per test so the receipt cache never answers. */
-  const ref = () => `12B004k2629${String(++n).padStart(5, "0")}`;
+  const ref = () => `SYN000a26000${String(++n).padStart(4, "0")}`;
 
   const serve = (body: string | Uint8Array, status = 200, type = "text/html; charset=utf-8") => {
     const calls: string[] = [];
