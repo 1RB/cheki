@@ -278,9 +278,6 @@ export class SiinqeeParser extends BaseParser {
   readonly bankId = "siinqee";
   readonly bankName = "Siinqee Bank";
   readonly responseType = "html" as const;
-  readonly requiresAccount = false;
-  readonly accountDigits?: number = undefined;
-  readonly requiresPhone = false;
   /** Kept as bytes: the page may be a PDF. Gets the PDF size cap. */
   readonly binaryResponse = true;
   /** About five views per receipt (another verifier's report): one request, no retry. */
@@ -366,9 +363,6 @@ export class SiinqeeEbirrParser extends BaseParser {
   readonly bankId = "siinqee-ebirr";
   readonly bankName = "Siinqee Bank";
   readonly responseType = "html" as const;
-  readonly requiresAccount = false;
-  readonly accountDigits?: number = undefined;
-  readonly requiresPhone = false;
   // The receipt link carries an opaque token, which is what is looked up
   // (the eBirr route's semantics; the bank-host format above is exempt).
   readonly referenceIsOpaqueToken = true;
