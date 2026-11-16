@@ -1295,7 +1295,7 @@
     "endpointFormat": "https://transinfo.wegagenbanksc.com.et:8011/sms_wega/txn/{SHARE_ID}",
     "color": "#b45309",
     "initials": "Wegagen",
-    "notes": "Beta. Wegagen shares receipts as a link (transinfo.wegagenbanksc.com.et:8183/?id=...) that opens its own receipt page; cheki reads the 24-character share id out of it and asks the JSON service on port 8011 for the record. An unknown id answers HTTP 200 with the plain text 'Transaction not found in Daily or History'. The service answers intermittently, so the parser retries once, and account numbers are masked with Wegagen's own rule before anything is shown or cached.",
+    "notes": "Beta. Wegagen shares receipts as a link (transinfo.wegagenbanksc.com.et:8183/?id=...) that opens its own receipt page; cheki reads the 24-character share id out of it and asks the JSON service on port 8011 for the record. An unknown id answers HTTP 200 with the plain text 'Transaction not found in Daily or History'. The service answers intermittently, so the parser retries once, and cheki masks every account number with Wegagen's own rule before anything is shown or cached.",
     "refPattern": {
       "source": "^\\d{3}[A-Z]{4}[A-Z0-9]{17}$",
       "flags": ""
@@ -1326,7 +1326,7 @@
       },
       {
         "q": "Does cheki show the full Wegagen account number?",
-        "a": "No. Every account on the record is masked with Wegagen's own rule from its receipt page before cheki shows, returns or caches anything: a 13-digit account keeps its first digit and last 7, a 12-character one the first 4 and last 2, a 10-character one the first 2 and last 2."
+        "a": "No. cheki masks every account on the record with Wegagen's own rule from Wegagen's receipt page before it shows, returns or caches anything: a 13-digit account keeps its first digit and last 7, a 12-character one the first 4 and last 2, a 10-character one the first 2 and last 2."
       },
       {
         "q": "Is the Wegagen receipt endpoint public?",
