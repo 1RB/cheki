@@ -154,11 +154,24 @@ describe("maskAccount: Wegagen's own rule", () => {
     expect(maskAccount("1234567890")).toBe("12*****90");
   });
 
-  it("leaves other lengths as they came: that is the bank's rule, not a choice", () => {
-    expect(maskAccount("1234567")).toBe("1234567");
-    expect(maskAccount("12345678901234")).toBe("12345678901234");
+  it("fully redacts any other length: no observed rule means no passthrough", () => {
+    expect(maskAccount("1234567")).toBe("*****");
+    expect(maskAccount("12345678901234")).toBe("*****");
     expect(maskAccount("")).toBe("");
     expect(maskAccount(null)).toBe("");
+  });
+});
+
+describe("synthetic share ids follow the documented shape", () => {
+  it("the default id carries the account digits its record is filed under", () => {
+    expect(SYNTH_WEGAGEN_ID).toHaveLength(24);
+    expect(SYNTH_WEGAGEN_ID.slice(0, 16)).toBe(SYNTH_WEGAGEN_REF);
+    expect(SYNTH_WEGAGEN_ID.slice(16, 20)).toBe(SYNTH_WEGAGEN_SENDER_ACCOUNT.slice(0, 4));
+    // The second id differs only where the format says two records may differ:
+    // the four account digits, never the printed reference.
+    expect(SYNTH_WEGAGEN_ID_2.slice(0, 16)).toBe(SYNTH_WEGAGEN_REF);
+    expect(SYNTH_WEGAGEN_ID_2.slice(16, 20)).not.toBe(SYNTH_WEGAGEN_ID.slice(16, 20));
+    expect(SYNTH_WEGAGEN_ID_2.slice(20)).toBe(SYNTH_WEGAGEN_ID.slice(20));
   });
 });
 
@@ -290,11 +303,11 @@ describe("Verifier: Wegagen", () => {
   });
 
   it("a bare share id verifies exactly like the link", async () => {
-    const calls = stubFetch(JSON.stringify(wegagenRecord("SAMPLE2")));
+    const calls = stubFetch(JSON.stringify(wegagenRecord("SAMPLE1")));
     const r = await v.verify({ bank: "wegagen", reference: SYNTH_WEGAGEN_ID_2 });
     expect(calls.map((c) => c.url)).toEqual([`${API}${SYNTH_WEGAGEN_ID_2}`]);
     expect(r.ok && r.value.verified).toBe(true);
-    if (r.ok) expect(r.value.reference).toBe(synthRef("SAMPLE2"));
+    if (r.ok) expect(r.value.reference).toBe(synthRef("SAMPLE1"));
   });
 
   it("an unknown share id is HTTP 200 with the not-found body, and says so", async () => {
