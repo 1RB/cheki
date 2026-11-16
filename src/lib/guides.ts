@@ -390,7 +390,7 @@ export const articles: Article[] = [
     excerpt:
       `A reference for Ethiopian bank receipt formats. Reference patterns, endpoint URLs, required fields, and response types for the ${LIVE_BANK_COUNT} live banks and wallets (${DIRECT_BANK_COUNT} checked directly from cheki.et), plus the ones still in research.`,
     date: "2026-06-18",
-    updated: "2026-10-22",
+    updated: "2026-11-16",
     readTime: "6 min",
     content: [
       { type: "text", text: `This is a technical reference for the Ethiopian bank and mobile wallet receipt systems cheki supports, plus the ones still in research. If you're building a verification system, integrating payments, or just want to understand how Ethiopian bank receipts work, start here. It covers what we have checked so far: ${IN_DEVELOPMENT_BANK_COUNT} more are in development.` },
@@ -671,7 +671,7 @@ export const articles: Article[] = [
           ["Geo-blocked", "No"],
         ],
       },
-      { type: "text", text: "The share id is 24 letters and digits: the 16-character Reference No printed on the receipt, then the first 4 digits of the account the record is filed under, the debit/credit flag and the transaction code, so the printed Reference No on its own never answers. The record names both sides with account numbers Wegagen masks itself, the amount, the date (Addis Ababa time) and Wegagen's own reference. The receipt page's QR carries the same share link inside its prose, so cheki reads the id out of it and checks it exactly like a pasted link. The service answers intermittently, so cheki retries once, which is why support is in beta." },
+      { type: "text", text: "The share id is 24 letters and digits: the 16-character Reference No printed on the receipt, then the first 4 digits of the account the record is filed under, the debit/credit flag and the transaction code, so the printed Reference No on its own never answers. The record names both sides with account numbers that Wegagen does not always mask and that cheki masks itself, the amount, the date (Addis Ababa time) and Wegagen's own reference. The receipt page's QR carries the same share link inside its prose, so cheki reads the id out of it and checks it exactly like a pasted link. The service answers intermittently, so cheki retries once, which is why support is in beta." },
 
       { type: "heading", text: "Other Ethiopian banks (researching)" },
       { type: "text", text: `These are in development: cheki does not yet have a confirmed public receipt endpoint for them, or has not seen a real receipt that its parser reads. ${inDevelopmentBankList()}.` },
@@ -1191,7 +1191,7 @@ export const articles: Article[] = [
     excerpt:
       `${IN_DEVELOPMENT_BANK_COUNT} Ethiopian banks and wallets still need confirmed receipt endpoints. You can help by sharing a receipt, writing a parser, or reporting broken endpoints. Here's the complete community contribution guide.`,
     date: "2026-06-19",
-    updated: "2026-10-21",
+    updated: "2026-11-16",
     readTime: "5 min",
     content: [
       { type: "text", text: `cheki lists ${TOTAL_BANK_COUNT} Ethiopian banks and wallets, but only ${LIVE_BANK_COUNT} are live. The remaining ${IN_DEVELOPMENT_BANK_COUNT} are listed as 'in development' because we haven't confirmed their public receipt endpoints yet. This is where the community comes in.` },

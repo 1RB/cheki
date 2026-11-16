@@ -162,7 +162,7 @@ describe("detectBankFromUrl", () => {
   });
 
   it("reads the share id out of a Wegagen share link, in capitals", () => {
-    const id = "000SAMPSAMPLE1000001DFTD";
+    const id = "000SAMPSAMPLE1001000DFTD";
     expect(detectBankFromUrl(`https://transinfo.wegagenbanksc.com.et:8183/?id=${id}`)).toEqual({ bank: "wegagen", reference: id });
     expect(detectBankFromUrl(`https://transinfo.wegagenbanksc.com.et:8183/?id=${id.toLowerCase()}`)).toEqual({ bank: "wegagen", reference: id });
     // No port: the same host serves the share page.
@@ -170,7 +170,7 @@ describe("detectBankFromUrl", () => {
   });
 
   it("only exactly transinfo.wegagenbanksc.com.et with a full 24-character id counts", () => {
-    const id = "000SAMPSAMPLE1000001DFTD";
+    const id = "000SAMPSAMPLE1001000DFTD";
     // Lookalike hosts, another query, and a short id (the printed 16-character
     // Reference No is not a lookup key) are all rejected.
     expect(detectBankFromUrl(`https://transinfo.wegagenbanksc.com.et.evil.example/?id=${id}`)).toBeNull();

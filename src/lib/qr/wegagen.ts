@@ -25,9 +25,12 @@ export const WEGAGEN_QR_MAX_INPUT = 4096;
 /**
  * The share link inside the QR text. The port is optional: the receipt app
  * prints `:8183`, and a link without it still points at the same host. The id
- * must be exactly 24 characters, so a 25th does not silently truncate.
+ * must be exactly 24 characters, so a 25th does not silently truncate. The
+ * link must start the text or follow whitespace, so a share link nested in
+ * another URL's query (`https://evil.example/?next=https://transinfo...`) is
+ * not read as a Wegagen receipt.
  */
-const SHARE_LINK_RE = /https:\/\/transinfo\.wegagenbanksc\.com\.et(?::\d{1,5})?\/\?id=([A-Za-z0-9]{24})(?![A-Za-z0-9])/;
+const SHARE_LINK_RE = /(?<!\S)https:\/\/transinfo\.wegagenbanksc\.com\.et(?::\d{1,5})?\/\?id=([A-Za-z0-9]{24})(?![A-Za-z0-9])/;
 
 export type WegagenQrFailure = "notText" | "empty" | "tooLong" | "noLink" | "badId";
 

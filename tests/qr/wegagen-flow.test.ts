@@ -61,6 +61,8 @@ describe("parseWegagenQr", () => {
     // Wrong host, wrong id length, wrong charset.
     expect(parseWegagenQr(`https://evil.example/?id=${SYNTH_WEGAGEN_ID}`).ok).toBe(false);
     expect(parseWegagenQr(`https://transinfo.wegagenbanksc.com.et.evil/?id=${SYNTH_WEGAGEN_ID}`).ok).toBe(false);
+    // A share link nested in another URL's query is not a Wegagen receipt.
+    expect(parseWegagenQr(`https://evil.example/?next=${SYNTH_WEGAGEN_LINK}`).ok).toBe(false);
     expect(parseWegagenQr(`${WEGAGEN_SHARE_URL}${SYNTH_WEGAGEN_ID.slice(0, 23)}`).ok).toBe(false);
     expect(parseWegagenQr(`${WEGAGEN_SHARE_URL}${SYNTH_WEGAGEN_ID}1`).ok).toBe(false);
     expect(parseWegagenQr(`${WEGAGEN_SHARE_URL}000SAMP26000000000000__/`).ok).toBe(false);
