@@ -37,7 +37,9 @@ npm run smoke -- https://<deployment>.vercel.app
 It checks:
 
 - `/`, `/banks/cbe`, `/status` and `/endpoints` answer 200 with HTML
-- `/api/health` answers 200 with `status: "ok"` and a bank list
+- `/api/health` answers 200 with a bank list and `status: "ok"` (or
+  `"degraded"` when a bank endpoint is down from here, which is truthful
+  reporting, not a failed check)
 - a bad `/api/verify` request (an unsafe reference, and a non-object body) gets
   a clean 4xx and never `success: true` or `verified: true`
 - an old URL (`/verify/verify-cbe-receipt-online`) answers 301 to `/banks/cbe`

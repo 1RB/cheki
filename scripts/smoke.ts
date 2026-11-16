@@ -91,9 +91,24 @@ const checks: Check[] = [
     run: async (base) => {
       const r = await get(base, "/api/health");
       expect(r.status === 200, `status ${r.status}`);
-      const json = (await r.json()) as { status?: string; banks?: unknown[] };
-      expect(json.status === "ok", `status field ${JSON.stringify(json.status)}`);
+      const json = (await r.json()) as { status?: string; banks?: Array<{ status?: string }> };
+      // "degraded" is a truthful answer, not a broken route: some bank
+      // endpoint did not answer this instance (down, or geo-blocked from
+      // here). CI must not go red because a bank is down; what this check
+      // tests is that the route answers. Any other value is a broken route.
+      expect(
+        json.status === "ok" || json.status === "degraded",
+        `status field ${JSON.stringify(json.status)}`
+      );
       expect(Array.isArray(json.banks) && json.banks.length > 0, "no banks in health body");
+      if (json.status === "degraded") {
+        const tally = json.banks.reduce<Record<string, number>>((m, b) => {
+          const k = b.status ?? "unknown";
+          m[k] = (m[k] ?? 0) + 1;
+          return m;
+        }, {});
+        return `degraded, ${Object.entries(tally).map(([k, v]) => `${k} x${v}`).join(", ")}`;
+      }
       return `${json.banks.length} banks`;
     },
   },
