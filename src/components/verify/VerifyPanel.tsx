@@ -29,6 +29,7 @@ import { detectBankFromUrl, isUrl } from "@/lib/adapters/url-detector";
 import { isBoaQrPayload } from "@/lib/qr/decode";
 import { isTelebirrQrPayload, parseTelebirrQr } from "@/lib/qr/telebirr";
 import { isDashenQrPayload, parseDashenQr } from "@/lib/qr/dashen";
+import { isWegagenQrPayload } from "@/lib/qr/wegagen";
 import { accountFieldKeys, browserReceiptUrl, detectInput, liveBanks, shouldShowCanonical, type Detection } from "@/lib/verify/detect";
 import { postJson } from "@/lib/verify/client";
 import { presentVerdict, type FraudCheck } from "@/lib/verify/verdict";
@@ -368,7 +369,7 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
       return;
     }
     const text = e.clipboardData?.getData("text")?.trim() ?? "";
-    if (text && (isUrl(text) || isBoaQrPayload(text) || isTelebirrQrPayload(text) || isDashenQrPayload(text))) {
+    if (text && (isUrl(text) || isBoaQrPayload(text) || isTelebirrQrPayload(text) || isDashenQrPayload(text) || isWegagenQrPayload(text))) {
       e.preventDefault();
       acceptScanned(text);
     }
@@ -391,7 +392,7 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
         return;
       }
       const text = e.clipboardData?.getData("text")?.trim() ?? "";
-      if (text && (isUrl(text) || isBoaQrPayload(text) || isTelebirrQrPayload(text) || isDashenQrPayload(text))) {
+      if (text && (isUrl(text) || isBoaQrPayload(text) || isTelebirrQrPayload(text) || isDashenQrPayload(text) || isWegagenQrPayload(text))) {
         e.preventDefault();
         latest.current.acceptScanned(text);
       }

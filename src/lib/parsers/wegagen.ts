@@ -112,9 +112,9 @@ function text(v: unknown): string | undefined {
  * Wegagen's own account mask, copied from the `Ql` function in its public
  * receipt app (transinfo.wegagenbanksc.com.et, observed 2026-11-11): a 13
  * digit account keeps its first digit and last 7, a 12 character one keeps
- * the first 4 and last 2, a 10 character one the first 2 and last 2, and
- * anything else is returned as it came. Shorter or longer values therefore
- * keep their own length; that is the bank's rule, not a cheki choice.
+ * the first 4 and last 2, a 10 character one the first 2 and last 2. No other
+ * length has an observed rule, so it is fully redacted: cheki never returns
+ * an account it does not know how to mask, whatever the service sends.
  */
 export function maskAccount(v: unknown): string {
   const s = typeof v === "string" ? v.trim() : "";
@@ -122,7 +122,7 @@ export function maskAccount(v: unknown): string {
   if (s.length === 13) return `${s.substring(0, 1)}*****${s.substring(6, 13)}`;
   if (s.length === 12) return `${s.substring(0, 4)}*****${s.substring(10)}`;
   if (s.length === 10) return `${s.substring(0, 2)}*****${s.substring(8)}`;
-  return s;
+  return "*****";
 }
 
 /** An account the record can name: masked, or undefined when it says none. */

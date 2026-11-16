@@ -185,7 +185,7 @@ describe("gate: a Wegagen share id is an opaque token", () => {
     receiverName: "Test Receiver",
   };
   const REF = "000SAMPSAMPLE100";
-  const SHARE_ID = "000SAMPSAMPLE1000001DFTD";
+  const SHARE_ID = "000SAMPSAMPLE1001000DFTD";
 
   it("passes a receipt whose reference is the printed Reference No, only a prefix of the share id", () => {
     expect(verificationGate({ ...receipt, reference: REF }, { bankId: "wegagen", requestedReference: SHARE_ID })).toEqual({ ok: true });
