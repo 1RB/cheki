@@ -39,7 +39,7 @@ function namedIds(): Set<string> {
 }
 
 /** Parsers whose response parser.parse() reads as-is (plain HTML or JSON). */
-const GENERIC = ["awash", "cbe-new", "ebirr", "siinqee", "telebirr"];
+const GENERIC = ["awash", "cbe-new", "ebirr", "siinqee-ebirr", "telebirr"];
 
 describe("parseResponse dispatch", () => {
   it("classifies every registered parser: named in the chain or listed as generic", () => {
@@ -61,7 +61,7 @@ describe("parseResponse dispatch", () => {
       expect(named.has(id), `${id} is generic and named`).toBe(false);
     }
     // The classification is complete and disjoint: every registered parser is
-    // covered exactly once (9 named + 5 generic = 14 today).
+    // covered exactly once (10 named + 5 generic = 15 today).
     const covered = [...registered].filter((id) => named.has(id) || GENERIC.includes(id));
     expect(new Set(covered).size).toBe(registered.length);
   });

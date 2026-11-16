@@ -50,6 +50,7 @@ export type ChekiErrorCode =
   | "notFound"
   | "notFound:otherAccount"
   | "unreadable"
+  | "unconfirmed"
   | "qrMismatch";
 
 /** True for the codes that mean "the bank has no such receipt". */
@@ -342,8 +343,12 @@ export interface ReceiptFormat {
   since?: string;
   deprecatedAt?: string;
   replacedBy?: string;
-  /** "verified": observed by cheki; "inferred": from another source, see evidence. */
-  confidence: "verified" | "inferred";
+  /**
+   * "verified": checked by cheki against the live endpoint; "observed": seen
+   * on real receipts (link shape and content) but not yet fetched from
+   * cheki's server; "inferred": from another source. See evidence.
+   */
+  confidence: "verified" | "observed" | "inferred";
   evidence: string;
   notes?: string;
   /** Shown when the input matches this format but a required field is missing. */

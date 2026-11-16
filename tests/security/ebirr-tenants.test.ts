@@ -26,7 +26,9 @@ const ROUTING: Record<string, string> = {
   wegagen: "ebirr",
   ahadu: "ahadu",
   kaafimf: "kaafi",
-  coop: "siinqee",
+  // Cooperative Bank of Oromia (COOPay-Ebirr), not Siinqee Bank: coop links
+  // are checked on the shared eBirr parser.
+  coop: "ebirr",
 };
 
 describe("eBirr tenants", () => {

@@ -34,6 +34,8 @@ const SAMPLE: Record<string, string> = {
   "cbepay1.cbe.com.et": "https://cbepay1.cbe.com.et/aureceipt?TID=CBRSAMPLE01&PH=251911000001",
   "cbepay2.cbe.com.et": "https://cbepay2.cbe.com.et/aureceipt?TID=CBRSAMPLE02",
   "receipt.ebirr.com": "https://receipt.ebirr.com/siinqee/TOKSAMPLE01",
+  "transactioninfo.ebirr.com": "https://transactioninfo.ebirr.com/kaafimf-Ebirr/receipt/800000000001",
+  "receipts.siinqeebank.com": "https://receipts.siinqeebank.com:871/generate/SAMPLE0000000001",
   "transinfo.wegagenbanksc.com.et:8183": "https://transinfo.wegagenbanksc.com.et:8183/?id=ABC123DEF456GHI789JKL012",
   "online.bunnabanksc.com": "https://online.bunnabanksc.com/receipt/#/SAMPLETOKEN01",
   "receipt.zamzambank.com.et": "https://receipt.zamzambank.com.et/receipt/9876543210",
@@ -44,7 +46,6 @@ const SAMPLE: Record<string, string> = {
  * evidence rows and parser-less formats with no share link.
  */
 const UNRECOGNISED = [
-  "receipts.siinqeebank.com",
   "receipt.ahadubank.com",
   "abaymobile.com.et",
   "receipt.amharabank.com.et",
@@ -67,7 +68,7 @@ for (const bank of getAllBanks()) {
 
 describe("linkHosts", () => {
   it("recognises a sample link to a bank that documents every host it claims", () => {
-    expect(Object.keys(SAMPLE).length).toBe(17);
+    expect(Object.keys(SAMPLE).length).toBe(19);
     for (const [host, url] of Object.entries(SAMPLE)) {
       const hit = detectBankFromUrl(url);
       expect(hit, `${host}: ${url}`).not.toBeNull();
@@ -76,7 +77,7 @@ describe("linkHosts", () => {
   });
 
   it("stays unrecognised on the reported-only hosts", () => {
-    expect(UNRECOGNISED.length).toBe(7);
+    expect(UNRECOGNISED.length).toBe(6);
     for (const host of UNRECOGNISED) {
       expect(detectBankFromUrl(`https://${host}/receipt/SAMPLE`), host).toBeNull();
     }

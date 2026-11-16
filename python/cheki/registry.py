@@ -65,7 +65,9 @@ _FAILURE_STATUS = re.compile(
 # "bunna" is looked up by the opaque token in its receipt link (no direct verifier here either).
 # "wegagen" is looked up by the 24-character share id; the record carries the printed
 # 16-character reference, a prefix of it (no direct verifier here either).
-_REFERENCE_IS_OPAQUE_TOKEN = frozenset({"awash", "ebirr", "siinqee", "cbe-new", "zamzam", "bunna", "wegagen"})
+# "siinqee-ebirr" is Siinqee's legacy eBirr route. Siinqee's current format is looked up by the
+# transaction reference itself, so "siinqee" is not exempt (no direct verifier for it either).
+_REFERENCE_IS_OPAQUE_TOKEN = frozenset({"awash", "ebirr", "siinqee-ebirr", "cbe-new", "zamzam", "bunna", "wegagen"})
 
 _DEPRECATION = (
     "cheki.verify() (direct verification) is deprecated and will be removed in the next major "

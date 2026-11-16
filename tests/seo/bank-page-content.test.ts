@@ -96,7 +96,11 @@ describe("bank page content", () => {
     expect(howToSubmit(getBank("boa")!)).toMatch(/last 5 digits of the account on the receipt/);
     expect(howToSubmit(getBank("cbebirr")!)).toMatch(/payer's phone number/);
     // Link-only banks: a typed number is no fallback at all.
-    for (const code of ["awash", "siinqee", "ebirr"]) expect(howToSubmit(getBank(code)!), code).toBe("Paste the full receipt link into cheki");
+    for (const code of ["awash", "ebirr"]) expect(howToSubmit(getBank(code)!), code).toBe("Paste the full receipt link into cheki");
+    // Siinqee: the link first, the reference from the SMS as the typed fallback.
+    expect(howToSubmit(getBank("siinqee")!)).toBe(
+      "Paste the full receipt link into cheki. If you only have the reference from the SMS, select Siinqee Bank and type it exactly as printed"
+    );
   });
 
   it("the API example carries every input the bank's current format needs", () => {

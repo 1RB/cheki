@@ -40,6 +40,7 @@ import { MpesaParser } from "../parsers/mpesa";
 import { ZamZamParser } from "../parsers/zamzam";
 import { BunnaParser } from "../parsers/bunna";
 import { WegagenParser } from "../parsers/wegagen";
+import { SiinqeeParser } from "../parsers/siinqee";
 import { verificationGate, gateFailureMessage, gateErrorCode } from "./gate";
 import { checkAccountSuffix, checkPhone, checkReference } from "../security/reference";
 import { selectFormat, fillTemplate, extraFieldNeeds, accountDigitsFor, DEFAULT_ACCOUNT_DIGITS } from "../manifest/formats";
@@ -83,6 +84,18 @@ function publicFields(parsed: ParsedReceipt): Omit<ParsedReceipt, "raw" | "verif
  */
 export const CBEBIRR_EMPTY_SHELL_MESSAGE =
   "CBE Birr sent back an empty receipt page, so this could not be confirmed. The receipt number and payer phone number may not match: check both, or open the receipt on CBE Birr's own site.";
+
+/**
+ * A receipt link that only opens on Ethiopian networks (eBirr's
+ * transactioninfo.ebirr.com is not in public DNS). Ends with a colon:
+ * errorToMessage appends the link.
+ */
+export const LOCAL_ONLY_MESSAGE =
+  "This receipt link only opens on Ethiopian networks, so cheki's server can't check it. Open it on a phone on an Ethiopian network and compare the amount, the receiver and the date:";
+
+/** Siinqee's page answered, but not with a successful receipt for this reference. */
+export const SIINQEE_NOT_CONFIRMED =
+  "Siinqee Bank's page did not show a successful transaction for this reference, so it cannot be confirmed as a receipt. Check the reference (letter case matters) or ask the sender for the receipt link.";
 
 export class Verifier {
   /**
@@ -184,6 +197,12 @@ export class Verifier {
           message: "This QR code is not a receipt link cheki recognises.",
         });
       }
+      // A link only Ethiopian networks can open (eBirr's transactioninfo
+      // host) arrives here too, when the QR is a picture of that link:
+      // nothing is fetched, the rebuilt link goes back.
+      if (qrRead.kind === "link" && qrRead.link.localOnlyUrl) {
+        return this.localOnly(qrRead.link.bank, qrRead.link.localOnlyUrl);
+      }
       // A CBE Birr receipt QR is its own receipt link: the receipt number
       // and the payer phone it was issued for (TID + PH). Like a Telebirr
       // QR it names its bank, and the pair in it wins over a typed phone,
@@ -214,7 +233,20 @@ export class Verifier {
         message: "Could not detect bank from URL. Please paste the reference number manually.",
       });
     }
+    // A link only Ethiopian networks can open (eBirr's transactioninfo
+    // host): nothing is fetched. The link, rebuilt on its fixed host, goes
+    // back with the same "not checked" answer the geo-blocked banks give.
+    if (read.kind === "link" && read.link.localOnlyUrl) {
+      return this.localOnly(read.link.bank, read.link.localOnlyUrl);
+    }
     return this.verifyReference(read.input, startTime);
+  }
+
+  /** A receipt link cheki's server cannot open at all: hand the link back, never a verdict. */
+  private localOnly(bankId: string, url: string): Result<Receipt, ChekiError> {
+    const entry = getBank(bankId);
+    if (!entry || entry.status !== "live") return err({ kind: "BANK_NOT_SUPPORTED", bank: bankId });
+    return err({ kind: "ENDPOINT_ERROR", bank: entry.name, message: LOCAL_ONLY_MESSAGE, fallbackUrl: url });
   }
 
   // ─── Bank + input gates, fetch, parse, verification gate ─────────────
@@ -530,6 +562,31 @@ export class Verifier {
             ? "Wegagen Bank has no transaction with this share id. Check the 24 characters after ?id= in the share link."
             : "Could not read the Wegagen Bank receipt.",
           code: notFound ? "notFound" : "unreadable",
+        });
+      }
+      return ok(parsed);
+    }
+
+    // Siinqee: an HTML page (or a PDF) read by its labels. Verified only with
+    // "Transaction is successful" and the exact, case-sensitive reference
+    // that was asked for. What Siinqee answers for an unknown reference has
+    // not been seen, so anything else is "not confirmed", never "not found".
+    if (id === "siinqee") {
+      const { parsed, miss } = await SiinqeeParser.parseResponse(data, requestedReference);
+      if (!parsed.verified) {
+        return err({
+          kind: "EXTRACTION_ERROR",
+          bank: manifestEntry.name,
+          message:
+            miss === "reference"
+              ? "The bank returned a receipt with a different reference than the one you entered."
+              : miss === "pdf"
+                ? "Could not read the Siinqee Bank receipt PDF, so it cannot be confirmed as a receipt."
+                : SIINQEE_NOT_CONFIRMED,
+          // The card reads the code, never the wording: a returned receipt
+          // under another reference is a mismatch; anything else Siinqee did
+          // not confirm is amber "not confirmed", never "no such receipt".
+          code: miss === "reference" ? "gate:reference" : "unconfirmed",
         });
       }
       return ok(parsed);

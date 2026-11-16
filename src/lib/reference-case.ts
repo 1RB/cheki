@@ -13,8 +13,11 @@
  *   - CBE Receipt IDs (fHCx..., v2-...) are opaque mbreciept tokens. Only an
  *     older CBE FT reference is uppercased.
  *   - Awash share tokens are base36 txID + counter, read from the link.
- *   - eBirr white-label (Siinqee, Nib, Wegagen, Ahadu, Kaafi) {token} URL
- *     path segments are case-sensitive.
+ *   - eBirr white-label (Nib, Wegagen, Ahadu, Kaafi, Coopbank, legacy
+ *     Siinqee) {token} URL path segments are case-sensitive.
+ *   - Siinqee Bank references (receipts.siinqeebank.com:871/generate/{ref},
+ *     or "Ref:" in the SMS) can hold a lowercase letter (12B004k...), so they
+ *     are case-sensitive and only trimmed.
  *   - ZamZam receipt ids are digits; spaces are dropped, nothing else.
  *   - Bunna receipt tokens are base64 from the link fragment (case-sensitive).
  *     Only their encoding is made canonical (canonicalBunnaToken), so a link,

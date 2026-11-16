@@ -531,6 +531,7 @@ def test_cbebirr_rejects_bad_reference():
         ("cbe", "fHCxExampleRcpt01", "fHCxExampleRcpt01"),
         ("awash", "2kdl95xe81-4u0000", "2kdl95xe81-4u0000"),
         ("siinqee", "AbCdEf123456", "AbCdEf123456"),
+        ("siinqee", "12B004k262950007", "12B004k262950007"),
         # Not letters and digits: left for the validator.
         ("telebirr", "a b", "a b"),
         ("telebirr", "../x", "../x"),

@@ -109,7 +109,7 @@ function FormatSummary({ f, bankId }: { f: ReceiptFormat; bankId: string }) {
     <div className="ep-format">
       <p className="ep-format-title">
         {f.label}
-        <span className="ep-format-tag">{tag}{f.confidence === "inferred" ? " · inferred" : ""}</span>
+        <span className="ep-format-tag">{tag}{f.confidence !== "verified" ? ` · ${f.confidence}` : ""}</span>
       </p>
       <p>
         {template ? <code>{template}</code> : <>Host: <code>{(f.linkHosts ?? []).join(", ")}</code></>}

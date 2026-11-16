@@ -85,7 +85,7 @@ const DEMO_REFS: Record<string, string> = {
   mpesa: "SEDEMO1250",
   dashen: "DEMO1250DSH",
   awash: "DEMO-1250-AW",
-  siinqee: "SQDEMO1250",
+  siinqee: "12BDEMO1250",
   ebirr: "DEMO-1250-EB",
   zamzam: "DEMO1250",
   bunna: "BBDEMO1250",
