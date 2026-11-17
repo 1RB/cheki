@@ -22,7 +22,7 @@
  */
 import "./verify.css";
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useMemo, useRef, useState, type ClipboardEvent } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState, type ClipboardEvent } from "react";
 import { verificationState, type VerifyResult } from "@/lib/banks";
 import { useTranslation } from "@/lib/i18n/use-translation";
 import { detectBankFromUrl, isUrl } from "@/lib/adapters/url-detector";
@@ -39,6 +39,7 @@ import { useReceiptDetection } from "./use-receipt-detection";
 import { VerifyInput } from "./VerifyInput";
 import { VerdictCard } from "./VerdictCard";
 import { buildShareLink, parseShareHash, type ShareInput } from "@/lib/verify/share-link";
+import { batchOf, initialPanelState, isBusy, isFolded, outcomeOf, panelReducer, type PanelEvent, type PanelState } from "@/lib/verify/panel-machine";
 import { VerdictSkeleton } from "./VerdictSkeleton";
 import { RecentChecks } from "./RecentChecks";
 import { Icon, ArrowUpRight01Icon } from "@/components/Icon";
@@ -47,8 +48,6 @@ import { BankLogoByName } from "@/components/BankLogo";
 const CameraScanner = dynamic(() => import("./CameraScanner"), { ssr: false });
 const BatchPanel = dynamic(() => import("./BatchPanel"), { ssr: false });
 const GeoFallback = dynamic(() => import("./GeoFallback"), { ssr: false });
-
-type Phase = "idle" | "reading" | "checking" | "done";
 
 interface Props {
   /** Lock the panel to one bank (the /banks/[code] pages). */
@@ -69,6 +68,9 @@ interface Outcome {
   /** The typed reference had lowercase letters, spaces or dashes, or not the bank's usual shape. */
   referenceHint?: boolean;
 }
+
+/** The run state machine (src/lib/verify/panel-machine.ts), typed for this panel. */
+const reducer = (state: PanelState<Outcome>, event: PanelEvent<Outcome>): PanelState<Outcome> => panelReducer(state, event);
 
 function isEditable(el: EventTarget | null): boolean {
   if (!(el instanceof HTMLElement)) return false;
@@ -95,22 +97,27 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
   const [input, setInput] = useState("");
   const [extra, setExtra] = useState("");
   const [overrideBank, setOverrideBank] = useState("");
-  const [phase, setPhase] = useState<Phase>("idle");
-  const [outcome, setOutcome] = useState<Outcome | null>(null);
+  /** idle / reading / checking / done, with exactly the data each one shows. */
+  const [panel, dispatch] = useReducer(reducer, undefined, () => initialPanelState<Outcome>());
+  const phase = panel.phase;
+  const outcome = outcomeOf(panel);
+  const batch = batchOf(panel);
   const [notice, setNotice] = useState<string | null>(null);
   const [extraError, setExtraError] = useState<string | null>(null);
   const [history, setHistory] = useState<RecentCheck[]>([]);
   const [camera, setCamera] = useState(false);
-  const [batch, setBatch] = useState<File[] | null>(null);
-  const [checkingBank, setCheckingBank] = useState<string>("");
   const [forced, setForced] = useState(false);
-  /** After a verdict the input folds to one row; Edit unfolds it. */
-  const [editing, setEditing] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const extraRef = useRef<HTMLInputElement>(null);
   const resultRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+  /**
+   * The number of the newest run (check, photo read, batch, reset). Async
+   * work remembers the run it started in and does nothing once a newer one
+   * has begun: a late answer never lands on top of what the user did since.
+   */
+  const runRef = useRef(0);
   /**
    * The field as the user last typed it, before it was shown in canonical
    * form, so a "not found" can still tell that it was typed in lowercase.
@@ -230,18 +237,16 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
       abortRef.current?.abort();
       const ctrl = new AbortController();
       abortRef.current = ctrl;
-      setCheckingBank(d.bank.shortName);
-      setEditing(false);
-      setPhase("checking");
-      setOutcome(null);
-      setBatch(null);
+      const thisRun = ++runRef.current;
+      dispatch({ type: "check", run: thisRun, bank: d.bank.shortName });
       let result: VerifyResult;
       try {
         result = await postJson("/api/verify", body, ctrl.signal);
       } catch {
         return false; // aborted by a newer check
       }
-      if (ctrl.signal.aborted) return false;
+      // A newer run (another check, a photo, a batch, a reset) owns the screen.
+      if (ctrl.signal.aborted || runRef.current !== thisRun) return false;
       const checkedAt = new Date();
       const checks: FraudCheck[] = [];
       const bankCode = d.bank.code;
@@ -268,8 +273,7 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
       // field may have been changed since by a scan, a recent check or a link).
       const typed = typedRef.current.trim() && canonicalReference(bankCode, typedRef.current) === d.value ? typedRef.current : value;
       const referenceHint = d.kind === "reference" && referenceLooksOff(bankCode, typed);
-      setOutcome({ result, checks, checkedAt, bankCode, reference: enteredRef, share, referenceHint });
-      setPhase("done");
+      dispatch({ type: "answer", run: thisRun, outcome: { result, checks, checkedAt, bankCode, reference: enteredRef, share, referenceHint } });
       return true; // the bank answered
     },
     [extra, lockedBank, overrideBank, t]
@@ -322,27 +326,31 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
       setCamera(false);
       setNotice(null);
       if (files.length > 1) {
-        setOutcome(null);
-        setPhase("idle");
-        setBatch(files.slice(0, 20));
+        abortRef.current?.abort();
+        dispatch({ type: "batch", run: ++runRef.current, files: files.slice(0, 20) });
         return;
       }
       const file = files[0];
       if (!file) return;
-      setBatch(null);
-      setOutcome(null);
-      setPhase("reading");
+      abortRef.current?.abort();
+      const thisRun = ++runRef.current;
+      dispatch({ type: "read", run: thisRun });
+      // Reading is slow (OCR especially): drop the result if the user has
+      // started something else meanwhile.
+      const stale = () => runRef.current !== thisRun;
       const { decodeQrFromImage } = await import("@/lib/qr/decode");
       const raw = await decodeQrFromImage(file);
+      if (stale()) return;
       if (raw) {
-        setPhase("idle");
+        dispatch({ type: "readEnd", run: thisRun });
         await acceptScanned(raw, true);
         return;
       }
       try {
         const { extractTextFromImage } = await import("@/lib/ocr");
         const { parsed } = await extractTextFromImage(file);
-        setPhase("idle");
+        if (stale()) return;
+        dispatch({ type: "readEnd", run: thisRun });
         if (parsed?.reference) {
           setInput(parsed.reference);
           if (!lockedBank && parsed.bank) setOverrideBank(parsed.bank === "cbe-new" ? "cbe" : parsed.bank);
@@ -352,7 +360,8 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
           setNotice(t("verify.photo.noRef"));
         }
       } catch (e) {
-        setPhase("idle");
+        if (stale()) return;
+        dispatch({ type: "readEnd", run: thisRun });
         setNotice((e as Error)?.message || t("verify.photo.failed"));
       }
     },
@@ -412,13 +421,10 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
     typedRef.current = "";
     setExtra("");
     setOverrideBank("");
-    setOutcome(null);
     setNotice(null);
     setExtraError(null);
-    setBatch(null);
     setForced(false);
-    setEditing(false);
-    setPhase("idle");
+    dispatch({ type: "reset", run: ++runRef.current });
     focusInput();
   }, [focusInput]);
 
@@ -457,8 +463,9 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
   const showBrowserFirst = detection.browserFirst && !forced && phase !== "done";
   const hideSubmit = detection.browserFirst && !forced && phase === "done";
   const olderFormats = detection.bank ? secondaryFormats(detection.bank).filter((f) => f.status !== "current") : [];
-  const busy = phase === "checking" || phase === "reading";
-  const folded = phase === "done" && !!outcome && !editing;
+  const busy = isBusy(panel);
+  const folded = isFolded(panel);
+  const checkingBank = panel.phase === "checking" ? panel.bank : "";
   const summaryBank = outcome?.bankCode ? liveBanks.find((b) => b.code === outcome.bankCode) : undefined;
   const summaryRef =
     detection.kind === "boaQr" ? t("verify.detect.boaQr") : (outcome?.reference || input.trim().replace(/^https?:\/\//i, ""));
@@ -477,7 +484,7 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
               type="button"
               className="vp-edit"
               onClick={() => {
-                setEditing(true);
+                dispatch({ type: "edit" });
                 focusInput();
               }}
             >
@@ -520,7 +527,7 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
             typedRef.current = v;
             setNotice(null);
             setForced(false);
-            if (phase === "done") setPhase("idle");
+            dispatch({ type: "input" });
           }}
           onBlur={() => {
             // Detected afresh: the live detection runs on a deferred copy of the input.
@@ -570,8 +577,8 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
               receiptUrl={browserUrl}
               t={t}
               onResult={(result) => {
-                setOutcome({ result, checks: [], checkedAt: new Date(), bankCode: detection.bank?.code });
-                setPhase("done");
+                abortRef.current?.abort();
+                dispatch({ type: "browserAnswer", run: ++runRef.current, outcome: { result, checks: [], checkedAt: new Date(), bankCode: detection.bank?.code } });
               }}
             />
             <button type="button" className="vp-server" onClick={() => runCheck(input, { force: true })}>
@@ -632,7 +639,7 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
         <BatchPanel
           files={batch}
           t={t}
-          onClear={() => setBatch(null)}
+          onClear={() => dispatch({ type: "clearBatch" })}
           onPick={(reference, bankCode) => {
             setInput(reference);
             if (!lockedBank && bankCode) setOverrideBank(bankCode);
