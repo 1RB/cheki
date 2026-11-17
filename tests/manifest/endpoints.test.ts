@@ -109,6 +109,22 @@ describe("health check", () => {
     expect(evaluate(t, { error: "timeout" }, "x").status).toBe("degraded");
   });
 
+  it("Siinqee: probes a fake reference on port 871 and, until its unknown-reference shape is known, takes any answer", () => {
+    const t = buildProbeTargets({ checkGeoRestricted: false }).find((x) => x.id === "siinqee")!;
+    expect(t.url).toBe("https://receipts.siinqeebank.com:871/generate/000A000000000000");
+    for (const r of [
+      { status: 200, contentType: "text/html", body: "<title>C B</title>" },
+      { status: 404, contentType: "text/plain", body: "Not Found" },
+      { status: 500, contentType: "text/html", body: "Server Error" },
+    ]) {
+      expect(evaluate(t, { response: r }, "x").status, String(r.status)).toBe("live");
+    }
+    // No answer at all is not proof of an outage here (port 871 may be filtered on the runner's network).
+    expect(evaluate(t, { error: "connect ETIMEDOUT" }, "x")).toMatchObject({ status: "not-checked" });
+    // The legacy eBirr route has docs but no probe row.
+    expect(buildProbeTargets({ checkGeoRestricted: false }).some((x) => x.id.startsWith("siinqee:"))).toBe(false);
+  });
+
   it("keeps in-development banks in development when their shape matches", () => {
     const t = buildProbeTargets({ checkGeoRestricted: false }).find((x) => x.id === "zemen")!;
     const r = evaluate(t, { response: { status: 404, contentType: "application/json", body: '{"messages":"Transaction not found.","status":"404"}' } }, "x");

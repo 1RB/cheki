@@ -37,6 +37,7 @@ Examples:
   cheki verify telebirr CHQ0SAMPLE
   cheki verify boa AB12345 -a 1234567890
   cheki verify cbebirr DTS41AB2C90 -p 09XXXXXXXX     (CBE Birr: receipt number + payer phone)
+  cheki verify siinqee SYN000a000000001              (Siinqee: the SMS "Ref:", exactly as printed)
   cheki verify-qr boa <base64-qr-payload>
   cheki verify-qr telebirr <telebirr-receipt-qr>     (reads the transaction number, then checks it)
   cheki verify-qr "<cbe-birr-receipt-qr>"            (a cbepay1 receipt link: receipt number + payer phone)

@@ -24,6 +24,7 @@ import { classifyStatus } from "@/lib/core/status";
 import { tEn, type Translate } from "@/lib/i18n/translate";
 import { formatAgeDays, parseTimestamp } from "@/lib/time/relative";
 import { referenceExample } from "@/lib/reference-case";
+import { EBIRR_LOCAL_HOST } from "@/lib/adapters/url-detector";
 
 /** "info" is a neutral note (grey dot): worth reading, not a warning. */
 export type FraudCheckState = "pass" | "warn" | "mismatch" | "unknown" | "info";
@@ -136,6 +137,14 @@ export interface PresentOptions {
 
 const HTTPS = /^https:\/\//i;
 
+function hostOf(url: string): string | undefined {
+  try {
+    return new URL(url).hostname.toLowerCase();
+  } catch {
+    return undefined;
+  }
+}
+
 export function findBank(codeOrName: string | undefined | null): Bank | undefined {
   if (!codeOrName) return undefined;
   const raw = String(codeOrName).trim();
@@ -240,6 +249,14 @@ export function presentVerdict(result: VerifyResult | null | undefined, opts: Pr
     if (fallbackUrl && !bank?.geoBlocked && bank?.code === "cbebirr") {
       return neutral("geoBlocked", t("verify.verdict.openAtBank.title", { bank: short }), t("verify.verdict.openAtBank.subtitle", { bank: short }), { fallbackUrl });
     }
+    // A link only Ethiopian networks can open (eBirr's transactioninfo
+    // host): no bank blocked anything, cheki's server just can't reach it.
+    if (fallbackUrl && hostOf(fallbackUrl) === EBIRR_LOCAL_HOST) {
+      return neutral("geoBlocked", t("verify.verdict.localOnly.title"), t("verify.verdict.localOnly.subtitle", { bank: short }), {
+        fallbackUrl,
+        nextStep: t("verify.verdict.localOnly.next"),
+      });
+    }
     if (fallbackUrl || (bank?.geoBlocked && (status === 502 || status === 504))) {
       // Never green, never a judgement: cheki did not see the receipt. The
       // card's one primary action opens the official page, and the next step
@@ -260,6 +277,10 @@ export function presentVerdict(result: VerifyResult | null | undefined, opts: Pr
           return red("mismatch", t("verify.verdict.refMismatch.title"), t("verify.verdict.refMismatch.subtitle", { bank: short }), t("verify.verdict.refMismatch.next"));
         case "gate:amount":
         case "gate:party":
+        // The bank answered and showed a receipt, but nothing in it confirmed
+        // the check (Siinqee's page without its success line, an unreadable
+        // receipt PDF): amber "not confirmed", never "no such receipt".
+        case "unconfirmed":
           return { ...base, kind: "unconfirmed", tone: "amber", title: t("verify.verdict.unconfirmed.title"), subtitle: t("verify.verdict.unconfirmed.subtitle", { bank: short }), nextStep: t("verify.verdict.unconfirmed.next"), detail: message || undefined };
         case "notFound:otherAccount":
           // BOA files some receipts under the payer's account; the API says so

@@ -1,12 +1,18 @@
 /**
  * eBirr parser - eBirr mobile money platform.
  *
- * Covers 5 partner banks through a single receipt endpoint:
+ * Covers the eBirr partners through a single receipt endpoint:
  *   - Nib International Bank (tenant: nib)
  *   - Wegagen Bank (tenant: wegagen)
  *   - Ahadu Bank (tenant: ahadu)
  *   - KAAFI Microfinance (tenant: kaafimf)
- *   - Cooperative Bank of Oromia / Siinqee (tenant: varies, may use own domain)
+ *   - Cooperative Bank of Oromia, COOPay-Ebirr (tenant: coop)
+ *   - Siinqee Bank (tenant: siinqee; legacy, answered 404 since 2026-10-10;
+ *     its receipts now live on receipts.siinqeebank.com:871)
+ *
+ * KAAFI receipts can also link to transactioninfo.ebirr.com, which only
+ * opens on Ethiopian networks: those links are never fetched (see
+ * parseEbirrLocalLink in src/lib/adapters/url-detector.ts).
  *
  * Endpoint: https://receipt.ebirr.com/{tenant}/{token}
  * Response: HTML receipt page with transaction details

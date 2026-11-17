@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- The `retryable: false` error veto is gone: no cheki route ever sent the field, so no answer could carry it and no retry decision changes. The `fallbackUrl` veto and the 429/503/GET-5xx rules from 1.5.0 are unchanged.
+
 ## 1.6.0
 
 - `ChekiException.checkedUrl` and `VerifyResult.checkedUrl` on failed batch items: on a 422, the bank page cheki asked.
