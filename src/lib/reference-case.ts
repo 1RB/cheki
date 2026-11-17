@@ -13,8 +13,11 @@
  *   - CBE Receipt IDs (fHCx..., v2-...) are opaque mbreciept tokens. Only an
  *     older CBE FT reference is uppercased.
  *   - Awash share tokens are base36 txID + counter, read from the link.
- *   - eBirr white-label (Siinqee, Nib, Wegagen, Ahadu, Kaafi) {token} URL
- *     path segments are case-sensitive.
+ *   - eBirr white-label (Nib, Wegagen, Ahadu, Kaafi, Coopbank, legacy
+ *     Siinqee) {token} URL path segments are case-sensitive.
+ *   - Siinqee Bank references (receipts.siinqeebank.com:871/generate/{ref},
+ *     or "Ref:" in the SMS) can hold a lowercase letter (SYN000a...), so they
+ *     are case-sensitive and only trimmed.
  *   - ZamZam receipt ids are digits; spaces are dropped, nothing else.
  *   - Bunna receipt tokens are base64 from the link fragment (case-sensitive).
  *     Only their encoding is made canonical (canonicalBunnaToken), so a link,
@@ -24,9 +27,10 @@
  *   - URLs are never changed. A link is parsed first and only the reference
  *     taken out of it comes through here.
  *
- * Pure and dependency-free, so the verifier, /api/receipt, the receipt cache
+ * Pure and no I/O, so the verifier, /api/receipt, the receipt cache
  * and the browser form all use the same rule.
  */
+import { canonicalBankCode } from "./bank-ids";
 
 /** Spaces (incl. NBSP), zero-width characters and dashes people copy along with a reference. */
 const SEPARATORS_RE = /[\s\u200B-\u200D\u2060\uFEFF\-\u2010-\u2015\u2212]/g;
@@ -89,15 +93,9 @@ export function canonicalBunnaToken(value: string): string {
   return m[1] + "=".repeat((4 - (m[1].length % 4)) % 4);
 }
 
-/** The manifest id a UI or API code maps to for these rules ("cbe-new" is CBE's current format). */
-function ruleKey(bank: string | undefined | null): string {
-  const id = String(bank ?? "").trim().toLowerCase();
-  return id === "cbe-new" ? "cbe" : id;
-}
-
 /** True when cheki uppercases this bank's typed references. */
 export function isCaseInsensitiveBank(bank: string | undefined | null): boolean {
-  return Object.hasOwn(CASE_RULES, ruleKey(bank));
+  return Object.hasOwn(CASE_RULES, canonicalBankCode(bank));
 }
 
 /** Banks cheki uppercases references for (manifest ids). */
@@ -134,7 +132,7 @@ export function canonicalReference(bank: string | undefined | null, reference: s
   if (typeof reference !== "string") return reference;
   const trimmed = reference.trim();
   if (!trimmed) return trimmed;
-  const key = ruleKey(bank);
+  const key = canonicalBankCode(bank);
   const doCompact = opts.compact !== false;
   if (key === "bunna") return canonicalBunnaToken(trimmed);
   if (DIGIT_BANKS.has(key)) {
@@ -160,7 +158,7 @@ export function canonicalReference(bank: string | undefined | null, reference: s
  * Only for case-insensitive banks and typed text (never a link or a QR).
  */
 export function referenceLooksOff(bank: string | undefined | null, typed: string | undefined | null): boolean {
-  const key = ruleKey(bank);
+  const key = canonicalBankCode(bank);
   const rule = Object.hasOwn(CASE_RULES, key) ? CASE_RULES[key] : undefined;
   if (!rule || typeof typed !== "string") return false;
   const trimmed = typed.trim();
@@ -174,6 +172,6 @@ export function referenceLooksOff(bank: string | undefined | null, typed: string
 
 /** The start of a real reference for the hint ("FT26…"), or undefined. */
 export function referenceExample(bank: string | undefined | null): string | undefined {
-  const key = ruleKey(bank);
+  const key = canonicalBankCode(bank);
   return Object.hasOwn(CASE_RULES, key) ? CASE_RULES[key].example : undefined;
 }

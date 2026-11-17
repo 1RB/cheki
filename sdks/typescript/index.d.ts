@@ -180,7 +180,7 @@ export interface BankInfo {
     swift?: string;
     type: "bank" | "mobile" | "wallet";
     status: "live" | "in-development";
-    /** Live, but the parser has not yet been confirmed with enough real receipts (M-Pesa, ZamZam, CBE Birr and Bunna today). Always set by the SDK (false when the server omits it). */
+    /** Live, but the parser has not yet been confirmed with enough real receipts (M-Pesa, ZamZam, CBE Birr, Bunna, Wegagen and Siinqee today). Always set by the SDK (false when the server omits it). */
     beta: boolean;
     requiresAccount: boolean;
     /** How many trailing account digits the bank needs, when it needs an account. */
@@ -208,8 +208,8 @@ export interface ReceiptFormatInfo {
     responseType: "pdf" | "html" | "json" | "pdf-in-json" | (string & {});
     /** False when cheki documents the format but cannot check it yet. */
     supported: boolean;
-    /** "verified" (observed by cheki) or "inferred" (from another source). */
-    confidence: "verified" | "inferred" | (string & {});
+    /** "verified" (checked by cheki), "observed" (seen on real receipts, not yet fetched by cheki) or "inferred" (from another source). */
+    confidence: "verified" | "observed" | "inferred" | (string & {});
 }
 /** Response from `GET /api/banks`. */
 export interface BankListResponse {
@@ -231,7 +231,16 @@ export interface HealthStatus {
     cached: boolean;
     banks: BankHealth[];
 }
-/** True only when the bank confirmed the receipt. `success`, `decodedOnly` and `parsed` are not proof. */
+/**
+ * True only when the bank confirmed the receipt: `success`, `verified`, and
+ * neither `decodedOnly` nor `parsed`. The other three are not proof: a BOA QR
+ * the bank could not confirm and content someone pasted are both handled
+ * requests, never payments.
+ *
+ * This is the server's `verificationState()` rule, re-read from JSON because
+ * the SDK is a separate package. tests/security/ui-verification-state.test.ts
+ * runs both over every combination of those four flags, so they cannot drift.
+ */
 export declare function isVerified(result: unknown): result is VerifyResult & {
     verified: true;
 };
@@ -325,8 +334,8 @@ export declare function parseRetryAfter(value: string | null | undefined, now?: 
  * - `POST /api/verify/batch`: only 429/503 with a short Retry-After. Never on a
  *   network error or 5xx (a 504 means the batch ran out of time; replaying it
  *   would hit every bank again and cost every receipt against the limit).
- * - Never: timeouts, other 4xx, and any answer with `retryable: false` or a
- *   `fallbackUrl` (geo-blocked bank).
+ * - Never: timeouts, other 4xx, or an answer that carries a `fallbackUrl`
+ *   (geo-blocked bank).
  */
 export declare class Cheki {
     private readonly config;

@@ -55,13 +55,19 @@ _FAILURE_STATUS = re.compile(
     re.IGNORECASE,
 )
 
-# Same set as src/lib/core/gate.ts (REFERENCE_IS_OPAQUE_TOKEN): lookup keys that are
-# share tokens, so the receipt's own reference never equals the requested one.
+# Same list as sdks/fixtures/api-contract.json (gate.opaqueLookupParsers): lookup keys that
+# are share tokens, so the receipt's own reference never equals the requested one. The server
+# keeps the flag on each parser (BaseParser.referenceIsOpaqueToken); this copy is checked
+# against the contract by python/tests/test_contract.py.
 # "cbe-new" is CBE's current format (the Receipt ID); the receipt carries the FT id.
 # "zamzam" is looked up by its numeric receipt id; the record carries ZamZam's own
 # transaction reference (no direct verifier here: use ChekiClient for ZamZam).
 # "bunna" is looked up by the opaque token in its receipt link (no direct verifier here either).
-_REFERENCE_IS_OPAQUE_TOKEN = frozenset({"awash", "ebirr", "siinqee", "cbe-new", "zamzam", "bunna"})
+# "wegagen" is looked up by the 24-character share id; the record carries the printed
+# 16-character reference, a prefix of it (no direct verifier here either).
+# "siinqee-ebirr" is Siinqee's legacy eBirr route. Siinqee's current format is looked up by the
+# transaction reference itself, so "siinqee" is not exempt (no direct verifier for it either).
+_REFERENCE_IS_OPAQUE_TOKEN = frozenset({"awash", "ebirr", "siinqee-ebirr", "cbe-new", "zamzam", "bunna", "wegagen"})
 
 _DEPRECATION = (
     "cheki.verify() (direct verification) is deprecated and will be removed in the next major "

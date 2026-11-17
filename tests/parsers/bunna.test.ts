@@ -145,7 +145,7 @@ describe("BunnaParser.parseAdvice", () => {
     });
     for (const k of ["transactionType", "serviceFee", "serviceFeeVat", "totalPaid"]) expect(k in parsed, k).toBe(false);
     expect(parsed.raw).not.toContain("TEST PAYER ONE");
-    expect(verificationGate(parsed, { bankId: "bunna", requestedReference: SYNTH_BUNNA_TOKEN })).toEqual({ ok: true });
+    expect(verificationGate(parsed, { referenceIsOpaqueToken: true, requestedReference: SYNTH_BUNNA_TOKEN })).toEqual({ ok: true });
   });
 
   it("masks unmasked accounts everywhere, raw included", () => {
@@ -160,7 +160,7 @@ describe("BunnaParser.parseAdvice", () => {
       expect(BunnaParser.parseAdvice(body), body).toEqual({ parsed: { verified: false }, notFound: false });
     }
     const zero = BunnaParser.parseAdvice(json({ status: "SUCCESS", receipt: { ...SYNTH_BUNNA_RECEIPT, amount: 0 } })).parsed;
-    expect(verificationGate(zero, { bankId: "bunna" })).toMatchObject({ ok: false, reason: "amount" });
+    expect(verificationGate(zero, { referenceIsOpaqueToken: true })).toMatchObject({ ok: false, reason: "amount" });
   });
 });
 

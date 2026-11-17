@@ -13,6 +13,10 @@
     "sdkMaxRetries": 1,
     "receiptDownloadBanks": ["cbe", "zemen", "dashen", "zamzam"]
   },
+  "gate": {
+    "$comment": "Parsers whose bank is looked up by an opaque share token, never by the transaction reference printed on the receipt, so the reference the bank returns can never equal the requested one and the verification gate's reference check is skipped for them. On the server the flag is on the parser (BaseParser.referenceIsOpaqueToken) and is passed into src/lib/core/gate.ts, which fails closed when it is absent; python/cheki/registry.py keeps its own copy for the deprecated direct verify. tests/contract/opaque-parsers.test.ts checks the parsers, the gate and the verifier against this list, and python/tests/test_contract.py checks the Python copy against it.",
+    "opaqueLookupParsers": ["awash", "ebirr", "siinqee-ebirr", "cbe-new", "zamzam", "bunna", "wegagen"]
+  },
   "receiptUrlCases": [
     { "name": "cbe_receipt_id", "format": "current", "served": "redirect", "bank": "cbe", "reference": "fHCxExampleRcpt01", "query": { "bank": "cbe", "reference": "fHCxExampleRcpt01" } },
     { "name": "cbe_receipt_id_v2", "format": "current", "served": "redirect", "bank": "cbe", "reference": "v2-hfHCxExample0001", "query": { "bank": "cbe", "reference": "v2-hfHCxExample0001" } },
@@ -39,7 +43,6 @@
     { "name": "verify_504_platform", "method": "POST", "path": "/api/verify", "status": 504, "headers": { "content-type": "text/plain" }, "rawBody": "An error occurred with your deployment\n\nFUNCTION_INVOCATION_TIMEOUT", "retried": false },
     { "name": "verify_503_retry_after", "method": "POST", "path": "/api/verify", "status": 503, "headers": { "retry-after": "0" }, "body": { "success": false, "error": "Temporarily unavailable." }, "retried": true },
     { "name": "verify_503_no_retry_after", "method": "POST", "path": "/api/verify", "status": 503, "headers": {}, "body": { "success": false, "error": "Temporarily unavailable." }, "retried": false },
-    { "name": "verify_503_not_retryable", "method": "POST", "path": "/api/verify", "status": 503, "headers": { "retry-after": "0" }, "body": { "success": false, "error": "Temporarily unavailable.", "retryable": false }, "retried": false },
     { "name": "verify_429_retry_after", "method": "POST", "path": "/api/verify", "status": 429, "headers": { "retry-after": "0" }, "body": { "success": false, "error": "Too many requests from your network. Wait a minute and try again." }, "retried": true },
     { "name": "verify_429_no_retry_after", "method": "POST", "path": "/api/verify", "status": 429, "headers": {}, "body": { "success": false, "error": "Too many requests from your network. Wait a minute and try again." }, "retried": false },
     { "name": "verify_429_long_retry_after", "method": "POST", "path": "/api/verify", "status": 429, "headers": { "retry-after": "120" }, "body": { "success": false, "error": "Too many requests from your network. Wait a minute and try again." }, "retried": false },
@@ -48,7 +51,6 @@
     { "name": "batch_429_retry_after", "method": "POST", "path": "/api/verify/batch", "status": 429, "headers": { "retry-after": "0" }, "body": { "success": false, "error": "Too many requests from your network. Wait a minute and try again." }, "retried": true },
     { "name": "banks_500_internal", "method": "GET", "path": "/api/banks", "status": 500, "headers": { "retry-after": "0" }, "body": { "success": false, "error": "Internal server error." }, "retried": true },
     { "name": "banks_504_platform", "method": "GET", "path": "/api/banks", "status": 504, "headers": { "content-type": "text/plain", "retry-after": "0" }, "rawBody": "An error occurred with your deployment\n\nFUNCTION_INVOCATION_TIMEOUT", "retried": true },
-    { "name": "banks_502_not_retryable", "method": "GET", "path": "/api/banks", "status": 502, "headers": { "retry-after": "0" }, "body": { "success": false, "error": "Bad gateway.", "retryable": false }, "retried": false },
     { "name": "health_502", "method": "GET", "path": "/api/health", "status": 502, "headers": { "retry-after": "0" }, "body": { "success": false, "error": "Bad gateway." }, "retried": true },
     { "name": "health_404", "method": "GET", "path": "/api/health", "status": 404, "headers": {}, "body": { "success": false, "error": "Not found." }, "retried": false }
   ],
@@ -207,6 +209,7 @@
           {
             "success": false,
             "error": "[Telebirr] Receipt not found. Check the reference number.",
+            "code": "notFound",
             "status": 422
           }
         ],
@@ -336,7 +339,7 @@
       "path": "/api/verify",
       "status": 400,
       "headers": {},
-      "body": { "success": false, "error": "Reference number, receipt URL, or QR data is required." }
+      "body": { "success": false, "error": "Reference number, receipt URL, or QR data is required.", "field": "reference" }
     },
     "error_400_batch_too_large": {
       "method": "POST",
@@ -364,7 +367,7 @@
       "path": "/api/verify",
       "status": 422,
       "headers": {},
-      "body": { "success": false, "error": "[Telebirr] Receipt not found. Check the reference number." }
+      "body": { "success": false, "error": "[Telebirr] Receipt not found. Check the reference number.", "code": "notFound" }
     },
     "error_429_rate_limited": {
       "method": "POST",

@@ -134,9 +134,12 @@ class VerifyResult {
     this.index,
   });
 
-  /// True only when the bank confirmed the receipt. [success], [decodedOnly]
-  /// and [parsed] are not proof of payment.
-  bool get isVerified => success && verified;
+  /// True only when the bank confirmed the receipt: [success] and [verified],
+  /// with neither [decodedOnly] nor [parsed]. The others are handled requests,
+  /// never payments. This is the API's `verificationState()` rule, re-read
+  /// from JSON because the SDK is a separate package; the test suite asserts
+  /// it over every combination of those four flags.
+  bool get isVerified => success && verified && !decodedOnly && !parsed;
 
   /// Creates a [VerifyResult] from a decoded JSON map.
   factory VerifyResult.fromJson(Map<String, dynamic> json, {int? index}) {
@@ -262,7 +265,7 @@ class BankInfo {
   final String status;
 
   /// Live, but not yet confirmed with enough real receipts (M-Pesa,
-  /// ZamZam, CBE Birr and Bunna today).
+  /// ZamZam, CBE Birr, Bunna, Wegagen and Siinqee today).
   final bool beta;
   final bool requiresAccount;
 
@@ -545,7 +548,8 @@ class ReceiptFormat {
   /// False when cheki documents the format but can't check it yet.
   final bool supported;
 
-  /// `verified` (observed by cheki) or `inferred`.
+  /// `verified` (checked by cheki), `observed` (seen on real receipts, not yet
+  /// fetched by cheki) or `inferred`.
   final String confidence;
 
   /// Constructs a [ReceiptFormat].

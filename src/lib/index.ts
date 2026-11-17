@@ -17,6 +17,7 @@ export type {
   Result,
   Receipt,
   ChekiError,
+  ChekiErrorCode,
   VerifyRequest,
   ParserPort,
   ParsedReceipt,
@@ -27,7 +28,7 @@ export type {
   BankId,
   Reference,
 } from "./core/types";
-export { ok, err, errorToHttpStatus, errorToMessage } from "./core/types";
+export { ok, err, errorToHttpStatus, errorToMessage, errorPayload, isNotFoundCode } from "./core/types";
 
 // ─── Manifest ───────────────────────────────────────────────────────
 export { getBank, getAllBanks, getLiveBanks, suggestBank } from "./manifest/loader";

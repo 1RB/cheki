@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Verifier, errorToHttpStatus, errorToMessage } from "@/lib";
+import { Verifier, errorToHttpStatus, errorPayload } from "@/lib";
+import { verificationState, type VerifyResult } from "@/lib/banks";
 import { getCached, setCached, verificationCacheKey } from "@/lib/receipt-cache";
 import { limiters, rateLimited } from "@/lib/rate-limit";
 import { readJsonCapped, bodyErrorResponse } from "@/lib/http/read-body";
@@ -83,6 +84,14 @@ export async function POST(request: NextRequest) {
 
     let freshCursor = 0;
     type BatchItem = { [key: string]: unknown; success?: boolean };
+    // A row is JSON, so its flags are `unknown`. This only reads them;
+    // verificationState() is what decides whether the row is verified.
+    const stateOf = (row: BatchItem): Pick<VerifyResult, "success" | "verified" | "decodedOnly" | "parsed"> => ({
+      success: row.success === true,
+      verified: row.verified === true,
+      decodedOnly: row.decodedOnly === true,
+      parsed: row.parsed === true,
+    });
     const results: BatchItem[] = inputs.map((_, i) => {
       const hit = hits[i];
       if (hit) {
@@ -90,24 +99,29 @@ export async function POST(request: NextRequest) {
       }
       const r = fresh[freshCursor++];
       if (!r) {
-        return { success: false, error: "No result.", status: 500 };
+        // verifyBatch fills one slot per request (see its worker loop), so a
+        // gap means that invariant broke: a bug in this route, not a
+        // per-receipt failure. Throwing turns it into a real 500 instead of
+        // HTTP 200 carrying a fabricated "No result." row the SDKs would
+        // count as a receipt that failed verification.
+        throw new Error("verifyBatch returned no result for a miss");
       }
       if (!r.ok) {
-        return {
-          success: false,
-          error: errorToMessage(r.error),
-          status: errorToHttpStatus(r.error),
-          ...(r.error.kind === "EXTRACTION_ERROR" && r.error.checkedUrl ? { checkedUrl: r.error.checkedUrl } : {}),
-        };
+        // The same body the single-receipt route sends, plus this row's HTTP
+        // status: `code` / `detail` / `field` travel with every failure.
+        return { ...errorPayload(r.error), status: errorToHttpStatus(r.error) };
       }
       const payload = { success: true, ...r.value };
-      if (r.value.verified) setCached(keys[i], payload);
+      // Only a bank-confirmed receipt earns a cache entry, by the same rule
+      // that decides the count below.
+      if (verificationState(payload) === "verified") setCached(keys[i], payload);
       return { ...payload, cached: false };
     });
 
-    // The SDKs read `verified` and `failed` counts. Only verified:true counts
-    // as verified; a decoded-only BOA QR or an error counts as failed.
-    const verifiedCount = results.filter((r) => r.verified === true).length;
+    // The SDKs read `verified` and `failed` counts. The count comes from the
+    // one rule every surface uses: only a bank-confirmed row is verified, so
+    // a decoded-only BOA QR, a parse and an error all count as failed.
+    const verifiedCount = results.filter((row) => verificationState(stateOf(row)) === "verified").length;
     return NextResponse.json({
       success: true,
       results,

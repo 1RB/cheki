@@ -400,7 +400,7 @@ def test_gate_reference_parity_with_the_server():
             amount=10.0, sender_name="A", raw=raw,
         )
 
-    # Opaque share tokens (server: REFERENCE_IS_OPAQUE_TOKEN) are exempt...
+    # Opaque share tokens (server: BaseParser.referenceIsOpaqueToken) are exempt...
     assert gate(make("cbe", "FT26SAMPLE01", "cbe-new"), "fHCxExampleRcpt01").status.value == "verified"
     assert gate(make("awash", "123456"), "tok").status.value == "verified"
     # ...every other bank must return the reference that was asked for.
@@ -531,6 +531,7 @@ def test_cbebirr_rejects_bad_reference():
         ("cbe", "fHCxExampleRcpt01", "fHCxExampleRcpt01"),
         ("awash", "2kdl95xe81-4u0000", "2kdl95xe81-4u0000"),
         ("siinqee", "AbCdEf123456", "AbCdEf123456"),
+        ("siinqee", "SYN000a000000001", "SYN000a000000001"),
         # Not letters and digits: left for the validator.
         ("telebirr", "a b", "a b"),
         ("telebirr", "../x", "../x"),

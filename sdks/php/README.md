@@ -1,6 +1,6 @@
 # cheki PHP SDK
 
-PHP client for the [cheki](https://cheki.et) receipt verification API: verify Ethiopian bank transfer receipts from CBE, Telebirr, BOA, Dashen, M-Pesa (beta: not yet confirmed with a real receipt), Awash, Siinqee, eBirr, ZamZam (beta: one receipt shape confirmed so far), CBE Birr (beta: two real receipts confirmed so far) and Bunna (beta: one real receipt confirmed so far) (the live banks; `getBanks()` lists the current set). Needs PHP 8.1+ with `ext-curl` and `ext-json` (the tests run on 8.1, 8.3 and 8.4).
+PHP client for the [cheki](https://cheki.et) receipt verification API: verify Ethiopian bank transfer receipts from CBE, Telebirr, BOA, Dashen, M-Pesa (beta: not yet confirmed with a real receipt), Awash, Siinqee (beta: built from real receipts, not yet fetched live), eBirr, ZamZam (beta: one receipt shape confirmed so far), CBE Birr (beta: two real receipts confirmed so far), Bunna (beta: one real receipt confirmed so far) and Wegagen (beta: three real share links confirmed so far) (the live banks; `getBanks()` lists the current set). Needs PHP 8.1+ with `ext-curl` and `ext-json` (the tests run on 8.1, 8.3 and 8.4).
 
 From the hosted API at cheki.et, Telebirr and M-Pesa come back as a 502 with `fallbackUrl` (the official receipt page), because they block cloud servers. Send the user there to check the amount and receiver; direct checks return once a local relay is live.
 
@@ -63,7 +63,7 @@ foreach (array_chunk($receipts, ChekiClient::RECOMMENDED_BATCH_CHUNK) as $chunk)
 }
 ```
 
-A failed item has `httpStatus` and `error`, plus `fallbackUrl` when the server sends one for a geo-blocked bank, or `checkedUrl` (the bank page cheki asked) on a 422. Results carry `orderId` when the receipt has one (CBE Birr), and `Bank::$beta` is true for M-Pesa, ZamZam, CBE Birr and Bunna.
+A failed item has `httpStatus` and `error`, plus `fallbackUrl` when the server sends one for a geo-blocked bank, or `checkedUrl` (the bank page cheki asked) on a 422. Results carry `orderId` when the receipt has one (CBE Birr), and `Bank::$beta` is true for M-Pesa, ZamZam, CBE Birr, Bunna, Wegagen and Siinqee.
 
 ### Banks and health
 
@@ -103,7 +103,7 @@ $url = $client->getReceiptUrl('cbe', 'FT26SAMPLE01', '1000000006171'); // the ba
   - `GET` (banks, health): a network error or a 5xx.
   - verify: a network error, or a 429/503 whose `Retry-After` is at most 60 s.
   - batch: only a 429/503 with a short `Retry-After`. Never a network error or a 5xx: a 504 means the batch ran out of server time, and replaying it would hit every bank again and charge every receipt against the rate limit.
-  - Never: timeouts, other 4xx, a geo-blocked bank (502 with `fallbackUrl`), or any error the server marks `retryable: false`. A 500/502/504 on verify is not retried either: the server already ran the check, with its own 2 attempts per bank.
+  - Never: timeouts, other 4xx, a geo-blocked bank (502 with `fallbackUrl`). A 500/502/504 on verify is not retried either: the server already ran the check, with its own 2 attempts per bank.
 - The retry waits for `Retry-After`; a network-error retry waits 1-2 s.
 - cURL is limited to HTTP and HTTPS.
 - The server tries each bank at most 2 times, so one call reaches the bank at most **4 times**.

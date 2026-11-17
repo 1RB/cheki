@@ -4,6 +4,28 @@ Every cheki SDK ships the same version: npm `cheki-verify` (and `@1rb/cheki-veri
 
 ## Unreleased
 
+**Siinqee Bank receipts (beta)**
+- cheki reads Siinqee Bank receipts from `receipts.siinqeebank.com:871/generate/{reference}`, the link in Siinqee's SMS. The page is keyed by the reference alone, so the 16-character reference after "Ref:" in the SMS works typed too (bank `siinqee`). It is case-sensitive (it can hold a lowercase letter, e.g. `SYN000a000000001`) and never uppercased.
+- The receipt page is read as HTML or, when the body is a PDF, through PDF text extraction; fields are taken by label, so the markup does not matter. Verified only when the page says "Transaction is successful" and its Reference No equals the reference asked for exactly. Amount: Transferred Amount (Amount on an incoming instant payment), then Total Amount. Charge Amount, VAT Amount and Total Amount map to `serviceFee`, `serviceFeeVat` and `totalPaid` when numeric. Accounts keep Siinqee's mask (at most 4 digits either side) or are remasked. The customer block (name, phone, TIN, branch) is never returned or kept.
+- Anything else (no success line, another reference, no amount) is not confirmed: 422 with `checkedUrl`, never "fake". What Siinqee answers for an unknown reference is unconfirmed: on 2026-11-17 an unknown reference and a real one both answered HTTP 502 "Receipt Unavailable", and cheki's server has not fetched a receipt live yet, hence beta.
+- Another verifier reports about five views per receipt: a Siinqee check makes one request and never retries, not even on a timeout or 5xx. Confirmed receipts are cached as before.
+- Host and port 871 are allowlisted from the manifest; the URL is rebuilt from the validated reference. Links are recognised in the checker, the QR path and OCR text (OCR keeps the reference's case). The older eBirr route (`receipt.ebirr.com/siinqee/…`, 404 since 2026-10-10) stays as a legacy format.
+- Manifest format confidence gains `observed` (seen on real receipts, not yet fetched by cheki) next to `verified` and `inferred`; `/api/banks` and the SDK types document it. The health check probes an all-zero reference; while the unknown-reference shape is unconfirmed, a server error or no answer at all reports "degraded" on /status, rather than counting as an answer or as "not checked".
+- Siinqee's description now says it grew out of the Oromia Credit and Saving Share Company microfinance institution. eBirr's `coop` tenant is Cooperative Bank of Oromia (COOPay-Ebirr), a different bank, so its links are checked as eBirr, not Siinqee.
+
+**eBirr: transactioninfo.ebirr.com links (KAAFI)**
+- `transactioninfo.ebirr.com/{tenant}-Ebirr/receipt/{number}` links (seen on a KAAFI receipt) are recognised. The host is not in public DNS, so they only open on Ethiopian networks and are never fetched: `/api/verify` answers 502 with the link, rebuilt on the fixed host, as `fallbackUrl`, and the checker says to open it on a phone on an Ethiopian network and compare the amount, receiver and date. `receipt.ebirr.com` links work as before.
+
+**Wegagen Bank (beta)**
+- cheki checks Wegagen Bank receipts. Paste the share link (`transinfo.wegagenbanksc.com.et:8183/?id={24 characters}`) or the 24-character share id after `?id=`, or scan the QR printed on the receipt: cheki reads the `?id=` out of it and asks Wegagen's transaction service, which answers the amount, the date, both sides of the payment (account numbers Wegagen does not always mask, every one of them masked again by cheki) and the printed Reference No.
+- The printed 16-character Reference No is not a lookup key: only the share id finds the record, and a share id that does not start with the record's reference is rejected. A pasted bare share link is detected as a link, and the QR prose is read only for its `?id=`: the names, accounts and amount around it are ignored.
+- Verified 2026-11-11 against three real share links (DigiCert for `*.wegagenbanksc.com.et`, verified without `-k`); an unknown id answers "Transaction not found", which cheki reports as not confirmed, never as fake. The service answers intermittently, so the parser retries once and a check that fails is worth retrying. The daily health check probes it with the share id `CHEKIPROBE00000000000000`.
+- The answer's source is Wegagen's own share page. No SDK or CLI code change: `verify` takes the share link as `reference`, and `cheki verify wegagen <share-id>` (or `cheki verify-qr` on the receipt QR) works from the terminal.
+- Copy, llms.txt, README, the formats guide and the SDK and Python descriptions now count 12 live banks, 10 checked directly.
+
+**Ahadu Bank (documented, still in development)**
+- Ahadu's own receipt service (`receipt.ahadubank.com/digitalReceiptIPS?es={TOKEN}`) is now documented in the manifest and on the bank page, beside the eBirr route cheki already reads for `ahadu`. No parser yet: no real Ahadu receipt has ever been seen, so `ahadu` stays in development and is not checked.
+
 **Bunna Bank (beta)**
 - cheki checks Bunna Bank receipts. Paste the receipt link (`online.bunnabanksc.com/receipt/#/{token}`) or scan the QR on the receipt (`online.bunnabanksc.com/#/receipt-v2/{token}`): cheki sends the token to the JSON service behind Bunna's own receipt page and shows the amount, date, payer, receiver (account numbers masked by Bunna) and Bunna's transaction reference. Beta: one real receipt confirmed so far.
 - The token is opaque base64 and case-sensitive. Only its URL encoding is normalised (`%2B`, a `+` that became a space, base64url, missing padding), so a link, the QR and a pasted token share one cache entry. A typed transaction number (`BB…`) is rejected before any request: Bunna does not look receipts up by it.
@@ -14,7 +36,7 @@ Every cheki SDK ships the same version: npm `cheki-verify` (and `@1rb/cheki-veri
 **Bank guides and pages say what cheki actually does**
 - BOA QR guide and /banks/boa: the QR's AES key and decryption parameters are no longer printed (the guide links `src/lib/parsers/boa.ts`). A decoded QR is never verified: the API example is BOA's record with masked accounts, next to the `decodedOnly` and not-found shapes. Removed: "the QR is the ONLY proof", "no server call", "offline", the ~8ms/~500ms timings and "no account needed". Transfers to other banks: cheki asks BOA (receiving account, then the QR's source account) and shows not confirmed when BOA has no record; whether BOA's endpoint returns them is stated as unconfirmed.
 - CBE QR guide: what is known about Receipt IDs is stated as observed (the `fHCx` header, nothing else decoded, HTTP 500 for an unknown ID), not as encryption fact. Adds what green means, dashed mbreciept links and FT case handling; drops unsourced timings. "The link doesn't work" now says the payment is not confirmed if retrying doesn't help.
-- Awash: the brute-force and counter-rate material is gone from /banks/awash, the manifest notes and the receipt-formats guide; cheki does not derive the second part of the share link, so it needs the full link. Backend and WAF product names are gone from the guide and manifest. The sample link has the real 10+6 shape, and the /endpoints certificate note and `sslVerify` match the parser (TLS verified normally).
+- Awash: the brute-force and counter-rate material is gone from /banks/awash, the manifest notes and the receipt-formats guide; cheki does not derive the second part of the share link, so it needs the full link. Backend and WAF product names are gone from the guide and manifest. The sample link has the real 10+6 shape, and the /endpoints certificate note matches the parser (TLS verified normally).
 - CBE Birr: the bank page's API example includes `phoneNumber` (any bank whose format needs a phone or account digits now shows it), and the page leads with the receipt QR code and link, which carry the receipt number and payer phone.
 - Every bank page: a record the bank doesn't have is "not confirmed", never "the receipt is fake"; the how-to FAQs lead with the QR code and link, with the typed reference (plus account digits or phone) as the fallback. The unsourced "2 to 10 seconds" is gone.
 - Receipt-formats guide: CBE Birr added to the at-a-glance table; Telebirr and M-Pesa rows say cheki.et opens the official page; unsourced Telebirr prefix meanings, the "definitive" and "same endpoints as check.et and verify.et" claims, and the BOA Selenium claim removed; Siinqee's endpoint corrected and its unconfirmed status stated; Zemen marked in development; the research table lists the in-development banks from the manifest; auto-detection rules match the code; contributions go to the Telegram bot or the private Help us add box, never a public issue with a real link.
@@ -29,6 +51,7 @@ Every cheki SDK ships the same version: npm `cheki-verify` (and `@1rb/cheki-veri
 
 **Security updates**
 - Next.js and eslint-config-next 16.4.1 (GHSA-673q-mjm6-r5xr, CVE-2026-96889 / GHSA-2464-fhr4-w9xw, GHSA-p3m5-59mp-jv5r), sharp resolves 0.35.5 or later, undici resolves 7.30.1 or later (GHSA-qrxm-fqhp-jwvm). Dev only: vitest 4.1.12 with vite 8.1.6 or later. Python SDK: requires `certifi>=2026.10.19` (GHSA-6q48-6c7w-9gw2).
+- Next.js 16.4.6 (GHSA-mfr8-8qww-v76h, information disclosure across root params with `unstable_cache()`), which clears the build-time security notice. Dev only: typescript-eslint resolves 8.73.0 and zod 4.6.7 (GHSA-mrhx-c7xc-m3w5) with patched minimatch (GHSA-g3hv-75wg-m249); `npm audit` reports 0 vulnerabilities.
 
 **References typed in lowercase**
 - A reference typed in lowercase now works. For the banks whose receipts print references in capitals (CBE FT references, BOA, Telebirr, M-Pesa, Dashen, CBE Birr), cheki trims it, drops spaces and dashes typed inside when that gives the bank's format, and uppercases it: `det0sample` is checked as `DET0SAMPLE`. One shared rule (`src/lib/reference-case.ts`) is used by `POST /api/verify` (so the batch route, the CLI and every SDK get it), `GET /api/receipt`, the cache key and the form.
@@ -61,6 +84,9 @@ Every cheki SDK ships the same version: npm `cheki-verify` (and `@1rb/cheki-veri
 **Re-check links for shared results**
 - A verdict now has a "Copy re-check link" button, and Share and Copy result include the link. Opening it fills the form and asks the bank again in the recipient's browser, so the person receiving it gets the bank's answer, not the sender's.
 - The link carries only what was entered (receipt link or reference, bank, and the account digits or phone the bank needs) and nothing about the result. It sits in the URL fragment, so it never reaches the server, logs or analytics, and search engines don't index it. Nothing is stored.
+
+**SDK retries: the `retryable: false` veto is gone**
+- No cheki route ever sent `retryable: false` (only two fixtures simulated it), so the field never reached an SDK and its veto never fired. All five SDKs, their READMEs and the fixtures drop it; the `fallbackUrl` veto and the 429/503/GET-5xx rules are unchanged. The dart changelog carries the same note for pub.dev.
 
 ## 1.6.0
 

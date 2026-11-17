@@ -153,18 +153,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Auto-detect bank from URL if not specified
-    let bankCode = bank;
-    if (!bankCode && url) {
-      if (url.includes("ethiotelecom.et")) bankCode = "telebirr";
-      else if (url.includes("safaricom.et") || url.includes("m-pesa"))
-        bankCode = "mpesa";
-    }
-
-    const parser = getParser(bankCode);
+    const parser = getParser(bank);
     if (!parser) {
       return NextResponse.json(
-        { success: false, error: `Bank "${bankCode}" is not supported.` },
+        { success: false, error: `Bank "${bank}" is not supported.` },
         { status: 404, headers: CORS_HEADERS }
       );
     }
@@ -176,7 +168,7 @@ export async function POST(request: NextRequest) {
     // so the parser's validation checks (e.g. "telebirr receipt" header) pass
     let parseData = rawData;
     if (contentType === "text/html" && !/<html|<body|<div|<table|<span|<p[\s>]/i.test(rawData.trim())) {
-      parseData = wrapPlainText(rawData, bankCode);
+      parseData = wrapPlainText(rawData, bank);
     }
 
     // M-Pesa's receipt is a PDF: a pasted getReceipt envelope is decoded (and
@@ -200,6 +192,9 @@ export async function POST(request: NextRequest) {
           success: false,
           verified: false,
           error: errorMsg,
+          // Same code vocabulary as /api/verify: cheki could not read it,
+          // which is not a claim that the receipt does not exist.
+          code: "unreadable",
           bank: parser.bankName,
         },
         { status: 422, headers: CORS_HEADERS }
@@ -214,7 +209,7 @@ export async function POST(request: NextRequest) {
       source: "client-supplied",
       label: "Parsed from your text, not checked with the bank",
       bank: parser.bankName,
-      bankCode: bankCode,
+      bankCode: bank,
       reference: parsed.reference || "unknown",
       senderName: parsed.senderName,
       senderAccount: parsed.senderAccount,

@@ -27,6 +27,37 @@ export type Reference = Brand<string, "Reference">;
 
 // ─── Error Hierarchy (discriminated unions, not classes) ────────────
 
+/**
+ * Why a check failed, as data. Every surface that has to *decide* what a
+ * failure means (the verdict card, a test, an SDK) reads this code; the
+ * `message` is copy for humans and must never be pattern-matched: rewording
+ * a message may not change what a result means.
+ *
+ *   gate:*     the bank answered, cheki's gate refused to confirm it:
+ *              amount / reference / party / status map 1:1 to GateFailure.
+ *   notFound   the bank has no such receipt.
+ *   notFound:otherAccount  BOA files some receipts under the payer's
+ *              account, so a miss says which other account to try.
+ *   unreadable the bank (or the QR) answered, but not in a shape cheki can
+ *              read; it is not a claim that the receipt does not exist.
+ *   qrMismatch the QR's own numbers contradict the bank's record.
+ */
+export type ChekiErrorCode =
+  | "gate:amount"
+  | "gate:reference"
+  | "gate:party"
+  | "gate:status"
+  | "notFound"
+  | "notFound:otherAccount"
+  | "unreadable"
+  | "unconfirmed"
+  | "qrMismatch";
+
+/** True for the codes that mean "the bank has no such receipt". */
+export function isNotFoundCode(code: ChekiErrorCode | undefined): boolean {
+  return code === "notFound" || code === "notFound:otherAccount";
+}
+
 export type ChekiError =
   | { kind: "BANK_NOT_SUPPORTED"; bank: string; suggestion?: string; message?: string }
   | { kind: "REF_ERROR"; bank: string; message: string }
@@ -35,6 +66,10 @@ export type ChekiError =
       kind: "EXTRACTION_ERROR";
       bank: string;
       message: string;
+      /** What this failure means (see ChekiErrorCode). Set by every producer. */
+      code?: ChekiErrorCode;
+      /** Bank-supplied detail for a code, e.g. the status word a gate:status shows. */
+      detail?: string;
       /**
        * The bank page cheki asked, when the bank answered but did not confirm
        * the receipt, so anyone can open it and see the bank's answer.
@@ -80,6 +115,25 @@ export function errorToMessage(error: ChekiError): string {
       return "Unknown error";
     }
   }
+}
+
+/**
+ * The JSON body of a failed check, for both verify routes. `code` / `detail`
+ * / `field` are what the verdict card switches on; `error` is copy for
+ * humans. Built here so a new field is added once and the two routes can
+ * never drift apart.
+ */
+export function errorPayload(error: ChekiError): Record<string, unknown> {
+  return {
+    success: false,
+    error: errorToMessage(error),
+    ...(error.kind === "EXTRACTION_ERROR"
+      ? { ...(error.code ? { code: error.code } : {}), ...(error.detail ? { detail: error.detail } : {}) }
+      : {}),
+    ...(error.kind === "MISSING_INPUT" ? { field: error.field } : {}),
+    ...(error.kind === "ENDPOINT_ERROR" && error.fallbackUrl ? { fallbackUrl: error.fallbackUrl } : {}),
+    ...(error.kind === "EXTRACTION_ERROR" && error.checkedUrl ? { checkedUrl: error.checkedUrl } : {}),
+  };
 }
 
 // ─── Receipt Entity ─────────────────────────────────────────────────
@@ -132,6 +186,14 @@ export interface VerifyRequest {
   accountNumber?: string;
   phoneNumber?: string;
   qrData?: string;
+  /**
+   * The reference came from a receipt link or a QR payload rather than a
+   * keyboard, so it is uppercased but never compacted (see
+   * src/lib/reference-input.ts). Not an API field: both verify routes build
+   * this object field by field from JSON, so only the verifier's QR branches
+   * ever set it.
+   */
+  fromLink?: boolean;
 }
 
 // ─── Parser Port (interface that bank parsers implement) ────────────
@@ -140,9 +202,6 @@ export interface ParserPort {
   readonly bankId: string;
   readonly bankName: string;
   readonly responseType: "pdf" | "html" | "json";
-  readonly requiresAccount: boolean;
-  readonly accountDigits?: number;
-  readonly requiresPhone: boolean;
 
   buildUrl(ref: string, account?: string, phone?: string): string;
   parse(data: string | Buffer, contentType: string): ParsedReceipt;
@@ -264,7 +323,14 @@ export interface ReceiptFormat {
   endpoint?: string;
   /** URL template of the receipt page people share or open. */
   link?: string;
-  /** Hosts whose links are recognised for this format (reference extraction only). */
+  /**
+   * Hosts this format's receipt pages are served from, shown on /endpoints
+   * when the format has no `link`/`endpoint` template and in the "Reported
+   * host" line for evidence-only rows. It documents; it does not recognise:
+   * whether a pasted URL counts as this format's receipt is decided in
+   * src/lib/adapters/url-detector.ts, and tests/manifest/link-hosts.test.ts
+   * pins the two against each other.
+   */
   linkHosts?: string[];
   inputs: ReceiptFormatInput[];
   /** References this format accepts. Used to pick a format by the shape of the input. */
@@ -277,8 +343,12 @@ export interface ReceiptFormat {
   since?: string;
   deprecatedAt?: string;
   replacedBy?: string;
-  /** "verified": observed by cheki; "inferred": from another source, see evidence. */
-  confidence: "verified" | "inferred";
+  /**
+   * "verified": checked by cheki against the live endpoint; "observed": seen
+   * on real receipts (link shape and content) but not yet fetched from
+   * cheki's server; "inferred": from another source. See evidence.
+   */
+  confidence: "verified" | "observed" | "inferred";
   evidence: string;
   notes?: string;
   /** Shown when the input matches this format but a required field is missing. */
@@ -342,7 +412,6 @@ export interface BankManifestEntry {
    * Absent: the endpoint needs no authentication.
    */
   endpointAuth?: string;
-  sslVerify: boolean;
   headers?: Record<string, string>;
   geoBlocked?: boolean;
   notes?: string;

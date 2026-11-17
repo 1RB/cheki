@@ -1,6 +1,6 @@
 # cheki Dart SDK
 
-Dart client for the [cheki](https://cheki.et) receipt verification API: verify Ethiopian bank transfer receipts from CBE, Telebirr, BOA, Dashen, M-Pesa (beta: not yet confirmed with a real receipt), Awash, Siinqee, eBirr, ZamZam (beta: one receipt shape confirmed so far), CBE Birr (beta: two real receipts confirmed so far) and Bunna (beta: one real receipt confirmed so far) (the live banks; `getBanks()` lists the current set). No `dart:io` import, so it also builds for Flutter web (the hosted API sends no CORS headers on these routes, so browser calls still need your own backend).
+Dart client for the [cheki](https://cheki.et) receipt verification API: verify Ethiopian bank transfer receipts from CBE, Telebirr, BOA, Dashen, M-Pesa (beta: not yet confirmed with a real receipt), Awash, Siinqee (beta: built from real receipts, not yet fetched live), eBirr, ZamZam (beta: one receipt shape confirmed so far), CBE Birr (beta: two real receipts confirmed so far), Bunna (beta: one real receipt confirmed so far) and Wegagen (beta: three real share links confirmed so far) (the live banks; `getBanks()` lists the current set). No `dart:io` import, so it also builds for Flutter web (the hosted API sends no CORS headers on these routes, so browser calls still need your own backend).
 
 From the hosted API at cheki.et, Telebirr and M-Pesa come back as a 502 with `fallbackUrl` (the official receipt page), because they block cloud servers. Send the user there to check the amount and receiver; direct checks return once a local relay is live.
 
@@ -70,7 +70,7 @@ for (final r in batch.results) {
 }
 ```
 
-More than 20 receipts (or none) throws `ChekiValidationException` without a request. Each receipt also counts against the per-IP verify limit (30 per minute), and a batch is never retried after a 5xx or network error, so send long lists in chunks of `ChekiClient.recommendedBatchChunk` (15). A failed item has `status` and `error`, plus `fallbackUrl` when the server sends one for a geo-blocked bank, or `checkedUrl` (the bank page cheki asked) on a 422. Results carry `orderId` when the receipt has one (CBE Birr), and `BankInfo.beta` is true for M-Pesa, ZamZam, CBE Birr and Bunna.
+More than 20 receipts (or none) throws `ChekiValidationException` without a request. Each receipt also counts against the per-IP verify limit (30 per minute), and a batch is never retried after a 5xx or network error, so send long lists in chunks of `ChekiClient.recommendedBatchChunk` (15). A failed item has `status` and `error`, plus `fallbackUrl` when the server sends one for a geo-blocked bank, or `checkedUrl` (the bank page cheki asked) on a 422. Results carry `orderId` when the receipt has one (CBE Birr), and `BankInfo.beta` is true for M-Pesa, ZamZam, CBE Birr, Bunna, Wegagen and Siinqee.
 
 ### Banks and health
 
@@ -113,7 +113,7 @@ client.getReceiptUrl('cbe', 'FT26SAMPLE01', '1000000006171'); // the bank's PDF
   - `GET` (banks, health): a network error or a 5xx.
   - verify: a network error, or a 429/503 whose `Retry-After` is at most 60 s.
   - batch: only a 429/503 with a short `Retry-After`. Never a network error or a 5xx: a 504 means the batch ran out of server time, and replaying it would hit every bank again and charge every receipt against the rate limit.
-  - Never: timeouts, other 4xx, a geo-blocked bank (502 with `fallbackUrl`), or any error the server marks `retryable: false`. A 500/502/504 on verify is not retried either: the server already ran the check, with its own 2 attempts per bank.
+  - Never: timeouts, other 4xx, a geo-blocked bank (502 with `fallbackUrl`). A 500/502/504 on verify is not retried either: the server already ran the check, with its own 2 attempts per bank.
 - The retry waits for `Retry-After`; a network-error retry waits 1-2 s.
 - The server tries each bank at most 2 times, so one call reaches the bank at most **4 times**.
 - Responses are decoded as UTF-8 whatever the `content-type` says (needs `http` 1.4.0+, which the pubspec requires), so Amharic names and messages arrive intact.

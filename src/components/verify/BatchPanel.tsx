@@ -17,6 +17,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { Translate } from "@/lib/i18n/translate";
 import { decodeQrFromImage } from "@/lib/qr/decode";
 import { detectInput } from "@/lib/verify/detect";
+import { canonicalBankCode } from "@/lib/bank-ids";
 import { postJson } from "@/lib/verify/client";
 import { presentVerdict } from "@/lib/verify/verdict";
 import {
@@ -99,7 +100,7 @@ export default function BatchPanel({ files, t, onClear, onPick }: Props) {
       if (!d.bank || d.kind === "unknownUrl" || d.kind === "empty") return set(i, { name, status: "noReceipt" });
       if (d.needsAccount || d.needsPhone) return set(i, { name, status: "needsAccount", reference: d.value, bankCode: d.bank.code });
       set(i, { name, status: "checking", reference: d.value, bankCode: d.bank.code });
-      const body = d.kind === "boaQr" ? { bank: "boa", qrData: d.value } : { bank: d.bank.code, reference: d.value };
+      const body = { bank: d.bank.code, ...(d.kind === "boaQr" ? { qrData: d.value } : { reference: d.value }) };
       const result = await postJson("/api/verify", body);
       set(i, { name, status: "done", reference: d.value, bankCode: d.bank.code, verdict: presentVerdict(result, { bankCode: d.bank.code, t }) });
     },
@@ -126,7 +127,7 @@ export default function BatchPanel({ files, t, onClear, onPick }: Props) {
         const { extractTextFromImage } = await import("@/lib/ocr");
         const { parsed } = await extractTextFromImage(files[i]);
         if (!parsed?.reference) return set(i, { name, status: "noReceipt" });
-        return check(i, parsed.reference, parsed.bank === "cbe-new" ? "cbe" : parsed.bank || undefined);
+        return check(i, parsed.reference, parsed.bank ? canonicalBankCode(parsed.bank) : undefined);
       } catch {
         set(i, { name, status: "noReceipt" });
       }

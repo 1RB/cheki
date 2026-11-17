@@ -10,9 +10,8 @@ export interface RegisteredParser {
   bankId: string;
   bankName: string;
   responseType: "pdf" | "html" | "json";
-  requiresAccount: boolean;
-  accountDigits?: number;
-  requiresPhone: boolean;
+  /** Looked up by an opaque share token: see BaseParser.referenceIsOpaqueToken. */
+  referenceIsOpaqueToken: boolean;
   buildUrl(ref: string, account?: string, phone?: string): string;
   /** Validate and canonicalise a reference before it is put in a URL. */
   normalizeReference(ref: string): import("../security/reference").Checked<string>;

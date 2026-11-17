@@ -79,6 +79,7 @@ describe("canonicalReference", () => {
     ["awash", "2kdl95xe81-4u0000"],
     ["ebirr", "nib/AbCdEf123456"],
     ["siinqee", "siinqee/AbCdEf123456"],
+    ["siinqee", "SYN000a000000001"],
     ["nib", "AbCdEf123456"],
     // Banks without a rule, and unknown codes.
     ["zemen", "zb123456"],
@@ -134,8 +135,10 @@ describe("parsers: lowercase is the same reference, case-sensitive tokens are no
     expect(getParser("awash")!.normalizeReference("2kdl95xe81-4u0000")).toEqual({ ok: true, value: "2kdl95xe81-4u0000" });
     const ebirr = getParser("ebirr")!.normalizeReference("nib/AbCdEf123456");
     expect(ebirr.ok && ebirr.value).toContain("AbCdEf123456");
-    const siinqee = getParser("siinqee")!.normalizeReference("AbCdEf123456");
+    const siinqee = getParser("siinqee-ebirr")!.normalizeReference("AbCdEf123456");
     expect(siinqee.ok && siinqee.value).toContain("AbCdEf123456");
+    // Siinqee Bank references can hold a lowercase letter: never uppercased.
+    expect(getParser("siinqee")!.normalizeReference("SYN000a000000001")).toEqual({ ok: true, value: "SYN000a000000001" });
   });
 });
 
@@ -307,8 +310,10 @@ describe("the hint after a not-found", () => {
     const rejected = presentVerdict({ success: false, error: "A CBE Birr receipt number is 10 or 11 letters and digits, as in the SMS.", httpStatus: 400 }, { bankCode: "cbebirr", referenceHint: true });
     expect(rejected.kind).toBe("invalidInput");
     expect(rejected.referenceHint).toContain("DTS4…");
-    // A missing account or phone is not about the reference.
-    expect(presentVerdict({ success: false, error: "Enter at least the last 8 digits of the account number.", httpStatus: 400 }, { bankCode: "cbe", referenceHint: true }).referenceHint).toBeUndefined();
+    // A missing account or phone is not about the reference: the API says
+    // which field it was about, and the card reads that, not the wording.
+    expect(presentVerdict({ success: false, error: "Enter at least the last 8 digits of the account number.", field: "accountNumber", httpStatus: 400 }, { bankCode: "cbe", referenceHint: true }).referenceHint).toBeUndefined();
+    expect(presentVerdict({ success: false, error: "Phone number must be text.", field: "phoneNumber", httpStatus: 400 }, { bankCode: "cbebirr", referenceHint: true }).referenceHint).toBeUndefined();
     // Never on a confirmed receipt or a bank that did not answer.
     expect(presentVerdict({ success: false, error: "down", httpStatus: 503 }, { bankCode: "boa", referenceHint: true }).referenceHint).toBeUndefined();
     // A bank without a rule has no example, so no hint.

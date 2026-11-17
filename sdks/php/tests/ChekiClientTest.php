@@ -8,6 +8,7 @@ use Cheki\ChekiClient;
 use Cheki\ChekiException;
 use Cheki\TransportException;
 use Cheki\VerifyOptions;
+use Cheki\VerifyResult;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -341,5 +342,31 @@ final class ChekiClientTest extends TestCase
         self::assertSame(5, ChekiClient::parseRetryAfter(gmdate('D, d M Y H:i:s', 1000005) . ' GMT', 1000000));
         self::assertNull(ChekiClient::parseRetryAfter('soon'));
         self::assertNull(ChekiClient::parseRetryAfter(null));
+    }
+
+    /**
+     * isVerified() is the API's verificationState() rule, in all 16
+     * combinations of the four flags. The rule is restated here because the
+     * SDK is a separate package and cannot import the server's copy; the
+     * TypeScript SDK's tests run the same matrix against that copy.
+     */
+    public function testIsVerifiedIsOneRuleOverEveryFlagCombination(): void
+    {
+        $bad = [];
+        foreach ([true, false] as $success) {
+            foreach ([true, false] as $verified) {
+                foreach ([true, false] as $decodedOnly) {
+                    foreach ([true, false] as $parsed) {
+                        $r = new VerifyResult($success, $verified);
+                        $r->decodedOnly = $decodedOnly;
+                        $r->parsed = $parsed;
+                        if ($r->isVerified() !== ($success && $verified && !$decodedOnly && !$parsed)) {
+                            $bad[] = [$success, $verified, $decodedOnly, $parsed, $r->isVerified()];
+                        }
+                    }
+                }
+            }
+        }
+        self::assertSame([], $bad);
     }
 }

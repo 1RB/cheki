@@ -75,9 +75,15 @@ type VerifyResult struct {
 	CheckedURL string `json:"checkedUrl,omitempty"`
 }
 
-// IsVerified reports whether the bank confirmed the receipt. Success,
-// DecodedOnly and Parsed are not proof of payment.
-func (r *VerifyResult) IsVerified() bool { return r != nil && r.Verified }
+// IsVerified reports whether the bank confirmed the receipt: Success and
+// Verified, with neither DecodedOnly nor Parsed. Success alone only says the
+// request was handled; a BOA QR the bank could not confirm and content read
+// from a page are never payments. This is the API's verificationState() rule,
+// re-read from JSON because the SDK is a separate module: every SDK's test
+// suite asserts it over all combinations of those four flags.
+func (r *VerifyResult) IsVerified() bool {
+	return r != nil && r.Success && r.Verified && !r.DecodedOnly && !r.Parsed
+}
 
 // BatchItem is one entry of BatchResult.Results. A failed item has Success
 // false, Error set, and Status (the HTTP status a single verify would have
@@ -115,7 +121,7 @@ type BankInfo struct {
 	Type   string `json:"type"`   // "bank" | "mobile" | "wallet"
 	Status string `json:"status"` // "live" | "in-development"
 	// Beta is true for a live bank not yet confirmed with enough real
-	// receipts (M-Pesa, ZamZam, CBE Birr and Bunna today).
+	// receipts (M-Pesa, ZamZam, CBE Birr, Bunna, Wegagen and Siinqee today).
 	Beta            bool `json:"beta,omitempty"`
 	RequiresAccount bool `json:"requiresAccount"`
 	AccountDigits   int  `json:"accountDigits,omitempty"`
@@ -142,7 +148,8 @@ type ReceiptFormat struct {
 	ResponseType  string   `json:"responseType"`
 	// Supported is false when cheki documents the format but can't check it yet.
 	Supported bool `json:"supported"`
-	// Confidence is "verified" (observed by cheki) or "inferred".
+	// Confidence is "verified" (checked by cheki), "observed" (seen on real
+	// receipts, not yet fetched by cheki) or "inferred".
 	Confidence string `json:"confidence"`
 }
 

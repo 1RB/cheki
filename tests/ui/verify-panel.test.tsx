@@ -14,6 +14,10 @@ vi.mock("next/link", () => ({ default: ({ href, children, prefetch: _p, ...rest 
 vi.mock("next/dynamic", () => ({ default: () => () => null }));
 
 const CBE = "https://mbreciept.cbe.com.et/fHCxExampleRcpt01";
+// The synthetic sample BOA receipt QR (the same payload as
+// tests/qr/qr-chain.test.ts): a Base64 ciphertext only BOA can read.
+const BOA_QR =
+  "KPHO0k4YlK/5s61BrKNnjG8dcbVjm5WqkNeCv93+8UYEinGOPAL1+Wpq6cy8McTYhpdXUgKvK4qFFcGhM0Yi+ZgrqD8G3UKsoUNwSiKqWXilJTG+1yIE+KEEK7IuoZl7";
 const json = (body: unknown, status = 200, headers: Record<string, string> = {}) =>
   new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json", ...headers } });
 
@@ -55,6 +59,19 @@ describe("VerifyPanel", () => {
     const saved = localStorage.getItem(HISTORY_KEY)!;
     expect(saved).toContain(CBE);
     expect(saved).not.toMatch(/Abebe|Selam/);
+  });
+
+  it("a BOA QR is checked as BOA even on a bank-locked page", async () => {
+    // detect reports the locked bank for a BOA QR (locked ?? boa) so the
+    // lock guard lets the input through; the request must still name BOA,
+    // the only bank that can read the ciphertext. Posting it to the locked
+    // bank would answer "reference too long" and never check the receipt.
+    fetchMock.mockResolvedValue(json({ success: true, verified: true, bankCode: "boa", reference: "FT26SAMPLE0706171", amount: 100, senderName: "Abebe Kebede", receiverName: "Selam" }));
+    const input = setup({ lockedBank: "cbe" });
+    await submit(input, BOA_QR);
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    const body = JSON.parse(fetchMock.mock.calls[0][1].body);
+    expect(body).toEqual({ bank: "boa", qrData: BOA_QR });
   });
 
   it("a second check of the same receipt warns 'Checked before on this device'", async () => {

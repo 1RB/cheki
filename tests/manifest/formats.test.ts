@@ -14,6 +14,7 @@ import { formatNeeds, formatsOf, primaryFormat, selectFormat, supportedFormats, 
 import { verificationGate } from "@/lib/core/gate";
 import { allowedHosts, isAllowedUrl } from "@/lib/security/hosts";
 import { CBEParser } from "@/lib/parsers/cbe";
+import { WegagenParser } from "@/lib/parsers/wegagen";
 import { GET as receiptGET } from "@/app/api/receipt/route";
 import "@/lib/parsers";
 
@@ -40,7 +41,7 @@ describe("format data in banks.json", () => {
   it("records evidence and confidence on every format, and dates on every history entry", () => {
     for (const bank of getAllBanks()) {
       for (const f of formatsOf(bank)) {
-        expect(["verified", "inferred"], `${bank.id}/${f.id}`).toContain(f.confidence);
+        expect(["verified", "observed", "inferred"], `${bank.id}/${f.id}`).toContain(f.confidence);
         expect(f.evidence.length, `${bank.id}/${f.id}`).toBeGreaterThan(10);
         if (f.replacedBy) expect(formatsOf(bank).some((g) => g.id === f.replacedBy), `${bank.id}/${f.id}`).toBe(true);
       }
@@ -57,9 +58,10 @@ describe("format data in banks.json", () => {
         if (/another verifier/i.test(f.evidence) && !/cheki/.test(f.evidence)) expect(f.confidence, `${bank.id}/${f.id}`).toBe("inferred");
       }
     }
-    for (const id of ["siinqee", "mpesa"]) {
-      for (const f of formatsOf(getBank(id))) expect(f.confidence, `${id}/${f.id}`).toBe("inferred");
-    }
+    for (const f of formatsOf(getBank("mpesa"))) expect(f.confidence, `mpesa/${f.id}`).toBe("inferred");
+    // Siinqee: built from real receipts but not yet fetched by cheki, so never "verified".
+    for (const f of formatsOf(getBank("siinqee"))) expect(f.confidence, `siinqee/${f.id}`).not.toBe("verified");
+    expect(formatsOf(getBank("siinqee"))[0]).toMatchObject({ id: "siinqee-bank-receipt", status: "current", confidence: "observed", parser: "siinqee" });
   });
 
   it("CBE Birr is verified with dated evidence from real receipts, and labelled beta", () => {
@@ -134,17 +136,17 @@ describe("gate: CBE Receipt ID is an opaque token", () => {
   };
 
   it("passes a cbe-new receipt whose returned reference is the FT id, not the Receipt ID", () => {
-    expect(verificationGate({ ...receipt, reference: "FT26SAMPLE01" }, { bankId: "cbe-new", requestedReference: "fHCxExampleRcpt01" })).toEqual({ ok: true });
+    expect(verificationGate({ ...receipt, reference: "FT26SAMPLE01" }, { referenceIsOpaqueToken: true, requestedReference: "fHCxExampleRcpt01" })).toEqual({ ok: true });
   });
 
   it("still fails a mismatched reference for a non-opaque bank (legacy CBE FT, Dashen)", () => {
-    expect(verificationGate({ ...receipt, reference: "FT00000XXXXX" }, { bankId: "cbe", requestedReference: "FT26SAMPLE01" })).toMatchObject({ ok: false, reason: "reference" });
-    expect(verificationGate({ ...receipt, reference: "B22WDTI0000000XX" }, { bankId: "dashen", requestedReference: "B22WDTI00SAMPLE1" })).toMatchObject({ ok: false, reason: "reference" });
+    expect(verificationGate({ ...receipt, reference: "FT00000XXXXX" }, { requestedReference: "FT26SAMPLE01" })).toMatchObject({ ok: false, reason: "reference" });
+    expect(verificationGate({ ...receipt, reference: "B22WDTI0000000XX" }, { requestedReference: "B22WDTI00SAMPLE1" })).toMatchObject({ ok: false, reason: "reference" });
   });
 
   it("the opaque-token exemption does not relax the other checks for cbe-new", () => {
-    expect(verificationGate({ ...receipt, amount: 0, reference: "FT26SAMPLE01" }, { bankId: "cbe-new", requestedReference: "tok123456789" })).toMatchObject({ ok: false, reason: "amount" });
-    expect(verificationGate({ verified: true, amount: 5, reference: "FT26SAMPLE01" }, { bankId: "cbe-new", requestedReference: "tok123456789" })).toMatchObject({ ok: false, reason: "party" });
+    expect(verificationGate({ ...receipt, amount: 0, reference: "FT26SAMPLE01" }, { referenceIsOpaqueToken: true, requestedReference: "tok123456789" })).toMatchObject({ ok: false, reason: "amount" });
+    expect(verificationGate({ verified: true, amount: 5, reference: "FT26SAMPLE01" }, { referenceIsOpaqueToken: true, requestedReference: "tok123456789" })).toMatchObject({ ok: false, reason: "party" });
   });
 
   it("end to end: bank=cbe with a Receipt ID verifies when CBE returns the FT id", async () => {
@@ -173,6 +175,35 @@ describe("gate: CBE Receipt ID is an opaque token", () => {
       expect(r.value.verified).toBe(true);
       expect(r.value.amount).toBe(20000);
     }
+  });
+});
+
+describe("gate: a Wegagen share id is an opaque token", () => {
+  const receipt = {
+    verified: true,
+    amount: 1250,
+    senderName: "Test Payer",
+    receiverName: "Test Receiver",
+  };
+  const REF = "000SAMPSAMPLE100";
+  const SHARE_ID = "000SAMPSAMPLE1001000DFTD";
+
+  it("passes a receipt whose reference is the printed Reference No, only a prefix of the share id", () => {
+    expect(verificationGate({ ...receipt, reference: REF }, { referenceIsOpaqueToken: true, requestedReference: SHARE_ID })).toEqual({ ok: true });
+  });
+
+  it("the exemption does not relax the other checks", () => {
+    expect(verificationGate({ ...receipt, amount: 0, reference: REF }, { referenceIsOpaqueToken: true, requestedReference: SHARE_ID })).toMatchObject({ ok: false, reason: "amount" });
+    expect(verificationGate({ verified: true, amount: 5, reference: REF }, { referenceIsOpaqueToken: true, requestedReference: SHARE_ID })).toMatchObject({ ok: false, reason: "party" });
+  });
+
+  it("a record for another transaction is caught by the parser's prefix check, not by the gate", () => {
+    // The gate cannot compare them: the share id never equals the record's
+    // reference. WegagenParser.parseRecord refuses a record whose reference
+    // is not a prefix of the requested share id (tests/parsers/wegagen.test.ts).
+    expect(verificationGate({ ...receipt, reference: "000NEVER260000000" }, { referenceIsOpaqueToken: true, requestedReference: SHARE_ID })).toEqual({ ok: true });
+    const body = JSON.stringify({ trnRefNo: "000NEVER260000000", txnAmount: 1250, sender_name: "A", receiver_name: "B" });
+    expect(WegagenParser.parseRecord(body, SHARE_ID).parsed.verified).toBe(false);
   });
 });
 
@@ -249,7 +280,9 @@ describe("allowlist derived from the formats", () => {
     }
     expect(isAllowedUrl("https://receipt.dashensuperapp.com/receipt/x")).toBe(false);
     expect(isAllowedUrl("https://api.dashensuperapp.com/receipts/x.pdf")).toBe(false);
-    expect(isAllowedUrl("https://receipts.siinqeebank.com:871/x")).toBe(false); // inferred, unsupported
+    expect(isAllowedUrl("https://receipts.siinqeebank.com:871/x")).toBe(true); // Siinqee's current format
+    expect(isAllowedUrl("https://receipts.siinqeebank.com/x")).toBe(false); // without its port
+    expect(isAllowedUrl("https://transactioninfo.ebirr.com/kaafimf-Ebirr/receipt/800000000001")).toBe(false); // never fetched
     expect(isAllowedUrl("https://mb.cbe.com.et.evil.example/x")).toBe(false);
     expect(isAllowedUrl("https://apps.cbe.com.et/?id=x")).toBe(false); // wrong port
     expect(isAllowedUrl("http://mb.cbe.com.et/x")).toBe(false);

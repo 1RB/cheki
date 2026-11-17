@@ -10,20 +10,25 @@
  *   down         a live bank whose endpoint was unreachable or answered differently
  *   geo          a live bank that only answers Ethiopian networks, so the
  *                cloud probe (outside Ethiopia) cannot see it
+ *   unknown      reserved: no status.json row maps here today. No answer from
+ *                the probe is "degraded" (down), and "not checked" is only
+ *                ever the geo skip, which maps to geo
  *   unsupported  cheki does not check this bank's receipts yet (in development)
  *
  * There is no "slow": status.json records no latency today. When it does,
  * this is the one place to add it.
  */
-import type { BankManifestEntry } from "./core/types";
+import type { BankManifestEntry, ReceiptFormat } from "./core/types";
 import type { BankHealth, HealthStatus } from "./health";
+import { isSupportedFormat } from "./manifest/formats";
 
-export type BankState = "working" | "down" | "geo" | "unsupported";
+export type BankState = "working" | "down" | "geo" | "unknown" | "unsupported";
 
 export const STATE_LABEL: Record<BankState, string> = {
   working: "Working",
   down: "Down",
   geo: "Geo-restricted",
+  unknown: "Not checked",
   unsupported: "Not supported yet",
 };
 
@@ -36,6 +41,8 @@ export function stateMeaning(state: BankState, bank: string, measuredFrom: strin
       return `${bank} checks may fail right now: the endpoint did not answer the daily probe as expected. A failed check says "couldn't check", never "fake".`;
     case "geo":
       return `${bank} only answers Ethiopian networks, so the probe from ${measuredFrom} cannot reach it. From an Ethiopian network, checks usually work.`;
+    case "unknown":
+      return `The daily probe from ${measuredFrom} got no answer from ${bank}, so its state is unknown. A failed check says "couldn't check", never "fake".`;
     case "unsupported":
       return `cheki does not check ${bank} receipts yet, whatever its endpoint does.`;
   }
@@ -43,12 +50,41 @@ export function stateMeaning(state: BankState, bank: string, measuredFrom: strin
 
 export function bankState(bank: Pick<BankManifestEntry, "status" | "geoBlocked">, status: HealthStatus): BankState {
   if (bank.status !== "live") return "unsupported";
-  if (status === "degraded") return "down";
-  if (status === "not-checked") return bank.geoBlocked ? "geo" : "working";
-  return "working";
+  // Every HealthStatus is named: a new status.json vocabulary word cannot
+  // fall through to "working" (a green dot is the loudest wrong answer), it
+  // fails to compile here until this mapping has decided what it means.
+  switch (status) {
+    case "degraded":
+      return "down";
+    case "not-checked":
+      // Only the geo-restricted skip produces this today (the cloud probe
+      // cannot see those banks at all): a bank that simply does not answer
+      // is "degraded" instead. Anything else lands in "unknown", which is
+      // reserved rather than a live reading.
+      return bank.geoBlocked ? "geo" : "unknown";
+    case "live":
+    case "in-development":
+      return "working";
+    default: {
+      const exhaustive: never = status;
+      return exhaustive;
+    }
+  }
 }
 
-/** The dot's tone. Green is "answering as expected", nothing stronger. */
+/**
+ * The tag /endpoints puts on a format, in the reader's words. Whether cheki
+ * fetches the format is isSupportedFormat's call (has a parser, not retired),
+ * never the status alone: a current format with a parser is checked, a legacy
+ * one without a parser is not, and the status by itself says neither.
+ */
+export function formatStatusTag(f: ReceiptFormat): string {
+  if (isSupportedFormat(f)) return "Still checked";
+  if (f.status === "current") return "Newer, not supported yet";
+  return f.status === "deprecated" ? "Retired" : "Not checked";
+}
+
+/** The dot's tone. Green is "answering as expected", nothing stronger; unknown is neutral. */
 export function stateTone(state: BankState): "green" | "red" | "amber" | "neutral" {
   return state === "working" ? "green" : state === "down" ? "red" : state === "geo" ? "amber" : "neutral";
 }
@@ -58,6 +94,7 @@ export interface StatusSummary {
   working: number;
   down: number;
   geo: number;
+  unknown: number;
   tone: "green" | "amber" | "red" | "neutral";
 }
 
@@ -66,8 +103,12 @@ export function summarize(states: BankState[]): StatusSummary {
   const working = live.filter((s) => s === "working").length;
   const down = live.filter((s) => s === "down").length;
   const geo = live.filter((s) => s === "geo").length;
-  const tone = live.length === 0 ? "neutral" : down === live.length ? "red" : down > 0 ? "amber" : "green";
-  return { live: live.length, working, down, geo, tone };
+  const unknown = live.filter((s) => s === "unknown").length;
+  // Green only when nothing is down and nothing went unanswered; all unknown
+  // is neutral (no reading), some unknown is amber (not a clean bill).
+  const tone =
+    live.length === 0 || unknown === live.length ? "neutral" : down === live.length ? "red" : down > 0 || unknown > 0 ? "amber" : "green";
+  return { live: live.length, working, down, geo, unknown, tone };
 }
 
 /** "Telebirr and M-Pesa", "CBE, BOA and Dashen". */
@@ -96,4 +137,15 @@ export function isStale(generatedAt: string | undefined, now: number): boolean {
 /** Health rows for a bank's older formats ("<bank>:<formatId>"). */
 export function legacyHealth(all: BankHealth[], bankId: string): BankHealth[] {
   return all.filter((h) => h.id.startsWith(`${bankId}:`));
+}
+
+/**
+ * The format id inside a "<bank>:<formatId>" health row (src/lib/health.ts
+ * builds the key; legacyHealth above keeps a bank's rows). The reading side
+ * of the key has this one owner: a key with no format part gives undefined,
+ * never half an id.
+ */
+export function healthFormatId(id: string): string | undefined {
+  const at = id.indexOf(":");
+  return at === -1 ? undefined : id.slice(at + 1) || undefined;
 }

@@ -6,8 +6,7 @@
  * separate provider, so it is not counted.
  */
 import { getAllBanks } from "./manifest/loader";
-
-const PARSER_ONLY_IDS = new Set(["cbe-new"]);
+import { PARSER_ONLY_IDS } from "./bank-ids";
 
 const providers = getAllBanks().filter((b) => !PARSER_ONLY_IDS.has(b.id));
 

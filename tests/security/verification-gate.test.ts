@@ -28,40 +28,50 @@ const good = {
 
 describe("verificationGate", () => {
   it("passes a complete receipt", () => {
-    expect(verificationGate(good, { bankId: "boa", requestedReference: "ft26167abcde " })).toEqual({ ok: true });
+    expect(verificationGate(good, { requestedReference: "ft26167abcde " })).toEqual({ ok: true });
   });
 
   it("requires a finite amount above zero", () => {
     for (const amount of [undefined, 0, -1, NaN, Infinity]) {
-      const r = verificationGate({ ...good, amount }, { bankId: "boa", requestedReference: "FT26167ABCDE" });
+      const r = verificationGate({ ...good, amount }, { requestedReference: "FT26167ABCDE" });
       expect(r.ok, String(amount)).toBe(false);
     }
   });
 
   it("requires the returned reference to match the requested one", () => {
-    const r = verificationGate({ ...good, reference: "FT26999OTHER" }, { bankId: "boa", requestedReference: "FT26167ABCDE" });
+    const r = verificationGate({ ...good, reference: "FT26999OTHER" }, { requestedReference: "FT26167ABCDE" });
     expect(r).toMatchObject({ ok: false, reason: "reference" });
   });
 
-  it("skips the reference match for banks whose link is an opaque token", () => {
-    const r = verificationGate({ ...good, reference: "123456789" }, { bankId: "awash", requestedReference: "2KDL95XE81-4U0000" });
+  it("skips the reference match when the parser says the lookup key is an opaque token", () => {
+    const r = verificationGate(
+      { ...good, reference: "123456789" },
+      { referenceIsOpaqueToken: true, requestedReference: "2KDL95XE81-4U0000" }
+    );
     expect(r.ok).toBe(true);
   });
 
+  it("fails closed without the flag: an opaque bank's own receipt would be rejected", () => {
+    // The exemption is a fact about how the bank is looked up. A caller that
+    // does not say so gets the strict check, never a silent skip.
+    const r = verificationGate({ ...good, reference: "123456789" }, { requestedReference: "2KDL95XE81-4U0000" });
+    expect(r).toMatchObject({ ok: false, reason: "reference" });
+  });
+
   it("requires at least one party", () => {
-    const r = verificationGate({ ...good, senderName: undefined, receiverName: "  " }, { bankId: "boa", requestedReference: "FT26167ABCDE" });
+    const r = verificationGate({ ...good, senderName: undefined, receiverName: "  " }, { requestedReference: "FT26167ABCDE" });
     expect(r).toMatchObject({ ok: false, reason: "party" });
   });
 
   it("rejects known failure and non-final statuses", () => {
     for (const s of ["Failed", "FAILED", "Reversed", "Pending", "Cancelled", "Canceled", "Declined", "Expired", "Not completed"]) {
-      const r = verificationGate({ ...good, transactionStatus: s }, { bankId: "boa", requestedReference: "FT26167ABCDE" });
+      const r = verificationGate({ ...good, transactionStatus: s }, { requestedReference: "FT26167ABCDE" });
       expect(r, s).toMatchObject({ ok: false, reason: "status" });
     }
   });
 
   it("fails closed when the parser did not accept the response", () => {
-    expect(verificationGate({ ...good, verified: false }, { bankId: "boa" }).ok).toBe(false);
+    expect(verificationGate({ ...good, verified: false }, {}).ok).toBe(false);
   });
 });
 
@@ -122,7 +132,7 @@ describe("parser fixes", () => {
     const tb = `<html><title>telebirr receipt</title><table><tr><td>Payer Name</td><td>A</td></tr><tr><td>transaction status</td><td>Failed</td></tr><tr><td>Invoice No.</td><td>DET1234567</td></tr><tr><td>Settled Amount</td><td>500.00 Birr</td></tr></table></html>`;
     const p = new TelebirrParser().parse(tb, "text/html");
     expect(p.transactionStatus).toBe("Failed");
-    expect(verificationGate(p, { bankId: "telebirr", requestedReference: "DET1234567" })).toMatchObject({ ok: false, reason: "status" });
+    expect(verificationGate(p, { requestedReference: "DET1234567" })).toMatchObject({ ok: false, reason: "status" });
   });
 });
 
@@ -161,6 +171,8 @@ describe("Verifier applies the gate to every bank", () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response(body, { status: 200 })));
     const r = await v.verify({ bank: "boa", reference: "FT26167ABCDE", accountNumber: "1000054321" });
     expect(r.ok).toBe(false);
+    // The refusal travels as a code, so the verdict never reads the copy.
+    if (!r.ok && r.error.kind === "EXTRACTION_ERROR") expect(r.error.code).toBe("gate:reference");
   });
 
   it("eBirr parser alone: one field is not a receipt", () => {

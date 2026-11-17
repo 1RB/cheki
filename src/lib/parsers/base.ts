@@ -8,14 +8,16 @@
  * The base class handles:
  *   - HTTP fetching through safeFetch: host allowlist on every hop, manual
  *     redirects, a total deadline and a response size cap
- *   - Retries for network errors and 5xx only (at most 2 attempts in total);
- *     a 4xx, including 404, is a definite answer and is never retried
+ *   - Retries for network errors and 5xx only (at most 2 attempts in total,
+ *     or the parser's own maxAttempts); a 4xx, including 404, is a definite
+ *     answer and is never retried
  *   - Geo-blocked banks (Telebirr, M-Pesa): one plain attempt with a short
  *     timeout. They only answer Ethiopian IPs, and no header trick changes
  *     that, so we fail fast and hand the user the receipt link instead.
  */
 import type { ParsedReceipt, HttpResult, Result, ChekiError } from "../core/types";
 import { ok, err } from "../core/types";
+import { getBank } from "../manifest/loader";
 import { checkReference, type Checked } from "../security/reference";
 import { canonicalReference } from "../reference-case";
 import { assertAllowedUrl } from "../security/hosts";
@@ -46,11 +48,27 @@ export abstract class BaseParser {
   abstract readonly bankId: string;
   abstract readonly bankName: string;
   abstract readonly responseType: "pdf" | "html" | "json";
-  abstract readonly requiresAccount: boolean;
-  abstract readonly accountDigits?: number;
-  abstract readonly requiresPhone: boolean;
-  readonly sslVerify: boolean = true;
-  readonly geoBlocked: boolean = false;
+  /**
+   * The bank only answers Ethiopian IPs, so one plain request with a short
+   * timeout is made and the receipt link is handed to the user instead.
+   * Declared in src/lib/manifest/banks.json (geoBlocked): the manifest is
+   * the single source of truth for it, and this reads it, so there is no
+   * second copy to keep in step. A parser whose bank is not in the manifest
+   * (a test double) is not geo-blocked.
+   */
+  get geoBlocked(): boolean {
+    return getBank(this.bankId)?.geoBlocked === true;
+  }
+  /**
+   * This bank is looked up by an opaque share token, not by the transaction
+   * reference printed on the receipt, so the reference the receipt returns
+   * can never equal the requested one and the verification gate's reference
+   * check (src/lib/core/gate.ts) must be skipped for it. The parser is the
+   * only place that knows how its own bank is looked up, so the gate is
+   * passed this flag and fails closed when it is absent. The contract copy
+   * of the list is sdks/fixtures/api-contract.json (gate.opaqueLookupParsers).
+   */
+  readonly referenceIsOpaqueToken: boolean = false;
   /**
    * Read the body as bytes even when responseType is not "pdf" (a bank that
    * may answer with a PDF or with HTML, like CBE Birr). Such a bank gets the
@@ -64,6 +82,12 @@ export abstract class BaseParser {
    * overrides this.
    */
   protected readonly notFoundStatuses: readonly number[] = [404];
+  /**
+   * Attempts per receipt fetch. A bank that counts views per receipt
+   * (Siinqee: about five, by another verifier's report) sets 1, so a slow
+   * answer is never fetched a second time.
+   */
+  protected readonly maxAttempts: number = MAX_ATTEMPTS;
   /** Message for a not-found status; a generic one is used when unset. */
   protected readonly notFoundMessage?: string;
 
@@ -126,11 +150,12 @@ export abstract class BaseParser {
     }
 
     let last: Attempt | undefined;
-    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    const attempts = Math.max(1, Math.min(this.maxAttempts, MAX_ATTEMPTS));
+    for (let attempt = 1; attempt <= attempts; attempt++) {
       last = this.geoBlocked ? await this.fetchGeoBlocked(url) : await this.doFetch(url);
       // A geo-block does not lift on a retry: one attempt, then the fallback link.
       if (last.result.ok || !last.retryable || this.geoBlocked) break;
-      if (attempt < MAX_ATTEMPTS) await sleep(RETRY_BACKOFF_MS);
+      if (attempt < attempts) await sleep(RETRY_BACKOFF_MS);
     }
     const result = last!.result;
 
@@ -153,6 +178,8 @@ export abstract class BaseParser {
           kind: "EXTRACTION_ERROR" as const,
           bank: this.bankName,
           message: notFoundMessage ?? this.notFoundMessage ?? "Receipt not found. Check the reference number.",
+          // The bank says it has no such receipt: a state, not a wording.
+          code: "notFound" as const,
         }),
         retryable: false,
       };

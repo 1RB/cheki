@@ -1,6 +1,6 @@
 # cheki Python SDK
 
-Python client for the [cheki](https://cheki.et) receipt verification API: verify Ethiopian bank and wallet receipts (live: CBE, Telebirr, BOA, M-Pesa (beta), Dashen, Awash, Siinqee, eBirr, ZamZam (beta), CBE Birr (beta), Bunna (beta); `get_banks()` lists the current set). Python 3.10+.
+Python client for the [cheki](https://cheki.et) receipt verification API: verify Ethiopian bank and wallet receipts (live: CBE, Telebirr, BOA, M-Pesa (beta), Dashen, Awash, Siinqee (beta), eBirr, ZamZam (beta), CBE Birr (beta), Bunna (beta), Wegagen (beta); `get_banks()` lists the current set). Python 3.10+.
 
 From the hosted API at cheki.et, Telebirr and M-Pesa come back as a 502 with `fallback_url` (the official receipt page), because they block cloud servers. Send the user there to check the amount and receiver; direct checks return once a local relay is live.
 
@@ -66,7 +66,7 @@ A failed item has `http_status` and `error`, plus `fallback_url` when the server
 
 ```python
 for bank in cheki.get_banks():
-    print(bank.id, bank.name, bank.type, bank.status, bank.beta)   # bank.code is an alias of bank.id; beta: M-Pesa, ZamZam
+    print(bank.id, bank.name, bank.type, bank.status, bank.beta)   # bank.code is an alias of bank.id; beta: M-Pesa, ZamZam, CBE Birr, Bunna, Wegagen
 
 health = cheki.get_health()   # cached up to 5 minutes server-side
 print(health.status, health.checked_at, health.cached)
@@ -111,7 +111,7 @@ cheki.get_receipt_url("cbe", "FT26SAMPLE01", account_number="1000000006171")  # 
   - `GET` (banks, health): a network error or a 5xx.
   - verify: a network error, or a 429/503 whose `Retry-After` is at most 60 s.
   - batch: only a 429/503 with a short `Retry-After`. Never a network error or a 5xx: a 504 means the batch ran out of server time, and replaying it would hit every bank again and charge every receipt against the rate limit.
-  - Never: timeouts, other 4xx, a geo-blocked bank (502 with `fallbackUrl`), or any error the server marks `retryable: false`. A 500/502/504 on verify is not retried either: the server already ran the check, with its own 2 attempts per bank.
+  - Never: timeouts, other 4xx, a geo-blocked bank (502 with `fallbackUrl`). A 500/502/504 on verify is not retried either: the server already ran the check, with its own 2 attempts per bank.
 - The retry waits for `Retry-After`; a network-error retry waits 1-2 s. Timeouts are never retried (the server may still be working on the request).
 - The server tries each bank at most 2 times, so one call reaches the bank at most **4 times**.
 - `ChekiClient(session=...)` reuses your `requests.Session` without changing it: the `User-Agent` and `Authorization` headers go on each request, so your API key is never sent to other hosts that session talks to, and `close()` leaves your session open.
@@ -132,7 +132,7 @@ It exits 0 only when the bank confirmed the receipt. `--api` is accepted and ign
 
 ## Direct verification (deprecated)
 
-`from cheki import verify` needs `pip install 'cheki[direct]'` (without it, it raises `DirectModeUnavailableError`). It fetches bank endpoints from your own machine with Python parsers that have drifted from the server's: they lack its host allowlist and ReDoS fixes and do not support eBirr/Siinqee. CBE (Receipt ID first, FT reference + account for older receipts) and Dashen (receipts.dashenbanksc.com) follow the current formats. It is kept only so existing code keeps working:
+`from cheki import verify` needs `pip install 'cheki[direct]'` (without it, it raises `DirectModeUnavailableError`). It fetches bank endpoints from your own machine with Python parsers that have drifted from the server's: they lack its host allowlist and ReDoS fixes and do not support eBirr or Siinqee. CBE (Receipt ID first, FT reference + account for older receipts) and Dashen (receipts.dashenbanksc.com) follow the current formats. It is kept only so existing code keeps working:
 
 - it emits a `DeprecationWarning`;
 - it rejects references that are not plain receipt numbers (no `/ ? # & %`, `..` or spaces);

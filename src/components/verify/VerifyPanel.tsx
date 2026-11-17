@@ -26,15 +26,14 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ClipboardEvent 
 import { verificationState, type VerifyResult } from "@/lib/banks";
 import { useTranslation } from "@/lib/i18n/use-translation";
 import { detectBankFromUrl, isUrl } from "@/lib/adapters/url-detector";
-import { isBoaQrPayload } from "@/lib/qr/decode";
-import { isTelebirrQrPayload, parseTelebirrQr } from "@/lib/qr/telebirr";
-import { isDashenQrPayload, parseDashenQr } from "@/lib/qr/dashen";
-import { accountFieldKeys, browserReceiptUrl, detectInput, liveBanks, shouldShowCanonical, type Detection } from "@/lib/verify/detect";
+import { isQrPayload, readQrPayload } from "@/lib/qr/chain";
+import { accountFieldKeys, browserReceiptUrl, detectInput, extraFieldProblem, liveBanks, shouldShowCanonical, type Detection } from "@/lib/verify/detect";
 import { postJson } from "@/lib/verify/client";
 import { presentVerdict, type FraudCheck } from "@/lib/verify/verdict";
 import { addVerified, clearRecent, findPrevious, loadRecent, removeRecent, type RecentCheck } from "@/lib/verify/history";
-import { secondaryFormats } from "@/lib/manifest/formats";
+import { secondaryFormats, DEFAULT_ACCOUNT_DIGITS } from "@/lib/manifest/formats";
 import { canonicalReference, referenceLooksOff } from "@/lib/reference-case";
+import { canonicalBankCode } from "@/lib/bank-ids";
 import { useReceiptDetection } from "./use-receipt-detection";
 import { VerifyInput } from "./VerifyInput";
 import { VerdictCard } from "./VerdictCard";
@@ -117,7 +116,7 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
    */
   const typedRef = useRef("");
 
-  const { detection } = useReceiptDetection(input, { lockedBank, overrideBank, extra });
+  const detection = useReceiptDetection(input, { lockedBank, overrideBank });
   const lockedName = lockedBank ? liveBanks.find((b) => b.code === lockedBank)?.shortName : undefined;
 
   // A mirror of `history` for async handlers (read only in callbacks).
@@ -207,17 +206,26 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
         return false;
       }
       if (opts.force) setForced(true);
-      if (d.needsAccount || d.needsPhone) {
-        const digits = extraValue.replace(/\D/g, "");
-        const phoneOk = /^(251|0)?[79]\d{8}$/.test(digits);
-        const accountOk = digits.length >= (d.accountDigits ?? 5);
-        if (d.needsPhone ? !phoneOk : !accountOk) {
-          setExtraError(d.needsPhone ? t("verify.extra.phoneMissing") : t(accountFieldKeys(d).missing, { digits: d.accountDigits ?? 5 }));
-          extraRef.current?.focus();
-          return false;
-        }
+      // One rule for what the extra field must hold (src/lib/verify/detect.ts),
+      // the same one the field's own validation uses.
+      const problem = extraFieldProblem(d, extraValue);
+      if (problem) {
+        setExtraError(problem === "phone" ? t("verify.extra.phoneMissing") : t(accountFieldKeys(d).missing, { digits: d.accountDigits ?? DEFAULT_ACCOUNT_DIGITS }));
+        extraRef.current?.focus();
+        return false;
       }
 
+      // One extra field, ever: this ternary sends phoneNumber or
+      // accountNumber, never both, while the API accepts either or both.
+      // tests/manifest/extra-field.test.ts pins that no bank and no format
+      // asks for both: detect.ts derives needsAccount/needsPhone from one
+      // matched format's inputs or the bank's own flags, never a mix, so
+      // those assertions cover every detection this panel can show.
+      // A BOA QR is checked as BOA from any page: detect reports the locked
+      // bank (locked ?? boa) so this panel's lock guard lets the input
+      // through, but the payload is BOA's ciphertext and only BOA can read
+      // it. d.bank.code here would post the ciphertext to the locked bank,
+      // which answers "reference too long".
       const body: Record<string, unknown> =
         d.kind === "boaQr"
           ? { bank: "boa", qrData: d.value }
@@ -262,7 +270,7 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
       const nextHistory = addVerified(historyRef.current, result, { bank: bankCode, ref: savedRef }, checkedAt);
       historyRef.current = nextHistory;
       setHistory(nextHistory);
-      const enteredRef = d.kind === "url" ? d.urlReference : d.kind === "reference" || d.kind === "telebirrQr" || d.kind === "dashenQr" ? d.value : undefined;
+      const enteredRef = d.kind === "url" ? d.urlReference : d.kind === "reference" || d.kind === "telebirrQr" || d.kind === "dashenQr" || d.kind === "wegagenQr" ? d.value : undefined;
       const share: ShareInput = { input: d.value, bank: bankCode, ...(d.needsAccount || d.needsPhone ? { extra: extraValue } : {}) };
       // What the user typed, if it is still the reference being checked (the
       // field may have been changed since by a scan, a recent check or a link).
@@ -289,22 +297,23 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
   const acceptScanned = useCallback(
     async (raw: string, fromQr = false) => {
       const text = raw.trim();
-      const telebirr = parseTelebirrQr(text);
-      if (telebirr.ok && (!lockedBank || lockedBank === "telebirr")) {
-        setInput(telebirr.reference);
+      // The shared chain (src/lib/qr/chain.ts) decides what this payload is,
+      // in the order the detector and the verifier read it too.
+      const qr = readQrPayload(text);
+      if (qr.format === "telebirr" && (!lockedBank || lockedBank === "telebirr")) {
+        setInput(qr.reference);
         if (!lockedBank) setOverrideBank("telebirr");
-        await runCheck(telebirr.reference, { override: "telebirr" });
+        await runCheck(qr.reference, { override: "telebirr" });
         setNotice(t("verify.qr.telebirr"));
         return;
       }
       // The token is kept on another bank's page on purpose: detectInput needs
       // it to name Dashen and report the mismatch, rather than sending the
       // FT Ref to the bank the page is locked to.
-      const dashen = parseDashenQr(text);
-      if (dashen.ok && (!lockedBank || lockedBank === "dashen")) {
-        setInput(dashen.reference);
+      if (qr.format === "dashen" && (!lockedBank || lockedBank === "dashen")) {
+        setInput(qr.reference);
         if (!lockedBank) setOverrideBank("dashen");
-        await runCheck(dashen.reference, { override: "dashen" });
+        await runCheck(qr.reference, { override: "dashen" });
         setNotice(t("verify.qr.dashen"));
         return;
       }
@@ -345,7 +354,7 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
         setPhase("idle");
         if (parsed?.reference) {
           setInput(parsed.reference);
-          if (!lockedBank && parsed.bank) setOverrideBank(parsed.bank === "cbe-new" ? "cbe" : parsed.bank);
+          if (!lockedBank && parsed.bank) setOverrideBank(canonicalBankCode(parsed.bank));
           setNotice(t("verify.photo.read"));
           focusInput();
         } else {
@@ -368,7 +377,10 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
       return;
     }
     const text = e.clipboardData?.getData("text")?.trim() ?? "";
-    if (text && (isUrl(text) || isBoaQrPayload(text) || isTelebirrQrPayload(text) || isDashenQrPayload(text))) {
+    // A receipt link or a QR this chain reads is checked straight away; the
+    // chain decides which formats those are, so paste cannot drift from the
+    // camera and the detector.
+    if (text && (isUrl(text) || isQrPayload(text))) {
       e.preventDefault();
       acceptScanned(text);
     }
@@ -391,7 +403,7 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
         return;
       }
       const text = e.clipboardData?.getData("text")?.trim() ?? "";
-      if (text && (isUrl(text) || isBoaQrPayload(text) || isTelebirrQrPayload(text) || isDashenQrPayload(text))) {
+      if (text && (isUrl(text) || isQrPayload(text))) {
         e.preventDefault();
         latest.current.acceptScanned(text);
       }

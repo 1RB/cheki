@@ -175,7 +175,7 @@ async function main() {
   console.log("Parser result:", doRedact ? redact({ ...parsed }) : parsed);
   if (parsed.verified) {
     // The Verifier only reports verified when the shared gate also passes.
-    const gate = verificationGate(parsed, { bankId: entry.id, requestedReference: reference });
+    const gate = verificationGate(parsed, { referenceIsOpaqueToken: parser.referenceIsOpaqueToken, requestedReference: reference });
     console.log("Verification gate:", gate.ok ? "passes" : `fails: ${gateFailureMessage(gate)}`);
   }
 

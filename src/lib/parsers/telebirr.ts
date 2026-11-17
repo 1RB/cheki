@@ -146,10 +146,7 @@ export class TelebirrParser extends BaseParser {
   readonly bankId = "telebirr";
   readonly bankName = "Telebirr";
   readonly responseType = "html" as const;
-  readonly requiresAccount = false;
-  readonly accountDigits?: number = undefined;
-  readonly requiresPhone = false;
-  readonly geoBlocked = true;
+  // geoBlocked is read from the manifest (src/lib/manifest/banks.json).
 
   buildUrl(ref: string): string {
     return `https://transactioninfo.ethiotelecom.et/receipt/${encodeURIComponent(ref)}`;

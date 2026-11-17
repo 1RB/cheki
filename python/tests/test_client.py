@@ -490,3 +490,27 @@ def test_health_checks_is_an_alias_of_banks():
     assert health.cached is True
     assert health.checks is health.banks
     assert health.banks[0].id == "cbe"
+
+
+def test_is_verified_is_one_rule_over_every_flag_combination():
+    """``is_verified`` is the API's verificationState() rule, in all 16 combinations.
+
+    The same rule is implemented in the CLI, the batch count and every SDK
+    (each package re-reads it from JSON, none can import another's copy), so
+    each suite states it independently and runs it over the whole matrix.
+    """
+    bad = []
+    for success in (True, False):
+        for verified in (True, False):
+            for decoded_only in (True, False):
+                for parsed in (True, False):
+                    r = ClientVerifyResult(
+                        success=success,
+                        verified=verified,
+                        decoded_only=decoded_only,
+                        parsed=parsed,
+                    )
+                    want = success and verified and not decoded_only and not parsed
+                    if r.is_verified != want:
+                        bad.append((success, verified, decoded_only, parsed, r.is_verified))
+    assert bad == []

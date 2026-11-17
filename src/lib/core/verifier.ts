@@ -3,8 +3,10 @@
  *
  * Flow:
  *   1. Resolve the input: a QR payload, a receipt link or a reference
- *      becomes (bank, reference, account, phone). Links are only used to
- *      extract those parts; the bank URL is always rebuilt from a fixed host.
+ *      becomes (bank, reference, account, phone). That rewrite lives in
+ *      src/lib/reference-input.ts, shared with the cache key so both name
+ *      the same fetch. Links are only used to extract those parts; the bank
+ *      URL is always rebuilt from a fixed host.
  *   2. Gate the bank: it exists, is live, has a parser, and the account or
  *      phone it needs is present and well formed.
  *   3. Validate the reference (no path/query characters, strict charset).
@@ -24,10 +26,11 @@
  * reference is decoded first and then looked up like a typed one.
  */
 import type { Result, Receipt, VerifyRequest, ChekiError, ParsedReceipt, BankManifestEntry } from "./types";
-import { ok, err } from "./types";
+import { ok, err, isNotFoundCode } from "./types";
 import { getParser, type RegisteredParser } from "../parsers/registry";
 import { getBank, suggestBank } from "../manifest/loader";
-import { detectBankFromUrl, isUrl, looksLikeUrl } from "../adapters/url-detector";
+import { readQrPayload } from "../qr/chain";
+import { resolveReference, type ResolvedReference } from "../reference-input";
 import { CBEParser } from "../parsers/cbe";
 import { DashenParser, DASHEN_NOT_FOUND } from "../parsers/dashen";
 import { BOAParser } from "../parsers/boa";
@@ -36,16 +39,17 @@ import { CBEBirrParser } from "../parsers/cbebirr";
 import { MpesaParser } from "../parsers/mpesa";
 import { ZamZamParser } from "../parsers/zamzam";
 import { BunnaParser } from "../parsers/bunna";
-import { verificationGate, gateFailureMessage } from "./gate";
+import { WegagenParser } from "../parsers/wegagen";
+import { SiinqeeParser } from "../parsers/siinqee";
+import { verificationGate, gateFailureMessage, gateErrorCode } from "./gate";
 import { checkAccountSuffix, checkPhone, checkReference } from "../security/reference";
-import { parseTelebirrQr } from "../qr/telebirr";
-import { parseDashenQr } from "../qr/dashen";
-import { selectFormat, formatNeeds, formatAccountDigits, fillTemplate } from "../manifest/formats";
-import { canonicalReference } from "../reference-case";
+import { selectFormat, fillTemplate, extraFieldNeeds, accountDigitsFor, DEFAULT_ACCOUNT_DIGITS } from "../manifest/formats";
 
 /** Receipts verified at the same time in one batch. */
 export const BATCH_CONCURRENCY = 5;
 const MAX_QR_LENGTH = 4096;
+/** What a QR-format receipt is called in "This QR code is from a X receipt". */
+const QR_RECEIPT_NAME = { telebirr: "Telebirr", dashen: "Dashen", wegagen: "Wegagen" } as const;
 
 /** BOA has no receipt under this reference + account pair (typed input). */
 export const BOA_NOT_FOUND =
@@ -81,6 +85,18 @@ function publicFields(parsed: ParsedReceipt): Omit<ParsedReceipt, "raw" | "verif
 export const CBEBIRR_EMPTY_SHELL_MESSAGE =
   "CBE Birr sent back an empty receipt page, so this could not be confirmed. The receipt number and payer phone number may not match: check both, or open the receipt on CBE Birr's own site.";
 
+/**
+ * A receipt link that only opens on Ethiopian networks (eBirr's
+ * transactioninfo.ebirr.com is not in public DNS). Ends with a colon:
+ * errorToMessage appends the link.
+ */
+export const LOCAL_ONLY_MESSAGE =
+  "This receipt link only opens on Ethiopian networks, so cheki's server can't check it. Open it on a phone on an Ethiopian network and compare the amount, the receiver and the date:";
+
+/** Siinqee's page answered, but not with a successful receipt for this reference. */
+export const SIINQEE_NOT_CONFIRMED =
+  "Siinqee Bank's page did not show a successful transaction for this reference, so it cannot be confirmed as a receipt. Check the reference (letter case matters) or ask the sender for the receipt link.";
+
 export class Verifier {
   /**
    * Verify a single receipt. Never throws: unexpected failures become
@@ -115,10 +131,13 @@ export class Verifier {
   // ─── Input resolution ─────────────────────────────────────────────
 
   /**
-   * `fromLink`: the reference was read out of a receipt link or QR, so it is
-   * case-normalised but never compacted (see canonicalReference).
+   * Turn the request into what the bank is asked. `request.fromLink` (set
+   * only by the QR branches below) says the reference was printed rather
+   * than typed, so it is case-normalised but never compacted; see
+   * src/lib/reference-input.ts, which is the one place that reads a link
+   * and the one place that canonicalises a reference.
    */
-  private async resolve(request: VerifyRequest, startTime: number, depth: number, fromLink = false): Promise<Result<Receipt, ChekiError>> {
+  private async resolve(request: VerifyRequest, startTime: number, depth: number): Promise<Result<Receipt, ChekiError>> {
     if (depth > 2) {
       return err({ kind: "MISSING_INPUT", field: "reference", message: "Could not resolve this receipt." });
     }
@@ -141,113 +160,105 @@ export class Verifier {
       if (qrData.length > MAX_QR_LENGTH) {
         return err({ kind: "MISSING_INPUT", field: "qrData", message: "QR data is too long." });
       }
-      // A Telebirr receipt QR (CRC-checked, so it can't be mistaken for a
-      // BOA ciphertext). Only the transaction number inside is used.
-      const telebirr = parseTelebirrQr(qrData);
-      if (telebirr.ok) {
+      // A QR that names its own bank is checked with the bank it names. The
+      // chain (src/lib/qr/chain.ts) decides which format this is and in what
+      // order the formats are tried, so the detector, the panel and this
+      // branch cannot disagree about it. A caller that named a different
+      // bank is told which bank the QR is from, never re-routed to it.
+      const qr = readQrPayload(qrData);
+      if (qr.format && qr.format !== "boa") {
         const named = (bank || "").trim().toLowerCase();
-        if (named && named !== "telebirr") {
+        if (named && named !== qr.format) {
           return err({
             kind: "MISSING_INPUT",
             field: "qrData",
-            message: "This QR code is from a Telebirr receipt. Check it with bank \"telebirr\".",
+            message: `This QR code is from a ${QR_RECEIPT_NAME[qr.format]} receipt. Check it with bank "${qr.format}".`,
           });
         }
-        return this.resolve({ bank: "telebirr", reference: telebirr.reference }, startTime, depth + 1, true);
-      }
-      // A Dashen Super App receipt QR: the FT Ref XOR a fixed key. The endpoint
-      // refuses the raw token (HTTP 401), so the reference must be decoded
-      // before any URL is built. The prefix is unambiguous, so it is matched
-      // before the BOA and URL branches below.
-      const dashen = parseDashenQr(qrData);
-      if (dashen.ok) {
-        const named = (bank || "").trim().toLowerCase();
-        if (named && named !== "dashen") {
-          return err({
-            kind: "MISSING_INPUT",
-            field: "qrData",
-            message: "This QR code is from a Dashen receipt. Check it with bank \"dashen\".",
-          });
-        }
-        return this.resolve({ bank: "dashen", reference: dashen.reference }, startTime, depth + 1, true);
+        // A Telebirr or Dashen QR carries only the number the bank looks the
+        // receipt up by (CRC-checked for Telebirr, XOR a fixed key for Dashen,
+        // which the endpoint refuses raw with HTTP 401); a Wegagen QR carries
+        // the 24-character share id. Either way only that value is used, and
+        // it is checked exactly like a typed one.
+        return this.resolve({ bank: qr.format, reference: qr.reference, fromLink: true }, startTime, depth + 1);
       }
       if ((bank || "").toLowerCase() === "boa") {
         return this.verifyBoaQr(qrData, startTime, depth);
       }
-      if (looksLikeUrl(qrData)) {
-        // Only a receipt link cheki recognises. An unknown URL is rejected,
-        // never fetched or used as a reference.
-        const detected = isUrl(qrData) ? detectBankFromUrl(qrData) : null;
-        if (!detected) {
+      // A receipt link inside the QR, or a plain reference the QR printed.
+      // Either way it is the QR that typed it: case-normalised, never
+      // compacted. An unknown URL is rejected here, never fetched and never
+      // used as a reference.
+      const qrRead = resolveReference({ bank: bank ?? "", reference: qrData, accountNumber, phoneNumber, fromLink: true });
+      if (qrRead.kind === "unrecognised-link") {
+        return err({
+          kind: "MISSING_INPUT",
+          field: "qrData",
+          message: "This QR code is not a receipt link cheki recognises.",
+        });
+      }
+      // A link only Ethiopian networks can open (eBirr's transactioninfo
+      // host) arrives here too, when the QR is a picture of that link:
+      // nothing is fetched, the rebuilt link goes back.
+      if (qrRead.kind === "link" && qrRead.link.localOnlyUrl) {
+        return this.localOnly(qrRead.link.bank, qrRead.link.localOnlyUrl);
+      }
+      // A CBE Birr receipt QR is its own receipt link: the receipt number
+      // and the payer phone it was issued for (TID + PH). Like a Telebirr
+      // QR it names its bank, and the pair in it wins over a typed phone,
+      // since CBE Birr only answers for the pair that belongs together.
+      if (qrRead.kind === "link" && qrRead.link.bank === "cbebirr") {
+        const named = (bank || "").trim().toLowerCase();
+        if (named && named !== "cbebirr") {
           return err({
             kind: "MISSING_INPUT",
             field: "qrData",
-            message: "This QR code is not a receipt link cheki recognises.",
+            message: "This QR code is from a CBE Birr receipt. Check it with bank \"cbebirr\".",
           });
         }
-        // A CBE Birr receipt QR is its own receipt link: the receipt number
-        // and the payer phone it was issued for (TID + PH). Like a Telebirr
-        // QR it names its bank, and the pair in it wins over a typed phone,
-        // since CBE Birr only answers for the pair that belongs together.
-        if (detected.bank === "cbebirr") {
-          const named = (bank || "").trim().toLowerCase();
-          if (named && named !== "cbebirr") {
-            return err({
-              kind: "MISSING_INPUT",
-              field: "qrData",
-              message: "This QR code is from a CBE Birr receipt. Check it with bank \"cbebirr\".",
-            });
-          }
-          return this.resolve(
-            { bank: "cbebirr", reference: detected.reference, phoneNumber: detected.phoneNumber ?? phoneNumber },
-            startTime,
-            depth + 1,
-            true
-          );
-        }
-        return this.resolve({ bank: bank ?? "", reference: qrData, accountNumber, phoneNumber }, startTime, depth + 1);
+        return this.verifyReference(
+          { bank: "cbebirr", reference: qrRead.input.reference, phoneNumber: qrRead.link.phoneNumber ?? phoneNumber, fromLink: true },
+          startTime
+        );
       }
-      // Plain reference inside the QR, for the bank the caller named.
-      return this.resolve({ bank: bank ?? "", reference: qrData, accountNumber, phoneNumber }, startTime, depth + 1, true);
+      return this.verifyReference(qrRead.input, startTime);
     }
 
-    let resolvedBank = bank;
-    let resolvedRef = reference!;
-    let resolvedAccount = accountNumber;
-    let resolvedPhone = phoneNumber;
-    let resolvedFromLink = fromLink;
-
-    // Receipt links. Anything with URL syntax must be a proper http(s) link
-    // to a known bank host; "http:/x", "http:evil.com", "//x" are rejected.
-    if (looksLikeUrl(resolvedRef)) {
-      const detected = isUrl(resolvedRef) ? detectBankFromUrl(resolvedRef) : null;
-      if (!detected) {
-        return err({
-          kind: "MISSING_INPUT",
-          field: "reference",
-          message: "Could not detect bank from URL. Please paste the reference number manually.",
-        });
-      }
-      resolvedBank = detected.bank;
-      resolvedRef = detected.reference;
-      resolvedFromLink = true;
-      if (detected.accountNumber && !resolvedAccount) resolvedAccount = detected.accountNumber;
-      if (detected.phoneNumber && !resolvedPhone) resolvedPhone = detected.phoneNumber;
+    // A receipt link, or a typed reference for the bank the caller named.
+    const read = resolveReference({ bank, reference, accountNumber, phoneNumber, fromLink: request.fromLink });
+    if (read.kind === "unrecognised-link") {
+      return err({
+        kind: "MISSING_INPUT",
+        field: "reference",
+        message: "Could not detect bank from URL. Please paste the reference number manually.",
+      });
     }
+    // A link only Ethiopian networks can open (eBirr's transactioninfo
+    // host): nothing is fetched. The link, rebuilt on its fixed host, goes
+    // back with the same "not checked" answer the geo-blocked banks give.
+    if (read.kind === "link" && read.link.localOnlyUrl) {
+      return this.localOnly(read.link.bank, read.link.localOnlyUrl);
+    }
+    return this.verifyReference(read.input, startTime);
+  }
 
-    return this.verifyReference(
-      { bank: resolvedBank, reference: resolvedRef, accountNumber: resolvedAccount, phoneNumber: resolvedPhone, fromLink: resolvedFromLink },
-      startTime
-    );
+  /** A receipt link cheki's server cannot open at all: hand the link back, never a verdict. */
+  private localOnly(bankId: string, url: string): Result<Receipt, ChekiError> {
+    const entry = getBank(bankId);
+    if (!entry || entry.status !== "live") return err({ kind: "BANK_NOT_SUPPORTED", bank: bankId });
+    return err({ kind: "ENDPOINT_ERROR", bank: entry.name, message: LOCAL_ONLY_MESSAGE, fallbackUrl: url });
   }
 
   // ─── Bank + input gates, fetch, parse, verification gate ─────────────
 
-  private async verifyReference(
-    rawInput: { bank?: string; reference: string; accountNumber?: string; phoneNumber?: string; fromLink?: boolean },
-    startTime: number
-  ): Promise<Result<Receipt, ChekiError>> {
-    const bank = rawInput.bank;
+  /**
+   * Ask the bank for one receipt. `input` is already resolved: the reference
+   * is in its bank's canonical form (src/lib/reference-input.ts), so what is
+   * left here is the gates, the fetch, the parse and the verification gate.
+   * `input.fromLink` is not read again; it was applied to the reference.
+   */
+  private async verifyReference(input: ResolvedReference, startTime: number): Promise<Result<Receipt, ChekiError>> {
+    const bank = input.bank;
     if (!bank) {
       return err({ kind: "MISSING_INPUT", field: "bank", message: "Bank is required." });
     }
@@ -276,17 +287,6 @@ export class Verifier {
       });
     }
 
-    // The bank's canonical form of the reference: "ft26sample01" and a typed
-    // "FT26 SAMPLE01" are FT26SAMPLE01 for a bank whose references are
-    // uppercase-only. A reference read out of a link or QR is only uppercased,
-    // never compacted. Case-sensitive tokens (CBE Receipt IDs, Awash and eBirr
-    // share tokens) are only trimmed. Done before the format is picked, so a
-    // spaced FT reference still goes to the FT format.
-    const input = {
-      ...rawInput,
-      reference: canonicalReference(manifestEntry.id, rawInput.reference, { compact: !rawInput.fromLink }),
-    };
-
     // Pick the receipt format from the input's shape (current formats first).
     // This never costs a bank request: exactly one format is fetched.
     const selection = selectFormat(manifestEntry, input);
@@ -304,8 +304,7 @@ export class Verifier {
       });
     }
 
-    const needsAccount = format ? formatNeeds(format, "account") : manifestEntry.requiresAccount;
-    const needsPhone = format ? formatNeeds(format, "phone") : Boolean(parser.requiresPhone || manifestEntry.requiresPhone);
+    const { needsAccount, needsPhone } = extraFieldNeeds(format, manifestEntry);
 
     // Account number (only the suffix the bank needs, digits only)
     let account: string | undefined;
@@ -317,7 +316,7 @@ export class Verifier {
           message: `${manifestEntry.name} requires the ${lowerFirst(manifestEntry.accountLabel || "account number")}.`,
         });
       }
-      const digits = formatAccountDigits(format) ?? manifestEntry.accountDigits ?? parser.accountDigits ?? 1;
+      const digits = accountDigitsFor(format, manifestEntry) ?? DEFAULT_ACCOUNT_DIGITS;
       const checked = checkAccountSuffix(input.accountNumber, digits);
       if (!checked.ok) return err({ kind: "MISSING_INPUT", field: "accountNumber", message: checked.message });
       account = checked.value;
@@ -374,13 +373,20 @@ export class Verifier {
     }
     const parsed = parsedResult.value;
 
-    // The gate is keyed by the parser (format), e.g. cbe-new looks receipts up by an opaque Receipt ID.
-    const gate = verificationGate(parsed, { bankId: parser.bankId, requestedReference: ref });
+    // The gate's reference check is skipped only when the parser says this
+    // bank is looked up by an opaque token (e.g. cbe-new's Receipt ID).
+    const gate = verificationGate(parsed, {
+      referenceIsOpaqueToken: parser.referenceIsOpaqueToken,
+      requestedReference: ref,
+    });
     if (!gate.ok) {
       return err({
         kind: "EXTRACTION_ERROR",
         bank: manifestEntry.name,
         message: gateFailureMessage(gate),
+        code: gateErrorCode(gate.reason),
+        // The verdict card shows the bank's own status word ("Failed", "Pending").
+        ...(gate.reason === "status" && gate.detail ? { detail: gate.detail } : {}),
         ...(/^https:\/\//i.test(checkedUrl) ? { checkedUrl } : {}),
       });
     }
@@ -433,6 +439,7 @@ export class Verifier {
             kind: "EXTRACTION_ERROR",
             bank: manifestEntry.name,
             message: `Could not parse the receipt PDF. ${pdf.hint}`,
+            code: "unreadable",
           });
         }
         return ok(parsed);
@@ -442,6 +449,7 @@ export class Verifier {
           kind: "EXTRACTION_ERROR",
           bank: manifestEntry.name,
           message: `The bank did not return a valid receipt PDF. ${pdf.hint}`,
+          code: "unreadable",
         });
       }
     }
@@ -471,6 +479,7 @@ export class Verifier {
           kind: "EXTRACTION_ERROR",
           bank: manifestEntry.name,
           message: "Could not read the CBE Birr receipt. Check the receipt number and the payer phone number.",
+          code: "unreadable",
         });
       }
       return ok(parsed);
@@ -488,13 +497,16 @@ export class Verifier {
             : envelope.reason === "too-large"
               ? "M-Pesa returned a receipt larger than cheki accepts."
               : "M-Pesa did not return a valid receipt.";
-        return err({ kind: "EXTRACTION_ERROR", bank: manifestEntry.name, message });
+        // The upstream has no such receipt; anything else is an answer cheki
+        // could not read.
+        return err({ kind: "EXTRACTION_ERROR", bank: manifestEntry.name, message, code: envelope.reason === "upstream-error" ? "notFound" : "unreadable" });
       }
       if (!parsed.verified) {
         return err({
           kind: "EXTRACTION_ERROR",
           bank: manifestEntry.name,
           message: "Could not read the M-Pesa receipt PDF. Check the transaction number.",
+          code: "unreadable",
         });
       }
       return ok(parsed);
@@ -512,6 +524,7 @@ export class Verifier {
           message: notFound
             ? "ZamZam Bank has no receipt with this id. Check the number at the end of the receipt link."
             : "Could not read the ZamZam Bank receipt.",
+          code: notFound ? "notFound" : "unreadable",
         });
       }
       return ok(parsed);
@@ -529,6 +542,51 @@ export class Verifier {
           message: notFound
             ? "Bunna Bank did not return a receipt for this link. Check that the whole link was copied, or scan the receipt QR."
             : "Could not read the Bunna Bank receipt.",
+          code: notFound ? "notFound" : "unreadable",
+        });
+      }
+      return ok(parsed);
+    }
+
+    // Wegagen: an unknown share id is HTTP 200 with the body `Transaction not
+    // found in Daily or History`. The share id is the printed reference plus
+    // three more fields, so it can never equal the record's own reference
+    // (the gate treats it as an opaque token); parseRecord checks the prefix.
+    if (id === "wegagen") {
+      const { parsed, notFound } = WegagenParser.parseRecord(data, requestedReference);
+      if (!parsed.verified) {
+        return err({
+          kind: "EXTRACTION_ERROR",
+          bank: manifestEntry.name,
+          message: notFound
+            ? "Wegagen Bank has no transaction with this share id. Check the 24 characters after ?id= in the share link."
+            : "Could not read the Wegagen Bank receipt.",
+          code: notFound ? "notFound" : "unreadable",
+        });
+      }
+      return ok(parsed);
+    }
+
+    // Siinqee: an HTML page (or a PDF) read by its labels. Verified only with
+    // "Transaction is successful" and the exact, case-sensitive reference
+    // that was asked for. What Siinqee answers for an unknown reference has
+    // not been seen, so anything else is "not confirmed", never "not found".
+    if (id === "siinqee") {
+      const { parsed, miss } = await SiinqeeParser.parseResponse(data, requestedReference);
+      if (!parsed.verified) {
+        return err({
+          kind: "EXTRACTION_ERROR",
+          bank: manifestEntry.name,
+          message:
+            miss === "reference"
+              ? "The bank returned a receipt with a different reference than the one you entered."
+              : miss === "pdf"
+                ? "Could not read the Siinqee Bank receipt PDF, so it cannot be confirmed as a receipt."
+                : SIINQEE_NOT_CONFIRMED,
+          // The card reads the code, never the wording: a returned receipt
+          // under another reference is a mismatch; anything else Siinqee did
+          // not confirm is amber "not confirmed", never "no such receipt".
+          code: miss === "reference" ? "gate:reference" : "unconfirmed",
         });
       }
       return ok(parsed);
@@ -542,7 +600,7 @@ export class Verifier {
       const { parsed, notFound } = (parser as BOAParser).parseLookup(data, contentType);
       if (!parsed.verified) {
         return notFound
-          ? err({ kind: "EXTRACTION_ERROR", bank: manifestEntry.name, message: BOA_NOT_FOUND })
+          ? err({ kind: "EXTRACTION_ERROR", bank: manifestEntry.name, message: BOA_NOT_FOUND, code: "notFound:otherAccount" })
           : err({ kind: "ENDPOINT_ERROR", bank: manifestEntry.name, message: BOA_UNREADABLE });
       }
       return ok(parsed);
@@ -552,10 +610,12 @@ export class Verifier {
       const parsed = parser.parse(data, contentType);
       if (!parsed.verified) {
         const text = typeof data === "string" ? data : data.toString("utf8");
+        const missing = /transaction not found/i.test(text.slice(0, 4096));
         return err({
           kind: "EXTRACTION_ERROR",
           bank: manifestEntry.name,
-          message: /transaction not found/i.test(text.slice(0, 4096)) ? DASHEN_NOT_FOUND : "Could not read the Dashen receipt. Check the FT Ref.",
+          message: missing ? DASHEN_NOT_FOUND : "Could not read the Dashen receipt. Check the FT Ref.",
+          code: missing ? "notFound" : "unreadable",
         });
       }
       return ok(parsed);
@@ -563,7 +623,7 @@ export class Verifier {
 
     const parsed = parser.parse(data, contentType);
     if (!parsed.verified) {
-      return err({ kind: "EXTRACTION_ERROR", bank: manifestEntry.name, message: "Receipt not found or invalid." });
+      return err({ kind: "EXTRACTION_ERROR", bank: manifestEntry.name, message: "Receipt not found or invalid.", code: "notFound" });
     }
     return ok(parsed);
   }
@@ -588,6 +648,7 @@ export class Verifier {
         kind: "EXTRACTION_ERROR",
         bank: manifestEntry.name,
         message: "Could not decrypt the QR code. It may be malformed or not a BOA receipt.",
+        code: "unreadable",
       });
     }
 
@@ -595,13 +656,14 @@ export class Verifier {
     // invalid reference, or a receiving account that is missing or masked
     // ("1****42674"), can't be looked up at BOA, so it is an error, never a
     // decoded-only result.
-    const digits = manifestEntry.accountDigits ?? 5;
+    const digits = accountDigitsFor(undefined, manifestEntry) ?? DEFAULT_ACCOUNT_DIGITS;
     const refCheck = checkReference(decoded.reference);
     if (!refCheck.ok) {
       return err({
         kind: "EXTRACTION_ERROR",
         bank: manifestEntry.name,
         message: "The QR code does not contain a valid BOA reference, so it can't be checked with the bank.",
+        code: "unreadable",
       });
     }
     const accountCheck = decoded.receiverAccount ? checkAccountSuffix(decoded.receiverAccount, digits) : null;
@@ -610,6 +672,7 @@ export class Verifier {
         kind: "EXTRACTION_ERROR",
         bank: manifestEntry.name,
         message: "The QR code does not contain a full receiving account number, so it can't be checked with the bank.",
+        code: "unreadable",
       });
     }
 
@@ -626,10 +689,9 @@ export class Verifier {
       });
 
     let lookup = await this.resolve(
-      { bank: "boa", reference: refCheck.value, accountNumber: decoded.receiverAccount },
+      { bank: "boa", reference: refCheck.value, accountNumber: decoded.receiverAccount, fromLink: true },
       startTime,
-      depth + 1,
-      true
+      depth + 1
     );
 
     // BOA files some receipts under the source account's suffix instead of
@@ -642,15 +704,14 @@ export class Verifier {
     if (
       !lookup.ok &&
       lookup.error.kind === "EXTRACTION_ERROR" &&
-      lookup.error.message === BOA_NOT_FOUND &&
+      isNotFoundCode(lookup.error.code) &&
       senderCheck?.ok &&
       senderCheck.value !== accountCheck.value
     ) {
       const bySender = await this.resolve(
-        { bank: "boa", reference: refCheck.value, accountNumber: decoded.senderAccount },
+        { bank: "boa", reference: refCheck.value, accountNumber: decoded.senderAccount, fromLink: true },
         startTime,
-        depth + 1,
-        true
+        depth + 1
       );
       // Only a found receipt replaces the first answer. If this second request
       // fails, BOA's "no record" under the receiver stands, so a QR is never
@@ -659,8 +720,8 @@ export class Verifier {
     }
     // The typed-input hint (try the other account) does not apply to a QR:
     // cheki already asked under every full account the QR names.
-    if (!lookup.ok && lookup.error.kind === "EXTRACTION_ERROR" && lookup.error.message === BOA_NOT_FOUND) {
-      lookup = err({ ...lookup.error, message: BOA_QR_NOT_FOUND });
+    if (!lookup.ok && lookup.error.kind === "EXTRACTION_ERROR" && isNotFoundCode(lookup.error.code)) {
+      lookup = err({ ...lookup.error, message: BOA_QR_NOT_FOUND, code: "notFound" });
     }
 
     if (lookup.ok) {
@@ -675,6 +736,7 @@ export class Verifier {
           kind: "EXTRACTION_ERROR",
           bank: manifestEntry.name,
           message: "The QR code does not match the bank's record for this receipt.",
+          code: "qrMismatch",
         });
       }
       return lookup;

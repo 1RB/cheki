@@ -25,9 +25,6 @@ export class CBEParser extends BaseParser {
   readonly bankId = "cbe";
   readonly bankName = "Commercial Bank of Ethiopia";
   readonly responseType = "pdf" as const;
-  readonly requiresAccount = true;
-  readonly accountDigits = 8;
-  readonly requiresPhone = false;
 
   buildUrl(ref: string, account?: string): string {
     const suffix = (account || "").replace(/\D/g, "").slice(-8);
@@ -166,6 +163,7 @@ export class CBEParser extends BaseParser {
           kind: "EXTRACTION_ERROR" as const,
           bank: this.bankName,
           message: "Receipt not found. Check the reference number and account suffix.",
+          code: "notFound",
         });
       }
 
@@ -188,9 +186,9 @@ export class CBENewParser extends BaseParser {
   readonly bankId = "cbe-new";
   readonly bankName = "Commercial Bank of Ethiopia";
   readonly responseType = "json" as const;
-  readonly requiresAccount = false;
-  readonly accountDigits?: number = undefined;
-  readonly requiresPhone = false;
+  // The current CBE format is looked up by its Receipt ID (a share token);
+  // the receipt it returns carries the FT transaction id instead.
+  readonly referenceIsOpaqueToken = true;
 
   private static readonly API_URL = "https://mb.cbe.com.et/api/v1/transactions/public/transaction-detail";
   /**
@@ -262,6 +260,7 @@ export class CBENewParser extends BaseParser {
           kind: "EXTRACTION_ERROR" as const,
           bank: this.bankName,
           message: "Receipt not found. Check the link or reference.",
+          code: "notFound",
         });
       }
       if (resp.status < 200 || resp.status >= 300) {

@@ -21,7 +21,6 @@
     "accountDigits": 8,
     "endpoint": "https://mb.cbe.com.et/api/v1/transactions/public/transaction-detail/{ref}",
     "endpointFormat": "https://mbreciept.cbe.com.et/{RECEIPT_ID}",
-    "sslVerify": true,
     "color": "#502878",
     "initials": "CBE",
     "notes": "Current: Receipt ID / mbreciept.cbe.com.et link, read through the mb.cbe.com.et JSON API. Legacy: FT reference + last 8 digits of the receiving account on apps.cbe.com.et:100 (PDF), still tried but often unreachable.",
@@ -193,7 +192,6 @@
     "requiresAccount": false,
     "endpoint": "https://transactioninfo.ethiotelecom.et/receipt/{ref}",
     "endpointFormat": "https://transactioninfo.ethiotelecom.et/receipt/{REFERENCE}",
-    "sslVerify": true,
     "geoBlocked": true,
     "color": "#00A0DC",
     "initials": "TB",
@@ -336,7 +334,6 @@
     "accountDigits": 5,
     "endpoint": "https://cs.bankofabyssinia.com/api/onlineSlip/getDetails/?id={ref}{account}",
     "endpointFormat": "https://cs.bankofabyssinia.com/api/onlineSlip/getDetails/?id={REFERENCE}{LAST_5_DIGITS}",
-    "sslVerify": true,
     "color": "#0E4D92",
     "initials": "BOA",
     "refPattern": {
@@ -450,7 +447,6 @@
     "requiresAccount": false,
     "endpoint": "https://m-pesabusiness.safaricom.et/api/receipt/getReceipt?trxNo={ref}",
     "endpointFormat": "https://m-pesabusiness.safaricom.et/api/receipt/getReceipt?trxNo={REFERENCE}",
-    "sslVerify": true,
     "geoBlocked": true,
     "color": "#00A651",
     "initials": "MP",
@@ -570,7 +566,6 @@
     "requiresAccount": false,
     "endpoint": "https://receipts.dashenbanksc.com/receipt/{ref}",
     "endpointFormat": "https://receipts.dashenbanksc.com/receipt/{REFERENCE}",
-    "sslVerify": true,
     "color": "#0066B3",
     "initials": "DB",
     "notes": "Current: receipts.dashenbanksc.com/receipt/{FT Ref} (HTML; an unknown ref answers HTTP 400 JSON 'Transaction not found'). Deprecated: receipt.dashensuperapp.com / api.dashensuperapp.com PDFs (502 since 2026-10-10); old links are still read for their FT Ref.",
@@ -722,7 +717,6 @@
     "requiresAccount": false,
     "endpoint": "https://awashpay.awashbank.com:8225/-{ref}",
     "endpointFormat": "https://awashpay.awashbank.com:8225/-{BASE36_TRANSACTION_ID}-{COUNTER_TOKEN}",
-    "sslVerify": true,
     "color": "#E2231A",
     "initials": "AB",
     "notes": "Share link format: -{base36(Transaction ID)}-{second segment issued by Awash's server}. The Transaction ID has a YYMMDDHHMM + 5-digit sequence structure (2026+). The second segment is issued by Awash's server; cheki does not derive it and needs the full link. Share link sent via SMS automatically.",
@@ -823,7 +817,6 @@
     "requiresAccount": false,
     "endpoint": "https://share.zemenbank.com/rt/{ref}/pdf",
     "endpointFormat": "https://share.zemenbank.com/rt/{REFERENCE}/pdf",
-    "sslVerify": true,
     "color": "#1B75BB",
     "initials": "ZB",
     "notes": "Unknown refs return HTTP 404 JSON {\"messages\":\"Transaction not found.\"} (checked 2026-10-10). Another verifier's docs describe the share token as 24 characters (an 8-character prefix plus the 16-character reference); another open-source app builds the URL from the bare reference. Neither is proven yet, so paste the full share link.",
@@ -895,7 +888,6 @@
     "requiresPhone": true,
     "endpoint": "https://cbepay1.cbe.com.et/aureceipt?TID={ref}&PH={phone}",
     "endpointFormat": "https://cbepay1.cbe.com.et/aureceipt?TID={REFERENCE}&PH={PAYER_PHONE}",
-    "sslVerify": false,
     "color": "#502878",
     "initials": "CB",
     "notes": "Beta. Requires the payer phone number. A matching receipt number and phone return HTTP 200 application/pdf (one page, about 0.5 MB); cheki reads its text by position and masks the phone numbers printed on it. A pair that does not match (or an unknown receipt number) returns HTTP 200 with an empty Telerik ReportViewer shell titled \"Auto Receipt\", which cheki reports as could not confirm, with a hint that the receipt number and phone may not match. Not geo-blocked: verified 2026-10-16 against 2 real receipts from cheki's egress outside Ethiopia.",
@@ -1031,21 +1023,24 @@
     },
     "type": "bank",
     "status": "live",
+    "beta": true,
+    "betaNote": "Beta: the parser is built from real Siinqee Bank receipts, but cheki's server has not fetched one live yet.",
     "parser": "siinqee",
     "responseType": "html",
     "requiresAccount": false,
-    "endpoint": "https://receipt.ebirr.com/siinqee/{ref}",
-    "endpointFormat": "https://receipt.ebirr.com/siinqee/{token}",
-    "sslVerify": true,
+    "endpoint": "https://receipts.siinqeebank.com:871/generate/{ref}",
+    "endpointFormat": "https://receipts.siinqeebank.com:871/generate/{REFERENCE}",
     "color": "#006A4E",
     "initials": "SQ",
-    "notes": "Supported through the eBirr route (receipt.ebirr.com/siinqee/{token}), which answered 404 on 2026-10-10. Another verifier reports Siinqee Bank receipts on receipts.siinqeebank.com:871 (PDF, inferred, not supported yet).",
-    "description": "Siinqee Bank is an Ethiopian microfinance institution turned bank. Siinqee receipts are available via a public endpoint.",
-    "referenceFormat": "Alphanumeric transaction reference",
-    "referenceExample": "SQ12345678",
+    "notes": "Beta. Receipt links are receipts.siinqeebank.com:871/generate/{reference}, keyed by the transaction reference the SMS prints after \"Ref:\", so a typed reference works too. The reference is case-sensitive (it can hold a lowercase letter). The receipt page is HTML; a PDF answer is read too. Another verifier reports about five views per receipt, so cheki fetches each check once, never retries, and caches a confirmed receipt. The older eBirr route (receipt.ebirr.com/siinqee/...) has answered HTTP 404 since 2026-10-10.",
+    "description": "Siinqee Bank grew out of Oromia Credit and Saving Share Company (OCSSCO), a microfinance institution, and was licensed as a commercial bank in 2021. Its receipt links (receipts.siinqeebank.com:871/generate/...) open a receipt page keyed by the transaction reference from the SMS: cheki reads that page and confirms the amount, date, payer and receiver, with account numbers masked by Siinqee. Siinqee support is in beta.",
+    "referenceFormat": "The receipt link (https://receipts.siinqeebank.com:871/generate/{reference}) or the 16-character reference after \"Ref:\" in the SMS: 3 capitals or digits, 4 letters or digits (a code such as IIPS for an incoming instant payment), then 9 digits (year and day of the year, then a sequence). Letter case matters.",
+    "referenceExample": "SYN000a000000001",
     "howToVerify": [
-      "Get the transaction reference from the customer's Siinqee receipt",
-      "cheki fetches the receipt from Siinqee's public endpoint"
+      "Paste the receipt link from the Siinqee SMS (https://receipts.siinqeebank.com:871/generate/...) into cheki",
+      "Or select Siinqee Bank and type the reference after \"Ref:\" in the SMS, exactly as printed",
+      "cheki opens Siinqee Bank's own receipt page for that reference and reads the amount, date, payer and receiver",
+      "Compare the amount, date and receiver with the payment you expected"
     ],
     "useCases": [
       "Merchants verifying Siinqee transfers",
@@ -1053,44 +1048,70 @@
     ],
     "faq": [
       {
-        "q": "When will Siinqee verification be available?",
-        "a": "Siinqee verification is in development. Follow the GitHub repository for updates."
+        "q": "What do I need to verify a Siinqee Bank receipt?",
+        "a": "The receipt link from the Siinqee SMS (receipts.siinqeebank.com:871/generate/...) or the reference printed after \"Ref:\" in the same SMS. No account number is needed. Type the reference exactly as printed: it can hold a lowercase letter, and letter case matters."
+      },
+      {
+        "q": "What does cheki confirm for a Siinqee Bank receipt?",
+        "a": "That Siinqee Bank's own receipt page for that reference says the transaction was successful, and what it shows: the amount, the date, the payer and the receiver, with account numbers masked by Siinqee. Siinqee support is in beta: the parser is built from real receipts, but cheki's server has not fetched one live yet."
+      },
+      {
+        "q": "Does a check use up one of the receipt's views?",
+        "a": "Another verifier reports that each Siinqee receipt link opens about five times in total. cheki asks Siinqee once per check, never retries, and remembers a confirmed receipt for a few hours, so checking the same receipt again on cheki.et usually does not open it again."
+      },
+      {
+        "q": "What if cheki says the Siinqee receipt is not confirmed?",
+        "a": "Siinqee's page did not show a successful transaction for exactly that reference. Check the reference letter by letter, including lowercase letters, or ask the sender for the receipt link. It is not proof that the receipt is fake, but do not hand anything over until it is confirmed."
       }
     ],
     "seo": {
       "title": "Siinqee Bank Receipt Check Online: Free Verifier",
-      "description": "Verify a Siinqee Bank receipt by reference and confirm amount, sender and date against the bank's record. Free, no signup, results in seconds.",
+      "description": "Check a Siinqee Bank receipt link or SMS reference against Siinqee's own receipt page: cheki confirms the amount, date, payer and receiver. Free, no signup.",
       "keywords": [
         "siinqee receipt check",
         "Siinqee Bank receipt verification",
         "verify Siinqee transaction",
+        "receipts.siinqeebank.com",
         "ethiopian bank receipt verify"
       ]
     },
     "formats": [
       {
-        "id": "siinqee-bank-pdf",
+        "id": "siinqee-bank-receipt",
         "status": "current",
-        "label": "Siinqee Bank receipt link",
+        "label": "Receipt link or reference",
+        "parser": "siinqee",
+        "endpoint": "https://receipts.siinqeebank.com:871/generate/{ref}",
+        "link": "https://receipts.siinqeebank.com:871/generate/{ref}",
         "linkHosts": [
           "receipts.siinqeebank.com"
         ],
         "inputs": [
           {
             "name": "link",
-            "label": "Receipt link"
+            "label": "Receipt link",
+            "example": "https://receipts.siinqeebank.com:871/generate/SYN000a000000001"
+          },
+          {
+            "name": "reference",
+            "label": "Reference from the SMS",
+            "example": "SYN000a000000001"
           }
         ],
-        "responseType": "pdf",
-        "confidence": "inferred",
-        "evidence": "Another verifier lists receipts.siinqeebank.com:871 (PDF) for Siinqee Bank and says each receipt allows about five views in total; it showed Siinqee unavailable on 2026-10-11. Not tested by cheki and not supported yet.",
-        "notes": "Not fetched. Needs a real receipt link and a parser that respects the view limit."
+        "refPattern": {
+          "source": "^[0-9A-Z]{3}[0-9A-Za-z]{4}\\d{9}$",
+          "flags": ""
+        },
+        "responseType": "html",
+        "confidence": "observed",
+        "evidence": "Real receipts from the maintainer (2026-10-31): the SMS prints \"Ref:\" and a 16-character reference, and the link is receipts.siinqeebank.com:871/generate/{reference}. The page reads \"Customer Receipt\" and \"Transaction is successful!\", then Reference No, Payer Account (masked), Payer Name, Transaction Date (dd/mm/yyyy), Currency, Transaction Description, Receiver Account (masked), Receiver Name, Transferred Amount (Amount on an incoming instant payment), Charge Amount, VAT Amount, Disaster Fund and Total Amount. A text reader rendered it as HTML; another verifier reports PDFs and about five views per receipt. Not yet fetched from cheki's server; the unknown-reference answer is not observed.",
+        "notes": "Read as HTML or PDF, by label. One request per check, no retry. Verified only with \"Transaction is successful\" and the exact (case-sensitive) reference asked for."
       },
       {
         "id": "siinqee-ebirr",
         "status": "legacy",
         "label": "eBirr receipt link (receipt.ebirr.com/siinqee/...)",
-        "parser": "siinqee",
+        "parser": "siinqee-ebirr",
         "endpoint": "https://receipt.ebirr.com/siinqee/{ref}",
         "link": "https://receipt.ebirr.com/siinqee/{ref}",
         "linkHosts": [
@@ -1104,7 +1125,12 @@
         ],
         "responseType": "html",
         "confidence": "inferred",
-        "evidence": "The siinqee route answered HTTP 404 'Cannot GET' on 2026-10-10, unlike other eBirr tenants. Another verifier reads Siinqee's wallet (COOPay) receipts at receipt.ebirr.com/coopay/."
+        "evidence": "The siinqee route answered HTTP 404 'Cannot GET' on 2026-10-10, unlike other eBirr tenants. Kept so an old link still verifies if the route answers again.",
+        "refPattern": {
+          "source": "^siinqee/[A-Za-z0-9_-]{4,128}$",
+          "flags": "i"
+        },
+        "replacedBy": "siinqee-bank-receipt"
       }
     ],
     "endpointHistory": [
@@ -1116,9 +1142,15 @@
       },
       {
         "date": "2026-10-11",
-        "formatId": "siinqee-bank-pdf",
+        "formatId": "siinqee-bank-receipt",
         "change": "Another verifier lists Siinqee Bank receipts on receipts.siinqeebank.com:871 (PDF). Recorded as inferred, not supported.",
         "source": "https://links.et/docs/providers"
+      },
+      {
+        "date": "2026-11-10",
+        "formatId": "siinqee-bank-receipt",
+        "change": "cheki reads Siinqee Bank receipts from receipts.siinqeebank.com:871/generate/{reference}, by receipt link or SMS reference (beta). The eBirr route stays as a legacy format.",
+        "source": "Real Siinqee Bank receipts from the maintainer (2026-10-31)"
       }
     ]
   },
@@ -1133,11 +1165,10 @@
     "requiresAccount": false,
     "endpoint": "https://receipt.ebirr.com/{tenant}/{token}",
     "endpointFormat": "https://receipt.ebirr.com/{tenant}/{token}",
-    "sslVerify": true,
     "color": "#059669",
     "initials": "eB",
-    "notes": "Shared receipt platform for Nib, Wegagen, Ahadu, KAAFI, and Siinqee/Coopbank. User provides tenant/token or full URL.",
-    "description": "eBirr is a mobile money platform connecting 5 Ethiopian financial institutions: Nib International Bank, Wegagen Bank, Ahadu Bank, KAAFI Microfinance, and Cooperative Bank of Oromia (Siinqee). Receipts are available via a shared HTML endpoint at receipt.ebirr.com. Users provide either a full receipt URL or a 'tenant/token' string (e.g., nib/abc123). cheki auto-detects the tenant and maps it to the correct partner bank.",
+    "notes": "Shared receipt platform for Nib, Wegagen, Ahadu, KAAFI and Coopbank (COOPay-Ebirr). User provides tenant/token or full URL. Links on transactioninfo.ebirr.com only open on Ethiopian networks, so cheki hands them back to open on a phone.",
+    "description": "eBirr is a mobile money platform used by several Ethiopian financial institutions, including Nib International Bank, Wegagen Bank, Ahadu Bank, KAAFI Microfinance and Cooperative Bank of Oromia (COOPay-Ebirr). Receipts are available via a shared HTML endpoint at receipt.ebirr.com. Users provide either a full receipt URL or a 'tenant/token' string (e.g., nib/abc123). cheki auto-detects the tenant and maps it to the correct partner bank.",
     "referenceFormat": "Receipt URL (receipt.ebirr.com/{tenant}/{token}) or tenant/token string (e.g., nib/abc123, wegagen/xyz, ahadu/def, kaafimf/ghi)",
     "referenceExample": "nib/abc123def",
     "howToVerify": [
@@ -1155,7 +1186,7 @@
     "faq": [
       {
         "q": "Which banks does eBirr cover?",
-        "a": "eBirr connects 5 financial institutions: Nib International Bank (tenant: nib), Wegagen Bank (tenant: wegagen), Ahadu Bank (tenant: ahadu), KAAKI Microfinance (tenant: kaafimf), and Cooperative Bank of Oromia / Siinqee Bank. All use the same receipt endpoint at receipt.ebirr.com/{tenant}/{token}."
+        "a": "eBirr is used by Nib International Bank (tenant: nib), Wegagen Bank (tenant: wegagen), Ahadu Bank (tenant: ahadu), KAAFI Microfinance (tenant: kaafimf) and Cooperative Bank of Oromia (COOPay-Ebirr). Shared receipts use the receipt endpoint at receipt.ebirr.com/{tenant}/{token}."
       },
       {
         "q": "How do I find my eBirr receipt URL?",
@@ -1168,6 +1199,10 @@
       {
         "q": "Is the eBirr receipt endpoint public?",
         "a": "Yes. The receipt URL at receipt.ebirr.com/{tenant}/{token} is publicly accessible without authentication. The token is a random string that maps to a specific transaction. cheki, qbirr, and any other verification service use this same endpoint."
+      },
+      {
+        "q": "Why can't cheki check a transactioninfo.ebirr.com link?",
+        "a": "Some eBirr receipts (KAAFI's, for one) link to transactioninfo.ebirr.com/{tenant}-Ebirr/receipt/{number}. That address only opens on Ethiopian networks, so cheki's server can't reach it. cheki gives the link back: open it on a phone on an Ethiopian network and check the amount, the receiver and the date there."
       }
     ],
     "seo": {
@@ -1205,6 +1240,34 @@
         "responseType": "html",
         "confidence": "verified",
         "evidence": "Unknown tokens answer HTTP 200 'Not Found Page' (cheki, 2026-10-10). Another verifier reads the same host for COOPay and Kaafi."
+      },
+      {
+        "id": "ebirr-transactioninfo-link",
+        "status": "current",
+        "label": "transactioninfo.ebirr.com receipt link",
+        "link": "https://transactioninfo.ebirr.com/{tenant}-Ebirr/receipt/{number}",
+        "linkHosts": [
+          "transactioninfo.ebirr.com"
+        ],
+        "inputs": [
+          {
+            "name": "link",
+            "label": "Receipt link",
+            "example": "https://transactioninfo.ebirr.com/kaafimf-Ebirr/receipt/800000000001"
+          }
+        ],
+        "responseType": "html",
+        "confidence": "observed",
+        "evidence": "A real KAAFI receipt link (2026-11-10) has the shape transactioninfo.ebirr.com/kaafimf-Ebirr/receipt/{12 digits}. transactioninfo.ebirr.com is NXDOMAIN on public DNS (dns.google, cheki, 2026-11-10) and receipt.ebirr.com/kaafimf/{same number} answers eBirr's Not Found Page, so cheki's server cannot check it.",
+        "notes": "Never fetched. cheki recognises the link and returns it, rebuilt on the fixed host, to open on an Ethiopian network."
+      }
+    ],
+    "endpointHistory": [
+      {
+        "date": "2026-11-10",
+        "formatId": "ebirr-transactioninfo-link",
+        "change": "KAAFI eBirr receipt links on transactioninfo.ebirr.com are recognised and handed back to open on an Ethiopian network (the host is not in public DNS).",
+        "source": "A real KAAFI receipt link and a public DNS lookup (cheki)"
       }
     ]
   },
@@ -1228,7 +1291,6 @@
     "requiresAccount": false,
     "endpoint": "receipt.ebirr.com/nib",
     "endpointFormat": "https://receipt.ebirr.com/nib/{token}",
-    "sslVerify": true,
     "color": "#1d4ed8",
     "initials": "Nib Bank",
     "description": "Nib International Bank is one of Ethiopia's largest private banks with 410 branches. Nib partners with eBirr for mobile money services. Receipts are available via receipt.ebirr.com/nib/{token}. Verification is handled through cheki's eBirr parser.",
@@ -1295,61 +1357,116 @@
       "registry": "not-checked"
     },
     "type": "bank",
-    "status": "in-development",
+    "status": "live",
+    "beta": true,
+    "betaNote": "Beta: cheki confirms Wegagen Bank's own record for a share id and shows the amount, the date and both sides of the payment, with account numbers masked. Three share links have been checked, and the service answers intermittently, so a check can fail and be worth retrying.",
     "parser": "wegagen",
-    "responseType": "html",
+    "responseType": "json",
     "requiresAccount": false,
-    "endpoint": "receipt.ebirr.com/wegagen",
-    "endpointFormat": "https://receipt.ebirr.com/wegagen/{token}",
-    "sslVerify": true,
+    "requiresPhone": false,
+    "endpoint": "https://transinfo.wegagenbanksc.com.et:8011/sms_wega/txn/{ref}",
+    "endpointFormat": "https://transinfo.wegagenbanksc.com.et:8011/sms_wega/txn/{SHARE_ID}",
     "color": "#b45309",
     "initials": "Wegagen",
-    "description": "Wegagen Bank is a private commercial bank established in 1996 with 279 branches. Wegagen partners with eBirr for mobile money. Receipts are available via receipt.ebirr.com/wegagen/{token}.",
-    "referenceFormat": "eBirr receipt URL or tenant/token (wegagen/{token})",
-    "referenceExample": "wegagen/abc123def",
+    "notes": "Beta. Wegagen shares receipts as a link (transinfo.wegagenbanksc.com.et:8183/?id=...) that opens its own receipt page; cheki reads the 24-character share id out of it and asks the JSON service on port 8011 for the record. An unknown id answers HTTP 200 with the plain text 'Transaction not found in Daily or History'. The service answers intermittently, so the parser retries once, and cheki masks every account number with Wegagen's own rule before anything is shown or cached.",
+    "refPattern": {
+      "source": "^\\d{3}[A-Z]{4}[A-Z0-9]{17}$",
+      "flags": ""
+    },
+    "description": "Wegagen Bank is a private commercial bank established in 1996 with 279 branches. Wegagen shares receipts as a link: cheki reads the 24-character share id out of it, asks Wegagen's own transaction service for the record, and shows the amount, the date and both sides of the payment with account numbers masked. Wegagen support is in beta.",
+    "referenceFormat": "The 24-character share id after ?id= in the share link: the 16-character Reference No printed on the receipt, then the first 4 digits of the account the record is filed under, the debit/credit flag and the transaction code (FTD, AAT, ...). The 16-character Reference No printed on the receipt is not a lookup key on its own.",
+    "referenceExample": "000SAMP26000000000000001",
     "howToVerify": [
-      "Use the eBirr receipt sharing feature in the Wegagen mobile app",
-      "Paste the receipt URL or tenant/token into cheki"
+      "Share the receipt from Wegagen to get a transinfo.wegagenbanksc.com.et:8183/?id=... link",
+      "Paste that link into cheki, or choose Wegagen Bank and enter the 24 characters after ?id=",
+      "cheki looks the share id up in Wegagen Bank's own transaction service",
+      "If Wegagen has the record, cheki shows the amount, the date and both sides, with account numbers masked",
+      "Compare the amount, date and names with the payment you expected"
     ],
     "useCases": [
-      "Merchants verifying Wegagen Bank transfers",
-      "Businesses reconciling Wegagen deposits"
+      "Merchants confirming a Wegagen Bank transfer before releasing goods",
+      "Businesses reconciling Wegagen deposits from shared receipt links",
+      "Apps checking Wegagen Bank receipt links via the cheki API"
     ],
     "faq": [
       {
         "q": "How do I verify a Wegagen Bank receipt?",
-        "a": "Wegagen Bank uses the eBirr platform. Share the receipt to get a receipt.ebirr.com/wegagen/{token} URL, then paste it into cheki."
+        "a": "Share the receipt to get a transinfo.wegagenbanksc.com.et:8183/?id=... link and paste the whole link into cheki. If you only have the id, choose Wegagen Bank and enter the 24 characters after ?id=. cheki asks Wegagen's own transaction service and shows what Wegagen's record says."
+      },
+      {
+        "q": "Why doesn't the Reference No printed on the receipt work?",
+        "a": "The Reference No is only the first 16 characters of Wegagen's lookup key. The full key is 24 characters: that reference plus the first 4 digits of the account the record is filed under, the debit/credit flag and the transaction code. Wegagen builds it into every share link, so paste the link, or the 24 characters after ?id= in it."
+      },
+      {
+        "q": "Does cheki show the full Wegagen account number?",
+        "a": "No. cheki masks every account on the record with Wegagen's own rule from Wegagen's receipt page before it shows, returns or caches anything: a 13-digit account keeps its first digit and last 7, a 12-character one the first 4 and last 2, a 10-character one the first 2 and last 2."
+      },
+      {
+        "q": "Is the Wegagen receipt endpoint public?",
+        "a": "Yes. It needs no login or token, and its certificate is DigiCert for *.wegagenbanksc.com.et. It answers intermittently, so a check can fail without meaning anything: try it again."
       }
     ],
     "seo": {
       "title": "Verify Wegagen Bank Receipts Online",
-      "description": "Verify Wegagen Bank receipts for free via eBirr. No signup, no API key.",
+      "description": "Check a Wegagen Bank receipt link against Wegagen's own record: cheki confirms the amount, date and both sides, with account numbers masked. Free, no signup.",
       "keywords": [
         "Wegagen Bank receipt",
         "verify Wegagen",
-        "Wegagen eBirr"
+        "Wegagen receipt link",
+        "Wegagen payment check"
       ]
     },
     "formats": [
       {
-        "id": "ebirr-wegagen",
+        "id": "wegagen-share-link",
         "status": "current",
-        "label": "eBirr receipt link",
+        "label": "Share link or 24-character share id",
         "parser": "wegagen",
-        "endpoint": "https://receipt.ebirr.com/wegagen/{token}",
-        "link": "https://receipt.ebirr.com/wegagen/{token}",
+        "endpoint": "https://transinfo.wegagenbanksc.com.et:8011/sms_wega/txn/{ref}",
+        "link": "https://transinfo.wegagenbanksc.com.et:8183/?id={ref}",
         "linkHosts": [
-          "receipt.ebirr.com"
+          "transinfo.wegagenbanksc.com.et:8183"
         ],
         "inputs": [
           {
-            "name": "link",
-            "label": "eBirr receipt link"
+            "name": "reference",
+            "label": "Share link or 24-character share id",
+            "example": "000SAMP26000000000000001"
           }
         ],
-        "responseType": "html",
-        "confidence": "inferred",
-        "evidence": "The wegagen tenant route exists on receipt.ebirr.com (cheki, 2026-10-10); the receipt layout is not confirmed with a real receipt."
+        "refPattern": {
+          "source": "^[A-Za-z0-9]{24}$",
+          "flags": ""
+        },
+        "responseType": "json",
+        "receiptPage": "redirect",
+        "confidence": "verified",
+        "evidence": "cheki, 2026-11-11: three real share links answered HTTP 200 application/json with the full record (DigiCert for *.wegagenbanksc.com.et, verified without -k); an unknown id answered HTTP 200 'Transaction not found in Daily or History', text/plain with Accept: */* and application/json with Accept: application/json. The printed 16-character Reference No alone never answers. Test fixtures are synthetic.",
+        "notes": "The share id is 24 letters and digits. It is a prefix-checked opaque key: the record carries the printed 16-character reference, which is the start of the share id, so the gate treats the id as a token (core/gate.ts) and the parser checks the prefix."
+      },
+      {
+        "id": "wegagen-receipt-qr",
+        "status": "current",
+        "label": "Receipt QR code",
+        "via": "wegagen-share-link",
+        "inputs": [
+          {
+            "name": "qr",
+            "label": "QR code on the receipt page"
+          }
+        ],
+        "responseType": "json",
+        "confidence": "verified",
+        "evidence": "Wegagen's own receipt page prints this QR (cheki, 2026-11-11, from Wegagen's public receipt app): prose with the share link inside it, ending 'For more information, click here: https://transinfo.wegagenbanksc.com.et:8183/?id={SHARE_ID} - Wegagen Bank.' cheki reads only the share id out of it. Test fixtures are synthetic.",
+        "notes": "Input only, never fetched and never proof of payment: cheki reads the share id out of the QR (on the device, or from qrData in the API) and checks it through wegagen-share-link exactly like a pasted link. The names, accounts and amount in the same text are ignored."
+      }
+    ],
+    "endpointHistory": [
+      {
+        "date": "2026-11-11",
+        "formatId": "wegagen-share-link",
+        "change": "Wegagen receipts are read from Wegagen's own transaction service (transinfo.wegagenbanksc.com.et:8011) by the 24-character share id, replacing the eBirr white-label tenant route (receipt.ebirr.com/wegagen), where no receipt could be found.",
+        "source": "cheki (3 real share links)"
       }
     ]
   },
@@ -1371,17 +1488,17 @@
     "parser": "ahadu",
     "responseType": "html",
     "requiresAccount": false,
-    "endpoint": "receipt.ebirr.com/ahadu",
-    "endpointFormat": "https://receipt.ebirr.com/ahadu/{token}",
-    "sslVerify": true,
+    "endpoint": "https://receipt.ahadubank.com/digitalReceiptIPS?es={ref}",
+    "endpointFormat": "https://receipt.ahadubank.com/digitalReceiptIPS?es={TOKEN}",
     "color": "#7c3aed",
     "initials": "Ahadu",
-    "description": "Ahadu Bank is a newer private commercial bank established in 2022. Ahadu partners with eBirr for mobile money. Receipts are available via receipt.ebirr.com/ahadu/{token}.",
-    "referenceFormat": "eBirr receipt URL or tenant/token (ahadu/{token})",
-    "referenceExample": "ahadu/abc123def",
+    "description": "Ahadu Bank is a newer private commercial bank established in 2022. Ahadu receipts are served as a PDF from receipt.ahadubank.com/digitalReceiptIPS?es={TOKEN}. cheki has not opened a receipt with a working token yet, so Ahadu support stays in development. An eBirr receipt link (receipt.ebirr.com/ahadu/{token}) is the format cheki can check today.",
+    "referenceFormat": "The 26-character token in the es parameter of the Ahadu receipt link (receipt.ahadubank.com/digitalReceiptIPS?es={TOKEN}). It has the same shape as the 26-character reference printed on the receipt, but that printed reference did not open a receipt (302 then 404), so only a link from Ahadu can be trusted. Not confirmed: no working link has been found yet.",
+    "referenceExample": "https://receipt.ahadubank.com/digitalReceiptIPS?es=XXXXXXXXXXXXXXXXXXXXXXXXXX",
     "howToVerify": [
-      "Use the eBirr receipt sharing feature in the Ahadu mobile app",
-      "Paste the receipt URL or tenant/token into cheki"
+      "Get the receipt link from Ahadu (it carries ?es={TOKEN})",
+      "Paste the whole link into cheki",
+      "cheki recognises the host but has not confirmed what a real receipt looks like, so Ahadu stays in development"
     ],
     "useCases": [
       "Merchants verifying Ahadu Bank transfers",
@@ -1390,16 +1507,20 @@
     "faq": [
       {
         "q": "How do I verify an Ahadu Bank receipt?",
-        "a": "Ahadu Bank uses the eBirr platform. Share the receipt to get a receipt.ebirr.com/ahadu/{token} URL, then paste it into cheki."
+        "a": "Ahadu receipts are shared as a receipt.ahadubank.com/digitalReceiptIPS?es=... link. cheki recognises that link but has not confirmed it with a real receipt yet, so Ahadu stays in development. An eBirr receipt link (receipt.ebirr.com/ahadu/...) is the Ahadu format cheki can check today."
+      },
+      {
+        "q": "Why is Ahadu still in development?",
+        "a": "No working es token has been found to check the receipt service with, so cheki has never seen what it returns for a real receipt. The endpoint is recorded so a contributor who has a receipt link can settle it."
       }
     ],
     "seo": {
       "title": "Verify Ahadu Bank Receipts Online",
-      "description": "Verify Ahadu Bank receipts for free via eBirr. No signup, no API key.",
+      "description": "Ahadu Bank receipt checking: cheki recognises the receipt.ahadubank.com link and the eBirr receipt link. Ahadu support is in development. Free, no signup.",
       "keywords": [
         "Ahadu Bank receipt",
         "verify Ahadu",
-        "Ahadu eBirr"
+        "Ahadu receipt link"
       ]
     },
     "formats": [
@@ -1427,6 +1548,7 @@
         "id": "ahadu-bank-pdf",
         "status": "current",
         "label": "Ahadu Bank receipt link",
+        "endpoint": "https://receipt.ahadubank.com/digitalReceiptIPS?es={TOKEN}",
         "linkHosts": [
           "receipt.ahadubank.com"
         ],
@@ -1438,7 +1560,7 @@
         ],
         "responseType": "pdf",
         "confidence": "inferred",
-        "evidence": "Another verifier lists receipt.ahadubank.com (PDF). Not tested by cheki and not supported yet."
+        "evidence": "Another verifier lists receipt.ahadubank.com (PDF). cheki found the same host and its digitalReceiptIPS?es= parameter on 2026-10-16, but no working es token has been found: a printed reference answered 302 then 404, so the PDF layout is not confirmed."
       }
     ]
   },
@@ -1453,7 +1575,6 @@
     "requiresAccount": false,
     "endpoint": "receipt.ebirr.com/kaafimf",
     "endpointFormat": "https://receipt.ebirr.com/kaafimf/{token}",
-    "sslVerify": true,
     "color": "#0891b2",
     "initials": "KAAFI",
     "description": "KAAFI Microfinance is an eBirr partner providing mobile money services. Receipts are available via receipt.ebirr.com/kaafimf/{token}. verify.et also supports KAAFI as 'Kaafi Ebirr'.",
@@ -1526,7 +1647,6 @@
     "requiresAccount": false,
     "endpoint": "Unknown",
     "endpointFormat": "Researching public receipt endpoint",
-    "sslVerify": true,
     "color": "#4338ca",
     "initials": "Abay",
     "description": "Abay Bank is a private commercial bank established in 2010 with 279 branches. No public receipt verification endpoint has been identified yet. Digital banking is available via abaybank.com.et.",
@@ -1593,7 +1713,6 @@
     "requiresAccount": false,
     "endpoint": "Unknown",
     "endpointFormat": "Researching public receipt endpoint",
-    "sslVerify": true,
     "color": "#0e7490",
     "initials": "Addis Bank",
     "description": "Addis International Bank was established in 2011 with 146 branches. No public receipt verification endpoint has been identified yet.",
@@ -1641,7 +1760,6 @@
     "requiresAccount": false,
     "endpoint": "Unknown",
     "endpointFormat": "Researching public receipt endpoint",
-    "sslVerify": true,
     "color": "#15803d",
     "initials": "Amhara",
     "description": "Amhara Bank is a newer private bank established in 2022 with 320 branches. Website at amharabank.com.et. No public receipt verification endpoint has been identified yet.",
@@ -1708,7 +1826,6 @@
     "requiresAccount": false,
     "endpoint": "Unknown",
     "endpointFormat": "Researching public receipt endpoint",
-    "sslVerify": true,
     "color": "#a16207",
     "initials": "Berhan",
     "description": "Berhan International Bank was established in 2009. No public receipt verification endpoint has been identified yet.",
@@ -1777,7 +1894,6 @@
     "requiresPhone": false,
     "endpoint": "https://online.bunnabanksc.com/st_backend/api/v1/advice?data={ref}",
     "endpointFormat": "https://online.bunnabanksc.com/st_backend/api/v1/advice?data={TOKEN}",
-    "sslVerify": true,
     "color": "#9333ea",
     "initials": "Bunna",
     "notes": "Beta. The receipt link (online.bunnabanksc.com/receipt/#/{token}) opens an Angular app whose data comes from this JSON endpoint. The token sits in the URL fragment and is opaque base64. Bunna answers HTTP 200 either way: status SUCCESS with the receipt, or status FAILURE (\"Something went wrong!\") for an unknown or malformed token. Bunna masks the account numbers itself.",
@@ -1874,7 +1990,6 @@
     "requiresAccount": false,
     "endpoint": "Unknown",
     "endpointFormat": "Researching public receipt endpoint",
-    "sslVerify": true,
     "color": "#db2777",
     "initials": "Enat",
     "description": "Enat Bank is a women-focused bank established in 2013. No public receipt verification endpoint has been identified yet.",
@@ -1922,7 +2037,6 @@
     "requiresAccount": false,
     "endpoint": "Unknown",
     "endpointFormat": "Researching public receipt endpoint",
-    "sslVerify": true,
     "color": "#475569",
     "initials": "Global Bank",
     "description": "Global Bank Ethiopia was established in 2012. No public receipt verification endpoint has been identified yet.",
@@ -1970,7 +2084,6 @@
     "requiresAccount": false,
     "endpoint": "Unknown",
     "endpointFormat": "Researching public receipt endpoint",
-    "sslVerify": true,
     "color": "#ea580c",
     "initials": "Lion Bank",
     "description": "Lion International Bank (also known as Anbessa Bank) was established in 2006. No public receipt verification endpoint has been identified yet.",
@@ -2019,7 +2132,6 @@
     "requiresAccount": false,
     "endpoint": "Unknown",
     "endpointFormat": "Researching public receipt endpoint",
-    "sslVerify": true,
     "color": "#16a34a",
     "initials": "Oromia Bank",
     "description": "Oromia International Bank was established in 2008. No public receipt verification endpoint has been identified yet.",
@@ -2085,7 +2197,6 @@
     "requiresAccount": false,
     "endpoint": "Unknown",
     "endpointFormat": "Researching public receipt endpoint",
-    "sslVerify": true,
     "color": "#0369a1",
     "initials": "Hibret",
     "description": "Hibret Bank (formerly United Bank) was established in 1998. No public receipt verification endpoint has been identified yet.",
@@ -2138,7 +2249,6 @@
     "endpoint": "https://receipt-backend.zamzambank.com.et/api/v1/invoice/{ref}",
     "endpointFormat": "https://receipt-backend.zamzambank.com.et/api/v1/invoice/{RECEIPT_ID}",
     "endpointAuth": "The endpoint expects an HTTP Basic credential that ZamZam ships inside its own public receipt web app, so every visitor's browser already sends it. cheki sends the same credential. No customer login is involved.",
-    "sslVerify": true,
     "color": "#0d9488",
     "initials": "ZZ",
     "notes": "Beta. The receipt link (receipt.zamzambank.com.et/receipt/{id}) opens a React app whose data comes from this JSON endpoint. An unknown id answers HTTP 200 with the body null. The record carries the full account number, which cheki masks (first digit and last 4).",
@@ -2243,7 +2353,6 @@
     "requiresAccount": false,
     "endpoint": "Unknown",
     "endpointFormat": "Researching public receipt endpoint",
-    "sslVerify": true,
     "color": "#65a30d",
     "initials": "Hijra",
     "description": "Hijra Bank is an Islamic bank established in 2021. No public receipt verification endpoint has been identified yet.",
@@ -2292,7 +2401,6 @@
     "requiresAccount": false,
     "endpoint": "Unknown",
     "endpointFormat": "Researching public receipt endpoint",
-    "sslVerify": true,
     "color": "#ca8a04",
     "initials": "Shabelle",
     "description": "Shabelle Bank was established in 2021. No public receipt verification endpoint has been identified yet.",
@@ -2340,7 +2448,6 @@
     "requiresAccount": false,
     "endpoint": "Unknown",
     "endpointFormat": "Researching public receipt endpoint",
-    "sslVerify": true,
     "color": "#9f1239",
     "initials": "Goh Betoch",
     "description": "Goh Betoch Bank SC is a mortgage and housing bank established in 2021. As a specialized housing bank, it may not have standard retail transfer receipts. No public receipt verification endpoint has been identified.",
@@ -2388,7 +2495,6 @@
     "requiresAccount": false,
     "endpoint": "Unknown",
     "endpointFormat": "Researching public receipt endpoint",
-    "sslVerify": true,
     "color": "#7e22ce",
     "initials": "Tsedey",
     "description": "Tsedey Bank was established in 2022. No public receipt verification endpoint has been identified yet.",
@@ -2436,7 +2542,6 @@
     "requiresAccount": false,
     "endpoint": "Unknown",
     "endpointFormat": "Researching public receipt endpoint",
-    "sslVerify": true,
     "color": "#15803d",
     "initials": "Gadaa",
     "description": "Gadaa Bank SC was established in 2022. No public receipt verification endpoint has been identified yet.",
@@ -2484,7 +2589,6 @@
     "requiresAccount": false,
     "endpoint": "Unknown",
     "endpointFormat": "Researching public receipt endpoint",
-    "sslVerify": true,
     "color": "#be185d",
     "initials": "Rammis",
     "description": "Rammis Bank is one of Ethiopia's newest banks, established in 2022. Website at rammisbank.et. No public receipt verification endpoint has been identified yet.",
@@ -2531,7 +2635,6 @@
     "requiresAccount": false,
     "requiresPhone": false,
     "endpoint": "https://mb.cbe.com.et/api/v1/transactions/public/transaction-detail/{ref}",
-    "sslVerify": true,
     "headers": {
       "X-App-ID": "d1292e42-7400-49de-a2d3-9731caa4c819",
       "X-App-Version": "0a01980b-9859-1369-8198-59f403820000",

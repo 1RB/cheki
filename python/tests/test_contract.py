@@ -28,7 +28,7 @@ from cheki import (
     VerificationStatus,
 )
 from cheki import client as client_module
-from cheki.registry import gate, verify
+from cheki.registry import _REFERENCE_IS_OPAQUE_TOKEN, gate, verify
 
 CONTRACT = json.loads((Path(__file__).resolve().parents[2] / "sdks" / "fixtures" / "api-contract.json").read_text())
 API = "https://api.test"
@@ -67,6 +67,14 @@ def test_defaults_match_contract():
     assert MAX_BATCH_SIZE == limits["batchMaxReceipts"]
     assert client(max_retries=5).max_retries == 1
     assert client(max_retries=-1).max_retries == 0
+
+
+def test_opaque_lookup_parsers_match_the_contract():
+    """The deprecated direct verify keeps its own copy of the list of parsers
+    whose lookup key is an opaque share token (on the server that flag is
+    BaseParser.referenceIsOpaqueToken), so it is compared with the shared
+    contract rather than left to drift."""
+    assert sorted(_REFERENCE_IS_OPAQUE_TOKEN) == sorted(CONTRACT["gate"]["opaqueLookupParsers"])
 
 
 @responses.activate
@@ -122,7 +130,7 @@ def test_banks():
     assert [f.status for f in banks[0].formats] == ["current", "legacy"]
     assert banks[0].formats[0].inputs == ["receiptId"]
     assert banks[0].formats[1].account_digits == 8
-    # beta: true for M-Pesa, ZamZam and CBE Birr, False when the server omits it.
+    # beta: true for M-Pesa, ZamZam, CBE Birr, Bunna and Wegagen, False when the server omits it.
     by_id = {b.id: b for b in banks}
     assert by_id["zamzam"].beta is True and by_id["mpesa"].beta is True and banks[0].beta is False
     assert by_id["zamzam"].to_dict()["beta"] is True

@@ -210,9 +210,6 @@ export class CBEBirrParser extends BaseParser {
   readonly bankId = "cbebirr";
   readonly bankName = "CBE Birr";
   readonly responseType = "html" as const;
-  readonly requiresAccount = false;
-  readonly accountDigits?: number = undefined;
-  readonly requiresPhone = true;
   /** Read the body as bytes: a real receipt may be a PDF, a miss is HTML. */
   readonly binaryResponse = true;
 

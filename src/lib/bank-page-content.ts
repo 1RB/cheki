@@ -11,7 +11,7 @@
  * 301 here (next.config.ts, src/lib/seo-redirects.ts), and their distinct
  * content lives in this file.
  */
-import { formatAccountDigits, formatNeeds, primaryFormat } from "./manifest/formats";
+import { accountDigitsFor, extraFieldNeeds, primaryFormat } from "./manifest/formats";
 import type { Bank } from "./banks";
 import { NO_SIGNUP_SENTENCE, competitorPrices } from "./guides-facts";
 import { BANK_HEADING, BANKS_WITH_TOPIC_PAGES } from "./seo-redirects";
@@ -68,19 +68,25 @@ function whatItShows(b: Bank): string {
  * How to hand cheki a receipt, for copy: the QR code or the receipt link
  * first, a typed reference only as the fallback, with whatever else the bank
  * needs (account digits, payer phone). Never implies a bare number is enough
- * when the bank needs more. Link-only banks (Awash, Siinqee, eBirr) get the
- * link and nothing else.
+ * when the bank needs more. Link-only banks (Awash, eBirr) get the link and
+ * nothing else; Siinqee's link comes first, its SMS reference second.
  */
 export function howToSubmit(b: Bank): string {
   const primary = primaryFormat(b);
   const first = primary?.inputs[0]?.name;
-  if (first === "link") return "Paste the full receipt link into cheki";
+  if (first === "link") {
+    // A link-first format that also takes the typed reference (Siinqee: the
+    // "Ref:" in the SMS is the lookup key) names it as the fallback.
+    const typed = primary?.inputs.find((i) => i.name === "reference");
+    if (!typed) return "Paste the full receipt link into cheki";
+    const label = /^[A-Z][a-z]/.test(typed.label) ? typed.label.charAt(0).toLowerCase() + typed.label.slice(1) : typed.label;
+    return `Paste the full receipt link into cheki. If you only have the ${label}, select ${b.name} and type it exactly as printed`;
+  }
   const lead = "Scan the receipt's QR code or paste the receipt link into cheki";
   const ref = refNoun(b);
-  const needsAccount = primary ? formatNeeds(primary, "account") : Boolean(b.requiresAccount);
-  const needsPhone = primary ? formatNeeds(primary, "phone") : Boolean(b.requiresPhone);
+  const { needsAccount, needsPhone } = extraFieldNeeds(primary, b);
   if (needsAccount) {
-    const digits = formatAccountDigits(primary) ?? b.accountDigits;
+    const digits = accountDigitsFor(primary, b);
     return `${lead}. If you only have the ${ref}, select ${b.name} and add the last ${digits} digits of the account on the receipt`;
   }
   if (needsPhone) return `${lead}. If you only have the ${ref}, select ${b.name} and add the payer's phone number`;
@@ -107,8 +113,7 @@ const LINK_OUT_CHECK = "On that page, check that the amount, the receiver's name
 export function requiredInfoIntro(b: Bank): string | null {
   if (b.status !== "live") return null;
   const primary = primaryFormat(b);
-  const needsAccount = primary ? formatNeeds(primary, "account") : Boolean(b.requiresAccount);
-  const needsPhone = primary ? formatNeeds(primary, "phone") : Boolean(b.requiresPhone);
+  const { needsAccount, needsPhone } = extraFieldNeeds(primary, b);
   if (needsAccount) return `Ask the sender for the ${refNoun(b)} and the account digits from their receipt: ${b.shortName}'s receipt record needs both.`;
   if (needsPhone) return `Ask the sender for the receipt QR code or link, which carries the ${refNoun(b)} and the payer's phone number. Without it, you need both: ${b.shortName} only answers for the pair.`;
   return `Ask the sender for the ${refNoun(b)} from their receipt. No account number is needed.`;
@@ -122,8 +127,7 @@ export function requiredInfoIntro(b: Bank): string | null {
  */
 export function apiExampleBody(b: Bank): string {
   const primary = primaryFormat(b);
-  const needsAccount = primary ? formatNeeds(primary, "account") : Boolean(b.requiresAccount);
-  const needsPhone = primary ? formatNeeds(primary, "phone") : Boolean(b.requiresPhone);
+  const { needsAccount, needsPhone } = extraFieldNeeds(primary, b);
   const ref = primary?.inputs[0]?.example ?? b.referenceExample;
   return `{ "bank": "${b.code}", "reference": "${ref}"${needsAccount ? `, "accountNumber": "1000XXXXXXX"` : ""}${needsPhone ? `, "phoneNumber": "2519XXXXXXXX"` : ""} }`;
 }

@@ -16,6 +16,7 @@ import { useRef, useState, type ChangeEvent, type ClipboardEvent, type DragEvent
 import Link from "next/link";
 import type { Detection } from "@/lib/verify/detect";
 import { accountFieldKeys, liveBanks } from "@/lib/verify/detect";
+import { DEFAULT_ACCOUNT_DIGITS } from "@/lib/manifest/formats";
 import type { Translate } from "@/lib/i18n/translate";
 import { BankLogoByName } from "@/components/BankLogo";
 import { BankSelect } from "@/components/ui/BankSelect";
@@ -214,7 +215,7 @@ export function VerifyInput({
       <div className="vi-extra" data-open={needsExtra || undefined} inert={!needsExtra} aria-hidden={!needsExtra || undefined}>
         <div className="vi-extra-inner">
           <label htmlFor={`${id}-extra`} className="vi-label">
-            {d.needsPhone ? t("verify.extra.phone") : t(accountFieldKeys(d).label, { digits: d.accountDigits ?? d.bank?.accountDigits ?? 8 })}
+            {d.needsPhone ? t("verify.extra.phone") : t(accountFieldKeys(d).label, { digits: d.accountDigits ?? DEFAULT_ACCOUNT_DIGITS })}
           </label>
           <input
             ref={extraRef}

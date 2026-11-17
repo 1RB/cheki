@@ -14,10 +14,11 @@ import { DashenParser } from "./dashen";
 import { EBirrParser } from "./ebirr";
 import { ZemenParser } from "./zemen";
 import { CBEBirrParser } from "./cbebirr";
-import { SiinqeeParser } from "./siinqee";
+import { SiinqeeParser, SiinqeeEbirrParser } from "./siinqee";
 import { AwashParser } from "./awash";
 import { ZamZamParser } from "./zamzam";
 import { BunnaParser } from "./bunna";
+import { WegagenParser } from "./wegagen";
 
 // Register all parsers
 registerParser(new CBEParser());
@@ -30,9 +31,11 @@ registerParser(new EBirrParser());
 registerParser(new ZemenParser());
 registerParser(new CBEBirrParser());
 registerParser(new SiinqeeParser());
+registerParser(new SiinqeeEbirrParser());
 registerParser(new AwashParser());
 registerParser(new ZamZamParser());
 registerParser(new BunnaParser());
+registerParser(new WegagenParser());
 
 // Re-export for convenience
 export { CBEParser, CBENewParser } from "./cbe";
@@ -43,10 +46,11 @@ export { DashenParser } from "./dashen";
 export { EBirrParser } from "./ebirr";
 export { ZemenParser } from "./zemen";
 export { CBEBirrParser } from "./cbebirr";
-export { SiinqeeParser } from "./siinqee";
+export { SiinqeeParser, SiinqeeEbirrParser } from "./siinqee";
 export { AwashParser } from "./awash";
 export { ZamZamParser } from "./zamzam";
 export { BunnaParser } from "./bunna";
+export { WegagenParser } from "./wegagen";
 export { BaseParser } from "./base";
 export {
   registerParser,

@@ -136,8 +136,8 @@ var (
 //   - POST /api/verify/batch: only 429/503 with a short Retry-After. A 504
 //     means the batch ran out of time; replaying it would hit every bank
 //     again and charge every receipt against the rate limit.
-//   - Never: timeouts, a cancelled context, other 4xx, and any answer with
-//     "retryable": false or a fallbackUrl.
+//   - Never: timeouts, a cancelled context, other 4xx, and any answer
+//     carrying a fallbackUrl.
 type Client struct {
 	baseURL    string
 	httpClient *http.Client
@@ -356,11 +356,11 @@ func (c *Client) do(ctx context.Context, method, path string, body []byte, targe
 }
 
 // shouldRetry is the retry rule shared by every cheki SDK (retryCases in
-// sdks/fixtures/api-contract.json): never when the body says
-// "retryable": false or carries a fallbackUrl; 429 and 503 only with a
-// Retry-After of at most 60 s; any other 5xx only for GET.
+// sdks/fixtures/api-contract.json): never when the body carries a
+// fallbackUrl; 429 and 503 only with a Retry-After of at most 60 s; any
+// other 5xx only for GET.
 func shouldRetry(method string, e *APIError) bool {
-	if e.notRetryable || e.FallbackURL != "" {
+	if e.FallbackURL != "" {
 		return false
 	}
 	switch {
@@ -486,9 +486,6 @@ type APIError struct {
 	RetryAfter time.Duration
 	// Body is the raw response body.
 	Body string
-
-	// notRetryable is set when the body says "retryable": false.
-	notRetryable bool
 }
 
 func newAPIError(method, path string, status int, raw []byte, header http.Header) *APIError {
@@ -503,13 +500,11 @@ func newAPIError(method, path string, status int, raw []byte, header http.Header
 		Error       string `json:"error"`
 		FallbackURL string `json:"fallbackUrl"`
 		CheckedURL  string `json:"checkedUrl"`
-		Retryable   *bool  `json:"retryable"`
 	}
 	if json.Unmarshal(raw, &envelope) == nil {
 		e.Message = envelope.Error
 		e.FallbackURL = envelope.FallbackURL
 		e.CheckedURL = envelope.CheckedURL
-		e.notRetryable = envelope.Retryable != nil && !*envelope.Retryable
 	}
 	return e
 }

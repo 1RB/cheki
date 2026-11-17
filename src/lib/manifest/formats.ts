@@ -85,6 +85,41 @@ export function formatAccountDigits(f: ReceiptFormat | undefined): number | unde
   return f?.inputs.find((i) => i.name === "account")?.digits;
 }
 
+/**
+ * Which extra field a verification for this bank asks for: the matched
+ * format's inputs when there is a format, the bank's manifest flags
+ * otherwise, never a mix. The one derivation of needsAccount/needsPhone:
+ * detect.ts (the UI), the verifier and bank-page-content all call it, so
+ * what the UI asks for and what the server demands cannot drift apart.
+ * tests/manifest/extra-field.test.ts pins the pair to never both be true.
+ */
+export function extraFieldNeeds(
+  format: ReceiptFormat | undefined,
+  bank: { requiresAccount: boolean; requiresPhone?: boolean }
+): { needsAccount: boolean; needsPhone: boolean } {
+  if (format) return { needsAccount: formatNeeds(format, "account"), needsPhone: formatNeeds(format, "phone") };
+  return { needsAccount: Boolean(bank.requiresAccount), needsPhone: Boolean(bank.requiresPhone) };
+}
+
+/**
+ * Digits the account field must hold: the format's input digits, else the
+ * bank's accountDigits. The one chain behind the server's length check, the
+ * BOA QR check, detect's minimum and every label next to the field, so a
+ * bank's rule and the words describing it can never disagree. Undefined
+ * when no account is asked for; consumers that need a number use
+ * DEFAULT_ACCOUNT_DIGITS, which no current bank reaches: every format that
+ * asks for an account declares its digits (tests/manifest/extra-field.test.ts).
+ */
+export function accountDigitsFor(
+  format: ReceiptFormat | undefined,
+  bank: { accountDigits?: number }
+): number | undefined {
+  return formatAccountDigits(format) ?? bank.accountDigits;
+}
+
+/** The digit count assumed when neither the format nor the bank declares one. */
+export const DEFAULT_ACCOUNT_DIGITS = 5;
+
 export function matchesFormat(f: ReceiptFormat, reference: string): boolean {
   const re = compile(f.refPattern);
   return re ? re.test(reference.trim()) : true;

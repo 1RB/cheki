@@ -19,10 +19,12 @@
  *     check": they say nothing about the receipt.
  */
 import { banks, verificationState, type Bank, type VerifyResult } from "@/lib/banks";
+import { canonicalBankCode } from "@/lib/bank-ids";
 import { classifyStatus } from "@/lib/core/status";
 import { tEn, type Translate } from "@/lib/i18n/translate";
 import { formatAgeDays, parseTimestamp } from "@/lib/time/relative";
 import { referenceExample } from "@/lib/reference-case";
+import { EBIRR_LOCAL_HOST } from "@/lib/adapters/url-detector";
 
 /** "info" is a neutral note (grey dot): worth reading, not a warning. */
 export type FraudCheckState = "pass" | "warn" | "mismatch" | "unknown" | "info";
@@ -135,10 +137,18 @@ export interface PresentOptions {
 
 const HTTPS = /^https:\/\//i;
 
+function hostOf(url: string): string | undefined {
+  try {
+    return new URL(url).hostname.toLowerCase();
+  } catch {
+    return undefined;
+  }
+}
+
 export function findBank(codeOrName: string | undefined | null): Bank | undefined {
   if (!codeOrName) return undefined;
   const raw = String(codeOrName).trim();
-  const code = raw.toLowerCase() === "cbe-new" ? "cbe" : raw.toLowerCase();
+  const code = canonicalBankCode(raw);
   return (
     banks.find((b) => b.code === code) ??
     banks.find((b) => b.name.toLowerCase() === raw.toLowerCase() || b.shortName.toLowerCase() === raw.toLowerCase())
@@ -239,6 +249,14 @@ export function presentVerdict(result: VerifyResult | null | undefined, opts: Pr
     if (fallbackUrl && !bank?.geoBlocked && bank?.code === "cbebirr") {
       return neutral("geoBlocked", t("verify.verdict.openAtBank.title", { bank: short }), t("verify.verdict.openAtBank.subtitle", { bank: short }), { fallbackUrl });
     }
+    // A link only Ethiopian networks can open (eBirr's transactioninfo
+    // host): no bank blocked anything, cheki's server just can't reach it.
+    if (fallbackUrl && hostOf(fallbackUrl) === EBIRR_LOCAL_HOST) {
+      return neutral("geoBlocked", t("verify.verdict.localOnly.title"), t("verify.verdict.localOnly.subtitle", { bank: short }), {
+        fallbackUrl,
+        nextStep: t("verify.verdict.localOnly.next"),
+      });
+    }
     if (fallbackUrl || (bank?.geoBlocked && (status === 502 || status === 504))) {
       // Never green, never a judgement: cheki did not see the receipt. The
       // card's one primary action opens the official page, and the next step
@@ -249,24 +267,34 @@ export function presentVerdict(result: VerifyResult | null | undefined, opts: Pr
       });
     }
     if (status === 422) {
-      const listed = /lists this transaction as "([^"]{1,40})"/i.exec(message);
-      if (listed) {
-        return red("notCompleted", t("verify.verdict.notCompleted.title"), t("verify.verdict.notCompleted.subtitle", { bank: short, status: listed[1] }), t("verify.verdict.notCompleted.next"));
+      // What a failure *means* is the error's `code`, never its wording: this
+      // card may not change colour because someone reworded a message. A
+      // codeless 422 (an older server) keeps the default: no matching receipt.
+      switch (result.code) {
+        case "gate:status":
+          return red("notCompleted", t("verify.verdict.notCompleted.title"), t("verify.verdict.notCompleted.subtitle", { bank: short, status: result.detail ?? "" }), t("verify.verdict.notCompleted.next"));
+        case "gate:reference":
+          return red("mismatch", t("verify.verdict.refMismatch.title"), t("verify.verdict.refMismatch.subtitle", { bank: short }), t("verify.verdict.refMismatch.next"));
+        case "gate:amount":
+        case "gate:party":
+        // The bank answered and showed a receipt, but nothing in it confirmed
+        // the check (Siinqee's page without its success line, an unreadable
+        // receipt PDF): amber "not confirmed", never "no such receipt".
+        case "unconfirmed":
+          return { ...base, kind: "unconfirmed", tone: "amber", title: t("verify.verdict.unconfirmed.title"), subtitle: t("verify.verdict.unconfirmed.subtitle", { bank: short }), nextStep: t("verify.verdict.unconfirmed.next"), detail: message || undefined };
+        case "notFound:otherAccount":
+          // BOA files some receipts under the payer's account; the API says so
+          // when a typed account found nothing.
+          return red("notFound", t("verify.verdict.notFound.title"), t("verify.verdict.notFound.subtitle", { bank: short }), t("verify.verdict.notFound.nextBoa"), { checkedUrl, referenceHint });
+        default:
+          // "notFound", "unreadable", "qrMismatch": cheki has nothing to show
+          // for the receipt either way, so they share one next step.
+          return red("notFound", t("verify.verdict.notFound.title"), t("verify.verdict.notFound.subtitle", { bank: short }), t("verify.verdict.notFound.next"), { checkedUrl, referenceHint });
       }
-      if (/different reference/i.test(message)) {
-        return red("mismatch", t("verify.verdict.refMismatch.title"), t("verify.verdict.refMismatch.subtitle", { bank: short }), t("verify.verdict.refMismatch.next"));
-      }
-      if (/(no valid amount|missing the payer|cannot be confirmed as a receipt)/i.test(message)) {
-        return { ...base, kind: "unconfirmed", tone: "amber", title: t("verify.verdict.unconfirmed.title"), subtitle: t("verify.verdict.unconfirmed.subtitle", { bank: short }), nextStep: t("verify.verdict.unconfirmed.next"), detail: message || undefined };
-      }
-      // BOA files some receipts under the payer's account; the API says so
-      // when a typed account found nothing.
-      const next = /try the last 5 digits of the source account/i.test(message) ? t("verify.verdict.notFound.nextBoa") : t("verify.verdict.notFound.next");
-      return red("notFound", t("verify.verdict.notFound.title"), t("verify.verdict.notFound.subtitle", { bank: short }), next, { checkedUrl, referenceHint });
     }
     if (status === 400 || status === 404) {
       // The hint is about the reference: not for a missing account or phone.
-      const aboutReference = !/\b(account|phone)\b/i.test(message);
+      const aboutReference = result.field !== "accountNumber" && result.field !== "phoneNumber";
       return neutral("invalidInput", t("verify.verdict.invalidInput.title"), message || t("verify.verdict.invalidInput.subtitle"), {
         referenceHint: aboutReference ? referenceHint : undefined,
       });

@@ -497,3 +497,27 @@ func TestParseRetryAfter(t *testing.T) {
 		t.Fatal(d)
 	}
 }
+
+// TestIsVerifiedIsOneRule pins the rule every cheki client shares: success
+// and verified, with neither DecodedOnly nor Parsed. The server's
+// verificationState() is the original; the TypeScript SDK's tests run the
+// same matrix against it, and each other SDK states it for itself.
+func TestIsVerifiedIsOneRule(t *testing.T) {
+	flags := []bool{true, false}
+	for _, success := range flags {
+		for _, verified := range flags {
+			for _, decodedOnly := range flags {
+				for _, parsed := range flags {
+					r := &VerifyResult{Success: success, Verified: verified, DecodedOnly: decodedOnly, Parsed: parsed}
+					want := success && verified && !decodedOnly && !parsed
+					if got := r.IsVerified(); got != want {
+						t.Errorf("IsVerified() = %v, want %v (success=%v verified=%v decodedOnly=%v parsed=%v)", got, want, success, verified, decodedOnly, parsed)
+					}
+				}
+			}
+		}
+	}
+	if (*VerifyResult)(nil).IsVerified() {
+		t.Error("a nil result is not verified")
+	}
+}

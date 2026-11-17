@@ -2,7 +2,7 @@
 
 > TypeScript SDK for the [cheki](https://cheki.et) receipt verification API.
 
-Verify Ethiopian bank transfer receipts from CBE, Telebirr, BOA, Dashen, M-Pesa (beta: not yet confirmed with a real receipt), Awash, Siinqee, eBirr, ZamZam (beta: one receipt shape confirmed so far), CBE Birr (beta: two real receipts confirmed so far) and Bunna (beta: one real receipt confirmed so far) (the live banks; `getBanks()` lists the current set). Zero runtime dependencies (uses the global `fetch`, Node.js ≥ 20).
+Verify Ethiopian bank transfer receipts from CBE, Telebirr, BOA, Dashen, M-Pesa (beta: not yet confirmed with a real receipt), Awash, Siinqee (beta: built from real receipts, not yet fetched live), eBirr, ZamZam (beta: one receipt shape confirmed so far), CBE Birr (beta: two real receipts confirmed so far), Bunna (beta: one real receipt confirmed so far) and Wegagen (beta: three real share links confirmed so far) (the live banks; `getBanks()` lists the current set). Zero runtime dependencies (uses the global `fetch`, Node.js ≥ 20).
 
 From the hosted API at cheki.et, Telebirr and M-Pesa come back as a 502 with `fallbackUrl` (the official receipt page), because they block cloud servers. Send the user there to check the amount and receiver; direct checks return once a local relay is live.
 
@@ -86,7 +86,7 @@ A failed item has `success: false`, `status` and `error`, plus `fallbackUrl` whe
 ```ts
 const { banks } = await cheki.getBanks();
 for (const b of banks) console.log(b.id, b.name, b.type, b.status, b.beta, b.requiresAccount, b.accountDigits);
-// b.beta: live, but not yet confirmed with enough real receipts (M-Pesa, ZamZam, CBE Birr, Bunna)
+// b.beta: live, but not yet confirmed with enough real receipts (M-Pesa, ZamZam, CBE Birr, Bunna, Wegagen)
 // b.code is a deprecated alias of b.id
 // b.formats: the bank's receipt formats, current first (status "current" | "legacy" | "deprecated")
 console.log(banks.find((b) => b.id === "cbe")?.formats.find((f) => f.supported)?.label); // "Receipt ID or mbreciept.cbe.com.et link"
@@ -136,7 +136,7 @@ Status codes: 400 bad input, 404 unsupported bank, 413 too large, 422 receipt no
   - `GET` (banks, health): a network error or a 5xx.
   - verify: a network error, or a 429/503 whose `Retry-After` is at most 60 s.
   - batch: only a 429/503 with a short `Retry-After`. Never a network error or a 5xx: a 504 means the batch ran out of server time, and replaying it would hit every bank again and charge every receipt against the rate limit.
-  - Never: timeouts, other 4xx, a geo-blocked bank (502 with `fallbackUrl`), or any error the server marks `retryable: false`. A 500/502/504 on verify is not retried either: the server already ran the check, with its own 2 attempts per bank.
+  - Never: timeouts, other 4xx, a geo-blocked bank (502 with `fallbackUrl`). A 500/502/504 on verify is not retried either: the server already ran the check, with its own 2 attempts per bank.
 - The retry waits for `Retry-After` (a longer wait than 60 s is thrown as `ChekiRateLimitError` instead); a network-error retry waits 1-2 s. Timeouts are never retried because the server may still be working on the request.
 - The server tries each bank at most 2 times, so one `verify()` reaches the bank at most **4 times**.
 

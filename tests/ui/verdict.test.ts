@@ -127,9 +127,34 @@ describe("amber", () => {
   });
 
   it("a 422 for a response with no amount or parties is amber, not 'no receipt'", () => {
-    const v = presentVerdict({ success: false, httpStatus: 422, error: "[CBE] The bank's response has no valid amount, so it cannot be confirmed as a receipt." });
+    const v = presentVerdict({ success: false, httpStatus: 422, code: "gate:amount", error: "[CBE] The bank's response has no valid amount, so it cannot be confirmed as a receipt." });
     expect(v.tone).toBe("amber");
     expect(v.kind).toBe("unconfirmed");
+  });
+
+  it("the code decides, not the wording: the same neutral message reads differently per code", () => {
+    const error = "anything the bank said";
+    expect(presentVerdict({ success: false, httpStatus: 422, code: "gate:amount", error }).kind).toBe("unconfirmed");
+    expect(presentVerdict({ success: false, httpStatus: 422, code: "gate:party", error }).kind).toBe("unconfirmed");
+    expect(presentVerdict({ success: false, httpStatus: 422, code: "gate:reference", error }).kind).toBe("mismatch");
+    expect(presentVerdict({ success: false, httpStatus: 422, code: "gate:status", detail: "Pending", error }).kind).toBe("notCompleted");
+    expect(presentVerdict({ success: false, httpStatus: 422, code: "notFound", error }).kind).toBe("notFound");
+    // An unreadable answer or a QR that contradicts the bank is still red:
+    // cheki has nothing to show for the receipt.
+    for (const code of ["unreadable", "qrMismatch"] as const) {
+      const v = presentVerdict({ success: false, httpStatus: 422, code, error });
+      expect(v.kind).toBe("notFound");
+      expect(v.tone).toBe("red");
+    }
+  });
+
+  it("a reworded message cannot flip a verdict: only the code classifies", () => {
+    const byCode = presentVerdict({ success: false, httpStatus: 422, code: "gate:status", detail: "Failed", error: "wording with 'different reference' and 'no valid amount' in it" });
+    expect(byCode.kind).toBe("notCompleted");
+    expect(byCode.subtitle).toContain("Failed");
+    // A codeless 422 from an older server keeps the default classification.
+    const legacy = presentVerdict({ success: false, httpStatus: 422, error: "[CBE] The bank lists this transaction as \"Failed\". It is not a completed payment." });
+    expect(legacy.kind).toBe("notFound");
   });
 });
 
@@ -147,7 +172,7 @@ describe("red", () => {
 
   it("a Failed or Pending bank status reads 'Payment not completed'", () => {
     for (const status of ["Failed", "Pending"]) {
-      const v = presentVerdict({ success: false, httpStatus: 422, error: `[Telebirr] The bank lists this transaction as "${status}". It is not a completed payment.` }, { bankCode: "telebirr" });
+      const v = presentVerdict({ success: false, httpStatus: 422, code: "gate:status", detail: status, error: `[Telebirr] The bank lists this transaction as "${status}". It is not a completed payment.` }, { bankCode: "telebirr" });
       expect(v.tone).toBe("red");
       expect(v.title).toBe("Payment not completed");
       expect(v.subtitle).toContain(status);
@@ -155,7 +180,7 @@ describe("red", () => {
   });
 
   it("a different reference from the bank is red", () => {
-    const v = presentVerdict({ success: false, httpStatus: 422, error: "[CBE] The bank returned a receipt with a different reference than the one you entered." });
+    const v = presentVerdict({ success: false, httpStatus: 422, code: "gate:reference", error: "[CBE] The bank returned a receipt with a different reference than the one you entered." });
     expect(v.tone).toBe("red");
     expect(v.kind).toBe("mismatch");
   });
@@ -203,6 +228,21 @@ describe("neutral: couldn't check", () => {
 
   it("an http: fallback link is dropped", () => {
     expect(presentVerdict({ success: false, httpStatus: 502, fallbackUrl: "http://evil.example" }, { bankCode: "cbe" }).fallbackUrl).toBeUndefined();
+  });
+
+  it("a 400 about the reference carries the hint; one about the extra field does not", () => {
+    const opts = { referenceHint: true, bankCode: "cbe" } as const;
+    const ref = presentVerdict({ success: false, httpStatus: 400, field: "reference", error: "Reference number is required." }, opts);
+    expect(ref.kind).toBe("invalidInput");
+    expect(ref.referenceHint).toBeTruthy();
+    for (const field of ["accountNumber", "phoneNumber"] as const) {
+      const v = presentVerdict({ success: false, httpStatus: 400, field, error: "The wording may even say account or phone." }, opts);
+      expect(v.kind).toBe("invalidInput");
+      expect(v.referenceHint).toBeUndefined();
+    }
+    // No field at all (an older server): the reference hint stays, as it did
+    // when the rule was a regex over the message.
+    expect(presentVerdict({ success: false, httpStatus: 404, error: "Unsupported bank: cbx." }, opts).referenceHint).toBeTruthy();
   });
 
   it("no neutral state carries a guide link or details", () => {

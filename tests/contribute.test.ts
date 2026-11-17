@@ -130,7 +130,7 @@ describe("contributeLeadMode", () => {
     "abay", "addis", "amhara", "berhan", "enat", "global", "lion", "oromia",
     "hibret", "hijra", "shabelle", "goh", "tsedey", "gadaa", "rammis",
   ];
-  const linkFirst = ["zemen", "nib", "wegagen", "ahadu", "kaafi"];
+  const linkFirst = ["zemen", "nib", "ahadu", "kaafi"];
 
   it("leads with a screenshot for banks with no known endpoint", () => {
     for (const id of screenshotFirst) expect(contributeLeadMode(id), id).toBe("screenshot");
