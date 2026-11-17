@@ -232,10 +232,7 @@ export class MpesaParser extends BaseParser {
   readonly bankId = "mpesa";
   readonly bankName = "M-Pesa Ethiopia";
   readonly responseType = "json" as const;
-  readonly requiresAccount = false;
-  readonly accountDigits?: number = undefined;
-  readonly requiresPhone = false;
-  readonly geoBlocked = true;
+  // geoBlocked is read from the manifest (src/lib/manifest/banks.json).
 
   /** The envelope carries a base64 PDF, so it may exceed the 2 MB JSON cap; the decoded PDF still respects MAX_PDF_BYTES. */
   protected get maxBytes(): number {

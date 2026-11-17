@@ -1,6 +1,6 @@
 import sharp from "sharp";
 import type { QRCode } from "jsqr";
-import { parseDashenQr } from "./qr/dashen";
+import { readQrPayload } from "./qr/chain";
 
 /**
  * Decode a QR code from an image buffer.
@@ -51,25 +51,27 @@ export async function decodeQrFromImage(buffer: Buffer): Promise<QRCode | null> 
 export function parseQrReference(qrData: string): { bank: string; reference: string } | null {
   if (!qrData) return null;
 
+  // The shared chain first (src/lib/qr/chain.ts): a payload that is one of
+  // the QR formats cheki reads is that format, in the order the verifier and
+  // the input detector read it too. A BOA payload is ciphertext only the BOA
+  // branch can decrypt, so it is left to the verifier (null here).
+  const qr = readQrPayload(qrData);
+  if (qr.format && qr.format !== "boa") {
+    return { bank: qr.format, reference: qr.reference };
+  }
+
   // CBE receipts sometimes encode the transaction ID directly.
   const cbeMatch = qrData.match(/\bFT[A-Z0-9]{10}\b/i);
   if (cbeMatch) {
     return { bank: "cbe", reference: cbeMatch[0].toUpperCase() };
   }
 
-  // Telebirr QR codes are base64-encoded hex strings that contain the invoice
-  // number as a printable ASCII run inside the decoded payload.
+  // A Telebirr payload the strict chain does not accept (its CRC does not
+  // check out) still has its invoice number readable as a printable ASCII
+  // run inside the decoded payload.
   const telebirr = extractTelebirrInvoiceFromQr(qrData);
   if (telebirr) {
     return { bank: "telebirr", reference: telebirr };
-  }
-
-  // Dashen Super App QR codes are "superappreceipt_<payload>.<trailing>",
-  // where the payload is the FT Ref XOR a fixed key. The endpoint only
-  // answers for the decoded reference, never the token.
-  const dashen = parseDashenQr(qrData);
-  if (dashen.ok) {
-    return { bank: "dashen", reference: dashen.reference };
   }
 
   return null;

@@ -112,6 +112,12 @@ describe("/api/parse", () => {
       })
     );
 
+  it("requires an explicit bank code; a URL in the body cannot stand in for it", async () => {
+    const r = await post({ url: "https://transactioninfo.ethiotelecom.et/receipt/CHQ0SAMPLE", content: "x" });
+    expect(r.status).toBe(400);
+    expect((await r.json()).error).toBe("Bank code is required.");
+  });
+
   it("never returns verified: true for pasted content", async () => {
     const content = [
       "Payer Name", "Abebe Kebede", "Credited Party name", "My Shop", "transaction status", "Completed",

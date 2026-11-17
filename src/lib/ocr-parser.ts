@@ -1,5 +1,6 @@
 import { detectBankFromUrl } from "./adapters/url-detector";
 import { banks, detectBank } from "./banks";
+import { canonicalBankCode } from "./bank-ids";
 
 export type OcrParseConfidence = "high" | "medium" | "low";
 
@@ -226,7 +227,7 @@ function parseReceiptTextInternal(text: string): OcrParseResult | null {
   if (urlInText) {
     const fromUrl = detectBankFromUrl(urlInText);
     if (fromUrl) {
-      const canonicalBank = fromUrl.bank === "cbe-new" ? "cbe" : fromUrl.bank;
+      const canonicalBank = canonicalBankCode(fromUrl.bank);
       return {
         reference: fromUrl.reference,
         bank: canonicalBank,

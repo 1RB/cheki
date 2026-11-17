@@ -8,13 +8,11 @@
  */
 import manifestData from "@/lib/manifest/banks.json";
 import { banks, type Bank } from "@/lib/banks";
+import { canonicalBankCode } from "@/lib/bank-ids";
 import { detectBankFromUrl, isUrl } from "@/lib/adapters/url-detector";
-import { formatAccountDigits, formatNeeds, matchesFormat, primaryFormat, supportedFormats } from "@/lib/manifest/formats";
+import { accountDigitsFor, extraFieldNeeds, formatNeeds, matchesFormat, primaryFormat, supportedFormats, DEFAULT_ACCOUNT_DIGITS } from "@/lib/manifest/formats";
 import type { ReceiptFormat } from "@/lib/core/types";
-import { isBoaQrPayload } from "@/lib/qr/decode";
-import { parseTelebirrQr } from "@/lib/qr/telebirr";
-import { parseDashenQr } from "@/lib/qr/dashen";
-import { parseWegagenQr } from "@/lib/qr/wegagen";
+import { readQrPayload } from "@/lib/qr/chain";
 import { canonicalReference } from "@/lib/reference-case";
 
 /**
@@ -74,7 +72,7 @@ export function betaInfo(bank: Bank | undefined): { beta: boolean; note?: string
 
 function bankByCode(code: string | undefined | null): Bank | undefined {
   if (!code) return undefined;
-  const c = code === "cbe-new" ? "cbe" : code;
+  const c = canonicalBankCode(code);
   return liveBanks.find((b) => b.code === c);
 }
 
@@ -114,79 +112,36 @@ export function detectInput(raw: string, opts: { lockedBank?: string; overrideBa
 
   if (!value) return finish(base);
 
-  // Telebirr receipt QR before BOA: its CRC-checked structure cannot match a
-  // BOA ciphertext, while a Telebirr payload can be a multiple of 16 bytes.
-  // Like a link, the QR names its own bank, so a locked page reports it
-  // instead of sending the transaction number to another bank.
-  const telebirrQr = parseTelebirrQr(value);
-  if (telebirrQr.ok) {
-    const telebirr = bankByCode("telebirr");
-    if (telebirr) {
-      return finish({
-        ...base,
-        kind: "telebirrQr",
-        value: telebirrQr.reference,
-        bank: telebirr,
-        candidates: [telebirr],
-        overridden: false,
-        format: primaryFormat(telebirr),
-        needsAccount: false,
-        needsPhone: false,
-      });
-    }
-  }
+  // Receipt QR payloads, read by the shared chain (src/lib/qr/chain.ts), which
+  // fixes the order they are tried in. Each named format names its own bank,
+  // so on a locked page the mismatch is reported instead of the value being
+  // sent to another bank.
+  const qr = readQrPayload(value);
 
-  // A Dashen Super App receipt QR names its own bank too, and carries only the
-  // FT Ref, obfuscated with a fixed key. Decoded here and then checked exactly
-  // like a typed reference: the raw token is never sent, because the endpoint
-  // refuses it (HTTP 401) and only the decoded FT Ref resolves.
-  const dashenQr = parseDashenQr(value);
-  if (dashenQr.ok) {
-    const dashen = bankByCode("dashen");
-    if (dashen) {
-      return finish({
-        ...base,
-        kind: "dashenQr",
-        value: dashenQr.reference,
-        bank: dashen,
-        candidates: [dashen],
-        overridden: false,
-        format: primaryFormat(dashen),
-        needsAccount: false,
-        needsPhone: false,
-      });
-    }
-  }
-
-  // A Wegagen receipt QR is prose with its share link inside it. Only the
-  // share id after ?id= is read out; it is then checked exactly like a
-  // pasted share link (the names, accounts and amount in the text are
-  // ignored). A bare share link on its own is a link, not a QR: it is left
-  // to the URL branch below, which keeps kind "url".
-  if (!isUrl(value)) {
-    const wegagenQr = parseWegagenQr(value);
-    if (wegagenQr.ok) {
-      const wegagen = bankByCode("wegagen");
-      if (wegagen) {
-        const format = supportedFormats(wegagen).find((f) => matchesFormat(f, wegagenQr.shareId)) ?? primaryFormat(wegagen);
-        return finish({
-          ...base,
-          kind: "wegagenQr",
-          value: wegagenQr.shareId,
-          bank: wegagen,
-          candidates: [wegagen],
-          overridden: false,
-          format,
-          needsAccount: false,
-          needsPhone: false,
-        });
-      }
-    }
-  }
-
-  if (isBoaQrPayload(value)) {
+  if (qr.format === "boa") {
     const boa = bankByCode("boa");
     return finish({ ...base, kind: "boaQr", bank: locked ?? boa, candidates: boa ? [boa] : [], overridden: false });
+  }
+
+  if (qr.format) {
+    const bank = bankByCode(qr.format);
+    if (bank) {
+      // A Wegagen share id is matched against the formats like any reference;
+      // the other two carry a plain receipt number for the primary format.
+      const format =
+        qr.format === "wegagen" ? supportedFormats(bank).find((f) => matchesFormat(f, qr.reference)) ?? primaryFormat(bank) : primaryFormat(bank);
+      return finish({
+        ...base,
+        kind: `${qr.format}Qr`,
+        value: qr.reference,
+        bank,
+        candidates: [bank],
+        overridden: false,
+        format,
+        needsAccount: false,
+        needsPhone: false,
+      });
+    }
   }
 
   if (isUrl(value)) {
@@ -216,7 +171,7 @@ export function detectInput(raw: string, opts: { lockedBank?: string; overrideBa
       olderFormat: Boolean(format && primary && format !== primary),
       needsAccount: linkNeedsAccount,
       needsPhone: linkNeedsPhone,
-      ...(linkNeedsAccount ? { accountDigits: formatAccountDigits(format) ?? bank.accountDigits } : {}),
+      ...(linkNeedsAccount ? { accountDigits: accountDigitsFor(format, bank) } : {}),
     });
   }
 
@@ -228,8 +183,7 @@ export function detectInput(raw: string, opts: { lockedBank?: string; overrideBa
   const reference = canonicalReference(bank.code, value);
   const primary = primaryFormat(bank);
   const format = supportedFormats(bank).find((f) => matchesFormat(f, reference)) ?? primary;
-  const needsAccount = format ? formatNeeds(format, "account") : bank.requiresAccount;
-  const needsPhone = format ? formatNeeds(format, "phone") : Boolean(bank.requiresPhone);
+  const { needsAccount, needsPhone } = extraFieldNeeds(format, bank);
   return finish({
     ...base,
     kind: "reference",
@@ -240,7 +194,7 @@ export function detectInput(raw: string, opts: { lockedBank?: string; overrideBa
     olderFormat: Boolean(format && primary && format !== primary),
     needsAccount,
     needsPhone,
-    accountDigits: formatAccountDigits(format) ?? bank.accountDigits,
+    accountDigits: accountDigitsFor(format, bank),
   });
 }
 
@@ -277,7 +231,7 @@ export function accountFieldKeys(d: Pick<Detection, "bank">): { label: string; m
 export function extraFieldProblem(d: Detection, extra: string): "phone" | "account" | null {
   const digits = extra.replace(/\D/g, "");
   if (d.needsPhone && !/^(251|0)?[79]\d{8}$/.test(digits)) return "phone";
-  if (d.needsAccount && digits.length < (d.accountDigits ?? 5)) return "account";
+  if (d.needsAccount && digits.length < (d.accountDigits ?? DEFAULT_ACCOUNT_DIGITS)) return "account";
   return null;
 }
 

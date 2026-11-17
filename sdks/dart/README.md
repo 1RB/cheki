@@ -113,7 +113,7 @@ client.getReceiptUrl('cbe', 'FT26SAMPLE01', '1000000006171'); // the bank's PDF
   - `GET` (banks, health): a network error or a 5xx.
   - verify: a network error, or a 429/503 whose `Retry-After` is at most 60 s.
   - batch: only a 429/503 with a short `Retry-After`. Never a network error or a 5xx: a 504 means the batch ran out of server time, and replaying it would hit every bank again and charge every receipt against the rate limit.
-  - Never: timeouts, other 4xx, a geo-blocked bank (502 with `fallbackUrl`), or any error the server marks `retryable: false`. A 500/502/504 on verify is not retried either: the server already ran the check, with its own 2 attempts per bank.
+  - Never: timeouts, other 4xx, a geo-blocked bank (502 with `fallbackUrl`). A 500/502/504 on verify is not retried either: the server already ran the check, with its own 2 attempts per bank.
 - The retry waits for `Retry-After`; a network-error retry waits 1-2 s.
 - The server tries each bank at most 2 times, so one call reaches the bank at most **4 times**.
 - Responses are decoded as UTF-8 whatever the `content-type` says (needs `http` 1.4.0+, which the pubspec requires), so Amharic names and messages arrive intact.

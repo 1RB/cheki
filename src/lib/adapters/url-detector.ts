@@ -20,6 +20,8 @@
  *   - transinfo.wegagenbanksc.com.et:8183/?id={SHARE_ID} → Wegagen (24-char
  *     share id; the printed 16-character Reference No is not the key)
  */
+import { EBIRR_HOST, EBIRR_TENANTS } from "../security/reference";
+
 export interface DetectedReceipt {
   bank: string;
   reference: string;
@@ -46,8 +48,16 @@ export function bunnaTokenFromHash(hash: string): string | null {
   return parts.length > 0 ? parts.join("/") : null;
 }
 
-/** eBirr white-label tenants that cheki recognises by name. */
-const EBIRR_TENANTS: Record<string, string> = {
+/**
+ * Where a recognised eBirr tenant's link is routed: tenant to bank id.
+ * Membership is not decided here. EBIRR_TENANTS in
+ * src/lib/security/reference.ts is the one list of tenants (it is what
+ * reference validation rejects against) and this routing must cover it
+ * exactly; tests/security/ebirr-tenants.test.ts pins the two together.
+ * The values are bank ids, not tenants: kaafimf is the tenant KAAFI
+ * Microfinance (bank id "kaafi") issues receipts under.
+ */
+const EBIRR_ROUTING: Record<string, string> = {
   siinqee: "siinqee",
   nib: "nib",
   // Wegagen's own share links (transinfo.wegagenbanksc.com.et) are handled
@@ -57,7 +67,6 @@ const EBIRR_TENANTS: Record<string, string> = {
   wegagen: "ebirr",
   ahadu: "ahadu",
   kaafimf: "kaafi",
-  kaafi: "kaafi",
   coop: "siinqee",
 };
 
@@ -212,14 +221,18 @@ export function detectBankFromUrl(input: string): DetectedReceipt | null {
     }
 
     // eBirr white-label: https://receipt.ebirr.com/{tenant}/{token}
-    // The tenant names the issuing bank. Only exactly receipt.ebirr.com and a
-    // known tenant are accepted; an unknown tenant is not guessed at.
-    if (host === "receipt.ebirr.com") {
+    // The tenant names the issuing bank. Only exactly the eBirr host and a
+    // tenant from the canonical EBIRR_TENANTS set are accepted: the same set
+    // parseEbirrReference validates against, so a link can never detect here
+    // and then be rejected there. An unknown tenant is not guessed at.
+    if (host === EBIRR_HOST) {
       const parts = url.pathname.split("/").filter(Boolean);
       if (parts.length === 2) {
         const tenant = parts[0].toLowerCase();
-        if (!Object.hasOwn(EBIRR_TENANTS, tenant)) return null;
-        const bank = EBIRR_TENANTS[tenant];
+        if (!EBIRR_TENANTS.has(tenant)) return null;
+        const bank = EBIRR_ROUTING[tenant];
+        // A tenant with no routing entry is not routable, never a guess.
+        if (!bank) return null;
         // Keep tenant/token: the eBirr parsers rebuild the URL from it.
         return { bank, reference: `${tenant}/${parts[1]}` };
       }

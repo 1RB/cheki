@@ -231,7 +231,16 @@ export interface HealthStatus {
     cached: boolean;
     banks: BankHealth[];
 }
-/** True only when the bank confirmed the receipt. `success`, `decodedOnly` and `parsed` are not proof. */
+/**
+ * True only when the bank confirmed the receipt: `success`, `verified`, and
+ * neither `decodedOnly` nor `parsed`. The other three are not proof: a BOA QR
+ * the bank could not confirm and content someone pasted are both handled
+ * requests, never payments.
+ *
+ * This is the server's `verificationState()` rule, re-read from JSON because
+ * the SDK is a separate package. tests/security/ui-verification-state.test.ts
+ * runs both over every combination of those four flags, so they cannot drift.
+ */
 export declare function isVerified(result: unknown): result is VerifyResult & {
     verified: true;
 };
@@ -325,8 +334,8 @@ export declare function parseRetryAfter(value: string | null | undefined, now?: 
  * - `POST /api/verify/batch`: only 429/503 with a short Retry-After. Never on a
  *   network error or 5xx (a 504 means the batch ran out of time; replaying it
  *   would hit every bank again and cost every receipt against the limit).
- * - Never: timeouts, other 4xx, and any answer with `retryable: false` or a
- *   `fallbackUrl` (geo-blocked bank).
+ * - Never: timeouts, other 4xx, or an answer that carries a `fallbackUrl`
+ *   (geo-blocked bank).
  */
 export declare class Cheki {
     private readonly config;

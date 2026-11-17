@@ -24,8 +24,7 @@ namespace Cheki;
  * - POST /api/verify/batch: only 429/503 with a short Retry-After. A 504
  *   means the batch ran out of time; replaying it would hit every bank again
  *   and charge every receipt against the rate limit.
- * - Never: timeouts, other 4xx, and any answer with "retryable": false or a
- *   fallbackUrl.
+ * - Never: timeouts, other 4xx, and any answer carrying a fallbackUrl.
  */
 class ChekiClient
 {
@@ -340,9 +339,9 @@ class ChekiClient
 
     /**
      * The retry rule shared by every cheki SDK (retryCases in
-     * sdks/fixtures/api-contract.json): never when the body says
-     * "retryable": false or carries a fallbackUrl; 429 and 503 only with a
-     * Retry-After of at most 60 s; any other 5xx only for GET.
+     * sdks/fixtures/api-contract.json): never when the body carries a
+     * fallbackUrl; 429 and 503 only with a Retry-After of at most 60 s; any
+     * other 5xx only for GET.
      *
      * @param array<string, mixed>|null $body
      */
@@ -351,7 +350,7 @@ class ChekiClient
         if ($status !== 429 && $status < 500) {
             return false;
         }
-        if ($body !== null && (($body['retryable'] ?? null) === false || is_string($body['fallbackUrl'] ?? null))) {
+        if ($body !== null && is_string($body['fallbackUrl'] ?? null)) {
             return false;
         }
         if ($status === 429 || $status === 503) {

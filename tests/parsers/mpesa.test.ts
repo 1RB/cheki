@@ -120,7 +120,7 @@ describe("MpesaParser PDF fields", () => {
       paymentChannel: "APP",
     });
     expect(parsed.transactionStatus).toBeUndefined();
-    expect(verificationGate(parsed, { bankId: "mpesa", requestedReference: REF })).toEqual({ ok: true });
+    expect(verificationGate(parsed, { requestedReference: REF })).toEqual({ ok: true });
   });
 
   it("reads flowed text (one long line) the same way", () => {
@@ -224,6 +224,7 @@ describe("Verifier with M-Pesa (fetch stubbed, envelope through the shared gate)
     const r = await v.verify({ bank: "mpesa", reference: ref("UCKB") });
     expect(r.ok).toBe(false);
     if (!r.ok && "message" in r.error) expect(r.error.message).toMatch(/different reference/);
+    if (!r.ok && r.error.kind === "EXTRACTION_ERROR") expect(r.error.code).toBe("gate:reference");
   });
 
   it("the reference compared and returned is the one read from the PDF, never the requested one echoed back", async () => {

@@ -96,9 +96,21 @@ function canonicalReceiptReference(bank, reference) {
     return shape.test(compact) ? compact : reference;
 }
 const BATCH_PATH = "/api/verify/batch";
-/** True only when the bank confirmed the receipt. `success`, `decodedOnly` and `parsed` are not proof. */
+/**
+ * True only when the bank confirmed the receipt: `success`, `verified`, and
+ * neither `decodedOnly` nor `parsed`. The other three are not proof: a BOA QR
+ * the bank could not confirm and content someone pasted are both handled
+ * requests, never payments.
+ *
+ * This is the server's `verificationState()` rule, re-read from JSON because
+ * the SDK is a separate package. tests/security/ui-verification-state.test.ts
+ * runs both over every combination of those four flags, so they cannot drift.
+ */
 function isVerified(result) {
-    return typeof result === "object" && result !== null && result.verified === true;
+    if (typeof result !== "object" || result === null)
+        return false;
+    const r = result;
+    return r.success === true && r.verified === true && r.decodedOnly !== true && r.parsed !== true;
 }
 // ============================================================================
 // Error Hierarchy
@@ -212,8 +224,8 @@ function parseRetryAfter(value, now = Date.now()) {
  * Whether one more attempt is safe for this answer. Shared rule of every
  * cheki SDK (sdks/fixtures/api-contract.json `retryCases`):
  *
- * - never when the body says `retryable: false` or carries a `fallbackUrl`
- *   (a geo-blocked bank answers the same way every time);
+ * - never when the body carries a `fallbackUrl` (a geo-blocked bank
+ *   answers the same way every time);
  * - 429 and 503 only with a Retry-After of at most 60 s (the server refused
  *   the request before doing any work);
  * - any other 5xx (500, 502, 504) only for GET: `POST /api/verify` and
@@ -223,7 +235,7 @@ function parseRetryAfter(value, now = Date.now()) {
  */
 function shouldRetryStatus(method, status, retryAfterSeconds, body) {
     const obj = body && typeof body === "object" ? body : undefined;
-    if (obj?.retryable === false || typeof obj?.fallbackUrl === "string")
+    if (typeof obj?.fallbackUrl === "string")
         return false;
     if (status === 429 || status === 503) {
         return retryAfterSeconds !== undefined && retryAfterSeconds * 1000 <= MAX_RETRY_AFTER_MS;
@@ -245,8 +257,8 @@ function shouldRetryStatus(method, status, retryAfterSeconds, body) {
  * - `POST /api/verify/batch`: only 429/503 with a short Retry-After. Never on a
  *   network error or 5xx (a 504 means the batch ran out of time; replaying it
  *   would hit every bank again and cost every receipt against the limit).
- * - Never: timeouts, other 4xx, and any answer with `retryable: false` or a
- *   `fallbackUrl` (geo-blocked bank).
+ * - Never: timeouts, other 4xx, or an answer that carries a `fallbackUrl`
+ *   (geo-blocked bank).
  */
 class Cheki {
     constructor(config) {

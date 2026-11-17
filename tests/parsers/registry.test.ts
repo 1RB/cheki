@@ -31,7 +31,6 @@ describe("parser registry", () => {
     expect(cbe!.bankId).toBe("cbe");
     expect(cbe!.bankName).toBe("Commercial Bank of Ethiopia");
     expect(cbe!.responseType).toBe("pdf");
-    expect(cbe!.requiresAccount).toBe(true);
   });
 
   it("getParser returns undefined for unknown bank", () => {

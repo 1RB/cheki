@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Verifier, errorToHttpStatus, errorToMessage } from "@/lib";
+import { Verifier, errorToHttpStatus, errorPayload } from "@/lib";
+import { verificationState } from "@/lib/banks";
 import { getCached, setCached, verificationCacheKey } from "@/lib/receipt-cache";
 import { limiters, rateLimited } from "@/lib/rate-limit";
 import { readJsonCapped, bodyErrorResponse } from "@/lib/http/read-body";
@@ -53,25 +54,18 @@ export async function POST(request: NextRequest) {
 
     if (!result.ok) {
       const status = errorToHttpStatus(result.error);
-      const message = errorToMessage(result.error);
-      const response: Record<string, unknown> = {
-        success: false,
-        error: message,
-      };
-      // Include fallback URL for geo-blocked banks
-      if (result.error.kind === "ENDPOINT_ERROR" && "fallbackUrl" in result.error) {
-        response.fallbackUrl = (result.error as { fallbackUrl?: string }).fallbackUrl;
-      }
-      // The bank answered but did not confirm: the page it answered on.
-      if (result.error.kind === "EXTRACTION_ERROR" && result.error.checkedUrl) {
-        response.checkedUrl = result.error.checkedUrl;
-      }
+      // `code` / `detail` / `field` are the state the verdict card switches
+      // on; `error` is copy. One helper builds this for both verify routes.
+      const response = errorPayload(result.error);
       // Failures are never cached. A timeout or geo-block must retry live.
       return NextResponse.json(response, { status });
     }
 
     const payload = { success: true, ...result.value };
-    if (result.value.verified) setCached(key, payload);
+    // Only a bank-confirmed receipt earns a cache entry, by the same rule the
+    // verdict card uses: a cached answer is never judged differently from a
+    // live one.
+    if (verificationState(payload) === "verified") setCached(key, payload);
 
     return NextResponse.json({ ...payload, cached: false }, {
       headers: { "x-cheki-cache": "miss" },

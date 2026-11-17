@@ -185,19 +185,19 @@ describe("ZamZamParser.parseRecord", () => {
     }
     // Unknown side: parsed, but no party, so the shared gate fails it.
     const odd = ZamZamParser.parseRecord(json({ ...SYNTH_ZAMZAM_DEBIT, drcr: "X" }), SYNTH_ZAMZAM_ID).parsed;
-    expect(verificationGate(odd, { bankId: "zamzam", requestedReference: SYNTH_ZAMZAM_ID })).toEqual({ ok: false, reason: "party" });
+    expect(verificationGate(odd, { referenceIsOpaqueToken: true, requestedReference: SYNTH_ZAMZAM_ID })).toEqual({ ok: false, reason: "party" });
   });
 
   it("the gate accepts the record although its reference differs from the id", () => {
     const { parsed } = ZamZamParser.parseRecord(json(SYNTH_ZAMZAM_DEBIT), SYNTH_ZAMZAM_ID);
-    expect(verificationGate(parsed, { bankId: "zamzam", requestedReference: SYNTH_ZAMZAM_ID })).toEqual({ ok: true });
+    expect(verificationGate(parsed, { referenceIsOpaqueToken: true, requestedReference: SYNTH_ZAMZAM_ID })).toEqual({ ok: true });
   });
 
   it("a zero or missing amount fails the gate", () => {
     const zero = ZamZamParser.parseRecord(json({ ...SYNTH_ZAMZAM_DEBIT, amount: "0" }), SYNTH_ZAMZAM_ID).parsed;
-    expect(verificationGate(zero, { bankId: "zamzam" })).toMatchObject({ ok: false, reason: "amount" });
+    expect(verificationGate(zero, { referenceIsOpaqueToken: true })).toMatchObject({ ok: false, reason: "amount" });
     const none = ZamZamParser.parseRecord(json({ ...SYNTH_ZAMZAM_DEBIT, amount: "NULL" }), SYNTH_ZAMZAM_ID).parsed;
-    expect(verificationGate(none, { bankId: "zamzam" })).toMatchObject({ ok: false, reason: "amount" });
+    expect(verificationGate(none, { referenceIsOpaqueToken: true })).toMatchObject({ ok: false, reason: "amount" });
   });
 });
 

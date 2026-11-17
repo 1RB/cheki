@@ -15,8 +15,9 @@
  * There is no "slow": status.json records no latency today. When it does,
  * this is the one place to add it.
  */
-import type { BankManifestEntry } from "./core/types";
+import type { BankManifestEntry, ReceiptFormat } from "./core/types";
 import type { BankHealth, HealthStatus } from "./health";
+import { isSupportedFormat } from "./manifest/formats";
 
 export type BankState = "working" | "down" | "geo" | "unsupported";
 
@@ -43,9 +44,34 @@ export function stateMeaning(state: BankState, bank: string, measuredFrom: strin
 
 export function bankState(bank: Pick<BankManifestEntry, "status" | "geoBlocked">, status: HealthStatus): BankState {
   if (bank.status !== "live") return "unsupported";
-  if (status === "degraded") return "down";
-  if (status === "not-checked") return bank.geoBlocked ? "geo" : "working";
-  return "working";
+  // Every HealthStatus is named: a new status.json vocabulary word cannot
+  // fall through to "working" (a green dot is the loudest wrong answer), it
+  // fails to compile here until this mapping has decided what it means.
+  switch (status) {
+    case "degraded":
+      return "down";
+    case "not-checked":
+      return bank.geoBlocked ? "geo" : "working";
+    case "live":
+    case "in-development":
+      return "working";
+    default: {
+      const exhaustive: never = status;
+      return exhaustive;
+    }
+  }
+}
+
+/**
+ * The tag /endpoints puts on a format, in the reader's words. Whether cheki
+ * fetches the format is isSupportedFormat's call (has a parser, not retired),
+ * never the status alone: a current format with a parser is checked, a legacy
+ * one without a parser is not, and the status by itself says neither.
+ */
+export function formatStatusTag(f: ReceiptFormat): string {
+  if (isSupportedFormat(f)) return "Still checked";
+  if (f.status === "current") return "Newer, not supported yet";
+  return f.status === "deprecated" ? "Retired" : "Not checked";
 }
 
 /** The dot's tone. Green is "answering as expected", nothing stronger. */
@@ -96,4 +122,15 @@ export function isStale(generatedAt: string | undefined, now: number): boolean {
 /** Health rows for a bank's older formats ("<bank>:<formatId>"). */
 export function legacyHealth(all: BankHealth[], bankId: string): BankHealth[] {
   return all.filter((h) => h.id.startsWith(`${bankId}:`));
+}
+
+/**
+ * The format id inside a "<bank>:<formatId>" health row (src/lib/health.ts
+ * builds the key; legacyHealth above keeps a bank's rows). The reading side
+ * of the key has this one owner: a key with no format part gives undefined,
+ * never half an id.
+ */
+export function healthFormatId(id: string): string | undefined {
+  const at = id.indexOf(":");
+  return at === -1 ? undefined : id.slice(at + 1) || undefined;
 }

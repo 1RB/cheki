@@ -13,7 +13,14 @@ import { getParser } from "./parsers/registry";
 import "./parsers";
 import { removeScriptsAndStyles, TAG_RE } from "./core/html";
 
-export type HealthStatus = "live" | "in-development" | "degraded" | "not-checked";
+/**
+ * Every status a status.json row can carry. The list is the source; the type
+ * follows it, so a producer returning a new status fails to compile until
+ * consumers (bankState, /status) have decided what it means, and
+ * tests/manifest/status-vocab.test.ts pins the committed file to it.
+ */
+export const HEALTH_STATUSES = ["live", "in-development", "degraded", "not-checked"] as const;
+export type HealthStatus = (typeof HEALTH_STATUSES)[number];
 
 export interface ObservedResponse {
   status: number;

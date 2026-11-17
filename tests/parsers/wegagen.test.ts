@@ -194,7 +194,7 @@ describe("WegagenParser.parseRecord", () => {
     });
     // messageStatus is the SMS state, never the transaction's.
     expect("transactionStatus" in parsed).toBe(false);
-    expect(verificationGate(parsed, { bankId: "wegagen", requestedReference: SYNTH_WEGAGEN_ID })).toEqual({ ok: true });
+    expect(verificationGate(parsed, { referenceIsOpaqueToken: true, requestedReference: SYNTH_WEGAGEN_ID })).toEqual({ ok: true });
   });
 
   it("keeps every account masked, raw included, and no name or phone in raw", () => {
@@ -221,7 +221,7 @@ describe("WegagenParser.parseRecord", () => {
     // The gate cannot catch this (the two never compare equal), which is why
     // the share id is an opaque token there and the prefix is checked here.
     expect(
-      verificationGate({ ...parsed, verified: true, amount: 1250, senderName: "X", receiverName: "Y" }, { bankId: "wegagen", requestedReference: SYNTH_WEGAGEN_OTHER_ID })
+      verificationGate({ ...parsed, verified: true, amount: 1250, senderName: "X", receiverName: "Y" }, { referenceIsOpaqueToken: true, requestedReference: SYNTH_WEGAGEN_OTHER_ID })
     ).toEqual({ ok: true });
   });
 
@@ -252,7 +252,7 @@ describe("WegagenParser.parseRecord", () => {
   it("a zero amount parses but fails the gate", () => {
     const { parsed } = WegagenParser.parseRecord(JSON.stringify(wegagenRecord("SAMPLE1", { txnAmount: 0 })), SYNTH_WEGAGEN_ID);
     expect(parsed.verified).toBe(true);
-    expect(verificationGate(parsed, { bankId: "wegagen", requestedReference: SYNTH_WEGAGEN_ID })).toMatchObject({ ok: false, reason: "amount" });
+    expect(verificationGate(parsed, { referenceIsOpaqueToken: true, requestedReference: SYNTH_WEGAGEN_ID })).toMatchObject({ ok: false, reason: "amount" });
   });
 });
 
@@ -266,7 +266,6 @@ describe("manifest: Wegagen formats", () => {
     expect(primaryFormat(wegagen)?.id).toBe("wegagen-share-link");
     // No account and no phone: the share id alone is the lookup key.
     expect(primaryFormat(wegagen)?.inputs.map((i) => i.name)).toEqual(["reference"]);
-    expect(wegagen.requiresAccount).toBe(false);
     expect(wegagen.requiresPhone).toBe(false);
   });
 

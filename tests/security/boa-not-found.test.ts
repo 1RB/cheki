@@ -38,6 +38,8 @@ describe("BOA not found", () => {
       expect(r.error.kind).toBe("EXTRACTION_ERROR");
       if (r.error.kind === "EXTRACTION_ERROR") {
         expect(r.error.message).toBe(BOA_NOT_FOUND);
+        // The state the verdict switches on travels as data, not as wording.
+        expect(r.error.code).toBe("notFound:otherAccount");
         expect(r.error.checkedUrl).toBe(CHECKED);
       }
     }
@@ -58,22 +60,22 @@ describe("BOA not found", () => {
     const res = await verifyPOST(post("https://cheki.et/api/verify", { bank: "boa", reference: "FT26SAMPLE07", accountNumber: "06171" }));
     expect(res.status).toBe(422);
     const body = await res.json();
-    expect(body).toMatchObject({ success: false, checkedUrl: CHECKED });
+    expect(body).toMatchObject({ success: false, checkedUrl: CHECKED, code: "notFound:otherAccount" });
     expect(body.verified).toBeFalsy();
   });
 
-  it("the batch route carries checkedUrl on the failed receipt", async () => {
+  it("the batch route carries checkedUrl and the code on the failed receipt", async () => {
     vi.stubGlobal("fetch", invalid());
     const res = await batchPOST(post("https://cheki.et/api/verify/batch", { receipts: [{ bank: "boa", reference: "FT26SAMPLE07", accountNumber: "06171" }] }));
     const body = await res.json();
-    expect(body.results[0]).toMatchObject({ success: false, status: 422, checkedUrl: CHECKED });
+    expect(body.results[0]).toMatchObject({ success: false, status: 422, checkedUrl: CHECKED, code: "notFound:otherAccount" });
   });
 });
 
 describe("verdict card", () => {
   it("a BOA miss gets the source-account next step and the bank's answer link", () => {
     const v = presentVerdict(
-      { success: false, httpStatus: 422, error: `[Bank of Abyssinia] ${BOA_NOT_FOUND}`, checkedUrl: CHECKED },
+      { success: false, httpStatus: 422, code: "notFound:otherAccount", error: `[Bank of Abyssinia] ${BOA_NOT_FOUND}`, checkedUrl: CHECKED },
       { bankCode: "boa", reference: "FT26SAMPLE07" },
     );
     expect(v.kind).toBe("notFound");

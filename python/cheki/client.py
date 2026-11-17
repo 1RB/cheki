@@ -34,8 +34,7 @@ same rule in every cheki SDK):
   means the batch ran out of time; replaying it would hit every bank again
   and charge every receipt against the rate limit. Send long lists in chunks
   of at most :data:`RECOMMENDED_BATCH_CHUNK`.
-* Never: timeouts, other 4xx, or an answer with ``retryable: false`` or a
-  ``fallbackUrl``.
+* Never: timeouts, other 4xx, or an answer carrying a ``fallbackUrl``.
 
 Example::
 
@@ -473,9 +472,9 @@ class ChekiClient:
     def _should_retry(method: str, status: int, retry_after: float | None, response: requests.Response) -> bool:
         """The shared retry rule (``retryCases`` in sdks/fixtures/api-contract.json).
 
-        Never when the body says ``retryable: false`` or has a ``fallbackUrl``
-        (a geo-blocked bank answers the same way every time). 429 and 503 only
-        with a Retry-After of at most 60 s. Any other 5xx only for GET.
+        Never when the body has a ``fallbackUrl`` (a geo-blocked bank answers
+        the same way every time). 429 and 503 only with a Retry-After of at
+        most 60 s. Any other 5xx only for GET.
         """
         if status != 429 and status < 500:
             return False
@@ -483,7 +482,7 @@ class ChekiClient:
             body = response.json()
         except ValueError:
             body = None
-        if isinstance(body, Mapping) and (body.get("retryable") is False or isinstance(body.get("fallbackUrl"), str)):
+        if isinstance(body, Mapping) and isinstance(body.get("fallbackUrl"), str):
             return False
         if status in (429, 503):
             return retry_after is not None and retry_after <= _MAX_RETRY_AFTER

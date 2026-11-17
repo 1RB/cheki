@@ -21,6 +21,15 @@ type HealthBody = { status: string; checkedAt: string; banks: BankCheck[] };
 let cache: { at: number; body: HealthBody } | null = null;
 let inflight: Promise<HealthBody> | null = null;
 
+/**
+ * The envelope answers "ok" only when no bank is in a state that is a
+ * problem: the endpoint answered, the bank is expected to block cloud IPs,
+ * or the bank is not built yet. Anything else (unreachable, no-parser, or a
+ * state a future probe adds without teaching this route about it) answers
+ * "degraded": an unknown state is never reported as healthy.
+ */
+const HEALTHY_BANK_STATES = new Set(["reachable", "geo-blocked", "in-development"]);
+
 async function checkEndpoint(url: string, timeoutMs: number): Promise<void> {
   // TLS is verified for every bank (the Awash and Telebirr/M-Pesa bypasses
   // were removed). Only reachability matters, so the body is discarded.
@@ -67,7 +76,11 @@ async function probeAll(): Promise<HealthBody> {
       }
     })
   );
-  return { status: "ok", checkedAt: new Date().toISOString(), banks: checks };
+  return {
+    status: checks.every((c) => HEALTHY_BANK_STATES.has(c.status)) ? "ok" : "degraded",
+    checkedAt: new Date().toISOString(),
+    banks: checks,
+  };
 }
 
 export async function GET() {

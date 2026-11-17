@@ -196,9 +196,18 @@ class ClientVerifyResult:
     def is_verified(self) -> bool:
         """``True`` only when the bank confirmed the receipt.
 
-        ``success``, ``decoded_only`` and ``parsed`` are not proof of payment.
+        ``success``, ``decoded_only`` and ``parsed`` are not proof of payment:
+        a handled request is not a payment. This is the API's
+        ``verificationState()`` rule, re-read from JSON because the SDK is a
+        separate package; the test suite asserts it over every combination of
+        those four flags.
         """
-        return self.success is True and self.verified is True
+        return (
+            self.success is True
+            and self.verified is True
+            and self.decoded_only is not True
+            and self.parsed is not True
+        )
 
     @property
     def is_rate_limited(self) -> bool:

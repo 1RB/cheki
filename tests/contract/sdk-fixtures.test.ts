@@ -218,7 +218,7 @@ describe("SDK contract fixtures match the route handlers", () => {
     vi.spyOn(Verifier.prototype, "verifyBatch").mockResolvedValue([
       ok(receiptOf(verifiedItem, uniqueRef())),
       ok(receiptOf(decodedItem, uniqueRef())),
-      err({ kind: "EXTRACTION_ERROR", bank: "Telebirr", message: "Receipt not found. Check the reference number." }),
+      err({ kind: "EXTRACTION_ERROR", bank: "Telebirr", message: "Receipt not found. Check the reference number.", code: "notFound" }),
     ]);
     const r = await batchPOST(
       jsonReq("/api/verify/batch", {
@@ -299,7 +299,7 @@ describe("SDK contract fixtures match the route handlers", () => {
   it("error_422_not_found", async () => {
     const f = fx("error_422_not_found");
     vi.spyOn(Verifier.prototype, "verify").mockResolvedValue(
-      err({ kind: "EXTRACTION_ERROR", bank: "Telebirr", message: "Receipt not found. Check the reference number." })
+      err({ kind: "EXTRACTION_ERROR", bank: "Telebirr", message: "Receipt not found. Check the reference number.", code: "notFound" })
     );
     const r = await verifyPOST(jsonReq("/api/verify", { bank: "telebirr", reference: uniqueRef() }));
     expect(r.status).toBe(f.status);

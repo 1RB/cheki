@@ -24,8 +24,13 @@ import { removeScriptsAndStyles, TAG_RE } from "../core/html";
 import { parseMoney } from "../core/money";
 import { parseEbirrReference, buildEbirrUrl, type Checked } from "../security/reference";
 
-// Map tenant codes to bank names
-const TENANT_MAP: Record<string, string> = {
+/**
+ * Tenant codes to display names for the receipt's issuing-bank line.
+ * Keys are pinned to the canonical EBIRR_TENANTS set
+ * (src/lib/security/reference.ts) by tests/security/ebirr-tenants.test.ts:
+ * every tenant the platform serves has a name here, and no other.
+ */
+export const TENANT_MAP: Record<string, string> = {
   nib: "Nib International Bank",
   wegagen: "Wegagen Bank",
   ahadu: "Ahadu Bank",
@@ -38,9 +43,8 @@ export class EBirrParser extends BaseParser {
   readonly bankId = "ebirr";
   readonly bankName = "eBirr";
   readonly responseType = "html" as const;
-  readonly requiresAccount = false;
-  readonly accountDigits?: number = undefined;
-  readonly requiresPhone = false;
+  // The receipt link carries an opaque token, which is what is looked up.
+  readonly referenceIsOpaqueToken = true;
 
   /**
    * Accepts "tenant/token" or a https://receipt.ebirr.com/tenant/token link and

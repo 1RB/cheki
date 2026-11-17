@@ -12,8 +12,12 @@ import { EBirrParser } from "./ebirr";
 import type { ParsedReceipt } from "../core/types";
 import { parseEbirrReference, buildEbirrUrl, type Checked } from "../security/reference";
 
-/** Tenants on receipt.ebirr.com that belong to Siinqee (Cooperative Bank of Oromia). */
-const SIINQEE_TENANTS = new Set(["siinqee", "coop"]);
+/**
+ * Tenants on receipt.ebirr.com that belong to Siinqee (Cooperative Bank of
+ * Oromia). A subset of the canonical EBIRR_TENANTS, pinned by
+ * tests/security/ebirr-tenants.test.ts.
+ */
+export const SIINQEE_TENANTS = new Set(["siinqee", "coop"]);
 
 function parseSiinqee(ref: string): Checked<{ tenant: string; token: string }> {
   const parsed = parseEbirrReference(ref, "siinqee");
@@ -28,9 +32,8 @@ export class SiinqeeParser extends BaseParser {
   readonly bankId = "siinqee";
   readonly bankName = "Siinqee Bank";
   readonly responseType = "html" as const;
-  readonly requiresAccount = false;
-  readonly accountDigits?: number = undefined;
-  readonly requiresPhone = false;
+  // The receipt link carries an opaque token, which is what is looked up.
+  readonly referenceIsOpaqueToken = true;
 
   private ebirrParser = new EBirrParser();
 

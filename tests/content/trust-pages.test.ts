@@ -99,7 +99,7 @@ describe("privacy matches the code", () => {
 
   it("only confirmed receipts are cached, failures never", () => {
     const route = read("src/app/api/verify/route.ts");
-    expect(route).toMatch(/if \(result\.value\.verified\) setCached\(/);
+    expect(route).toMatch(/if \(verificationState\(payload\) === "verified"\) setCached\(/);
     expect(t).toMatch(/Failed checks are never kept/);
   });
 

@@ -7,10 +7,10 @@ import { Chevron } from "@/components/reference/Chevron";
 import { UrlTemplate } from "@/components/reference/UrlTemplate";
 import { BankJump } from "@/components/reference/BankJump";
 import { changelogFor, getEndpointRows, REPO_URL, REPORT_CHANGE_URL, THIRD_PARTY_PROVIDER_LIST, type EndpointRow, type PlaceholderDoc } from "@/lib/manifest/endpoints";
-import { primaryFormat, secondaryFormats, templateHost } from "@/lib/manifest/formats";
+import { primaryFormat, secondaryFormats, isSupportedFormat, templateHost } from "@/lib/manifest/formats";
 import type { ReceiptFormat } from "@/lib/core/types";
 import { getBankHealth, healthStatusFor, statusFile } from "@/lib/status-data";
-import { bankState, STATE_LABEL, type BankState } from "@/lib/status-view";
+import { bankState, formatStatusTag, STATE_LABEL, type BankState } from "@/lib/status-view";
 import { formatAbsolute, parseTimestamp } from "@/lib/time/relative";
 import { MAINTAINER_PERSON, PUBLISHER } from "@/lib/site-schema";
 import "@/components/reference/reference.css";
@@ -104,7 +104,7 @@ function Placeholders({ items }: { items: PlaceholderDoc[] }) {
 function FormatSummary({ f, bankId }: { f: ReceiptFormat; bankId: string }) {
   const health = getBankHealth(`${bankId}:${f.id}`);
   const template = f.link ?? f.endpoint;
-  const tag = f.status === "current" ? "Newer, not supported yet" : f.status === "legacy" ? "Still checked" : "Retired";
+  const tag = formatStatusTag(f);
   return (
     <div className="ep-format">
       <p className="ep-format-title">
@@ -149,8 +149,12 @@ function EndpointPanel({ row }: { row: EndpointRow }) {
   const hasBankPage = !doc.aliasOf;
   const current = primaryFormat(bank);
   const others = secondaryFormats(bank);
-  const older = others.filter((f) => f.status !== "current");
-  const newerUnsupported = others.filter((f) => f.status === "current");
+  // Support decides the section, not the status alone (isSupportedFormat):
+  // a format cheki fetches never lands under "not supported yet", and a
+  // current format it cannot fetch never lands under "Older receipts". The
+  // tag each format gets comes from the same rule (formatStatusTag).
+  const newerUnsupported = others.filter((f) => f.status === "current" && !isSupportedFormat(f));
+  const older = others.filter((f) => !newerUnsupported.includes(f));
   const changelog = changelogFor(row);
   const health = getBankHealth(bank.id);
   const gotchas = [

@@ -83,7 +83,7 @@ describe("status classification", () => {
       expect(classifyStatus(status)).toBe("failure");
       const gate = verificationGate(
         { verified: true, amount: 100, senderName: "A", reference: "R1", transactionStatus: status },
-        { bankId: "telebirr", requestedReference: "R1" }
+        { requestedReference: "R1" }
       );
       expect(gate.ok).toBe(false);
     }

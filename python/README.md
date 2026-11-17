@@ -111,7 +111,7 @@ cheki.get_receipt_url("cbe", "FT26SAMPLE01", account_number="1000000006171")  # 
   - `GET` (banks, health): a network error or a 5xx.
   - verify: a network error, or a 429/503 whose `Retry-After` is at most 60 s.
   - batch: only a 429/503 with a short `Retry-After`. Never a network error or a 5xx: a 504 means the batch ran out of server time, and replaying it would hit every bank again and charge every receipt against the rate limit.
-  - Never: timeouts, other 4xx, a geo-blocked bank (502 with `fallbackUrl`), or any error the server marks `retryable: false`. A 500/502/504 on verify is not retried either: the server already ran the check, with its own 2 attempts per bank.
+  - Never: timeouts, other 4xx, a geo-blocked bank (502 with `fallbackUrl`). A 500/502/504 on verify is not retried either: the server already ran the check, with its own 2 attempts per bank.
 - The retry waits for `Retry-After`; a network-error retry waits 1-2 s. Timeouts are never retried (the server may still be working on the request).
 - The server tries each bank at most 2 times, so one call reaches the bank at most **4 times**.
 - `ChekiClient(session=...)` reuses your `requests.Session` without changing it: the `User-Agent` and `Authorization` headers go on each request, so your API key is never sent to other hosts that session talks to, and `close()` leaves your session open.

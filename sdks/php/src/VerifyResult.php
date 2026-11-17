@@ -132,10 +132,15 @@ class VerifyResult
         return $r;
     }
 
-    /** True only when the bank confirmed the receipt. decodedOnly and parsed are not proof. */
+    /**
+     * True only when the bank confirmed the receipt: success and verified,
+     * with neither decodedOnly nor parsed. The others are handled requests,
+     * never payments. This is the API's verificationState() rule; the test
+     * suite asserts it over all combinations of those four flags.
+     */
     public function isVerified(): bool
     {
-        return $this->success && $this->verified;
+        return $this->success && $this->verified && !$this->decodedOnly && !$this->parsed;
     }
 
     /** HTTP 429: wait retryAfter seconds (when set) before trying again. */
