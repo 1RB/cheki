@@ -32,12 +32,6 @@ export interface ProbeExpectation {
   bodyIncludes?: string[];
   /** The whole body (trimmed) must be exactly this, e.g. ZamZam's "null" for an unknown id. */
   bodyIs?: string;
-  /**
-   * The unknown-reference answer has not been observed (Siinqee): any HTTP
-   * answer counts, 5xx included, and no answer at all is "not-checked", not
-   * "degraded". Replace it with a real shape once one is seen.
-   */
-  anyAnswer?: boolean;
 }
 
 export interface ProbeSpec {
@@ -497,7 +491,7 @@ export const endpointDocs: EndpointDoc[] = [
     ],
     redactedExample: "https://receipts.siinqeebank.com:871/generate/SYN000a000000001",
     fieldsParsed: ["senderName", "senderAccount", "receiverName", "receiverAccount", "amount", "currency", "date", "reference", "transactionType", "transactionStatus", "serviceFee", "serviceFeeVat", "totalPaid"],
-    unknownRef: "Not observed yet. cheki treats any page without \"Transaction is successful\" and the exact reference asked for as not confirmed (HTTP 422 with checkedUrl), never as fake.",
+    unknownRef: "Unconfirmed: on 2026-11-17 an unknown reference and a real one both answered HTTP 502 text/html \"Siinqee Bank - Receipt Unavailable\". cheki treats any page without \"Transaction is successful\" and the exact reference asked for as not confirmed (HTTP 422 with checkedUrl), never as fake.",
     gotchas: [
       "Port 871, HTTPS. The host and port are allowlisted together; the URL is rebuilt from the validated reference, never fetched as pasted.",
       "Another verifier reports that each receipt link opens about five times in total (unverified by cheki). cheki makes one request per check, never retries (not even on a timeout or 5xx), and caches a confirmed receipt; failures are not cached.",
@@ -527,8 +521,8 @@ export const endpointDocs: EndpointDoc[] = [
     fixture: "tests/parsers/siinqee.test.ts",
     probe: {
       ref: "000A000000000000",
-      expect: { anyAnswer: true },
-      observed: "not observed yet (unknown-reference answer unseen; any HTTP answer counts)",
+      expect: {},
+      observed: "not observed yet (2026-11-17 only ever answered 502 \"Receipt Unavailable\"; the healthy answer unseen)",
     },
   },
   {
