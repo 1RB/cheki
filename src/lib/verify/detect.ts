@@ -14,6 +14,7 @@ import type { ReceiptFormat } from "@/lib/core/types";
 import { isBoaQrPayload } from "@/lib/qr/decode";
 import { parseTelebirrQr } from "@/lib/qr/telebirr";
 import { parseDashenQr } from "@/lib/qr/dashen";
+import { parseWegagenQr } from "@/lib/qr/wegagen";
 import { canonicalReference } from "@/lib/reference-case";
 
 /**
@@ -21,8 +22,10 @@ import { canonicalReference } from "@/lib/reference-case";
  * used (as `value`); it is then checked exactly like a typed reference.
  * "dashenQr": a Dashen Super App receipt QR payload. Only its FT Ref is used
  * (as `value`); likewise checked exactly like a typed reference.
+ * "wegagenQr": a Wegagen receipt QR (prose with a share link in it). Only the
+ * share id after ?id= is used (as `value`), checked like a pasted share link.
  */
-export type InputKind = "empty" | "url" | "unknownUrl" | "reference" | "boaQr" | "telebirrQr" | "dashenQr";
+export type InputKind = "empty" | "url" | "unknownUrl" | "reference" | "boaQr" | "telebirrQr" | "dashenQr" | "wegagenQr";
 
 export interface Detection {
   kind: InputKind;
@@ -152,6 +155,32 @@ export function detectInput(raw: string, opts: { lockedBank?: string; overrideBa
         needsAccount: false,
         needsPhone: false,
       });
+    }
+  }
+
+  // A Wegagen receipt QR is prose with its share link inside it. Only the
+  // share id after ?id= is read out; it is then checked exactly like a
+  // pasted share link (the names, accounts and amount in the text are
+  // ignored). A bare share link on its own is a link, not a QR: it is left
+  // to the URL branch below, which keeps kind "url".
+  if (!isUrl(value)) {
+    const wegagenQr = parseWegagenQr(value);
+    if (wegagenQr.ok) {
+      const wegagen = bankByCode("wegagen");
+      if (wegagen) {
+        const format = supportedFormats(wegagen).find((f) => matchesFormat(f, wegagenQr.shareId)) ?? primaryFormat(wegagen);
+        return finish({
+          ...base,
+          kind: "wegagenQr",
+          value: wegagenQr.shareId,
+          bank: wegagen,
+          candidates: [wegagen],
+          overridden: false,
+          format,
+          needsAccount: false,
+          needsPhone: false,
+        });
+      }
     }
   }
 

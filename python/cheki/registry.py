@@ -61,7 +61,9 @@ _FAILURE_STATUS = re.compile(
 # "zamzam" is looked up by its numeric receipt id; the record carries ZamZam's own
 # transaction reference (no direct verifier here: use ChekiClient for ZamZam).
 # "bunna" is looked up by the opaque token in its receipt link (no direct verifier here either).
-_REFERENCE_IS_OPAQUE_TOKEN = frozenset({"awash", "ebirr", "siinqee", "cbe-new", "zamzam", "bunna"})
+# "wegagen" is looked up by the 24-character share id; the record carries the printed
+# 16-character reference, a prefix of it (no direct verifier here either).
+_REFERENCE_IS_OPAQUE_TOKEN = frozenset({"awash", "ebirr", "siinqee", "cbe-new", "zamzam", "bunna", "wegagen"})
 
 _DEPRECATION = (
     "cheki.verify() (direct verification) is deprecated and will be removed in the next major "

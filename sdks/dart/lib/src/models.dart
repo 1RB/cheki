@@ -262,7 +262,7 @@ class BankInfo {
   final String status;
 
   /// Live, but not yet confirmed with enough real receipts (M-Pesa,
-  /// ZamZam, CBE Birr and Bunna today).
+  /// ZamZam, CBE Birr, Bunna and Wegagen today).
   final bool beta;
   final bool requiresAccount;
 

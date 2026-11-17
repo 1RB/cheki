@@ -115,7 +115,7 @@ type BankInfo struct {
 	Type   string `json:"type"`   // "bank" | "mobile" | "wallet"
 	Status string `json:"status"` // "live" | "in-development"
 	// Beta is true for a live bank not yet confirmed with enough real
-	// receipts (M-Pesa, ZamZam, CBE Birr and Bunna today).
+	// receipts (M-Pesa, ZamZam, CBE Birr, Bunna and Wegagen today).
 	Beta            bool `json:"beta,omitempty"`
 	RequiresAccount bool `json:"requiresAccount"`
 	AccountDigits   int  `json:"accountDigits,omitempty"`

@@ -122,7 +122,7 @@ def test_banks():
     assert [f.status for f in banks[0].formats] == ["current", "legacy"]
     assert banks[0].formats[0].inputs == ["receiptId"]
     assert banks[0].formats[1].account_digits == 8
-    # beta: true for M-Pesa, ZamZam and CBE Birr, False when the server omits it.
+    # beta: true for M-Pesa, ZamZam, CBE Birr, Bunna and Wegagen, False when the server omits it.
     by_id = {b.id: b for b in banks}
     assert by_id["zamzam"].beta is True and by_id["mpesa"].beta is True and banks[0].beta is False
     assert by_id["zamzam"].to_dict()["beta"] is True

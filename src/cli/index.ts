@@ -9,6 +9,7 @@
  *   cheki verify telebirr CHQ0SAMPLE                 Verify a Telebirr receipt
  *   cheki verify boa AB12345 -a 1234567890           Verify a BOA receipt
  *   cheki verify cbebirr DTS41AB2C90 -p 09XXXXXXXX   Verify a CBE Birr receipt (payer phone)
+ *   cheki verify wegagen 000SAMP26000000000000001    Verify a Wegagen receipt (share id or link)
  *   cheki health                                     Check endpoint health
  */
 import { Verifier, getAllBanks, errorToMessage, type BankManifestEntry } from "../lib";
@@ -26,7 +27,7 @@ Usage:
   cheki verify <bank> <ref> [-a <account>] [-p <phone>]
                                                   Verify a receipt (-p: payer phone, CBE Birr)
   cheki verify-qr [bank] <qr-data>                Verify from QR code (bank optional for a
-                                                  Telebirr, CBE Birr or Bunna receipt QR)
+                                                  Telebirr, CBE Birr, Bunna or Wegagen receipt QR)
   cheki health                                    Check endpoint health
   cheki --version                                 Show version
 
@@ -40,6 +41,8 @@ Examples:
   cheki verify-qr telebirr <telebirr-receipt-qr>     (reads the transaction number, then checks it)
   cheki verify-qr "<cbe-birr-receipt-qr>"            (a cbepay1 receipt link: receipt number + payer phone)
   cheki verify-qr "<bunna-receipt-qr>"               (an online.bunnabanksc.com receipt link)
+  cheki verify-qr "<wegagen-receipt-qr>"             (reads the share link's ?id= out of the QR)
+  cheki verify wegagen 000SAMP26000000000000001      (Wegagen: the share id, or the whole share link)
   cheki verify cbe FT26SAMPLE01 -a 1000000006171   (older CBE receipt, legacy format)
 `);
     process.exit(0);

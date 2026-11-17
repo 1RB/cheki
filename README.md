@@ -6,7 +6,7 @@
 
 **Check an Ethiopian bank or mobile money receipt with the bank that issued it. Free, open source, no signup, no API key.**
 
-Checks CBE, Bank of Abyssinia (BOA), Dashen, Awash, CBE Birr, Siinqee, eBirr, ZamZam and Bunna receipts directly with the bank, and opens the official receipt page for Telebirr and M-Pesa.
+Checks CBE, Bank of Abyssinia (BOA), Dashen, Awash, CBE Birr, Siinqee, eBirr, ZamZam, Bunna and Wegagen receipts directly with the bank, and opens the official receipt page for Telebirr and M-Pesa.
 
 [![CI](https://img.shields.io/github/actions/workflow/status/1RB/cheki/ci.yml?branch=main&style=flat&label=CI&logo=github)](https://github.com/1RB/cheki/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/cheki-verify?style=flat&label=npm&logo=npm&color=CB383D)](https://www.npmjs.com/package/cheki-verify)
@@ -64,7 +64,7 @@ Confirmed results are cached in memory for 6 hours, so checking the same receipt
 
 ## Supported banks
 
-**11 live banks** (four in beta) and 20 in research. From cheki.et, 9 are checked directly with the bank; Telebirr and M-Pesa go through their official receipt pages until a local relay exists. The source of truth is [`src/lib/manifest/banks.json`](src/lib/manifest/banks.json); `GET /api/banks` returns it, including each bank's receipt formats, current first.
+**12 live banks** (five in beta) and 19 in research. From cheki.et, 10 are checked directly with the bank; Telebirr and M-Pesa go through their official receipt pages until a local relay exists. The source of truth is [`src/lib/manifest/banks.json`](src/lib/manifest/banks.json); `GET /api/banks` returns it, including each bank's receipt formats, current first.
 
 | Bank | `id` | What to send | Notes |
 |------|------|--------------|-------|
@@ -79,15 +79,16 @@ Confirmed results are cached in memory for 6 hours, so checking the same receipt
 | ZamZam Bank | `zamzam` | Receipt link (`receipt.zamzambank.com.et/receipt/…`) or its numeric id | Beta |
 | CBE Birr | `cbebirr` | Receipt number (TID, e.g. `DTS41AB2C90`) + the payer's phone number, or the receipt QR (it carries both) | Beta. An empty page back usually means the number and phone don't match |
 | Bunna Bank | `bunna` | Receipt link (`online.bunnabanksc.com/receipt/#/…`) or the receipt QR | Beta. The transaction number printed on the receipt does not work on its own |
+| Wegagen Bank | `wegagen` | Share link (`transinfo.wegagenbanksc.com.et:8183/?id=…`) or the 24-character share id after `?id=` | Beta. The 16-character Reference No printed on the receipt is not a lookup key on its own |
 
 References are not case-sensitive for CBE FT references, BOA, Telebirr, M-Pesa, Dashen and CBE Birr, whose receipts print them in capitals: `det0sample` is checked as `DET0SAMPLE`, and spaces or dashes typed inside are dropped. CBE Receipt IDs, Awash and eBirr links and ZamZam ids are used exactly as given; Bunna tokens keep their case (only their URL encoding is normalised).
 
 Beta means the bank is live but not yet confirmed with enough real receipts. [cheki.et/endpoints](https://cheki.et/endpoints) shows every format with a dated changelog, and [cheki.et/status](https://cheki.et/status) shows the daily endpoint health check.
 
 <details>
-<summary>In research (20)</summary>
+<summary>In research (19)</summary>
 
-Zemen Bank has a parser and is waiting on a confirmed real receipt. The others need a receipt and an endpoint: Nib, Wegagen, Ahadu, KAAFI, Abay, Addis International, Amhara, Berhan, Enat, Global Bank Ethiopia, Lion International, Oromia International, Hibret, Hijra, Shabelle, Goh Betoch, Tsedey, Gadaa, Rammis.
+Zemen Bank has a parser and is waiting on a confirmed real receipt. The others need a receipt and an endpoint: Nib, Ahadu, KAAFI, Abay, Addis International, Amhara, Berhan, Enat, Global Bank Ethiopia, Lion International, Oromia International, Hibret, Hijra, Shabelle, Goh Betoch, Tsedey, Gadaa, Rammis.
 
 </details>
 
@@ -107,6 +108,7 @@ Zemen Bank has a parser and is waiting on a confirmed real receipt. The others n
 | eBirr | `https://receipt.ebirr.com/{TENANT}/{TOKEN}` | HTML |
 | ZamZam | `https://receipt-backend.zamzambank.com.et/api/v1/invoice/{RECEIPT_ID}` | JSON |
 | CBE Birr | `https://cbepay1.cbe.com.et/aureceipt?TID={RECEIPT_NUMBER}&PH={PAYER_PHONE}` | PDF |
+| Wegagen | `https://transinfo.wegagenbanksc.com.et:8011/sms_wega/txn/{SHARE_ID}` (from the share link on `:8183`) | JSON, HTTP 200 with `Transaction not found in Daily or History` for an unknown id |
 
 - **M-Pesa** is geo-blocked and has not been probed by cheki: the envelope shape comes from five other open-source verifiers, and the tests use a synthetic receipt. It stays in beta until a real receipt verifies.
 - **ZamZam**'s service expects an HTTP Basic credential that ZamZam ships in its own public receipt web app (the same precedent as BOA's public QR key). cheki sends it from the parser and never returns it. The record carries the full account number, which cheki masks (first digit and last 4) before any output or cache.
@@ -183,8 +185,8 @@ The TypeScript SDK is also on GitHub Packages as [`@1rb/cheki-verify`](https://g
 <summary>What every SDK does the same way</summary>
 
 - **`verified` is the only success signal.** Each SDK has a helper: `isVerified()`, `is_verified`, `IsVerified()`.
-- **QR codes go in `qrData`:** a BOA inter-bank receipt QR (bank `boa`), the Payment QR code on a Telebirr receipt (bank `telebirr`), or the QR on a CBE Birr receipt (bank `cbebirr`: a receipt link carrying the receipt number and payer phone, so no phone number is needed). The server reads the reference out of the QR and checks it with the bank; a QR on its own never verifies.
-- **Banks are identified by `id`** (`code` is kept as a deprecated alias). `beta` is true for M-Pesa, ZamZam and CBE Birr today. Results carry `orderId` when the receipt has one (CBE Birr).
+- **QR codes go in `qrData`:** a BOA inter-bank receipt QR (bank `boa`), the Payment QR code on a Telebirr receipt (bank `telebirr`), the QR on a CBE Birr receipt (bank `cbebirr`: a receipt link carrying the receipt number and payer phone, so no phone number is needed), a Bunna receipt link QR (bank `bunna`) and a Wegagen receipt QR (bank `wegagen`: the share link inside it is read for its `?id=`). The server reads the reference out of the QR and checks it with the bank; a QR on its own never verifies.
+- **Banks are identified by `id`** (`code` is kept as a deprecated alias). `beta` is true for M-Pesa, ZamZam, CBE Birr, Bunna and Wegagen today. Results carry `orderId` when the receipt has one (CBE Birr).
 - **Batch: at most 20 receipts**, checked before sending. Send long lists in chunks of 15 or fewer (`RECOMMENDED_BATCH_CHUNK`): every receipt also counts toward the verify limit, the whole batch has 60 s on the server, and a batch is never retried.
 - **Typed errors** for 429 (with the `Retry-After` seconds) and 413, and the server's `error` text and `fallbackUrl` (geo-blocked banks) on every API error.
 - **Timeouts and retries:** each attempt waits up to 65 s. At most one retry, and only where it is safe: `GET` requests on a network error or 5xx; verify on a network error or a 429/503 with a `Retry-After` of 60 s or less; a batch only on a 429/503 with a short `Retry-After`. The server makes at most 2 attempts per bank fetch, so one SDK call reaches a bank at most 4 times.
