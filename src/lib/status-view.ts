@@ -10,8 +10,9 @@
  *   down         a live bank whose endpoint was unreachable or answered differently
  *   geo          a live bank that only answers Ethiopian networks, so the
  *                cloud probe (outside Ethiopia) cannot see it
- *   unknown      a live bank whose probe got no answer, where no answer is not
- *                yet known to mean down (Siinqee): neither green nor red
+ *   unknown      reserved: no status.json row maps here today. No answer from
+ *                the probe is "degraded" (down), and "not checked" is only
+ *                ever the geo skip, which maps to geo
  *   unsupported  cheki does not check this bank's receipts yet (in development)
  *
  * There is no "slow": status.json records no latency today. When it does,
@@ -56,9 +57,10 @@ export function bankState(bank: Pick<BankManifestEntry, "status" | "geoBlocked">
     case "degraded":
       return "down";
     case "not-checked":
-      // No answer from the probe's network: neither green nor red (Siinqee's
-      // unknown-reference answer is not known yet), unless the bank only
-      // answers Ethiopian networks, which the cloud probe cannot see at all.
+      // Only the geo-restricted skip produces this today (the cloud probe
+      // cannot see those banks at all): a bank that simply does not answer
+      // is "degraded" instead. Anything else lands in "unknown", which is
+      // reserved rather than a live reading.
       return bank.geoBlocked ? "geo" : "unknown";
     case "live":
     case "in-development":
