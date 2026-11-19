@@ -38,15 +38,14 @@ export function DocsTabs({ tabs }: DocsTabsProps) {
   };
 
   return (
-    <div style={{ marginBottom: "20px" }}>
+    <div style={{ marginBottom: "20px" }} data-ui>
       {/* Tab bar */}
       <div
         style={{
           display: "flex",
           gap: "0",
           marginBottom: "0",
-          overflowX: "auto",
-          scrollbarWidth: "thin",
+          flexWrap: "wrap",
         }}
       >
         {tabs.map((tab, i) => (
@@ -56,7 +55,7 @@ export function DocsTabs({ tabs }: DocsTabsProps) {
             onClick={() => setActive(i)}
             style={{
               padding: "8px 16px",
-              fontSize: "12px",
+              fontSize: "13px",
               fontWeight: 600,
               borderRadius: "8px 8px 0 0",
               background:
@@ -91,7 +90,7 @@ export function DocsTabs({ tabs }: DocsTabsProps) {
             top: "10px",
             right: "10px",
             padding: "5px 12px",
-            fontSize: "12px",
+            fontSize: "13px",
             fontWeight: 500,
             background: "rgba(255,255,255,0.08)",
             border: "1px solid rgba(255,255,255,0.15)",

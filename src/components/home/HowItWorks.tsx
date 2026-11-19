@@ -1,25 +1,31 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { SAMPLE } from "@/lib/sample-receipt";
 import { Icon, Camera01Icon, Upload01Icon } from "@/components/Icon";
 
 /**
- * "How a check works": one slider drives the stage's sentence (the section
- * heading) and a fragment of the real checker in the matching state. Every
- * stage is in the markup (the inactive ones are aria-hidden and faded), so
- * the page reads the same to crawlers and without script; the slider is a
- * native range input, so arrow keys and touch work as they do everywhere.
+ * "How a check works": the four steps set as a list, beside a fragment of the
+ * real checker in the matching state. Every step stays in the markup, so the
+ * page reads the same to crawlers and without script; the active step is only
+ * a tone change and the fragment crossfades between the four states. While the
+ * section is on screen and the reader has not touched it, the steps advance on
+ * their own; reduced motion and any tap stop that for good.
+ *
+ * The steps are ordinary buttons in a real <ol>, so the order reads without
+ * script and arrow keys, touch and screen readers behave as they do anywhere.
  *
  * Data is the synthetic SAMPLE receipt (src/lib/sample-receipt.ts), never a
  * real transaction.
  */
 const STAGES = [
-  { name: "Paste", clause: "Paste the receipt link or scan its QR" },
-  { name: "Ask", clause: "cheki asks the bank's own receipt page" },
-  { name: "Read", clause: "It reads what the bank published" },
-  { name: "Answer", clause: "Green only when the bank confirms it" },
+  { name: "Paste", clause: "the receipt link, or scan the QR code" },
+  { name: "Ask", clause: "the bank's own receipt page, live, for that reference" },
+  { name: "Read", clause: "the amount, the names, the date and the reference the bank printed" },
+  { name: "Answer", clause: "the verdict the bank gives, green only when it confirms the receipt" },
 ] as const;
+
+const STEP_MS = 3600;
 
 const amount = SAMPLE.amount.toLocaleString("en-US", { minimumFractionDigits: 2 });
 
@@ -75,22 +81,60 @@ function Fragment({ stage }: { stage: number }) {
 export function HowItWorks() {
   const [stage, setStage] = useState(0);
   const id = useId();
-  const valueText = (i: number) => `${STAGES[i].name}: ${STAGES[i].clause}`;
+  const sectionRef = useRef<HTMLElement>(null);
+  /** Set on the first tap: the reader has taken over, so the steps hold still. */
+  const takenRef = useRef(false);
+
+  useEffect(() => {
+    const el = sectionRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches) return;
+    let onScreen = false;
+    const io = new IntersectionObserver(
+      (entries) => {
+        onScreen = entries.some((e) => e.isIntersecting);
+      },
+      { threshold: 0.25 }
+    );
+    io.observe(el);
+    const timer = window.setInterval(() => {
+      if (!onScreen || takenRef.current) return;
+      setStage((s) => (s + 1) % STAGES.length);
+    }, STEP_MS);
+    return () => {
+      io.disconnect();
+      window.clearInterval(timer);
+    };
+  }, []);
 
   return (
-    <section className="hw" aria-labelledby={`${id}-h`}>
-      <div className="hw-fields">
-        <div className="hw-words">
-          <h2 id={`${id}-h`} className="hw-clause">
-            {STAGES.map((s, i) => (
-              <span key={s.name} className="hw-clause-text" data-on={i === stage || undefined} aria-hidden={i !== stage || undefined}>
-                {s.clause}
-              </span>
-            ))}
-          </h2>
-        </div>
-        <div className="hw-stage">
-          <div className="hw-window" data-ui>
+    <section ref={sectionRef} className="container-wide hp-section hw" aria-labelledby={`${id}-h`}>
+      <h2 id={`${id}-h`} className="hp-h2">How a check works</h2>
+      <p className="hp-p">One request, one answer: cheki reads the bank&apos;s own receipt page and repeats what the bank says.</p>
+
+      <div className="hw-body">
+        <ol className="hw-steps">
+          {STAGES.map((s, i) => (
+            <li key={s.name}>
+              <button
+                type="button"
+                className="hw-step"
+                data-on={i === stage || undefined}
+                aria-current={i === stage ? "step" : undefined}
+                onClick={() => {
+                  takenRef.current = true;
+                  setStage(i);
+                }}
+              >
+                <span className="hw-step-name">{s.name}</span>
+                <span className="hw-step-clause">{s.clause}</span>
+              </button>
+            </li>
+          ))}
+        </ol>
+
+        <div className="hw-stage" data-ui inert>
+          <div className="hw-window">
             {STAGES.map((s, i) => (
               <div key={s.name} className="hw-state" data-on={i === stage || undefined} aria-hidden={i !== stage || undefined}>
                 <Fragment stage={i} />
@@ -98,30 +142,6 @@ export function HowItWorks() {
             ))}
           </div>
         </div>
-      </div>
-      <div className="container hw-control">
-        <label htmlFor={`${id}-r`} className="sr-only">Stage of a check</label>
-        <input
-          id={`${id}-r`}
-          className="hw-range"
-          type="range"
-          min={0}
-          max={STAGES.length - 1}
-          step={1}
-          value={stage}
-          aria-valuetext={valueText(stage)}
-          onChange={(e) => setStage(Number(e.target.value))}
-          style={{ ["--hw-p" as string]: `${(stage / (STAGES.length - 1)) * 100}%` }}
-        />
-        <ol className="hw-names">
-          {STAGES.map((s, i) => (
-            <li key={s.name}>
-              <button type="button" className="hw-name" data-on={i === stage || undefined} aria-current={i === stage ? "step" : undefined} onClick={() => setStage(i)}>
-                {s.name}
-              </button>
-            </li>
-          ))}
-        </ol>
       </div>
     </section>
   );

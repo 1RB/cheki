@@ -285,10 +285,10 @@ export default async function BankPage({ params }: { params: Promise<{ code: str
               <ul className="pg-rows">
                 {otherBanks.map((b) => (
                   <li key={b.code}>
-                    <a href={`/banks/${b.code}`} className="pg-row bank-aside-row">
+                    <Link href={`/banks/${b.code}`} prefetch={false} className="pg-row bank-aside-row">
                       <BankMark code={b.code} shortName={b.shortName} color={b.color} size={20} />
                       <span>{b.shortName}</span>
-                    </a>
+                    </Link>
                   </li>
                 ))}
               </ul>

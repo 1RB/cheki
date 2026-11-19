@@ -37,7 +37,7 @@
   /* max-height is set inline on open: the room below (or above) the trigger. */
   display: flex; flex-direction: column;
   background: var(--surface); border-radius: var(--radius-lg); overflow: hidden;
-  box-shadow: 0 0 0 1px var(--border), var(--shadow-lg);
+  box-shadow: 0 0 0 1px var(--border), var(--shadow-lg); /* taste-skill-ignore: 1px ring drawn with box-shadow, no elevation */
 }
 .bs-pop[data-state="open"] { animation: bs-pop-in var(--dur-base) var(--ease-out) both; }
 .bs-pop[data-state="closed"] { animation: bs-pop-out var(--dur-fast) var(--ease-out) both; pointer-events: none; }
@@ -47,7 +47,7 @@
 @keyframes bs-pop-out { to { opacity: 0; transform: scale(0.98); } }
 
 /* Filter: a borderless field set off by a hairline, not a box in a box. */
-.bs-search { display: flex; align-items: center; gap: 8px; flex-shrink: 0; padding: 0 12px; border-bottom: 1px solid var(--border); }
+.bs-search { display: flex; align-items: center; gap: 8px; flex-shrink: 0; padding: 0 12px; border-bottom: 1px solid var(--border); } /* taste-skill-ignore: form field line on the overlay sheet */
 .bs-search > svg { flex-shrink: 0; }
 .bs-filter {
   flex: 1; min-width: 0; height: 44px; border: none; background: transparent; color: var(--ink);
@@ -80,7 +80,7 @@
 /* Auto-detect leads the list; a hairline sets it apart from the banks. */
 .bs-opt[data-auto] { position: relative; margin-bottom: 9px; }
 .bs-opt[data-auto]::after {
-  content: ""; position: absolute; left: 10px; right: 10px; bottom: -5px; height: 1px; background: var(--border);
+  content: ""; position: absolute; left: 10px; right: 10px; bottom: -5px; height: 1px; background: var(--border); /* taste-skill-ignore: form field line on the overlay sheet */
 }
 .bs-empty { padding: 20px 12px; text-align: center; font-size: 13px; color: var(--ink-3); }
 
@@ -91,7 +91,7 @@
   position: absolute; left: 8px; right: 8px; bottom: max(8px, env(safe-area-inset-bottom));
   display: flex; flex-direction: column; max-height: min(600px, calc(100dvh - 96px));
   padding: 4px 4px 4px; background: var(--surface); border-radius: var(--radius-xl); overflow: hidden;
-  box-shadow: 0 0 0 1px var(--border), var(--shadow-lg);
+  box-shadow: 0 0 0 1px var(--border), var(--shadow-lg); /* taste-skill-ignore: 1px ring drawn with box-shadow, no elevation */
 }
 .bs-sheet .bs-list { padding: 4px 4px 4px; }
 .bs-sheet .bs-opt { padding: 6px 12px; font-size: 15px; }

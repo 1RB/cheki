@@ -49,17 +49,17 @@ export function artUrl(name: OgArt): string {
 
 const WHITE = "#ffffff";
 const INK = "#1c1814";
-/** A soft shadow so white type holds on the brighter parts of a photo. */
+/** A soft shadow so white type holds on the brighter parts of a photo. */ // taste-skill-ignore: inside a generated OG image, not page UI
 const LIFT = "0 2px 22px rgba(0, 20, 60, 0.45)";
 
 /**
  * A headline as words that wrap, with the words in `italic` set in the
  * italic display serif (the hero type pairing). Hyphens never break.
  */
-export function Words({ text, italic = [], size, color, align = "left", width, shadow }: { text: string; italic?: string[]; size: number; color: string; align?: "left" | "center"; width: number; shadow?: string }) {
+export function Words({ text, italic = [], size, color, align = "left", width, shadow }: { text: string; italic?: string[]; size: number; color: string; align?: "left" | "center"; width: number; shadow?: string }) { // taste-skill-ignore: inside a generated OG image, not page UI
   const words = text.split(" ");
   return (
-    <div style={{ display: "flex", flexWrap: "wrap", justifyContent: align === "center" ? "center" : "flex-start", width, color, lineHeight: 1.02, ...(shadow ? { textShadow: shadow } : {}) }}>
+    <div style={{ display: "flex", flexWrap: "wrap", justifyContent: align === "center" ? "center" : "flex-start", width, color, lineHeight: 1.02, ...(shadow ? { textShadow: shadow } : {}) }}> {/* taste-skill-ignore: inside a generated OG image, not page UI */}
       {words.map((w, i) => {
         const serif = italic.includes(w);
         const style: CSSProperties = serif

@@ -148,6 +148,12 @@ export function HomePage() {
               <h1 className="hp-title">
                 <T k="hero.titleLead" /> <T k="hero.titleRest" />
               </h1>
+              <p className="hp-lede"><T k="hero.lede" /></p>
+              <ul className="hp-proofs">
+                <li><T k="hero.proofFree" /></li>
+                <li><T k="hero.proofHost" /></li>
+                <li><T k="hero.proofShape" /></li>
+              </ul>
               <div className="hp-hero-desktop-extra">
                 <AgentPrompt />
               </div>
@@ -183,7 +189,6 @@ export function HomePage() {
         </section>
 
         <section className="container-wide hp-section hp-biz">
-          <Photo id="counter" className="hp-biz-photo" sizes="(min-width: 900px) 560px, 100vw" />
           <div className="hp-biz-copy">
             <h2 id="business" className="hp-h2">Receipt verification for your business</h2>
             <p className="hp-p">Free for a business of any size: no per-check fee, no subscription, no signup. Fake screenshots, reused receipts and made-up references are caught the same way, by asking the bank.</p>
@@ -230,7 +235,7 @@ export function HomePage() {
             <Link href="/guides" prefetch={false} className="hp-more">All {articles.length} articles<Icon icon={ArrowRight01Icon} size={16} color="currentColor" /></Link>
           </div>
           <div className="hp-guides-grid">
-            <Photo id="shopByNight" className="hp-guides-photo" sizes="(min-width: 900px) 520px, 100vw" />
+            <Photo id="shopByNight" className="hp-guides-photo" sizes="(min-width: 900px) 520px, 100vw" eager />
             <ul className="hp-guides">
               {featured.map((a) => (
                 <li key={a.slug}>
@@ -283,7 +288,7 @@ export function HomePage() {
             ))}
           </div>
         </section>
-        <PhotoCredits ids={["counter", "shopByNight"]} />
+        <PhotoCredits ids={["shopByNight"]} />
       </main>
       <Footer />
     </>

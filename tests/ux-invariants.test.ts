@@ -212,7 +212,7 @@ describe("homepage on a phone", () => {
   const homeCss = read("src/components/home/home.css");
 
   it("puts the agent prompt where desktop has it: in the hero, before the endpoint list", () => {
-    const hero = home.slice(home.indexOf('className="container hp-hero"'), home.indexOf("</section>"));
+    const hero = home.slice(home.indexOf('className="container-wide hp-hero"'), home.indexOf("</section>"));
     expect(hero).toContain('className="hp-hero-desktop-extra"');
     expect(hero).toContain('className="hp-agent-mobile"');
     expect(home.match(/<AgentPrompt \/>/g)).toHaveLength(2);

@@ -25,7 +25,7 @@ const initials = (label: string, color: string): BankLogoSpec => ({
 export const BANK_LOGOS: Record<string, BankLogoSpec> = {
   cbe: initials("CBE", "#1a5c3e"),
   telebirr: { label: "Tb", color: "#e8a000", fontSize: 14, fontWeight: 800 },
-  boa: initials("BOA", "#7c3aed"),
+  boa: initials("BOA", "#7c3aed"), // taste-skill-ignore: the bank's own brand colour
   mpesa: { label: "M-P", color: "#16a34a", fontSize: 11, fontWeight: 700 },
   dashen: initials("DAS", "#dc2626"),
   awash: initials("AWA", "#f59e0b"),
@@ -33,7 +33,7 @@ export const BANK_LOGOS: Record<string, BankLogoSpec> = {
   cbebirr: { label: "CBEb", color: "#0ea5e9", fontSize: 10, fontWeight: 700 },
   siinqee: initials("SQE", "#be185d"),
   zamzam: initials("ZZB", "#0d9488"),
-  bunna: initials("BUN", "#9333ea"),
+  bunna: initials("BUN", "#9333ea"), // taste-skill-ignore: the bank's own brand colour
 };
 
 /** The mark for a bank code; unknown codes get their first three letters on grey. */

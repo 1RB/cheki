@@ -254,7 +254,7 @@ function SectionTitle({ id, children }: { id: string; children: React.ReactNode 
     <h2
       id={id}
       style={{
-        fontSize: "22px",
+        fontSize: "28px",
         fontWeight: 800,
         color: "var(--ink)",
         marginTop: "48px",
@@ -280,7 +280,7 @@ function SubTitle({ id, children }: { id: string; children: React.ReactNode }) {
   );
 }
 
-const prose = { fontSize: "15px", color: "var(--ink-2)", lineHeight: 1.6, marginBottom: "16px", maxWidth: "60ch" } as const;
+const prose = { fontSize: "16px", color: "var(--ink-2)", lineHeight: 1.6, marginBottom: "16px", maxWidth: "60ch" } as const;
 const proseList = { ...prose, paddingLeft: "20px" } as const;
 
 function MethodBadge({ method }: { method: string }) {
@@ -289,9 +289,8 @@ function MethodBadge({ method }: { method: string }) {
       style={{
         padding: "4px 12px",
         borderRadius: "6px",
-        fontSize: "12px",
+        fontSize: "13px",
         fontWeight: 700,
-        fontFamily: "var(--mono)",
         background: method === "GET" ? "var(--green-light)" : "color-mix(in srgb, var(--ink) 8%, var(--surface))",
         color: method === "GET" ? "var(--green-dark)" : "var(--ink-2)",
         flexShrink: 0,
@@ -339,7 +338,7 @@ function EndpointHeader({
       <p
         style={{
           color: "var(--ink-2)",
-          fontSize: "14px",
+          fontSize: "16px",
           marginBottom: "16px",
           lineHeight: 1.5,
           maxWidth: "60ch",
@@ -361,10 +360,10 @@ function ParamTable({
       <table>
         <thead>
           <tr style={{ borderBottom: "2px solid var(--border)" }}>
-            <th style={{ textAlign: "left", padding: "10px 14px", fontWeight: 700, fontSize: "12px", color: "var(--ink)", textTransform: "uppercase", letterSpacing: "0.04em" }}>Parameter</th>
-            <th style={{ textAlign: "left", padding: "10px 14px", fontWeight: 700, fontSize: "12px", color: "var(--ink)", textTransform: "uppercase", letterSpacing: "0.04em" }}>Type</th>
-            <th style={{ textAlign: "left", padding: "10px 14px", fontWeight: 700, fontSize: "12px", color: "var(--ink)", textTransform: "uppercase", letterSpacing: "0.04em" }}>Required</th>
-            <th style={{ textAlign: "left", padding: "10px 14px", fontWeight: 700, fontSize: "12px", color: "var(--ink)", textTransform: "uppercase", letterSpacing: "0.04em" }}>Description</th>
+            <th style={{ textAlign: "left", fontWeight: 700, fontSize: "13px", color: "var(--ink)", textTransform: "uppercase", letterSpacing: "0.04em" }}>Parameter</th>
+            <th style={{ textAlign: "left", fontWeight: 700, fontSize: "13px", color: "var(--ink)", textTransform: "uppercase", letterSpacing: "0.04em" }}>Type</th>
+            <th style={{ textAlign: "left", fontWeight: 700, fontSize: "13px", color: "var(--ink)", textTransform: "uppercase", letterSpacing: "0.04em" }}>Required</th>
+            <th style={{ textAlign: "left", fontWeight: 700, fontSize: "13px", color: "var(--ink)", textTransform: "uppercase", letterSpacing: "0.04em" }}>Description</th>
           </tr>
         </thead>
         <tbody>
@@ -376,10 +375,10 @@ function ParamTable({
                 background: i % 2 === 0 ? "transparent" : "var(--surface-alt)",
               }}
             >
-              <td style={{ padding: "10px 14px", fontFamily: "var(--mono)", fontSize: "13px", fontWeight: 600, color: "var(--green-dark)" }}>{p.name}</td>
-              <td style={{ padding: "10px 14px", fontFamily: "var(--mono)", fontSize: "13px", color: "var(--ink-2)" }}>{p.type}</td>
-              <td style={{ padding: "10px 14px", fontSize: "13px", color: "var(--ink-2)" }}>{p.required}</td>
-              <td style={{ padding: "10px 14px", fontSize: "13px", color: "var(--ink-2)" }}>{p.desc}</td>
+              <td style={{ fontFamily: "var(--mono)", fontSize: "16px", fontWeight: 600, color: "var(--green-dark)" }}><code>{p.name}</code></td>
+              <td style={{ fontFamily: "var(--mono)", fontSize: "16px", color: "var(--ink-2)" }}><code>{p.type}</code></td>
+              <td style={{ fontSize: "16px", color: "var(--ink-2)" }}>{p.required}</td>
+              <td style={{ fontSize: "16px", color: "var(--ink-2)" }}>{p.desc}</td>
             </tr>
           ))}
         </tbody>
@@ -586,7 +585,7 @@ docker-compose up -d
             <main className="docs-main" style={{ minWidth: 0 }}>
               <h1
                 style={{
-                  fontSize: "clamp(28px, 5vw, 36px)",
+                  fontSize: "clamp(34px, 5vw, 60px)",
                   fontWeight: 800,
                   letterSpacing: "-0.03em",
                   marginBottom: "8px",
@@ -597,7 +596,7 @@ docker-compose up -d
               <p
                 style={{
                   color: "var(--ink-2)",
-                  fontSize: "16px",
+                  fontSize: "20px",
                   marginBottom: "8px",
                 }}
               >
@@ -616,9 +615,9 @@ docker-compose up -d
                     <span
                       key={tag}
                       style={{
-                        fontSize: "12px",
+                        fontSize: "16px",
                         fontWeight: 600,
-                        padding: "4px 12px",
+                        padding: "5px 14px",
                         borderRadius: "20px",
                         background: "var(--green-light)",
                         color: "var(--green-dark)",
@@ -634,7 +633,7 @@ docker-compose up -d
               <SectionTitle id="overview">Overview</SectionTitle>
               <p
                 style={{
-                  fontSize: "15px",
+                  fontSize: "16px",
                   color: "var(--ink-2)",
                   lineHeight: 1.6,
                   marginBottom: "16px",
@@ -680,7 +679,7 @@ docker-compose up -d
               <SectionTitle id="quickstart">Quick Start</SectionTitle>
               <p
                 style={{
-                  fontSize: "15px",
+                  fontSize: "16px",
                   color: "var(--ink-2)",
                   lineHeight: 1.6,
                   marginBottom: "16px",
@@ -755,7 +754,7 @@ docker-compose up -d
                 highlightedHtml={verifyReqHtml}
                 langLabel="json"
               />
-              <details style={{ margin: "8px 0 16px", fontSize: "14px", color: "var(--ink-2)" }}>
+              <details style={{ margin: "8px 0 16px", fontSize: "16px", color: "var(--ink-2)" }}>
                 <summary style={{ cursor: "pointer", fontWeight: 600 }}>Older receipt? (legacy formats)</summary>
                 <p style={{ margin: "8px 0" }}>
                   A CBE receipt that shows only an FT reference uses the legacy format: send the FT reference and the receiving account (cheki uses the last 8 digits). CBE&apos;s older receipt host is often unreachable, so prefer the receipt link when you have it. Old Dashen Super App links still work: cheki reads the FT Ref from them. Each bank&apos;s formats, current first, are in <code>GET /api/banks</code> and on the <a href="/endpoints">endpoint reference</a>.
@@ -816,7 +815,7 @@ docker-compose up -d
                 <summary
                   style={{
                     fontWeight: 600,
-                    fontSize: "14px",
+                    fontSize: "16px",
                     cursor: "pointer",
                     color: "var(--ink)",
                   }}
@@ -1001,23 +1000,21 @@ docker-compose up -d
 
               {/* SDKs */}
               <SectionTitle id="sdks">SDKs</SectionTitle>
-              <p
-                style={{
-                  fontSize: "15px",
-                  color: "var(--ink-2)",
-                  lineHeight: 1.6,
-                  marginBottom: "16px",
-                }}
-              >
+              <p style={prose}>
                 SDKs are available in 5 languages. All wrap the same REST API and
                 share one contract (sdks/fixtures/api-contract.json): bank id, the
                 verified, decodedOnly and parsed fields, batch counts, typed 429 (with
                 Retry-After) and 413 errors, and a client-side limit of 20 receipts per
                 batch. Each attempt waits up to 65 seconds (the server may take up to 60).
+              </p>
+              <p style={prose}>
                 They retry at most once, and only where it is safe: GET requests on a
                 network error or 5xx, a verify on a network error or a 429/503 with a
                 Retry-After of up to 60 s, and a batch only on a 429/503 with a short
-                Retry-After. A timeout, another 4xx, a geo-blocked bank (502 with
+                Retry-After.
+              </p>
+              <p style={prose}>
+                A timeout, another 4xx, a geo-blocked bank (502 with
                 fallbackUrl) and a 5xx on a verify or batch POST are never retried, so a
                 batch is never replayed: send long lists in chunks of 15 or fewer. The
                 server makes at most 2 attempts per bank fetch, so one SDK call reaches a
@@ -1046,9 +1043,9 @@ docker-compose up -d
                 <table>
                   <thead>
                     <tr style={{ borderBottom: "2px solid var(--border)" }}>
-                      <th style={{ textAlign: "left", padding: "10px 14px", fontWeight: 700, fontSize: "12px", color: "var(--ink)", textTransform: "uppercase", letterSpacing: "0.04em" }}>Status</th>
-                      <th style={{ textAlign: "left", padding: "10px 14px", fontWeight: 700, fontSize: "12px", color: "var(--ink)", textTransform: "uppercase", letterSpacing: "0.04em" }}>Name</th>
-                      <th style={{ textAlign: "left", padding: "10px 14px", fontWeight: 700, fontSize: "12px", color: "var(--ink)", textTransform: "uppercase", letterSpacing: "0.04em" }}>Description</th>
+                      <th style={{ textAlign: "left", fontWeight: 700, fontSize: "13px", color: "var(--ink)", textTransform: "uppercase", letterSpacing: "0.04em" }}>Status</th>
+                      <th style={{ textAlign: "left", fontWeight: 700, fontSize: "13px", color: "var(--ink)", textTransform: "uppercase", letterSpacing: "0.04em" }}>Name</th>
+                      <th style={{ textAlign: "left", fontWeight: 700, fontSize: "13px", color: "var(--ink)", textTransform: "uppercase", letterSpacing: "0.04em" }}>Description</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1060,9 +1057,9 @@ docker-compose up -d
                           background: i % 2 === 0 ? "transparent" : "var(--surface-alt)",
                         }}
                       >
-                        <td style={{ padding: "10px 14px", fontFamily: "var(--mono)", fontSize: "13px", fontWeight: 700, color: e.code.startsWith("4") ? "var(--amber-text)" : "var(--red-text)" }}>{e.code}</td>
-                        <td style={{ padding: "10px 14px", fontSize: "13px", fontWeight: 600, color: "var(--ink)" }}>{e.name}</td>
-                        <td style={{ padding: "10px 14px", fontSize: "13px", color: "var(--ink-2)" }}>{e.desc}</td>
+                        <td style={{ fontFamily: "var(--mono)", fontSize: "16px", fontWeight: 700, color: e.code.startsWith("4") ? "var(--amber-text)" : "var(--red-text)" }}><code>{e.code}</code></td>
+                        <td style={{ fontSize: "16px", fontWeight: 600, color: "var(--ink)" }}>{e.name}</td>
+                        <td style={{ fontSize: "16px", color: "var(--ink-2)" }}>{e.desc}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -1071,7 +1068,7 @@ docker-compose up -d
 
               {/* Bank endpoints */}
               <SectionTitle id="bank-endpoints">Bank endpoints</SectionTitle>
-              <p style={{ fontSize: "15px", color: "var(--ink-2)", lineHeight: 1.7, marginBottom: "12px" }}>
+              <p style={{ fontSize: "16px", color: "var(--ink-2)", lineHeight: 1.7, marginBottom: "12px" }}>
                 The <Link href="/endpoints" style={{ color: "var(--green-dark)", fontWeight: 600 }}>endpoint reference</Link> lists every bank receipt URL cheki reads, with placeholders, unknown-reference error shapes and a dated changelog. It is generated from the manifest. Daily health checks are on the <Link href="/status" style={{ color: "var(--green-dark)", fontWeight: 600 }}>status page</Link>.
               </p>
 
@@ -1109,7 +1106,7 @@ docker-compose up -d
                     borderRadius: "8px",
                     background: "var(--accent)",
                     color: "var(--accent-ink)",
-                    fontSize: "14px",
+                    fontSize: "16px",
                     fontWeight: 600,
                     display: "inline-flex",
                     alignItems: "center",
@@ -1128,7 +1125,7 @@ docker-compose up -d
                     borderRadius: "8px",
                     border: "1px solid var(--border)",
                     color: "var(--ink)",
-                    fontSize: "14px",
+                    fontSize: "16px",
                     fontWeight: 600,
                     background: "var(--surface)",
                   }}
@@ -1144,7 +1141,7 @@ docker-compose up -d
                     borderRadius: "8px",
                     border: "1px solid var(--border)",
                     color: "var(--ink)",
-                    fontSize: "14px",
+                    fontSize: "16px",
                     fontWeight: 600,
                     background: "var(--surface)",
                   }}

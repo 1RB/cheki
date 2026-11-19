@@ -535,8 +535,8 @@ export const articles: Article[] = [
         headers: ["Component", "Digits", "Value", "Meaning"],
         rows: [
           ["YY", "2", "26", "Year (2026)"],
-          ["MM", "2", "06", "Month (June)"],
-          ["DD", "2", "07", "Day (7th)"],
+          ["MM", "2", "06", "Month (June)"], // taste-skill-ignore: a date/hex/protocol value in the article, not an index
+          ["DD", "2", "07", "Day (7th)"], // taste-skill-ignore: a date/hex/protocol value in the article, not an index
           ["HH", "2", "11", "Hour (11)"],
           ["MI", "2", "22", "Minute (22)"],
           ["SEQ", "5", "00001", "Per-minute sequence number"],
@@ -1098,7 +1098,7 @@ export const articles: Article[] = [
       { type: "code", code: "ODAxODAwMDIwNjAxMDI5MTAyMDEzMTgxMjQwMDBBNDE0MjQzMzE0NDMyNDUzMzQ2MzQ2MzA0RTk2OQ==" },
       { type: "text", text: "Decoded, it is neither binary nor JSON but ASCII text made of 58 hex characters:" },
       { type: "code", code: "80180002060102910201318124000A414243314432453346346304E969" },
-      { type: "text", text: "The tail is the first clue. `41424331443245334634` is `ABC1D2E3F4` written as ASCII hex, and `6304` followed by four hex digits near the end is familiar from payment QR codes: in EMVCo merchant QR codes, tag `63` with length `04` is the checksum." },
+      { type: "text", text: "The tail is the first clue. `41424331443245334634` is `ABC1D2E3F4` written as ASCII hex, and `6304` followed by four hex digits near the end is familiar from payment QR codes: in EMVCo merchant QR codes, tag `63` with length `04` is the checksum." }, // taste-skill-ignore: a date/hex/protocol value in the article, not an index
 
       { type: "heading", id: "tlv-rule", text: "Step 2: finding the TLV rule" },
       { type: "text", text: "TLV means tag, length, value. The work is in deciding what the length counts and in which base. These readings were tried first and rejected:" },
@@ -1117,7 +1117,7 @@ export const articles: Article[] = [
         rows: [
           ["80", "18", "000206010291020131", "Unknown; cheki ignores it"],
           ["81", "24", "000A41424331443245334634", "Container holding the transaction number"],
-          ["63", "04", "E969", "CRC checksum"],
+          ["63", "04", "E969", "CRC checksum"], // taste-skill-ignore: a date/hex/protocol value in the article, not an index
         ],
       },
       { type: "text", text: "Tag `80` is still unexplained: 9 bytes (`00 02 06 01 02 91 02 01 31`) that parse cleanly under neither the EMVCo rule nor a byte TLV." },

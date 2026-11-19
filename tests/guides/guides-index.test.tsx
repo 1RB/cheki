@@ -123,7 +123,7 @@ describe("GuidesPage (server render)", () => {
     expect(doc.querySelector('input[type="search"]')).not.toBeNull();
     expect(html).not.toMatch(/guide-card|guides-grid|featured/);
     expect(doc.querySelectorAll("button").length).toBe(0); // no filter pills (the clear button only appears with no results)
-    expect(html).not.toMatch(/#2563eb|#dc2626|#7c3aed|#059669|#d97706|#0891b2|#db2777/);
+    expect(html).not.toMatch(/#2563eb|#dc2626|#7c3aed|#059669|#d97706|#0891b2|#db2777/); // taste-skill-ignore: asserts this colour is not used
     expect(html).not.toMatch(/text-transform|letter-spacing|uppercase/i);
   });
 

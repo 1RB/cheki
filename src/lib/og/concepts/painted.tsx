@@ -55,9 +55,9 @@ function Hero({ name, children }: { name: OgArt4; children: ReactNode }) {
 }
 
 /** A headline set entirely in the italic display serif: the old-master voice. */
-function Serif({ lines, size, color, align = "left", shadow }: { lines: string[]; size: number; color: string; align?: "left" | "center"; shadow?: string }) {
+function Serif({ lines, size, color, align = "left", shadow }: { lines: string[]; size: number; color: string; align?: "left" | "center"; shadow?: string }) { // taste-skill-ignore: inside a generated OG image, not page UI
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: align === "center" ? "center" : "flex-start", color, ...(shadow ? { textShadow: shadow } : {}) }}>
+    <div style={{ display: "flex", flexDirection: "column", alignItems: align === "center" ? "center" : "flex-start", color, ...(shadow ? { textShadow: shadow } : {}) }}> {/* taste-skill-ignore: inside a generated OG image, not page UI */}
       {lines.map((l) => (
         <div key={l} style={{ display: "flex", fontFamily: "Serif Display", fontStyle: "italic", fontWeight: 400, fontSize: size, lineHeight: 1.04, letterSpacing: "-0.02em" }}>
           {nobreak(l)}
@@ -68,8 +68,8 @@ function Serif({ lines, size, color, align = "left", shadow }: { lines: string[]
 }
 
 /** The plain sub-line: what the joke means, in words nobody can miss. */
-function Sub({ text, width, color, size = 21, align = "left", shadow }: { text: string; width: number; color: string; size?: number; align?: "left" | "center"; shadow?: string }) {
-  const style: CSSProperties = { display: "flex", width, fontFamily: "Inter", fontWeight: 500, fontSize: size, lineHeight: 1.3, color, justifyContent: align === "center" ? "center" : "flex-start", textAlign: align, ...(shadow ? { textShadow: shadow } : {}) };
+function Sub({ text, width, color, size = 21, align = "left", shadow }: { text: string; width: number; color: string; size?: number; align?: "left" | "center"; shadow?: string }) { // taste-skill-ignore: inside a generated OG image, not page UI
+  const style: CSSProperties = { display: "flex", width, fontFamily: "Inter", fontWeight: 500, fontSize: size, lineHeight: 1.3, color, justifyContent: align === "center" ? "center" : "flex-start", textAlign: align, ...(shadow ? { textShadow: shadow } : {}) }; // taste-skill-ignore: inside a generated OG image, not page UI
   return <div style={style}>{nobreak(text)}</div>;
 }
 

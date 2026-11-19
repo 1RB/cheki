@@ -260,7 +260,7 @@ export function ContributeBox({
       />
       {!screenshotFirst && linkExample && (
         <p id="contrib-link-hint" style={hint}>
-          From the share button. It looks like <span style={{ fontFamily: "var(--font-mono, monospace)" }}>{linkExample}</span>
+          From the share button. It looks like <span style={{ fontFamily: "var(--font-mono, monospace)" }}>{linkExample}</span> {/* taste-skill-ignore: literal code, ID or URL */}
         </p>
       )}
     </div>

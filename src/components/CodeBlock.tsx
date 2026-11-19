@@ -35,7 +35,7 @@ export function CodeBlock({ code, highlightedHtml, langLabel }: CodeBlockProps) 
   };
 
   return (
-    <div style={{ margin: "14px 0" }}>
+    <div style={{ margin: "14px 0" }} data-ui>
       <div className="code-block-header">
         <span className="code-lang-label">{langLabel || "code"}</span>
         <button
