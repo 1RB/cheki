@@ -38,7 +38,7 @@ const FONT_FILES = [
   { name: "Inter Display", file: "InterDisplay-SemiBold.ttf", weight: 600, style: "normal" },
   { name: "Inter Display", file: "InterDisplay-Bold.ttf", weight: 700, style: "normal" },
   { name: "Serif", file: "NotoSerif-Italic.ttf", weight: 400, style: "italic" },
-  { name: "Mono", file: "JetBrainsMono-Medium.ttf", weight: 500, style: "normal" },
+  { name: "Mono", file: "JetBrainsMono-Medium.ttf", weight: 500, style: "normal" }, // taste-skill-ignore: inside a generated OG image, not page UI
   // Used only by the exploration concepts in src/lib/og/concepts (OG_VARIANT).
   { name: "Serif Display", file: "NotoSerifDisplay-Italic.ttf", weight: 400, style: "italic" },
   { name: "Ethiopic", file: "NotoSerifEthiopic-Black.ttf", weight: 900, style: "normal" },

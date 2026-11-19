@@ -1,0 +1,181 @@
+/* ── Inner pages (pg-) ───────────────────────────────────────────────
+   The homepage's system (src/components/home/home.css) for the pages behind
+   it: /banks, /banks/[code], /compare and the reference screens. Type does
+   the hierarchy; the page draws no lines and no resting shadows (real tables
+   and [data-ui] fragments keep the product's own 1px --line). Surfaces are
+   one tone step from the ground. Running text is 16px or more in full ink;
+   13px is the floor and only for crumbs and stamps. The accent fills one
+   action per page; green is only ever a bank-confirmed status dot. */
+
+.pg { padding-top: 16px; padding-bottom: 96px; }
+@media (min-width: 900px) { .pg { padding-top: 40px; padding-bottom: 144px; } }
+
+/* Breadcrumb: a quiet trail, 44px hit areas on touch (globals.css). */
+.pg-crumb { list-style: none; display: flex; flex-wrap: wrap; align-items: center; margin: 0 0 8px; padding: 0; font-size: 14px; color: var(--ink-3); }
+.pg-crumb > li { display: inline-flex; align-items: center; min-height: 40px; min-width: 0; }
+.pg-crumb > li + li::before { content: "/"; margin: 0 8px; color: var(--ink-3); }
+.pg-crumb a { color: var(--ink-3); text-decoration: none; transition: color var(--dur-fast) var(--ease-out); }
+.pg-crumb [aria-current] { color: var(--ink-2); overflow-wrap: anywhere; }
+@media (hover: hover) { .pg-crumb a:hover { color: var(--ink); } }
+
+.pg-title {
+  font-size: clamp(34px, 6.2vw, 60px); line-height: 1.03; font-weight: 700; letter-spacing: -0.04em;
+  color: var(--ink); max-width: 16ch; text-wrap: balance; margin-left: -0.03em;
+}
+.pg-title--long { max-width: 22ch; font-size: clamp(32px, 5vw, 52px); }
+.pg-lede { margin-top: 20px; font-size: 18px; line-height: 1.55; color: var(--ink); max-width: 56ch; text-wrap: pretty; }
+@media (min-width: 900px) { .pg-lede { font-size: 20px; } }
+
+/* Sections: the gap between sections is far larger than any gap inside one. */
+.pg-section { margin-top: 88px; }
+@media (min-width: 900px) { .pg-section { margin-top: 136px; } }
+.pg-section--near { margin-top: 56px; }
+@media (min-width: 900px) { .pg-section--near { margin-top: 72px; } }
+.pg-h2 {
+  font-size: clamp(26px, 1.6vw + 16px, 40px); line-height: 1.08; font-weight: 700; letter-spacing: -0.03em;
+  color: var(--ink); text-wrap: balance; max-width: 24ch;
+}
+.pg-h3 { font-size: 20px; line-height: 1.25; font-weight: 650; letter-spacing: -0.015em; color: var(--ink); }
+.pg-count { color: var(--ink-3); font-weight: 500; font-variant-numeric: tabular-nums; }
+.pg-p { margin-top: 16px; font-size: 17px; line-height: 1.6; color: var(--ink); max-width: 60ch; }
+.pg-p--quiet { color: var(--ink-2); }
+/* A provenance or "as of" line under a table: kept (it is a disclosure), set quiet. */
+.pg-note { margin-top: 12px; font-size: 15px; line-height: 1.55; color: var(--ink-2); max-width: 68ch; }
+.pg-list { margin-top: 16px; padding-left: 20px; list-style: disc; max-width: 60ch; }
+.pg-list > li { font-size: 17px; line-height: 1.6; color: var(--ink); margin-bottom: 6px; }
+.pg-list > li::marker { color: var(--ink-3); }
+
+/* Heading at the left, content at the right (the homepage's bank split). */
+.pg-split { display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px 64px; }
+@media (min-width: 900px) {
+  .pg-split { grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); align-items: start; }
+  .pg-split-head { position: sticky; top: calc(var(--nav-h) + 32px); }
+}
+
+/* Rows: a name at the left, at most one quiet value at the right; the hover is
+   a tone step behind the row, no lines between. */
+.pg-rows { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px 32px; }
+@media (min-width: 720px) { .pg-rows--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 1100px) { .pg-rows--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.pg-row {
+  display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 8px 16px; margin: 0 -16px;
+  border-radius: var(--radius-sm); color: var(--ink); text-decoration: none; min-width: 0;
+  transition: background-color var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
+}
+@media (hover: hover) { a.pg-row:hover { background: var(--surface); } }
+a.pg-row:active { transform: scale(0.98); }
+.pg-row svg { flex-shrink: 0; }
+.pg-row-name { min-width: 0; font-size: 17px; font-weight: 650; letter-spacing: -0.01em; overflow-wrap: anywhere; }
+.pg-row-meta { margin-left: auto; flex-shrink: 0; font-size: 15px; font-weight: 500; color: var(--ink-2); white-space: nowrap; }
+
+/* Filled cells: one tone step, no outline, no shadow. */
+.pg-cells { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
+@media (min-width: 720px) { .pg-cells--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 1000px) { .pg-cells--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.pg-cell { display: block; padding: 24px; border-radius: var(--radius-md); background: var(--surface); color: var(--ink); text-decoration: none; min-width: 0; }
+@media (min-width: 900px) { .pg-cell { padding: 28px; } }
+a.pg-cell { transition: background-color var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out); }
+@media (hover: hover) { a.pg-cell:hover { background: var(--surface-alt); } }
+a.pg-cell:active { transform: scale(0.98); }
+.pg-cell p { margin-top: 8px; font-size: 16px; line-height: 1.55; color: var(--ink-2); max-width: 52ch; }
+.pg-cell-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+
+/* Actions: one accent fill per page; everything else is a tone step or a link. */
+.pg-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; margin-top: 28px; }
+.pg-cta, .pg-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 0 20px;
+  border: none; border-radius: var(--radius-sm); font: inherit; font-size: 16px; font-weight: 650; text-decoration: none; cursor: pointer;
+  transition: transform var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out);
+}
+.pg-cta { background: var(--accent); color: var(--accent-ink); }
+.pg-btn { background: var(--surface); color: var(--ink); }
+@media (hover: hover) {
+  .pg-cta:hover { transform: translateY(-1px); background: color-mix(in srgb, var(--accent) 88%, #ffffff); }
+  .pg-btn:hover { background: var(--surface-alt); }
+}
+.pg-cta:active, .pg-btn:active { transform: scale(0.98); }
+.pg-textlink {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 44px; font-size: 17px; font-weight: 600; color: var(--ink);
+  text-decoration: underline; text-decoration-thickness: 0.07em; text-underline-offset: 0.2em;
+  text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
+  transition: text-decoration-color var(--dur-fast) var(--ease-out);
+}
+.pg-textlink svg { transition: transform var(--dur-fast) var(--ease-out); }
+@media (hover: hover) {
+  .pg-textlink:hover { text-decoration-color: currentColor; }
+  .pg-textlink:hover svg { transform: translateX(3px); }
+}
+
+/* The page's one dark field (as on the homepage). */
+.pg-band { margin-top: 88px; padding: 72px 0; background: var(--invert-bg); color: var(--invert-text); }
+@media (min-width: 900px) { .pg-band { margin-top: 136px; padding: 112px 0; } }
+.pg-band .pg-h2, .pg-band .pg-h3, .pg-band .pg-p { color: var(--invert-text); }
+.pg-band .pg-textlink { color: var(--invert-text); }
+.pg-band-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 40px 64px; }
+@media (min-width: 900px) { .pg-band-grid { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); align-items: start; } }
+.pg-band-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 24px; }
+.pg-band-list p { margin-top: 6px; font-size: 16px; line-height: 1.55; color: var(--invert-text); opacity: 0.82; max-width: 48ch; }
+
+/* Data tables: the product's own lines (row rules in --line), no zebra, no
+   fill band on the header; figures tabular. */
+.pg-table-wrap { margin-top: 24px; }
+.pg-table { width: 100%; border-collapse: collapse; font-size: 15px; font-variant-numeric: tabular-nums; }
+.pg-table th { padding: 10px 16px 10px 0; font-size: 14px; font-weight: 500; color: var(--ink-2); text-align: left; border-bottom: 1px solid var(--line-strong); white-space: nowrap; }
+.pg-table td { padding: 12px 16px 12px 0; font-size: 15px; line-height: 1.45; color: var(--ink-2); text-align: left; vertical-align: top; border-bottom: 1px solid var(--line); }
+.pg-table tr:last-child td { border-bottom: 0; }
+.pg-table th:first-child, .pg-table td:first-child { padding-left: 0; }
+.pg-table .pg-td-key { font-weight: 600; color: var(--ink); }
+
+/* Plain text links inside running copy are underlined (globals.css); these
+   pages' paragraphs pick that up through :where(p, li). */
+
+@media (prefers-reduced-motion: reduce) {
+  .pg-row, .pg-cell, .pg-cta, .pg-btn, .pg-textlink svg { transition: none; }
+  a.pg-row:active, a.pg-cell:active, .pg-cta:active, .pg-btn:active { transform: none; }
+}
+
+/* ── /banks/[code] ── */
+.bank-head { display: flex; align-items: center; gap: 16px; margin-bottom: 32px; }
+.bank-head svg { flex-shrink: 0; }
+.bank-head .pg-title { max-width: 20ch; font-size: clamp(32px, 5.4vw, 52px); }
+.bank-desc { margin-top: 0; margin-bottom: 72px; }
+.two-col.bank-body { gap: 48px; }
+@media (min-width: 900px) { .two-col.bank-body { grid-template-columns: minmax(0, 1fr) 280px; gap: 80px; } }
+.bank-aside { top: calc(var(--nav-h) + 32px); }
+.bank-aside-title { margin-bottom: 8px; font-size: 16px; font-weight: 650; color: var(--ink); }
+.bank-aside-row { min-height: 44px; padding: 6px 16px; }
+.bank-aside-row span { font-size: 16px; font-weight: 500; color: var(--ink-2); }
+@media (hover: hover) { .bank-aside-row:hover span { color: var(--ink); } }
+
+/* ── /compare ── */
+.cmp-table { min-width: 100%; width: auto; }
+.cmp-table th, .cmp-table td { padding-left: 16px; }
+.cmp-table th a { color: inherit; text-decoration: none; }
+.cmp-table th[data-own] { color: var(--ink); font-weight: 650; }
+/* The feature column stays put while the services scroll sideways. */
+.cmp-sticky {
+  position: sticky; left: 0; z-index: 1; background: var(--bg);
+  min-width: 7.5em; max-width: min(40vw, 16em); padding-left: 0 !important; padding-right: 16px;
+}
+.cmp-cell { min-width: 80px; max-width: 176px; }
+.cmp-check { font-weight: 700; color: var(--ink-2); }
+.cmp-dash { color: var(--ink-3); }
+.cmp-val { color: var(--ink-2); }
+.cmp-check[data-own], .cmp-val[data-own] { color: var(--ink); font-weight: 650; }
+.cmp-fit td:first-child { color: var(--ink); }
+.cmp-core { padding: 40px 28px; border-radius: var(--radius-md); background: var(--surface); }
+@media (min-width: 900px) { .cmp-core { padding: 64px 56px; } }
+.cmp-core .pg-textlink { margin-top: 16px; }
+.cmp-profiles { margin-top: 32px; }
+.cmp-profiles .pg-h3 a { color: inherit; text-decoration: none; }
+@media (hover: hover) { .cmp-profiles .pg-h3 a:hover { text-decoration: underline; text-underline-offset: 0.2em; text-decoration-thickness: 0.07em; } }
+.cmp-meta { font-size: 15px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.cmp-sl { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; margin-top: 20px; }
+@media (min-width: 520px) { .cmp-sl { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+.cmp-sl h4 { font-size: 16px; font-weight: 650; color: var(--ink); margin-bottom: 8px; }
+.cmp-sl ul { list-style: disc; padding-left: 18px; margin: 0; }
+.cmp-sl li { font-size: 15px; line-height: 1.5; color: var(--ink-2); margin-bottom: 6px; }
+.cmp-sl li::marker { color: var(--ink-3); }
+.pg-cell .cmp-stack { margin-top: 20px; font-size: 15px; color: var(--ink-2); }
+.cmp-repo { overflow-wrap: anywhere; }
+.pg-cells + .pg-p { margin-top: 32px; }

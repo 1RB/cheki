@@ -212,7 +212,7 @@ export function VerifyInput({
         )}
       </div>
 
-      <div className="vi-extra" data-open={needsExtra || undefined} inert={!needsExtra}>
+      <div className="vi-extra" data-open={needsExtra || undefined} inert={!needsExtra} aria-hidden={!needsExtra || undefined}>
         <div className="vi-extra-inner">
           <label htmlFor={`${id}-extra`} className="vi-label">
             {d.needsPhone ? t("verify.extra.phone") : t(accountFieldKeys(d).label, { digits: d.accountDigits ?? DEFAULT_ACCOUNT_DIGITS })}

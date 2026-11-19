@@ -118,7 +118,11 @@ const ldWebapp = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#16a34a",
+  // The browser bar takes the page's ground (green is kept for verdicts).
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f7f7f7" },
+    { media: "(prefers-color-scheme: dark)", color: "#0f1612" },
+  ],
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,

@@ -1,7 +1,7 @@
 // Bank logo marks: a rounded square in the bank's colour with its initials.
 // The marks are described once in BANK_LOGOS (src/lib/bank-logos.ts), so the
 // Open Graph cards (src/lib/og) draw the same mark the checker shows.
-import { bankLogoSpec, type BankLogoSpec } from "@/lib/bank-logos";
+import { BANK_LOGOS, bankLogoSpec, type BankLogoSpec } from "@/lib/bank-logos";
 
 function LogoMark({ size, spec }: { size: number; spec: BankLogoSpec }) {
   return (
@@ -38,4 +38,11 @@ export function BankLogo({ size = 36, shortName, color }: LogoProps) {
 
 export function BankLogoByName({ code, size = 36 }: { code: string; size?: number }) {
   return <LogoMark size={size} spec={bankLogoSpec(code)} />;
+}
+
+/** The bank's own mark when it has one, otherwise its initials on its colour. */
+export function BankMark({ code, shortName, color, size = 24 }: { code: string; shortName: string; color: string; size?: number }) {
+  return code in BANK_LOGOS
+    ? <BankLogoByName code={code} size={size} />
+    : <BankLogo shortName={shortName} color={color} size={size} />;
 }

@@ -1,6 +1,7 @@
 /**
- * /about, /privacy and /contact: one prose layout in the guides' type scale
- * (src/components/guides/guides.css), content from src/lib/trust-pages.ts.
+ * /about, /privacy and /contact: the inner-page head (src/components/page/page.css)
+ * over one reading column in the guides' prose (src/components/guides/guides.css),
+ * content from src/lib/trust-pages.ts.
  */
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -11,6 +12,7 @@ import { jsonLdScript, SITE } from "@/lib/guides-seo";
 import { ORGANIZATION_ID } from "@/lib/site-schema";
 import type { Inline, TrustPage } from "@/lib/trust-pages";
 import "@/components/guides/guides.css";
+import "@/components/page/page.css";
 
 const PAGE_TYPE: Record<TrustPage["path"], string> = {
   "/about": "AboutPage",
@@ -80,16 +82,16 @@ export function TrustPageView({ page }: { page: TrustPage }) {
       {trustPageJsonLd(page).map((ld, i) => (
         <script key={i} type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript(ld) }} />
       ))}
-      <main className="container ga">
+      <main className="container pg">
         <nav aria-label="Breadcrumb">
-          <ol className="ga-crumb" role="list">
+          <ol className="pg-crumb" role="list">
             <li><Link href="/" prefetch={false}>Home</Link></li>
             <li aria-current="page">{page.heading}</li>
           </ol>
         </nav>
         <article className="trust-article">
-          <h1 className="ga-title">{page.heading}</h1>
-          <p className="ga-desc"><Rich parts={page.intro} /></p>
+          <h1 className="pg-title">{page.heading}</h1>
+          <p className="pg-lede"><Rich parts={page.intro} /></p>
           <p className="ga-meta">
             <span>
               <time dateTime={page.updated}><T k="guides.updated" vars={{ date: formatGuideDate(page.updated) }} /></time>

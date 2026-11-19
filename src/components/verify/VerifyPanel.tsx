@@ -22,7 +22,8 @@
  */
 import "./verify.css";
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useMemo, useRef, useState, type ClipboardEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ClipboardEvent, type ReactNode } from "react";
+import { DistortionWave } from "distortion-waves";
 import { verificationState, type VerifyResult } from "@/lib/banks";
 import { useTranslation } from "@/lib/i18n/use-translation";
 import { detectBankFromUrl, isUrl } from "@/lib/adapters/url-detector";
@@ -48,6 +49,32 @@ const BatchPanel = dynamic(() => import("./BatchPanel"), { ssr: false });
 const GeoFallback = dynamic(() => import("./GeoFallback"), { ssr: false });
 
 type Phase = "idle" | "reading" | "checking" | "done";
+
+/**
+ * The wave is one WebGL 2 canvas over the two views, tracked with
+ * ResizeObserver. Where that is missing (jsdom, an old engine) the plain
+ * result renders instead: the same two views, one at a time, which is exactly
+ * what the wave's layers hold. Read at module load, and the panel only draws
+ * this after hydration, so the server and the first client frame agree.
+ */
+const CAN_WAVE =
+  typeof window !== "undefined" &&
+  typeof ResizeObserver === "function" &&
+  typeof MutationObserver === "function";
+
+/**
+ * The check -> verdict handover: the skeleton (or nothing) passes under the
+ * wave, the verdict is what it leaves behind. `revealedContent` is null until
+ * there is a verdict, so the result row stays empty and hidden at rest.
+ */
+function ResultWave({ revealed, revealedContent, children }: { revealed: boolean; revealedContent: ReactNode; children: ReactNode }) {
+  if (!CAN_WAVE) return <>{children}{revealedContent}</>;
+  return (
+    <DistortionWave className="vp-wave" revealed={revealed} revealedContent={revealedContent} cornerRadius={16}>
+      {children}
+    </DistortionWave>
+  );
+}
 
 interface Props {
   /** Lock the panel to one bank (the /banks/[code] pages). */
@@ -471,14 +498,15 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
   const olderFormats = detection.bank ? secondaryFormats(detection.bank).filter((f) => f.status !== "current") : [];
   const busy = phase === "checking" || phase === "reading";
   const folded = phase === "done" && !!outcome && !editing;
+  const showVerdict = phase === "done" && !!verdict && !!outcome;
   const summaryBank = outcome?.bankCode ? liveBanks.find((b) => b.code === outcome.bankCode) : undefined;
   const summaryRef =
     detection.kind === "boaQr" ? t("verify.detect.boaQr") : (outcome?.reference || input.trim().replace(/^https?:\/\//i, ""));
 
   return (
-    <div className="vp" data-phase={phase}>
+    <div className="vp" data-phase={phase} data-ui>
       <div className="vp-card" data-folded={folded || undefined}>
-      <div className="vp-fold" data-hidden={!folded || undefined} inert={!folded}>
+      <div className="vp-fold" data-hidden={!folded || undefined} inert={!folded} aria-hidden={!folded || undefined}>
         <div>
           <div className="vp-summary">
             {summaryBank && <BankLogoByName code={summaryBank.code} size={20} />}
@@ -498,7 +526,7 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
           </div>
         </div>
       </div>
-      <div className="vp-fold" data-hidden={folded || undefined} inert={folded}>
+      <div className="vp-fold" data-hidden={folded || undefined} inert={folded} aria-hidden={folded || undefined}>
       <div>
       <form
         className="vp-form"
@@ -625,18 +653,26 @@ export function VerifyPanel({ lockedBank, inputId = "verify-reference" }: Props)
       </div>
 
       <div ref={resultRef} className="vp-result">
-        {busy && <VerdictSkeleton label={phase === "reading" ? t("verify.reading") : t("verify.checking", { bank: checkingBank })} />}
-        {phase === "done" && verdict && outcome && (
-          <VerdictCard
-            key={outcome.checkedAt.getTime()}
-            verdict={verdict}
-            result={outcome.result}
-            checkedAt={outcome.checkedAt}
-            t={t}
-            onAnother={reset}
-            onRetry={() => runCheck(input, { force: true })}
-            shareUrl={shareUrl}
-          />
+        {(busy || showVerdict) && (
+          <ResultWave
+            revealed={showVerdict}
+            revealedContent={
+              showVerdict && verdict && outcome ? (
+                <VerdictCard
+                  key={outcome.checkedAt.getTime()}
+                  verdict={verdict}
+                  result={outcome.result}
+                  checkedAt={outcome.checkedAt}
+                  t={t}
+                  onAnother={reset}
+                  onRetry={() => runCheck(input, { force: true })}
+                  shareUrl={shareUrl}
+                />
+              ) : null
+            }
+          >
+            {busy ? <VerdictSkeleton label={phase === "reading" ? t("verify.reading") : t("verify.checking", { bank: checkingBank })} /> : null}
+          </ResultWave>
         )}
       </div>
 

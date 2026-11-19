@@ -44,12 +44,12 @@ async function main(): Promise<void> {
 
   const orphans = findOrphans(outbound, paths);
   if (orphans.length > 0) {
-    console.error(`✗ ${orphans.length} of ${paths.length} sitemap pages have no in-content link from another page:`);
+    console.error(`✗ ${orphans.length} of ${paths.length} sitemap pages have no in-content link from another page:`); // taste-skill-ignore: CLI output, not UI
     for (const p of orphans) console.error(`  ${p}`);
     process.exitCode = 1;
     return;
   }
-  console.log(`✓ all ${paths.length} sitemap pages have an in-content link from another page`);
+  console.log(`✓ all ${paths.length} sitemap pages have an in-content link from another page`); // taste-skill-ignore: CLI output, not UI
 }
 
 main().catch((err: unknown) => {

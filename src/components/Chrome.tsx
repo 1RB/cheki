@@ -224,22 +224,18 @@ export function Footer() {
     { href: "https://github.com/1RB/cheki/tree/main/python", label: t("footer.python") },
   ];
   return (
-    <footer style={{ marginTop: "64px", borderTop: "1px solid var(--border)", background: "var(--bg)" }}>
-      <div className="container" style={{ padding: "40px 24px calc(40px + env(safe-area-inset-bottom, 0px))" }}>
-        <div className="footer-grid" style={{
-          display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: "28px",
-        }}>
+    <footer className="site-footer">
+      <div className="container-wide site-footer-inner">
+        <div className="footer-grid">
           <div>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
-              <span style={{ fontWeight: 750, fontSize: "18px", letterSpacing: "-0.035em" }}>cheki</span>
-            </div>
+            <p className="footer-word">cheki</p>
             {/* No tagline: the legal line below already says what cheki is and isn't. */}
             <Link href="/guides/contribute-translations" prefetch={false} className="footer-link footer-link--more footer-translate">
               {t("language.contribute")}
             </Link>
           </div>
           <div>
-            <p style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink)", marginBottom: "12px" }}>{t("footer.banks")}</p>
+            <p className="footer-head">{t("footer.banks")}</p>
             <div className="footer-links">
               {bankLinks.map((l) => (
                 <Link key={l.href} href={l.href} prefetch={false} className="footer-link">{l.label}</Link>
@@ -248,7 +244,7 @@ export function Footer() {
             </div>
           </div>
           <div>
-            <p style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink)", marginBottom: "12px" }}>{t("footer.guides")}</p>
+            <p className="footer-head">{t("footer.guides")}</p>
             <div className="footer-links">
               {guideLinks.map((l) => (
                 <Link key={l.href} href={l.href} prefetch={false} className="footer-link">{l.label}</Link>
@@ -257,7 +253,7 @@ export function Footer() {
             </div>
           </div>
           <div>
-            <p style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink)", marginBottom: "12px" }}>{t("footer.resources")}</p>
+            <p className="footer-head">{t("footer.resources")}</p>
             <div className="footer-links">
               {resourceLinks.map((l) => (
                 <Link key={l.href} href={l.href} prefetch={false} className="footer-link">{l.label}</Link>
@@ -265,7 +261,7 @@ export function Footer() {
             </div>
           </div>
         </div>
-        <div style={{ marginTop: "28px", paddingTop: "20px", borderTop: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
+        <div className="footer-legal">
           <p className="footer-legal-link">{t("footer.legal")}</p>
           {/* The trust pages. API docs, GitHub and Python are already in the Resources column. */}
           <div className="footer-legal-links">

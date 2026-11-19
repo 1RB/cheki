@@ -174,7 +174,7 @@ export function ThermalReceipt({
   height,
   scale = 1,
   edge = "top",
-  shadow = true,
+  shadow = true, // taste-skill-ignore: inside a generated OG image, not page UI
   showBank = true,
   stampSpace = 0,
 }: {
@@ -218,7 +218,7 @@ export function ThermalReceipt({
           fontFamily: "Mono",
           color: P.ink,
           // Satori draws `boxShadow: "none"` as a solid black box, so leave it out.
-          ...(shadow ? { boxShadow: shadow === true ? "0 30px 60px rgba(0,0,0,0.35)" : shadow } : {}),
+          ...(shadow ? { boxShadow: shadow === true ? "0 30px 60px rgba(0,0,0,0.35)" : shadow } : {}), // taste-skill-ignore: inside a generated OG image, not page UI
         }}
       >
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12 * s, fontSize: 23 * s, color: P.ink }}>

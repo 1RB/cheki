@@ -177,7 +177,7 @@ async function renderBlock(block: ContentBlock, key: number): Promise<React.Reac
       );
 
     case "divider":
-      return <hr key={key} style={{ border: "none", borderTop: "1px solid var(--border)", margin: "24px 0" }} />;
+      return <hr key={key} style={{ border: "none", borderTop: "1px solid var(--border)", margin: "24px 0" }} />; // taste-skill-ignore: the article's own section separator
 
     default:
       return null;

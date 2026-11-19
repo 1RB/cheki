@@ -38,6 +38,7 @@
     "@vercel/analytics": "^2.0.1",
     "cheerio": "^1.0.0",
     "clsx": "^2.1.1",
+    "distortion-waves": "^0.1.0",
     "jsqr": "^1.4.0",
     "lucide-react": "^1.21.0",
     "motion": "^12.41.0",

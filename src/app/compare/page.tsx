@@ -11,6 +11,7 @@ import {
   COMPETITOR_PRICING,
   type Competitor,
 } from "@/lib/guides-facts";
+import "@/components/page/page.css";
 import { useTranslation } from "@/lib/i18n/use-translation";
 import { Icon, ArrowRight01Icon } from "@/components/Icon";
 import { BouncyAccordion } from "@/components/motion/bouncy-accordion";
@@ -36,24 +37,21 @@ function byService(cell: (c: Competitor) => string): Record<string, string> {
 /** A table row: the feature name, then one cell per service column. */
 type Row = { feature: string } & Record<string, string>;
 
-const h2Style = { fontSize: "22px", fontWeight: 800, marginBottom: "16px" } as const;
-const proseStyle = { color: "var(--ink-2)", fontSize: "15px", lineHeight: 1.7, marginBottom: "12px", maxWidth: "720px" } as const;
-
-const noteStyle = { fontSize: "13px", color: "var(--ink-3)", lineHeight: 1.5, marginBottom: "32px", maxWidth: "720px" } as const;
-
+/** A value cell. cheki's column is set in ink at weight, not in green: green
+ *  means a bank-confirmed receipt and nothing else. */
 function Cell({ value, highlight }: { value: string; highlight?: boolean }) {
   if (value === check) {
-    return <span style={{ color: highlight ? "var(--green-dark)" : "var(--ink-2)", fontWeight: 700, fontSize: "15px" }}>{check}</span>;
+    return <span className="cmp-check" data-own={highlight || undefined}>{check}</span>;
   }
   if (value === dash) {
-    return <span style={{ color: "var(--ink-4)" }}>{dash}</span>;
+    return <span className="cmp-dash">{dash}</span>;
   }
-  return <span style={{ color: highlight ? "var(--green-dark)" : "var(--ink-2)", fontWeight: highlight ? 600 : 400 }}>{value}</span>;
+  return <span className="cmp-val" data-own={highlight || undefined}>{value}</span>;
 }
 
 /** Table columns, cheki first. */
 const services = [
-  { key: "cheki", name: "cheki", href: "/", color: "var(--green-dark)" },
+  { key: "cheki", name: "cheki", href: "/" },
   { key: "checket", name: "check.et", href: "https://check.et" },
   { key: "verifyet", name: "verify.et", href: "https://verify.et" },
   { key: "qbirr", name: "qbirr", href: "https://qbirr.com" },
@@ -67,34 +65,32 @@ const services = [
  * The feature column stays put while the services scroll sideways on a phone,
  * so the half-visible next column is the cue to swipe (no "swipe" caption).
  * overflow: clip, not hidden: a hidden table would become the scroll container
- * and the sticky column would never stick.
+ * and the sticky column would never stick. Styles: .cmp-* in page.css.
  */
-const stickyCol = { position: "sticky", left: 0, zIndex: 1, background: "inherit", boxShadow: "1px 0 0 var(--border)" } as const;
-
-function Table({ rows, noted }: { rows: Row[]; noted?: boolean }) {
+function Table({ rows }: { rows: Row[] }) {
   return (
-    <div className="table-wrap" style={{ marginBottom: noted ? "12px" : "32px" }}>
-      <table style={{ borderCollapse: "collapse", fontSize: "13px", background: "var(--surface)", borderRadius: "12px", overflow: "clip", width: "100%" }}>
+    <div className="table-wrap pg-table-wrap">
+      <table className="pg-table cmp-table">
         <thead>
-          <tr style={{ borderBottom: "2px solid var(--border)", background: "var(--surface)" }}>
-            <th style={{ textAlign: "left", padding: "12px 14px", fontWeight: 700, whiteSpace: "nowrap", ...stickyCol }}>Feature</th>
+          <tr>
+            <th className="cmp-sticky">Feature</th>
             {services.map((s) => (
-              <th key={s.key} style={{ textAlign: "left", padding: "12px 14px", fontWeight: 700, whiteSpace: "nowrap", color: s.color || "var(--ink)" }}>
-                <a href={s.href} target="_blank" rel="noopener noreferrer nofollow" style={{ color: "inherit", textDecoration: "none" }}>{s.name}</a>
+              <th key={s.key} data-own={s.key === "cheki" || undefined}>
+                <a href={s.href} target="_blank" rel="noopener noreferrer nofollow">{s.name}</a>
               </th>
             ))}
           </tr>
         </thead>
         <tbody>
-          {rows.map((row, i) => (
-            <tr key={row.feature} style={{ borderBottom: "1px solid var(--border)", background: i % 2 === 0 ? "var(--surface)" : "var(--surface-alt)" }}>
-              <td style={{ padding: "11px 14px", fontWeight: 600, color: "var(--ink)", minWidth: "7.5em", maxWidth: "min(40vw, 16em)", ...stickyCol }}>{row.feature}</td>
+          {rows.map((row) => (
+            <tr key={row.feature}>
+              <td className="cmp-sticky pg-td-key">{row.feature}</td>
               {services.map((s) => (
-                <td key={s.key} style={{ padding: "11px 14px", verticalAlign: "top" }}>
+                <td key={s.key}>
                   {/* Values wrap at a fixed width (a td ignores max-width) so a long
                       price, like verify.et's three plans, can't push every other
                       column off screen. */}
-                  <div style={{ minWidth: "72px", maxWidth: "168px" }}>
+                  <div className="cmp-cell">
                     <Cell value={row[s.key]} highlight={s.key === "cheki"} />
                   </div>
                 </td>
@@ -216,182 +212,184 @@ export default function ComparePage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
       <Nav />
-      <main className="container" style={{ paddingTop: "48px", paddingBottom: "48px" }}>
-        <nav aria-label="Breadcrumb" style={{ fontSize: "13px", color: "var(--ink-3)", marginBottom: "16px" }}>
-          <Link href="/" style={{ color: "var(--ink-3)" }}>Home</Link>
-          <span style={{ margin: "0 6px"}}>/</span>
-          <span style={{ color: "var(--ink)" }}>{t("nav.compare")}</span>
+      <main className="container pg">
+        <nav aria-label="Breadcrumb">
+          <ol className="pg-crumb" role="list">
+            <li><Link href="/">Home</Link></li>
+            <li aria-current="page">{t("nav.compare")}</li>
+          </ol>
         </nav>
-        <h1 style={{ fontSize: "clamp(28px, 5vw, 40px)", fontWeight: 800, letterSpacing: "-0.03em", marginBottom: "24px" }}>
+        <h1 className="pg-title pg-title--long">
           {t("compare.title")}
         </h1>
-
-        <div style={{
-          padding: "20px", borderRadius: "12px", background: "var(--surface)", border: "1px solid var(--border)", marginBottom: "32px",
-        }}>
-          <p style={{ fontSize: "15px", color: "var(--ink-2)", lineHeight: 1.6, marginBottom: "14px" }}>
-            {t("compare.verdict")}
-          </p>
-          <Link href="/" style={{
-            display: "inline-flex", alignItems: "center", gap: "6px", padding: "10px 20px", borderRadius: "8px", background: "var(--green-cta)", color: "var(--green-cta-fg)", fontSize: "14px", fontWeight: 600,
-          }}>
+        <p className="pg-lede">
+          {t("compare.verdict")}
+        </p>
+        <div className="pg-actions">
+          <Link href="/" className="pg-cta">
             {t("compare.cta")}
-            <Icon icon={ArrowRight01Icon} size={14} color="var(--green-cta-fg)" />
+            <Icon icon={ArrowRight01Icon} size={16} color="currentColor" />
           </Link>
         </div>
 
         {/* Who each service fits */}
-        <h2 id="which-fits" style={h2Style}>check.et vs verify.et vs cheki: which one fits you</h2>
-        <p style={proseStyle}>
-          Choose by the job, not the longest feature list. Most people need one thing: to confirm the payment happened.
-        </p>
-        <div className="table-wrap" style={{ marginBottom: "12px" }}>
-          <table style={{ borderCollapse: "collapse", fontSize: "13px", background: "var(--surface)", borderRadius: "12px", overflow: "hidden", width: "100%" }}>
-            <thead>
-              <tr style={{ borderBottom: "2px solid var(--border)" }}>
-                <th style={{ textAlign: "left", padding: "12px 14px", fontWeight: 700 }}>You need</th>
-                <th style={{ textAlign: "left", padding: "12px 14px", fontWeight: 700 }}>Use</th>
-              </tr>
-            </thead>
-            <tbody>
-              {FIT_ROWS.map(([need, service], i) => (
-                <tr key={need} style={{ borderBottom: "1px solid var(--border)", background: i % 2 === 0 ? "var(--surface)" : "var(--surface-alt)" }}>
-                  <td style={{ padding: "11px 14px", color: "var(--ink-2)" }}>{need}</td>
-                  <td style={{ padding: "11px 14px", fontWeight: 600, color: "var(--ink)" }}>{service}</td>
+        <section className="pg-section">
+          <h2 id="which-fits" className="pg-h2">check.et vs verify.et vs cheki: which one fits you</h2>
+          <p className="pg-p">
+            Choose by the job, not the longest feature list. Most people need one thing: to confirm the payment happened.
+          </p>
+          <div className="table-wrap pg-table-wrap">
+            <table className="pg-table cmp-fit">
+              <thead>
+                <tr>
+                  <th>You need</th>
+                  <th>Use</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <p style={noteStyle}>{chekiShortfalls()}</p>
+              </thead>
+              <tbody>
+                {FIT_ROWS.map(([need, service]) => (
+                  <tr key={need}>
+                    <td>{need}</td>
+                    <td className="pg-td-key">{service}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="pg-note">{chekiShortfalls()}</p>
+        </section>
 
         {/* Pricing */}
-        <h2 style={{ fontSize: "20px", fontWeight: 800, marginBottom: "16px" }}>{t("compare.pricing")}</h2>
-        <Table rows={pricingData} noted />
-        <p style={noteStyle}>
-          Prices as listed on each service&apos;s public site on {COMPETITORS_CHECKED}. The signup and API key rows are as of {COMPETITOR_FACTS_AS_OF}.
-        </p>
+        <section className="pg-section">
+          <h2 className="pg-h2">{t("compare.pricing")}</h2>
+          <Table rows={pricingData} />
+          <p className="pg-note">
+            Prices as listed on each service&apos;s public site on {COMPETITORS_CHECKED}. The signup and API key rows are as of {COMPETITOR_FACTS_AS_OF}.
+          </p>
+        </section>
 
         {/* Platform */}
-        <h2 style={{ fontSize: "20px", fontWeight: 800, marginBottom: "16px" }}>{t("compare.platform")}</h2>
-        <Table rows={platformData} noted />
-        <p style={noteStyle}>
-          Bank counts are what each service listed on its own site on {COMPETITORS_CHECKED}; cheki also lists {IN_DEVELOPMENT_BANK_COUNT} more banks and wallets as in development. The other rows are as of {COMPETITOR_FACTS_AS_OF}, except QR scanning and mobile apps, re-checked on {COMPETITORS_CHECKED}.
-        </p>
+        <section className="pg-section--near">
+          <h2 className="pg-h2">{t("compare.platform")}</h2>
+          <Table rows={platformData} />
+          <p className="pg-note">
+            Bank counts are what each service listed on its own site on {COMPETITORS_CHECKED}; cheki also lists {IN_DEVELOPMENT_BANK_COUNT} more banks and wallets as in development. The other rows are as of {COMPETITOR_FACTS_AS_OF}, except QR scanning and mobile apps, re-checked on {COMPETITORS_CHECKED}.
+          </p>
+        </section>
 
         {/* Openness */}
-        <h2 style={{ fontSize: "20px", fontWeight: 800, marginBottom: "16px" }}>{t("compare.transparency")}</h2>
-        <Table rows={openData} noted />
-        <p style={noteStyle}>
-          As of {COMPETITOR_FACTS_AS_OF}, except qbirr&apos;s and verify.et&apos;s SDKs and every service&apos;s robots.txt (AI crawler access), re-checked on {COMPETITORS_CHECKED}.
-        </p>
+        <section className="pg-section--near">
+          <h2 className="pg-h2">{t("compare.transparency")}</h2>
+          <Table rows={openData} />
+          <p className="pg-note">
+            As of {COMPETITOR_FACTS_AS_OF}, except qbirr&apos;s and verify.et&apos;s SDKs and every service&apos;s robots.txt (AI crawler access), re-checked on {COMPETITORS_CHECKED}.
+          </p>
+        </section>
 
-        {/* The story */}
-        <div style={{
-          padding: "32px", borderRadius: "12px", background: "var(--surface)", border: "1px solid var(--border)", marginBottom: "40px",
-        }}>
-          <h2 style={{ fontSize: "22px", fontWeight: 800, color: "var(--ink)", marginBottom: "16px" }}>{t("compare.coreFact")}</h2>
-          <p style={{ color: "var(--ink-2)", fontSize: "15px", lineHeight: 1.7, marginBottom: "12px" }}>
+        {/* The story: a filled field, one tone step. */}
+        <section className="pg-section cmp-core">
+          <h2 className="pg-h2">{t("compare.coreFact")}</h2>
+          <p className="pg-p">
             {t("compare.coreFactText")}
           </p>
-          <a href="#data-source" style={{
-            display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "14px", color: "var(--green-dark)", fontWeight: 600,
-          }}>
+          <a href="#data-source" className="pg-textlink">
             See the evidence
-            <Icon icon={ArrowRight01Icon} size={14} color="var(--green)" />
+            <Icon icon={ArrowRight01Icon} size={16} color="currentColor" />
           </a>
-        </div>
+        </section>
 
         {/* Competitor profiles */}
-        <h2 id="profiles" style={{ fontSize: "22px", fontWeight: 800, marginBottom: "8px" }}>cheki vs the competition, service by service</h2>
-        <p style={{ fontSize: "13px", color: "var(--ink-3)", lineHeight: 1.5, marginBottom: "20px", maxWidth: "720px" }}>
-          Prices and bank counts as listed on {COMPETITORS_CHECKED}. Strengths, limitations and stacks are as of {COMPETITOR_FACTS_AS_OF}, except mobile apps, SDKs, AI crawler access and tally&apos;s site, re-checked on {COMPETITORS_CHECKED}.
-        </p>
-        <div className="grid-2" style={{ gap: "16px", marginBottom: "40px" }}>
-          {competitors.map((c) => (
-            <div key={c.name} style={{
-              padding: "24px", borderRadius: "12px", background: "var(--surface)", border: "1px solid var(--border)",
-            }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "12px" }}>
-                <a href={c.url} target="_blank" rel="noopener noreferrer nofollow" style={{ fontSize: "17px", fontWeight: 700, color: "var(--ink)" }}>{c.name}</a>
-                <span style={{ fontSize: "12px", color: "var(--ink-3)" }}>{c.banks}</span>
-              </div>
-              <p style={{ fontSize: "13px", color: "var(--ink-2)", marginBottom: "16px" }}>{c.pricing}</p>
-              <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: "16px" }}>
-                <div>
-                  <p style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink)", marginBottom: "8px" }}>Strengths</p>
-                  <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
-                    {c.strengths.map((s) => (
-                      <li key={s} style={{ fontSize: "13px", color: "var(--ink-2)", lineHeight: 1.5, marginBottom: "4px", paddingLeft: "14px", position: "relative" }}>
-                        <span aria-hidden="true" style={{ position: "absolute", left: 0, color: "var(--ink-3)" }}>+</span>{s}
-                      </li>
-                    ))}
-                  </ul>
+        <section className="pg-section">
+          <h2 id="profiles" className="pg-h2">cheki vs the competition, service by service</h2>
+          <p className="pg-note">
+            Prices and bank counts as listed on {COMPETITORS_CHECKED}. Strengths, limitations and stacks are as of {COMPETITOR_FACTS_AS_OF}, except mobile apps, SDKs, AI crawler access and tally&apos;s site, re-checked on {COMPETITORS_CHECKED}.
+          </p>
+          <ul className="pg-cells pg-cells--2 cmp-profiles">
+            {competitors.map((c) => (
+              <li key={c.name} className="pg-cell">
+                <div className="pg-cell-head">
+                  <h3 className="pg-h3"><a href={c.url} target="_blank" rel="noopener noreferrer nofollow">{c.name}</a></h3>
+                  <span className="cmp-meta">{c.banks}</span>
                 </div>
-                <div>
-                  <p style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink)", marginBottom: "8px" }}>Limitations</p>
-                  <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
-                    {c.limitations.map((w) => (
-                      <li key={w} style={{ fontSize: "13px", color: "var(--ink-2)", lineHeight: 1.5, marginBottom: "4px", paddingLeft: "14px", position: "relative" }}>
-                        <span aria-hidden="true" style={{ position: "absolute", left: 0, color: "var(--ink-3)" }}>-</span>{w}
-                      </li>
-                    ))}
-                  </ul>
+                <p>{c.pricing}</p>
+                <div className="cmp-sl">
+                  <div>
+                    <h4>Strengths</h4>
+                    <ul>
+                      {c.strengths.map((s) => <li key={s}>{s}</li>)}
+                    </ul>
+                  </div>
+                  <div>
+                    <h4>Limitations</h4>
+                    <ul>
+                      {c.limitations.map((w) => <li key={w}>{w}</li>)}
+                    </ul>
+                  </div>
                 </div>
-              </div>
-              <p style={{ marginTop: "16px", fontSize: "12px", color: "var(--ink-3)", fontFamily: "var(--mono)" }}>{c.stack}</p>
-            </div>
-          ))}
-        </div>
+                <p className="cmp-stack">{c.stack}</p>
+              </li>
+            ))}
+          </ul>
+        </section>
 
         {/* The shared geo-block */}
-        <h2 id="geo-blocking" style={h2Style}>Geo-blocking: the shared problem</h2>
-        <p style={proseStyle}>
-          Telebirr and M-Pesa block non-Ethiopian IP addresses at the network level. That affects every service without an Ethiopian relay or server, cheki&apos;s hosted version included. No service has a private line to Ethio Telecom or Safaricom.
-        </p>
-        <p style={proseStyle}>
-          cheki.et does not check Telebirr or M-Pesa receipts itself today: it opens the official receipt page for you to check the amount and receiver yourself, on a phone on an Ethiopian network, and you can paste the receipt text back. A pasted or decoded receipt is marked as not confirmed: only the bank&apos;s record turns a result green. Direct checks return once a local relay is live.
-        </p>
-        <p style={{ ...proseStyle, marginBottom: "40px" }}>
-          The permanent fixes are to self-host cheki on an Ethiopian server, or to use a service that has an Ethiopian relay or server: as of {COMPETITOR_FACTS_AS_OF}, qbirr offered a relay and tally ran on an Ethio Telecom IP.
-        </p>
+        <section className="pg-section">
+          <h2 id="geo-blocking" className="pg-h2">Geo-blocking: the shared problem</h2>
+          <p className="pg-p">
+            Telebirr and M-Pesa block non-Ethiopian IP addresses at the network level. That affects every service without an Ethiopian relay or server, cheki&apos;s hosted version included. No service has a private line to Ethio Telecom or Safaricom.
+          </p>
+          <p className="pg-p">
+            cheki.et does not check Telebirr or M-Pesa receipts itself today: it opens the official receipt page for you to check the amount and receiver yourself, on a phone on an Ethiopian network, and you can paste the receipt text back. A pasted or decoded receipt is marked as not confirmed: only the bank&apos;s record turns a result green. Direct checks return once a local relay is live.
+          </p>
+          <p className="pg-p">
+            The permanent fixes are to self-host cheki on an Ethiopian server, or to use a service that has an Ethiopian relay or server: as of {COMPETITOR_FACTS_AS_OF}, qbirr offered a relay and tally ran on an Ethio Telecom IP.
+          </p>
+        </section>
 
         {/* Where the data comes from */}
-        <h2 id="data-source" style={h2Style}>Do the paid services use private bank APIs?</h2>
-        <p style={proseStyle}>No. All six read the same public endpoints. The evidence:</p>
-        <ul style={{ ...proseStyle, paddingLeft: "20px", marginBottom: "40px" }}>
-          {DATA_SOURCE_EVIDENCE.map((e) => <li key={e} style={{ marginBottom: "4px" }}>{e}</li>)}
-        </ul>
+        <section className="pg-section">
+          <h2 id="data-source" className="pg-h2">Do the paid services use private bank APIs?</h2>
+          <p className="pg-p">No. All six read the same public endpoints. The evidence:</p>
+          <ul className="pg-list">
+            {DATA_SOURCE_EVIDENCE.map((e) => <li key={e}>{e}</li>)}
+          </ul>
+        </section>
 
         {/* Other OSS competitors */}
-        <h2 style={{ fontSize: "22px", fontWeight: 800, marginBottom: "16px" }}>Other open source projects</h2>
-        <div className="grid-2" style={{ gap: "16px" }}>
-          {[
-            { name: "ethiobank_receipts", stars: "40", url: "https://github.com/NahomAl/ethiobank_receipts", desc: "Python library, 6 banks, requires Selenium for BOA, no web UI, no API, PyPI published" },
-            { name: "verification-engine", stars: "1", url: "https://github.com/oneshotEFA/verification-engine", desc: "TypeScript engine, 4 banks, 5 verification methods, npm published as @localpay/verification-engine" },
-            { name: "telebirr-receipt", stars: "14", url: "https://github.com/TheRealYT/telebirr-receipt", desc: "Node.js package for Telebirr receipt parsing only, npm published" },
-            { name: "receipt_verify", stars: "2", url: "https://github.com/TsinatKibru/receipt_verify", desc: "NestJS + PostgreSQL backend, Telebirr + CBE, duplicate prevention, Prisma ORM" },
-            { name: "veri-py", stars: "0", url: "https://github.com/nahom-d54/veri-py", desc: "Python toolkit, async/sync, 6 banks, image verification via OpenAI, PyPI published" },
-            { name: "receipt-verifier", stars: "0", url: "https://github.com/barok21/receipt-verifier", desc: "Python FastAPI microservice for Ethiopian bank receipts" },
-          ].map((p) => (
-            <a key={p.name} href={p.url} target="_blank" rel="noopener" style={{
-              padding: "20px", borderRadius: "10px", background: "var(--surface)", border: "1px solid var(--border)",
-            }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-                <p style={{ fontSize: "15px", fontWeight: 600, fontFamily: "var(--mono)" }}>{p.name}</p>
-                <span style={{ fontSize: "13px", color: "var(--ink-3)" }}>{"\u2605"}{p.stars}</span>
-              </div>
-              <p style={{ fontSize: "13px", color: "var(--ink-2)", lineHeight: 1.5 }}>{p.desc}</p>
-            </a>
-          ))}
-        </div>
-        <p style={{ marginTop: "16px", fontSize: "14px", color: "var(--ink-2)" }}>
-          cheki combines these approaches: a web UI, REST API, batch verification, TypeScript SDK, Python library, Docker, {DIRECT_BANK_COUNT} banks checked directly, guide pages, and BOA QR decryption. All free and open source.
-        </p>
+        <section className="pg-section">
+          <h2 className="pg-h2">Other open source projects</h2>
+          <ul className="pg-cells pg-cells--2 pg-cells--3" style={{ marginTop: "32px" }}>
+            {[
+              { name: "ethiobank_receipts", stars: "40", url: "https://github.com/NahomAl/ethiobank_receipts", desc: "Python library, 6 banks, requires Selenium for BOA, no web UI, no API, PyPI published" },
+              { name: "verification-engine", stars: "1", url: "https://github.com/oneshotEFA/verification-engine", desc: "TypeScript engine, 4 banks, 5 verification methods, npm published as @localpay/verification-engine" },
+              { name: "telebirr-receipt", stars: "14", url: "https://github.com/TheRealYT/telebirr-receipt", desc: "Node.js package for Telebirr receipt parsing only, npm published" },
+              { name: "receipt_verify", stars: "2", url: "https://github.com/TsinatKibru/receipt_verify", desc: "NestJS + PostgreSQL backend, Telebirr + CBE, duplicate prevention, Prisma ORM" },
+              { name: "veri-py", stars: "0", url: "https://github.com/nahom-d54/veri-py", desc: "Python toolkit, async/sync, 6 banks, image verification via OpenAI, PyPI published" },
+              { name: "receipt-verifier", stars: "0", url: "https://github.com/barok21/receipt-verifier", desc: "Python FastAPI microservice for Ethiopian bank receipts" },
+            ].map((p) => (
+              <li key={p.name}>
+                <a href={p.url} target="_blank" rel="noopener" className="pg-cell">
+                  <span className="pg-cell-head">
+                    <span className="pg-h3 cmp-repo">{p.name}</span>
+                    <span className="cmp-meta">{"\u2605"}{p.stars}</span>
+                  </span>
+                  <p>{p.desc}</p>
+                </a>
+              </li>
+            ))}
+          </ul>
+          <p className="pg-p">
+            cheki combines these approaches: a web UI, REST API, batch verification, TypeScript SDK, Python library, Docker, {DIRECT_BANK_COUNT} banks checked directly, guide pages, and BOA QR decryption. All free and open source.
+          </p>
+        </section>
 
         {/* Visible FAQ: the FAQPage JSON-LD above is built from these exact objects. */}
-        <h2 id="faq" style={{ ...h2Style, marginTop: "48px" }}>Questions about the comparison</h2>
-        <BouncyAccordion items={compareFaqs.map((f, i) => ({ id: `faq-${i}`, title: f.q, description: f.a }))} />
+        <section className="pg-section">
+          <h2 id="faq" className="pg-h2">Questions about the comparison</h2>
+          <div style={{ marginTop: "32px" }}>
+            <BouncyAccordion items={compareFaqs.map((f, i) => ({ id: `faq-${i}`, title: f.q, description: f.a }))} />
+          </div>
+        </section>
       </main>
       <Footer />
     </>

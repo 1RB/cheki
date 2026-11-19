@@ -45,7 +45,7 @@ export function DocsSidebar({ sections }: DocsSidebarProps) {
   return (
     <div
       style={{
-        padding: "20px",
+        padding: "14px",
         borderRadius: "12px",
         background: "var(--surface)",
         border: "1px solid var(--border)",
@@ -53,11 +53,11 @@ export function DocsSidebar({ sections }: DocsSidebarProps) {
     >
       <p
         style={{
-          fontSize: "12px",
+          fontSize: "13px",
           fontWeight: 700,
           color: "var(--ink)",
-          textTransform: "uppercase",
-          letterSpacing: "0.05em",
+          textTransform: "none",
+          letterSpacing: "0.02em",
           marginBottom: "14px",
           display: "flex",
           alignItems: "center",
@@ -83,13 +83,13 @@ export function DocsSidebar({ sections }: DocsSidebarProps) {
             <div key={group}>
               <p
                 style={{
-                  fontSize: "11px",
+                  fontSize: "13px",
                   fontWeight: 600,
                   color: "var(--ink-3)",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.04em",
+                  textTransform: "none",
+                  letterSpacing: "0.02em",
                   marginBottom: "6px",
-                  paddingLeft: "12px",
+                  paddingLeft: "0",
                 }}
               >
                 {group}
@@ -108,6 +108,9 @@ export function DocsSidebar({ sections }: DocsSidebarProps) {
                       fontSize: "13px",
                       lineHeight: 1.4,
                       padding: "6px 12px",
+                      /* The row runs to the card's own edges so the text sits
+                         close to the page margin the card is aligned to. */
+                      marginInline: "-14px",
                       borderRadius: "6px",
                       transition: "background-color 0.15s, color 0.15s, border-color 0.15s, transform 0.15s",
                       color:
