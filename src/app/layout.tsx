@@ -7,7 +7,7 @@ import { THEME_INIT_SCRIPT } from "@/lib/theme";
 import { LOCALE_INIT_SCRIPT } from "@/lib/i18n/locale-store";
 import { SiteAnalytics } from "@/components/SiteAnalytics";
 import { analyticsPaths } from "@/lib/analytics/paths";
-import { ORGANIZATION_ID, organizationJsonLd, sourceCodeJsonLd, websiteJsonLd } from "@/lib/site-schema";
+import { BRAND, TITLE_TEMPLATE, organizationJsonLd, sourceCodeJsonLd, webApplicationJsonLd, websiteJsonLd } from "@/lib/site-schema";
 
 const SITE_URL = "https://cheki.et";
 
@@ -28,15 +28,17 @@ const inter = localFont({
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "Check Ethiopian Bank Receipts Free: CBE, Telebirr & More | cheki",
-    template: "%s | cheki",
+    // The home answers "bank receipt check ethiopia" / "receipt checker
+    // ethiopia"; the H1 says the same thing (hero.titleLead).
+    default: `Check Ethiopian Bank Receipts Free: CBE, Telebirr | ${BRAND}`,
+    template: TITLE_TEMPLATE,
   },
   description:
     `Check ${directBankList("short")} receipts against each bank's own record. ${linkOutBankList()} open on their official receipt pages. Free, no signup, open source.`,
-  applicationName: "cheki",
+  applicationName: BRAND,
   category: "finance",
-  creator: "cheki open source",
-  publisher: "cheki open source",
+  creator: BRAND,
+  publisher: BRAND,
   authors: [{ name: "Ray (@1RB)", url: "https://github.com/1RB" }],
   keywords: [
     "ethiopian receipt verification",
@@ -55,17 +57,17 @@ export const metadata: Metadata = {
     canonical: "/",
   },
   openGraph: {
-    title: "Check Ethiopian Bank Receipts Free | cheki",
+    title: `Check Ethiopian Bank Receipts Free | ${BRAND}`,
     description:
       `Check CBE, BOA and ${DIRECT_BANK_COUNT - 2} more Ethiopian bank and wallet receipts against the bank's own record. ${linkOutBankList()} open on their official receipt pages. Free, open source.`,
     type: "website",
-    siteName: "cheki",
+    siteName: BRAND,
     locale: "en_US",
     url: SITE_URL,
   },
   twitter: {
     card: "summary_large_image",
-    title: "Check Ethiopian Bank Receipts Free | cheki",
+    title: `Check Ethiopian Bank Receipts Free | ${BRAND}`,
     description:
       `Check CBE, BOA and ${DIRECT_BANK_COUNT - 2} more Ethiopian bank and wallet receipts against the bank's own record. ${linkOutBankList()} open on their official receipt pages. Free, open source.`,
   },
@@ -90,32 +92,7 @@ export const metadata: Metadata = {
 // Structured data. Rendered as real <script type="application/ld+json"> tags
 // in <head>: the previous `metadata.other` entries were emitted as <meta>
 // tags, which Google does not read as structured data. The Organization,
-// WebSite and source-code nodes live in src/lib/site-schema.ts.
-const ldWebapp = {
-  "@context": "https://schema.org",
-  "@type": "WebApplication",
-  name: "cheki.et",
-  url: SITE_URL,
-  publisher: { "@id": ORGANIZATION_ID },
-  applicationCategory: "FinanceApplication",
-  operatingSystem: "Web",
-  offers: {
-    "@type": "Offer",
-    price: "0",
-    priceCurrency: "ETB",
-  },
-  description:
-    "Free, open-source Ethiopian bank receipt verification. Checks CBE, BOA, Dashen and more against each bank's own record; Telebirr and M-Pesa receipts open on their official pages. No signup, no API key required.",
-  featureList: [
-    "Real-time receipt verification",
-    "QR code scanning",
-    "Batch verification up to 20 receipts",
-    "REST API with no authentication",
-    "TypeScript, Python, Dart, PHP, and Go SDKs",
-    "Self-hosting with Docker",
-    "Bank receipt endpoint health monitoring",
-  ],
-};
+// WebSite, WebApplication and source-code nodes live in src/lib/site-schema.ts.
 
 export const viewport: Viewport = {
   themeColor: "#16a34a",
@@ -134,7 +111,7 @@ export default function RootLayout({
       <head>
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }} />
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ldWebapp) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(webApplicationJsonLd) }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(sourceCodeJsonLd) }} />
         <link rel="manifest" href="/manifest.webmanifest" />
         <style>{`

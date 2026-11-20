@@ -8,9 +8,11 @@ import { join } from "node:path";
 import { getArticle, articles } from "@/lib/guides";
 import { guideArticleJsonLd } from "@/lib/guides-seo";
 import {
+  BRAND_PROFILES,
   LOGO,
   MAINTAINER_PERSON,
   ORGANIZATION_ID,
+  PACKAGE_PROFILES,
   PUBLISHER,
   SAME_AS,
   organizationJsonLd,
@@ -46,7 +48,19 @@ describe("Organization", () => {
 
   it("lists only profiles the project owns, the repository first", () => {
     expect(SAME_AS[0]).toBe("https://github.com/1RB/cheki");
-    for (const u of SAME_AS) expect(u).toMatch(/^https:\/\/(github\.com\/1RB\/cheki|www\.npmjs\.com\/package\/cheki-verify|pypi\.org\/project\/cheki\/|packagist\.org\/packages\/cheki\/cheki|pkg\.go\.dev\/github\.com\/1RB\/cheki\/)/);
+    for (const u of SAME_AS) {
+      expect(u).toMatch(
+        /^https:\/\/(github\.com\/1RB\/cheki$|www\.linkedin\.com\/company\/chekiet\/$|dev\.to\/cheki$|launch\.et\/product\/cheki-et$|www\.npmjs\.com\/package\/cheki-verify$|pypi\.org\/project\/cheki\/$|packagist\.org\/packages\/cheki\/cheki$|pkg\.go\.dev\/github\.com\/1RB\/cheki\/sdks\/go$|pub\.dev\/packages\/cheki$)/,
+      );
+    }
+    expect(new Set(SAME_AS).size).toBe(SAME_AS.length);
+  });
+
+  it("lists the brand profiles before the SDK packages, and the same ones on /about", () => {
+    expect(SAME_AS.slice(0, BRAND_PROFILES.length)).toEqual(BRAND_PROFILES.map((p) => p.url));
+    for (const p of PACKAGE_PROFILES) expect(SAME_AS).toContain(p);
+    const about = readFileSync(join(ROOT, "src/lib/trust-pages.ts"), "utf8");
+    expect(about).toMatch(/BRAND_PROFILES/);
   });
 
   it("declares the code MIT and open", () => {

@@ -38,7 +38,7 @@ export interface TrustSection {
 
 export interface TrustPage {
   path: "/about" | "/privacy" | "/contact";
-  /** <title> (the layout appends " | cheki"). */
+  /** <title> (the layout appends " | cheki.et"). */
   title: string;
   /** The H1. */
   heading: string;

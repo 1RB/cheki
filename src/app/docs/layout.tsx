@@ -8,7 +8,7 @@ export const metadata: Metadata = {
     canonical: "/docs",
   },
   openGraph: {
-    images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "cheki - verify Ethiopian receipts for free" }],
+    images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "cheki.et: check Ethiopian bank receipts for free" }],
     title: "cheki API Documentation - Free Receipt Verification REST API",
     description:
       "Free REST API for verifying Ethiopian bank receipts. No auth, no API key, per-IP rate limits. Checks CBE, BOA, Dashen and more with the bank; for Telebirr and M-Pesa it returns the official receipt link.",
