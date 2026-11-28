@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-27T13:56:42Z",
+  "generatedAt": "2026-11-28T13:05:42Z",
   "runner": "GitHub Actions (ubuntu-latest)",
   "checkedGeoRestricted": false,
   "banks": [
@@ -7,7 +7,7 @@
       "id": "cbe",
       "label": "CBE",
       "manifestStatus": "live",
-      "checkedAt": "2026-11-27T13:55:59Z",
+      "checkedAt": "2026-11-28T13:05:37Z",
       "status": "live",
       "detail": "Endpoint answers in the expected shape.",
       "observed": "500 application/problem+json \"Security Alert: Invalid or tampered legacy token!\""
@@ -16,17 +16,17 @@
       "id": "cbe:cbe-ft-pdf",
       "label": "CBE (legacy: FT reference + last 8 digits of the receiving account)",
       "manifestStatus": "live",
-      "checkedAt": "2026-11-27T13:55:59Z",
+      "checkedAt": "2026-11-28T13:05:38Z",
       "formatStatus": "legacy",
-      "status": "degraded",
-      "detail": "Unknown-reference response changed: expected HTTP 404, got 500; body is missing \"You Are Not Allowed to See This Data\".",
-      "observed": "500 application/json \"receipt is under maintenance\""
+      "status": "live",
+      "detail": "Endpoint answers in the expected shape.",
+      "observed": "404 text/html \"You Are Not Allowed to See This Data, Please Check your Link\""
     },
     {
       "id": "telebirr",
       "label": "Telebirr",
       "manifestStatus": "live",
-      "checkedAt": "2026-11-27T13:55:57Z",
+      "checkedAt": "2026-11-28T13:05:36Z",
       "status": "not-checked",
       "detail": "Geo-restricted to Ethiopian IPs, not checked from CI."
     },
@@ -34,7 +34,7 @@
       "id": "boa",
       "label": "BOA",
       "manifestStatus": "live",
-      "checkedAt": "2026-11-27T13:55:59Z",
+      "checkedAt": "2026-11-28T13:05:38Z",
       "status": "live",
       "detail": "Endpoint answers in the expected shape.",
       "observed": "200 application/json \"[{\"Tel.\":\"+251****51\",\"Payer's Name\":\"Invalid reference number\"}]\""
@@ -43,7 +43,7 @@
       "id": "mpesa",
       "label": "M-Pesa",
       "manifestStatus": "live",
-      "checkedAt": "2026-11-27T13:55:57Z",
+      "checkedAt": "2026-11-28T13:05:36Z",
       "status": "not-checked",
       "detail": "Geo-restricted to Ethiopian IPs, not checked from CI."
     },
@@ -51,7 +51,7 @@
       "id": "dashen",
       "label": "Dashen",
       "manifestStatus": "live",
-      "checkedAt": "2026-11-27T13:55:59Z",
+      "checkedAt": "2026-11-28T13:05:38Z",
       "status": "live",
       "detail": "Endpoint answers in the expected shape.",
       "observed": "400 application/json \"Transaction not found\""
@@ -60,7 +60,7 @@
       "id": "awash",
       "label": "Awash",
       "manifestStatus": "live",
-      "checkedAt": "2026-11-27T13:56:00Z",
+      "checkedAt": "2026-11-28T13:05:38Z",
       "status": "live",
       "detail": "Endpoint answers in the expected shape.",
       "observed": "200 text/html \"Receipt not found\""
@@ -69,7 +69,7 @@
       "id": "zemen",
       "label": "Zemen",
       "manifestStatus": "in-development",
-      "checkedAt": "2026-11-27T13:56:07Z",
+      "checkedAt": "2026-11-28T13:05:38Z",
       "status": "in-development",
       "detail": "Endpoint answers in the expected shape. Parser still needs a real receipt.",
       "observed": "404 application/json \"Transaction not found.\""
@@ -78,41 +78,41 @@
       "id": "cbebirr",
       "label": "CBE Birr",
       "manifestStatus": "live",
-      "checkedAt": "2026-11-27T13:56:42Z",
-      "status": "degraded",
-      "detail": "Endpoint unreachable: timeout after 20s."
+      "checkedAt": "2026-11-28T13:05:38Z",
+      "status": "live",
+      "detail": "Endpoint answers in the expected shape.",
+      "observed": "200 text/html \"Auto Receipt\""
     },
     {
       "id": "siinqee",
       "label": "Siinqee",
       "manifestStatus": "live",
-      "checkedAt": "2026-11-27T13:56:02Z",
-      "status": "degraded",
-      "detail": "Endpoint unreachable: write EPROTO C0ECD338F7780000:error:0A00010B:SSL routines:ssl3_get_record:wrong version number:../deps/openssl/openssl/ssl/record/ssl3_record.c:350:\n."
+      "checkedAt": "2026-11-28T13:05:38Z",
+      "status": "live",
+      "detail": "Endpoint answers in the expected shape.",
+      "observed": "404 text/html \"Siinqee Bank - Transaction Not Found\""
     },
     {
       "id": "ebirr",
       "label": "eBirr",
       "manifestStatus": "live",
-      "checkedAt": "2026-11-27T13:56:00Z",
-      "status": "live",
-      "detail": "Endpoint answers in the expected shape.",
-      "observed": "200 text/html \"Not Found Page\""
+      "checkedAt": "2026-11-28T13:05:41Z",
+      "status": "degraded",
+      "detail": "Endpoint unreachable: socket hang up."
     },
     {
       "id": "nib",
       "label": "Nib",
       "manifestStatus": "in-development",
-      "checkedAt": "2026-11-27T13:56:00Z",
-      "status": "in-development",
-      "detail": "Endpoint answers in the expected shape. Parser still needs a real receipt.",
-      "observed": "200 text/html \"Not Found Page\""
+      "checkedAt": "2026-11-28T13:05:41Z",
+      "status": "degraded",
+      "detail": "Endpoint unreachable: socket hang up."
     },
     {
       "id": "wegagen",
       "label": "Wegagen",
       "manifestStatus": "live",
-      "checkedAt": "2026-11-27T13:56:00Z",
+      "checkedAt": "2026-11-28T13:05:39Z",
       "status": "live",
       "detail": "Endpoint answers in the expected shape.",
       "observed": "200 application/json \"Transaction not found in Daily or History\""
@@ -121,25 +121,23 @@
       "id": "ahadu",
       "label": "Ahadu",
       "manifestStatus": "in-development",
-      "checkedAt": "2026-11-27T13:56:00Z",
-      "status": "in-development",
-      "detail": "Endpoint answers in the expected shape. Parser still needs a real receipt.",
-      "observed": "200 text/html \"Not Found Page\""
+      "checkedAt": "2026-11-28T13:05:41Z",
+      "status": "degraded",
+      "detail": "Endpoint unreachable: socket hang up."
     },
     {
       "id": "kaafi",
       "label": "KAAFI",
       "manifestStatus": "in-development",
-      "checkedAt": "2026-11-27T13:56:01Z",
-      "status": "in-development",
-      "detail": "Endpoint answers in the expected shape. Parser still needs a real receipt.",
-      "observed": "200 text/html \"Not Found Page\""
+      "checkedAt": "2026-11-28T13:05:41Z",
+      "status": "degraded",
+      "detail": "Endpoint unreachable: socket hang up."
     },
     {
       "id": "abay",
       "label": "Abay",
       "manifestStatus": "in-development",
-      "checkedAt": "2026-11-27T13:55:57Z",
+      "checkedAt": "2026-11-28T13:05:36Z",
       "status": "in-development",
       "detail": "No public receipt endpoint known yet."
     },
@@ -147,7 +145,7 @@
       "id": "addis",
       "label": "Addis Bank",
       "manifestStatus": "in-development",
-      "checkedAt": "2026-11-27T13:55:57Z",
+      "checkedAt": "2026-11-28T13:05:36Z",
       "status": "in-development",
       "detail": "No public receipt endpoint known yet."
     },
@@ -155,7 +153,7 @@
       "id": "amhara",
       "label": "Amhara",
       "manifestStatus": "in-development",
-      "checkedAt": "2026-11-27T13:55:57Z",
+      "checkedAt": "2026-11-28T13:05:36Z",
       "status": "in-development",
       "detail": "No public receipt endpoint known yet."
     },
@@ -163,7 +161,7 @@
       "id": "berhan",
       "label": "Berhan",
       "manifestStatus": "in-development",
-      "checkedAt": "2026-11-27T13:55:57Z",
+      "checkedAt": "2026-11-28T13:05:36Z",
       "status": "in-development",
       "detail": "No public receipt endpoint known yet."
     },
@@ -171,7 +169,7 @@
       "id": "bunna",
       "label": "Bunna",
       "manifestStatus": "live",
-      "checkedAt": "2026-11-27T13:56:00Z",
+      "checkedAt": "2026-11-28T13:05:39Z",
       "status": "live",
       "detail": "Endpoint answers in the expected shape.",
       "observed": "200 application/json \"Something went wrong!\""
@@ -180,7 +178,7 @@
       "id": "enat",
       "label": "Enat",
       "manifestStatus": "in-development",
-      "checkedAt": "2026-11-27T13:55:57Z",
+      "checkedAt": "2026-11-28T13:05:36Z",
       "status": "in-development",
       "detail": "No public receipt endpoint known yet."
     },
@@ -188,7 +186,7 @@
       "id": "global",
       "label": "Global Bank",
       "manifestStatus": "in-development",
-      "checkedAt": "2026-11-27T13:55:57Z",
+      "checkedAt": "2026-11-28T13:05:36Z",
       "status": "in-development",
       "detail": "No public receipt endpoint known yet."
     },
@@ -196,7 +194,7 @@
       "id": "lion",
       "label": "Lion Bank",
       "manifestStatus": "in-development",
-      "checkedAt": "2026-11-27T13:55:57Z",
+      "checkedAt": "2026-11-28T13:05:36Z",
       "status": "in-development",
       "detail": "No public receipt endpoint known yet."
     },
@@ -204,7 +202,7 @@
       "id": "oromia",
       "label": "Oromia Bank",
       "manifestStatus": "in-development",
-      "checkedAt": "2026-11-27T13:55:57Z",
+      "checkedAt": "2026-11-28T13:05:36Z",
       "status": "in-development",
       "detail": "No public receipt endpoint known yet."
     },
@@ -212,7 +210,7 @@
       "id": "hibret",
       "label": "Hibret",
       "manifestStatus": "in-development",
-      "checkedAt": "2026-11-27T13:55:57Z",
+      "checkedAt": "2026-11-28T13:05:36Z",
       "status": "in-development",
       "detail": "No public receipt endpoint known yet."
     },
@@ -220,7 +218,7 @@
       "id": "zamzam",
       "label": "ZamZam",
       "manifestStatus": "live",
-      "checkedAt": "2026-11-27T13:56:04Z",
+      "checkedAt": "2026-11-28T13:05:42Z",
       "status": "live",
       "detail": "Endpoint answers in the expected shape.",
       "observed": "200 application/json \"null\""
@@ -229,7 +227,7 @@
       "id": "hijra",
       "label": "Hijra",
       "manifestStatus": "in-development",
-      "checkedAt": "2026-11-27T13:55:57Z",
+      "checkedAt": "2026-11-28T13:05:36Z",
       "status": "in-development",
       "detail": "No public receipt endpoint known yet."
     },
@@ -237,7 +235,7 @@
       "id": "shabelle",
       "label": "Shabelle",
       "manifestStatus": "in-development",
-      "checkedAt": "2026-11-27T13:55:57Z",
+      "checkedAt": "2026-11-28T13:05:36Z",
       "status": "in-development",
       "detail": "No public receipt endpoint known yet."
     },
@@ -245,7 +243,7 @@
       "id": "goh",
       "label": "Goh Betoch",
       "manifestStatus": "in-development",
-      "checkedAt": "2026-11-27T13:55:57Z",
+      "checkedAt": "2026-11-28T13:05:36Z",
       "status": "in-development",
       "detail": "No public receipt endpoint known yet."
     },
@@ -253,7 +251,7 @@
       "id": "tsedey",
       "label": "Tsedey",
       "manifestStatus": "in-development",
-      "checkedAt": "2026-11-27T13:55:57Z",
+      "checkedAt": "2026-11-28T13:05:36Z",
       "status": "in-development",
       "detail": "No public receipt endpoint known yet."
     },
@@ -261,7 +259,7 @@
       "id": "gadaa",
       "label": "Gadaa",
       "manifestStatus": "in-development",
-      "checkedAt": "2026-11-27T13:55:57Z",
+      "checkedAt": "2026-11-28T13:05:36Z",
       "status": "in-development",
       "detail": "No public receipt endpoint known yet."
     },
@@ -269,7 +267,7 @@
       "id": "rammis",
       "label": "Rammis",
       "manifestStatus": "in-development",
-      "checkedAt": "2026-11-27T13:55:57Z",
+      "checkedAt": "2026-11-28T13:05:36Z",
       "status": "in-development",
       "detail": "No public receipt endpoint known yet."
     },
@@ -277,7 +275,7 @@
       "id": "cbe-new",
       "label": "CBE (Receipt ID alias)",
       "manifestStatus": "live",
-      "checkedAt": "2026-11-27T13:55:59Z",
+      "checkedAt": "2026-11-28T13:05:37Z",
       "status": "live",
       "detail": "Endpoint answers in the expected shape.",
       "observed": "500 application/problem+json \"Security Alert: Invalid or tampered legacy token!\""
